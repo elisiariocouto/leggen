@@ -55,8 +55,8 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            elisiariocouto/jsonschema-markdown
-            ghcr.io/elisiariocouto/jsonschema-markdown
+            elisiariocouto/leggen
+            ghcr.io/elisiariocouto/leggen
           # generate Docker tags based on the following events/attributes
           tags: |
             type=ref,event=tag
