@@ -1,0 +1,39 @@
+version: '3.1'
+
+services:
+  mongo:
+    image: mongo:7
+    restart: "unless-stopped"
+    # If you want to expose the mongodb port to the host, uncomment the following lines
+    # ports:
+    #   - 127.0.0.1:27017:27017
+    volumes:
+      - "./data:/data/db"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "leggen"
+      MONGO_INITDB_ROOT_PASSWORD: "changeme"
+
+  leggen:
+    image: elisiariocouto/leggen:latest
+    restart: "no"
+    environment:
+      LEGGEN_MONGO_URI: mongodb://leggen:changeme@mongo:27017/
+      LEGGEN_GC_API_KEY: "changeme"
+      LEGGEN_GC_API_SECRET: "changeme"
+    volumes:
+      - "./leggen:/root/.config/leggen"
+    depends_on:
+      - mongo
+
+  # If you want to have an admin interface for your mongodb, uncomment the following lines
+  # mongo-express:
+  #   image: mongo-express
+  #   restart: "unless-stopped"
+  #   # By default, we are exposing the mongo-express port to the host
+  #   ports:
+  #     - 127.0.0.1:8081:8081
+  #   environment:
+  #     ME_CONFIG_MONGODB_URL: "mongodb://leggen:changeme@mongo:27017/"
+  #     ME_CONFIG_BASICAUTH_USERNAME: ""
+  #   depends_on:
+  #     - mongo
