@@ -25,7 +25,20 @@ services:
     depends_on:
       - mongo
 
-  # If you want to have an admin interface for your mongodb, uncomment the following lines
+  # Recommended: Run `leggen sync` every day.
+  ofelia:
+    image: mcuadros/ofelia:latest
+    depends_on:
+      - leggen
+    command: daemon --docker -f label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      ofelia.job-run.leggen-sync.schedule: "0 0 3 * * *"
+      ofelia.job-run.leggen-sync.command: "sync"
+      ofelia.job-run.leggen-sync.container: "leggen"
+
+  # Optional: If you want to have an admin interface for your mongodb, uncomment the following lines
   # mongo-express:
   #   image: mongo-express
   #   restart: "unless-stopped"
