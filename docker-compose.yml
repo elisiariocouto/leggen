@@ -13,8 +13,10 @@ services:
       MONGO_INITDB_ROOT_USERNAME: "leggen"
       MONGO_INITDB_ROOT_PASSWORD: "changeme"
 
+  # Defaults to `sync` command.
   leggen:
     image: elisiariocouto/leggen:latest
+    command: sync
     restart: "no"
     environment:
       LEGGEN_MONGO_URI: mongodb://leggen:changeme@mongo:27017/
@@ -28,6 +30,7 @@ services:
   # Recommended: Run `leggen sync` every day.
   ofelia:
     image: mcuadros/ofelia:latest
+    restart: "unless-stopped"
     depends_on:
       - leggen
     command: daemon --docker -f label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}
@@ -35,8 +38,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:
       ofelia.job-run.leggen-sync.schedule: "0 0 3 * * *"
-      ofelia.job-run.leggen-sync.command: "sync"
-      ofelia.job-run.leggen-sync.container: "leggen"
+      ofelia.job-run.leggen-sync.container: ${COMPOSE_PROJECT_NAME}-leggen-1
 
   # Optional: If you want to have an admin interface for your mongodb, uncomment the following lines
   # mongo-express:
