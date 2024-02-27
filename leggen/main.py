@@ -98,5 +98,6 @@ def cli(ctx: click.Context):
     config = load_config()
     token = get_token(config)
     ctx.obj["api_url"] = config["api_url"]
+    ctx.obj["sqlite"] = config["sqlite"]
     ctx.obj["mongo_uri"] = config["mongo_uri"]
     ctx.obj["headers"] = {"Authorization": f"Bearer {token}"}

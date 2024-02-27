@@ -160,3 +160,5 @@ cython_debug/
 #.idea/
 data/
 docker-compose.dev.yml
+nocodb/
+sql/
