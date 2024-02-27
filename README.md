@@ -12,8 +12,9 @@ Having your bank data in a database, gives you the power to backup, analyze and 
   - Python: for the CLI
   - [GoCardless Open Banking API](https://developer.gocardless.com/bank-account-data/overview): for connecting to banks
   - [SQLite](https://www.sqlite.org): for storing transactions, simple and easy to use
-  - [MongoDB](https://www.mongodb.com/docs/): alternative store for transactions, good balance between performance and query capabilities
+  - [NocoDB](https://github.com/nocodb/nocodb): for visualizing and querying transactions, a simple and easy to use interface for SQLite
   - [Ofelia](https://github.com/mcuadros/ofelia): for scheduling regular syncs with the database when using Docker
+  - [MongoDB](https://www.mongodb.com/docs/): alternative store for transactions, good balance between performance and query capabilities
 
 ## ✨ Features
   - Connect to banks using GoCardless Open Banking API
