@@ -12,18 +12,19 @@ services:
       # Uncomment the following lines if you use MongoDB
       # LEGGEN_MONGO_URI: "mongodb://leggen:changeme@mongo:27017/leggen"
     volumes:
-      - "./leggen:/root"
-    depends_on:
-      - mongo
+      - "./leggen:/root/.config/leggen"
+      - "./db:/app"
 
   nocodb:
     image: nocodb/nocodb:latest
     restart: "unless-stopped"
     volumes:
       - "./nocodb:/usr/app/data/"
-      - "./leggen:/usr/leggen:ro"
+      - "./db:/usr/leggen:ro"
     ports:
       - "127.0.0.1:8080:8080"
+    depends_on:
+      - leggen
 
   # Recommended: Run `leggen sync` every day.
   ofelia:
