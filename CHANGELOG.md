@@ -1,3 +1,21 @@
+## 0.2.0 (2024/02/27)
+
+### Bug Fixes
+
+- **compose:** Fix ofelia configuration, add sync command as the default. ([433d1737](https://github.com/elisiariocouto/leggen/commit/433d17371ead323ca9b793a2dd5782cca598ffcf))
+
+
+### Documentation
+
+-  Improve README.md. ([de17cf44](https://github.com/elisiariocouto/leggen/commit/de17cf44ec5260305de8aa053582744ec69d705f))
+
+
+### Features
+
+-  Add periodic sync, handled by ofelia. ([91c74b04](https://github.com/elisiariocouto/leggen/commit/91c74b0412713ef8305fbe7fcf7c53e4cf8948fe))
+-  Change default database engine to SQLite, change schema. ([f9ab3ae0](https://github.com/elisiariocouto/leggen/commit/f9ab3ae0a813f2a512b4f5fa57e0da089f823783))
+
+
 ## 0.1.1 (2024/02/18)
 
 ### Bug Fixes
