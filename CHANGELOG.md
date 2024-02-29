@@ -1,3 +1,16 @@
+## 0.2.1 (2024/02/29)
+
+### Bug Fixes
+
+-  Fix compose volumes and dependencies. ([460fed3e](https://github.com/elisiariocouto/leggen/commit/460fed3ed0ca694eab6e80f98392edbe5d5b83fd))
+-  Deduplicate accounts. ([facf6ac9](https://github.com/elisiariocouto/leggen/commit/facf6ac94e533087846fca297520c311a81b6692))
+
+
+### Documentation
+
+-  Add NocoDB information to README.md. ([d8fde49d](https://github.com/elisiariocouto/leggen/commit/d8fde49da4e34457a7564655dd42bb6f0d427b4b))
+
+
 ## 0.2.0 (2024/02/27)
 
 ### Bug Fixes
