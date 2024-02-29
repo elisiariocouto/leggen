@@ -15,7 +15,7 @@ def status(ctx: click.Context):
 
     res = get(ctx, "/requisitions/")
     requisitions = []
-    accounts = []
+    accounts = set()
     for r in res["results"]:
         requisitions.append(
             {
@@ -24,7 +24,7 @@ def status(ctx: click.Context):
                 "Created at": datefmt(r["created"]),
             }
         )
-        accounts += r.get("accounts", [])
+        accounts.update(r.get("accounts", []))
     info("Banks")
     print_table(requisitions)
 

@@ -104,10 +104,9 @@ def sync(ctx: click.Context):
     """
     info("Getting accounts details")
     res = get(ctx, "/requisitions/")
-    accounts = []
+    accounts = set()
     for r in res.get("results", []):
-        accounts += r.get("accounts", [])
-    accounts = list(set(accounts))
+        accounts.update(r.get("accounts", []))
 
     info(f"Syncing transactions for {len(accounts)} accounts")
 

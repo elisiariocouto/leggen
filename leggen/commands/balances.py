@@ -13,9 +13,9 @@ def balances(ctx: click.Context):
     """
 
     res = get(ctx, "/requisitions/")
-    accounts = []
+    accounts = set()
     for r in res.get("results", []):
-        accounts += r.get("accounts", [])
+        accounts.update(r.get("accounts", []))
 
     all_balances = []
     for account in accounts:

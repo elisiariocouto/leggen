@@ -41,9 +41,9 @@ def transactions(ctx: click.Context, account: str):
         print_transactions(ctx, account_info, account_transactions)
     else:
         res = get(ctx, "/requisitions/")
-        accounts = []
+        accounts = set()
         for r in res["results"]:
-            accounts += r.get("accounts", [])
+            accounts.update(r.get("accounts", []))
         for account in accounts:
             account_details = get(ctx, f"/accounts/{account}")
             account_transactions = get(ctx, f"/accounts/{account}/transactions/").get(
