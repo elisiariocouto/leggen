@@ -1,3 +1,10 @@
+## 0.2.2 (2024/03/01)
+
+### Bug Fixes
+
+- **sync:** Pending dates can be null. ([d8aa1ef9](https://github.com/elisiariocouto/leggen/commit/d8aa1ef90d263771b080194adc9e983b1b3d56fe))
+
+
 ## 0.2.1 (2024/02/29)
 
 ### Bug Fixes
