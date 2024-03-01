@@ -21,13 +21,16 @@ def save_transactions(ctx: click.Context, account: str):
     )
 
     for transaction in account_transactions.get("booked", []):
-        booked_date = datetime.fromisoformat(
-            transaction.get("bookingDateTime", transaction.get("bookingDate"))
+        booked_date = transaction.get("bookingDateTime") or transaction.get(
+            "bookingDate"
         )
-        value_date = datetime.fromisoformat(
-            transaction.get("valueDateTime", transaction.get("valueDate"))
-        )
-        min_date = min(booked_date, value_date)
+        value_date = transaction.get("valueDateTime") or transaction.get("valueDate")
+        if booked_date and value_date:
+            min_date = min(
+                datetime.fromisoformat(booked_date), datetime.fromisoformat(value_date)
+            )
+        else:
+            min_date = datetime.fromisoformat(booked_date or value_date)
 
         transactionValue = float(
             transaction.get("transactionAmount", {}).get("amount", 0)
@@ -54,13 +57,16 @@ def save_transactions(ctx: click.Context, account: str):
         transactions.append(t)
 
     for transaction in account_transactions.get("pending", []):
-        booked_date = datetime.fromisoformat(
-            transaction.get("bookingDateTime", transaction.get("bookingDate"))
+        booked_date = transaction.get("bookingDateTime") or transaction.get(
+            "bookingDate"
         )
-        value_date = datetime.fromisoformat(
-            transaction.get("valueDateTime", transaction.get("valueDate"))
-        )
-        min_date = min(booked_date, value_date)
+        value_date = transaction.get("valueDateTime") or transaction.get("valueDate")
+        if booked_date and value_date:
+            min_date = min(
+                datetime.fromisoformat(booked_date), datetime.fromisoformat(value_date)
+            )
+        else:
+            min_date = datetime.fromisoformat(booked_date or value_date)
 
         transactionValue = float(
             transaction.get("transactionAmount", {}).get("amount", 0)
