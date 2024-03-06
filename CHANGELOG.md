@@ -1,3 +1,15 @@
+## 0.2.3 (2024/03/06)
+
+### Bug Fixes
+
+-  Print HTTP response body on errors. ([ee30bff5](https://github.com/elisiariocouto/leggen/commit/ee30bff5ef0e40245004e1811a3a62c9caf4f30f))
+
+
+### Miscellaneous Tasks
+
+-  Update dependencies. ([f7ef4b32](https://github.com/elisiariocouto/leggen/commit/f7ef4b32cae347ae05ae763cb169d6b6c09bde99))
+
+
 ## 0.2.2 (2024/03/01)
 
 ### Bug Fixes
