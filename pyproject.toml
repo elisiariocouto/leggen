@@ -36,7 +36,7 @@ tabulate = "^0.9.0"
 pymongo = "^4.6.1"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.1.14"
+ruff = "^0.3.0"
 pre-commit = "^3.6.0"
 black = "^24.1.1"
 
@@ -48,5 +48,5 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-ignore = ["E501", "B008", "B006"]
-extend-select = ["B", "C4", "PIE", "T20", "SIM", "TCH"]
+lint.ignore = ["E501", "B008", "B006"]
+lint.extend-select = ["B", "C4", "PIE", "T20", "SIM", "TCH"]
