@@ -14,7 +14,7 @@ def get(ctx: click.Context, path: str, params: dict = {}):
     try:
         res.raise_for_status()
     except Exception as e:
-        error(f"Error: {e}")
+        error(f"Error: {e}\n{res.text}")
         ctx.abort()
     return res.json()
 
@@ -29,7 +29,7 @@ def post(ctx: click.Context, path: str, data: dict = {}):
     try:
         res.raise_for_status()
     except Exception as e:
-        error(f"Error: {e}")
+        error(f"Error: {e}\n{res.text}")
         ctx.abort()
     return res.json()
 
@@ -44,7 +44,6 @@ def put(ctx: click.Context, path: str, data: dict = {}):
     try:
         res.raise_for_status()
     except Exception as e:
-        error(f"Error: {e}")
-        error(res.text)
+        error(f"Error: {e}\n{res.text}")
         ctx.abort()
     return res.json()

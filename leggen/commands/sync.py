@@ -119,5 +119,5 @@ def sync(ctx: click.Context):
     for account in accounts:
         try:
             save_transactions(ctx, account)
-        except Exception as e:
-            error(f"[{account}] Error: Sync failed, skipping account. Exception: {e}")
+        except Exception:
+            error(f"[{account}] Error: Sync failed, skipping account.")
