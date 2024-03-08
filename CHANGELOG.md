@@ -1,3 +1,21 @@
+## 0.3.0 (2024/03/08)
+
+### Documentation
+
+-  Improve README.md. ([cb6682ea](https://github.com/elisiariocouto/leggen/commit/cb6682ea2e7e842806f668fdf4ed34fd0278fd04))
+
+
+### Features
+
+- **commands:** Add new `leggen bank delete` command to delete a bank connection. ([fcb0f1ed](https://github.com/elisiariocouto/leggen/commit/fcb0f1edd7f7ebd556ee31912ba25ee0b01d7edc))
+- **commands/bank/add:** Add all supported GoCardless country ISO codes. ([0c8f68ad](https://github.com/elisiariocouto/leggen/commit/0c8f68adfddbda08ee90c58e1c69035a0f873a40))
+
+
+### Miscellaneous Tasks
+
+-  Update dependencies. ([6d2f1b7b](https://github.com/elisiariocouto/leggen/commit/6d2f1b7b2f2bf4e4e6d64804adccd74dfb38dcf6))
+
+
 ## 0.2.3 (2024/03/06)
 
 ### Bug Fixes
