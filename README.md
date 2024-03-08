@@ -9,19 +9,26 @@ Having a simple CLI tool to connect to banks and list transactions can be very u
 Having your bank data in a database, gives you the power to backup, analyze and create reports with your data.
 
 ## 🛠️ Technologies
-  - Python: for the CLI
   - [GoCardless Open Banking API](https://developer.gocardless.com/bank-account-data/overview): for connecting to banks
+
+  ### 📦 Storage
   - [SQLite](https://www.sqlite.org): for storing transactions, simple and easy to use
-  - [NocoDB](https://github.com/nocodb/nocodb): for visualizing and querying transactions, a simple and easy to use interface for SQLite
-  - [Ofelia](https://github.com/mcuadros/ofelia): for scheduling regular syncs with the database when using Docker
   - [MongoDB](https://www.mongodb.com/docs/): alternative store for transactions, good balance between performance and query capabilities
+
+  ### ⏰ Scheduling
+  - [Ofelia](https://github.com/mcuadros/ofelia): for scheduling regular syncs with the database when using Docker
+
+  ### 📊 Visualization
+  - [NocoDB](https://github.com/nocodb/nocodb): for visualizing and querying transactions, a simple and easy to use interface for SQLite
 
 ## ✨ Features
   - Connect to banks using GoCardless Open Banking API
-  - List all connected banks and their status
+  - List all connected banks and their statuses
   - List balances of all connected accounts
   - List transactions for all connected accounts
-  - Sync all transactions with a MongoDB database
+  - Sync all transactions with a SQLite or MongoDB database
+  - Visualize and query transactions using NocoDB
+  - Schedule regular syncs with the database using Ofelia
 
 ## 🚀 Installation and Configuration
 
@@ -71,7 +78,7 @@ Commands:
   init          Create configuration file
   status        List all connected banks and their status
   sync          Sync all transactions with database
-  transactions  List transactions for an account
+  transactions  List transactions
 ```
 
 ## ⚠️ Caveats
