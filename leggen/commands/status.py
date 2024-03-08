@@ -22,6 +22,7 @@ def status(ctx: click.Context):
                 "Bank": r["institution_id"],
                 "Status": REQUISITION_STATUS.get(r["status"], "UNKNOWN"),
                 "Created at": datefmt(r["created"]),
+                "Requisition ID": r["id"],
             }
         )
         accounts.update(r.get("accounts", []))

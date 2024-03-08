@@ -47,3 +47,18 @@ def put(ctx: click.Context, path: str, data: dict = {}):
         error(f"Error: {e}\n{res.text}")
         ctx.abort()
     return res.json()
+
+
+def delete(ctx: click.Context, path: str):
+    """
+    DELETE request to the GoCardless API
+    """
+
+    url = f"{ctx.obj['api_url']}{path}"
+    res = requests.delete(url, headers=ctx.obj["headers"])
+    try:
+        res.raise_for_status()
+    except Exception as e:
+        error(f"Error: {e}\n{res.text}")
+        ctx.abort()
+    return res.json()
