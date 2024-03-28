@@ -6,13 +6,8 @@ services:
     image: elisiariocouto/leggen:latest
     command: sync
     restart: "no"
-    environment:
-      LEGGEN_GC_API_KEY: "changeme"
-      LEGGEN_GC_API_SECRET: "changeme"
-      # Uncomment the following lines if you use MongoDB
-      # LEGGEN_MONGO_URI: "mongodb://leggen:changeme@mongo:27017/leggen"
     volumes:
-      - "./leggen:/root/.config/leggen"
+      - "./leggen:/root/.config/leggen" # Default configuration file should be in this directory, named `config.toml`
       - "./db:/app"
 
   nocodb:

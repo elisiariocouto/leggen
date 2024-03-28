@@ -74,30 +74,33 @@ class Group(click.Group):
         return getattr(mod, name)
 
 
-@click.group(cls=Group, context_settings={"help_option_names": ["-h", "--help"]})
+@click.option(
+    "-c",
+    "--config",
+    type=click.Path(dir_okay=False),
+    default=click.get_app_dir("leggen") / Path("config.toml"),
+    show_default=True,
+    callback=load_config,
+    is_eager=True,
+    expose_value=False,
+    envvar="LEGGEN_CONFIG_FILE",
+    show_envvar=True,
+    help="Path to TOML configuration file",
+)
+@click.group(
+    cls=Group,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 @click.version_option(package_name="leggen")
 @click.pass_context
 def cli(ctx: click.Context):
     """
     Leggen: An Open Banking CLI
     """
-    ctx.ensure_object(dict)
 
     # Do not require authentication when printing help messages
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
         return
 
-    # or when running the init command
-    if ctx.invoked_subcommand == "init":
-        if (click.get_app_dir("leggen") / Path("config.json")).is_file():
-            click.confirm(
-                "Configuration file already exists. Do you want to overwrite it?",
-                abort=True,
-            )
-        return
-    config = load_config()
-    token = get_token(config)
-    ctx.obj["api_url"] = config["api_url"]
-    ctx.obj["sqlite"] = config["sqlite"]
-    ctx.obj["mongo_uri"] = config["mongo_uri"]
+    token = get_token(ctx)
     ctx.obj["headers"] = {"Authorization": f"Bearer {token}"}

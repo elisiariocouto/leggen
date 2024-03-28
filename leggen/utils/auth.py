@@ -7,13 +7,16 @@ import requests
 from leggen.utils.text import warning
 
 
-def create_token(config: dict) -> str:
+def create_token(ctx: click.Context) -> str:
     """
     Create a new token
     """
     res = requests.post(
-        f"{config['api_url']}/token/new/",
-        json={"secret_id": config["api_key"], "secret_key": config["api_secret"]},
+        f"{ctx.obj['gocardless']['url']}/token/new/",
+        json={
+            "secret_id": ctx.obj["gocardless"]["key"],
+            "secret_key": ctx.obj["gocardless"]["secret"],
+        },
     )
     res.raise_for_status()
     auth = res.json()
@@ -21,7 +24,7 @@ def create_token(config: dict) -> str:
     return auth["access"]
 
 
-def get_token(config: dict) -> str:
+def get_token(ctx: click.Context) -> str:
     """
     Get the token from the auth file or request a new one
     """
@@ -30,10 +33,11 @@ def get_token(config: dict) -> str:
         with click.open_file(str(auth_file), "r") as f:
             auth = json.load(f)
         if not auth.get("access"):
-            return create_token(config)
+            return create_token(ctx)
 
         res = requests.post(
-            f"{config['api_url']}/token/refresh/", json={"refresh": auth["refresh"]}
+            f"{ctx.obj['gocardless']['url']}/token/refresh/",
+            json={"refresh": auth["refresh"]},
         )
         try:
             res.raise_for_status()
@@ -44,9 +48,9 @@ def get_token(config: dict) -> str:
             warning(
                 f"Token probably expired, requesting a new one.\nResponse: {res.status_code}\n{res.text}"
             )
-            return create_token(config)
+            return create_token(ctx)
     else:
-        return create_token(config)
+        return create_token(ctx)
 
 
 def save_auth(d: dict):
