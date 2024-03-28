@@ -35,7 +35,7 @@ Having your bank data in a database, gives you the power to backup, analyze and 
 
 In order to use `leggen`, you need to create a GoCardless account. GoCardless is a service that provides access to Open Banking APIs. You can create an account at https://gocardless.com/bank-account-data/.
 
-After creating an account and getting your API keys, the best way is to use the [compose file](docker-compose.yml). Open the file and adapt it to your needs.
+After creating an account and getting your API keys, the best way is to use the [compose file](compose.yml). Open the file and adapt it to your needs.
 
 ### Example Configuration
 
