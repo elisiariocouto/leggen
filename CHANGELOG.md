@@ -1,3 +1,16 @@
+## 0.4.0 (2024/03/28)
+
+### Features
+
+- **notifications:** Add support for transaction filter and notifications via Discord. ([0cb33936](https://github.com/elisiariocouto/leggen/commit/0cb339366cc5965223144d2829312d9416d4bc46))
+
+
+### Miscellaneous Tasks
+
+- **deps-dev:** Bump black from 24.2.0 to 24.3.0 ([2352ea9e](https://github.com/elisiariocouto/leggen/commit/2352ea9e58f14250b819e02fa59879e7ff200764))
+-  Update dependencies. ([3d36198b](https://github.com/elisiariocouto/leggen/commit/3d36198b06eebc9d7480eb020d1a713e8637b31a))
+
+
 ## 0.3.0 (2024/03/08)
 
 ### Documentation

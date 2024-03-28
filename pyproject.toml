@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "leggen"
-version = "0.3.0"
+version = "0.4.0"
 description = "An Open Banking CLI"
 authors = ["Elisiário Couto <elisiario@couto.io>"]
 readme = "README.md"
