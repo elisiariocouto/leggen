@@ -92,7 +92,7 @@ def save_transactions(ctx: click.Context, account: str):
         }
         transactions.append(t)
 
-    sqlite = ctx.obj["sqlite"]
+    sqlite = ctx.obj.get("database", {}).get("sqlite", True)
     info(
         f"[{account}] Fetched {len(transactions)} transactions, saving to {'SQLite' if sqlite else 'MongoDB'}"
     )
@@ -119,5 +119,5 @@ def sync(ctx: click.Context):
     for account in accounts:
         try:
             save_transactions(ctx, account)
-        except Exception:
-            error(f"[{account}] Error: Sync failed, skipping account.")
+        except Exception as e:
+            error(f"[{account}] Error: Sync failed, skipping account, exception: {e}")

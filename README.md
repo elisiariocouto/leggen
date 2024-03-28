@@ -29,24 +29,48 @@ Having your bank data in a database, gives you the power to backup, analyze and 
   - Sync all transactions with a SQLite or MongoDB database
   - Visualize and query transactions using NocoDB
   - Schedule regular syncs with the database using Ofelia
+  - Send notifications to Discrod when transactions match certain filters
 
 ## 🚀 Installation and Configuration
 
 In order to use `leggen`, you need to create a GoCardless account. GoCardless is a service that provides access to Open Banking APIs. You can create an account at https://gocardless.com/bank-account-data/.
 
-After creating an account and getting your API keys, the best way is to use the [compose file](docker-compose.yml). Open the file and adapt it to your needs. Then run the following command:
+After creating an account and getting your API keys, the best way is to use the [compose file](docker-compose.yml). Open the file and adapt it to your needs.
+
+### Example Configuration
+
+Create a configuration file at with the following content:
+
+```toml
+[gocardless]
+key = "your-api-key"
+secret = "your-secret-key"
+url = "https://bankaccountdata.gocardless.com/api/v2"
+
+[database]
+sqlite = true
+
+[notifications.discord]
+webhook = "https://discord.com/api/webhooks/..."
+
+[filters]
+enabled = true
+
+[filters.case-insensitive]
+filter1 = "company-name"
+```
+
+### Running Leggen with Docker
+
+After adapting the compose file, run the following command:
 
 ```bash
 $ docker compose up -d
 ```
 
-The leggen container will exit, this is expected. Now you can run the following command to create the configuration file:
+The leggen container will exit, this is expected since you didn't connect any bank accounts yet.
 
-```bash
-$ docker compose run leggen init
-```
-
-Now you need to connect your bank accounts. Run the following command and follow the instructions:
+Run the following command and follow the instructions:
 
 ```bash
 $ docker compose run leggen bank add
@@ -67,15 +91,17 @@ Usage: leggen [OPTIONS] COMMAND [ARGS]...
   Leggen: An Open Banking CLI
 
 Options:
-  --version   Show the version and exit.
-  -h, --help  Show this message and exit.
+  --version          Show the version and exit.
+  -c, --config FILE  Path to TOML configuration file
+                      [env var: LEGGEN_CONFIG_FILE;
+                       default: ~/.config/leggen/config.toml]
+  -h, --help         Show this message and exit.
 
 Command Groups:
   bank  Manage banks connections
 
 Commands:
   balances      List balances of all connected accounts
-  init          Create configuration file
   status        List all connected banks and their status
   sync          Sync all transactions with database
   transactions  List transactions

@@ -1,29 +1,18 @@
-import json
 import sys
-from pathlib import Path
 
 import click
+import tomllib
 
-from leggen.utils.text import error, info
-
-
-def save_config(d: dict):
-    Path.mkdir(Path(click.get_app_dir("leggen")), exist_ok=True)
-    config_file = click.get_app_dir("leggen") / Path("config.json")
-
-    with click.open_file(str(config_file), "w") as f:
-        json.dump(d, f)
-        info(f"Wrote configuration file at '{config_file}'")
+from leggen.utils.text import error
 
 
-def load_config() -> dict:
-    config_file = click.get_app_dir("leggen") / Path("config.json")
+def load_config(ctx: click.Context, _, filename):
     try:
-        with click.open_file(str(config_file), "r") as f:
-            config = json.load(f)
-            return config
+        with click.open_file(str(filename), "rb") as f:
+            # TODO: Implement configuration file validation (use pydantic?)
+            ctx.obj = tomllib.load(f)
     except FileNotFoundError:
         error(
-            "Configuration file not found. Run `leggen init` to configure your account."
+            "Configuration file not found. Provide a valid configuration file path with leggen --config <path> or LEGGEN_CONFIG=<path> environment variable."
         )
         sys.exit(1)
