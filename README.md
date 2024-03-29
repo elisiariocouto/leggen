@@ -26,10 +26,10 @@ Having your bank data in a database, gives you the power to backup, analyze and 
   - List all connected banks and their statuses
   - List balances of all connected accounts
   - List transactions for all connected accounts
-  - Sync all transactions with a SQLite or MongoDB database
+  - Sync all transactions with a SQLite and/or MongoDB database
   - Visualize and query transactions using NocoDB
   - Schedule regular syncs with the database using Ofelia
-  - Send notifications to Discrod when transactions match certain filters
+  - Send notifications to Discord and/or Telegram when transactions match certain filters
 
 ## 🚀 Installation and Configuration
 
@@ -49,12 +49,19 @@ url = "https://bankaccountdata.gocardless.com/api/v2"
 
 [database]
 sqlite = true
+mongodb = true
+
+[database.mongodb]
+uri = "mongodb://localhost:27017"
 
 [notifications.discord]
 webhook = "https://discord.com/api/webhooks/..."
 
-[filters]
-enabled = true
+[notifications.telegram]
+# See gist for telegram instructions
+# https://gist.github.com/nafiesl/4ad622f344cd1dc3bb1ecbe468ff9f8a
+token = "12345:abcdefghijklmnopqrstuvxwyz"
+chat-id = 12345
 
 [filters.case-insensitive]
 filter1 = "company-name"

@@ -27,4 +27,7 @@ def send_message(ctx: click.Context, transactions: list):
 
     webhook.add_embed(embed)
     response = webhook.execute()
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except Exception as e:
+        raise Exception(f"Discord notification failed: {e}\n{response.text}") from e
