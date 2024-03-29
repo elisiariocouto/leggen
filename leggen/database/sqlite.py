@@ -4,11 +4,10 @@ from sqlite3 import IntegrityError
 
 import click
 
-from leggen.notifications.discord import send_message
 from leggen.utils.text import success, warning
 
 
-def save_transactions(ctx: click.Context, account: str, transactions: list):
+def persist_transactions(ctx: click.Context, account: str, transactions: list) -> list:
     # Path to your SQLite database file
 
     # Connect to SQLite database
@@ -32,7 +31,6 @@ def save_transactions(ctx: click.Context, account: str, transactions: list):
     )
 
     # Insert transactions into SQLite database
-    new_transactions_count = 0
     duplicates_count = 0
 
     # Prepare an SQL statement for inserting data
@@ -49,12 +47,7 @@ def save_transactions(ctx: click.Context, account: str, transactions: list):
         rawTransaction
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
-    notification_transactions = []
-    filters_case_insensitive = {}
-    if ctx.obj.get("filters", {}).get("enabled", False):
-        filters_case_insensitive = ctx.obj.get("filters", {}).get(
-            "case-insensitive", {}
-        )
+    new_transactions = []
 
     for transaction in transactions:
         try:
@@ -73,19 +66,7 @@ def save_transactions(ctx: click.Context, account: str, transactions: list):
                     json.dumps(transaction["rawTransaction"]),
                 ),
             )
-            new_transactions_count += 1
-
-            # Add transaction to the list of transactions to be sent as a notification
-            for _, v in filters_case_insensitive.items():
-                if v.lower() in transaction["description"].lower():
-                    notification_transactions.append(
-                        {
-                            "name": transaction["description"],
-                            "value": transaction["transactionValue"],
-                            "currency": transaction["transactionCurrency"],
-                            "date": transaction["transactionDate"],
-                        }
-                    )
+            new_transactions.append(transaction)
         except IntegrityError:
             # A transaction with the same ID already exists, indicating a duplicate
             duplicates_count += 1
@@ -94,10 +75,8 @@ def save_transactions(ctx: click.Context, account: str, transactions: list):
     conn.commit()
     conn.close()
 
-    # Send a notification with the transactions that match the filters
-    if notification_transactions:
-        send_message(ctx, notification_transactions)
-
-    success(f"[{account}] Inserted {new_transactions_count} new transactions")
+    success(f"[{account}] Inserted {len(new_transactions)} new transactions")
     if duplicates_count:
         warning(f"[{account}] Skipped {duplicates_count} duplicate transactions")
+
+    return new_transactions

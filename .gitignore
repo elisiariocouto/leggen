@@ -162,3 +162,4 @@ data/
 docker-compose.dev.yml
 nocodb/
 sql/
+leggen.db
