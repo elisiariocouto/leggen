@@ -1,3 +1,15 @@
+## 0.5.0 (2024/03/29)
+
+### Features
+
+- **notifications:** Add support for Telegram notifications. ([7401ca62](https://github.com/elisiariocouto/leggen/commit/7401ca62d2ff23c4100ed9d1c8b7450289337553))
+
+
+### Miscellaneous Tasks
+
+-  Rename docker-compose.yml to compose.yml and remove obsolete 'version' key. ([e46634cf](https://github.com/elisiariocouto/leggen/commit/e46634cf27046bfc8d638a0cd4910a4a8a42648a))
+
+
 ## 0.4.0 (2024/03/28)
 
 ### Features
