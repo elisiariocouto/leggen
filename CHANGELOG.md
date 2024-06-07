@@ -1,3 +1,10 @@
+## 0.6.4 (2024/06/07)
+
+### Bug Fixes
+
+- **sync:** Correctly calculate days left. ([6c44beda](https://github.com/elisiariocouto/leggen/commit/6c44beda672242714bab1100b1f0576cdce255ca))
+
+
 ## 0.6.3 (2024/06/07)
 
 ### Features
