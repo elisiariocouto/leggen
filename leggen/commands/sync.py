@@ -27,7 +27,7 @@ def sync(ctx: click.Context):
         if account_status != "LINKED":
             created_at = datetime.datetime.fromisoformat(r["created"])
             now = datetime.datetime.now(tz=datetime.timezone.utc)
-            days_left = 90 - (created_at - now).days
+            days_left = 90 - (now - created_at).days
             if days_left <= 15:
                 n = {
                     "bank": r["institution_id"],
