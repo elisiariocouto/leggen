@@ -1,3 +1,10 @@
+## 0.6.2 (2024/06/07)
+
+### Bug Fixes
+
+- **sync:** Use timezone-aware datetime objects. ([9402c253](https://github.com/elisiariocouto/leggen/commit/9402c2535baade84128bdfd0fc314d5225bbd822))
+
+
 ## 0.6.1 (2024/06/07)
 
 ### Bug Fixes
