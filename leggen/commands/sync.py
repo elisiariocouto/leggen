@@ -22,10 +22,10 @@ def sync(ctx: click.Context):
     for r in res.get("results", []):
         accounts.update(r.get("accounts", []))
 
-    for r in res["results"]:
+    for r in res.get("results", []):
         account_status = REQUISITION_STATUS.get(r["status"], "UNKNOWN")
         if account_status != "LINKED":
-            created_at = datetime.fromisoformat(r["createdAt"])
+            created_at = datetime.fromisoformat(r["created"])
             now = datetime.now()
             if (created_at - now).days <= 15:
                 n = {
