@@ -7,9 +7,63 @@ import click
 from leggen.utils.text import success, warning
 
 
-def persist_transactions(ctx: click.Context, account: str, transactions: list) -> list:
-    # Path to your SQLite database file
+def persist_balances(ctx: click.Context, balance: dict):
+    # Connect to SQLite database
+    conn = sqlite3.connect("./leggen.db")
+    cursor = conn.cursor()
 
+    # Create the balances table if it doesn't exist
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS balances (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id TEXT,
+        bank TEXT,
+        status TEXT,
+        iban TEXT,
+        amount REAL,
+        currency TEXT,
+        type TEXT,
+        timestamp DATETIME
+    )"""
+    )
+
+    # Insert balance into SQLite database
+    try:
+        cursor.execute(
+            """INSERT INTO balances (
+            account_id,
+            bank,
+            status,
+            iban,
+            amount,
+            currency,
+            type,
+            timestamp
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                balance["account_id"],
+                balance["bank"],
+                balance["status"],
+                balance["iban"],
+                balance["amount"],
+                balance["currency"],
+                balance["type"],
+                balance["timestamp"],
+            ),
+        )
+    except IntegrityError:
+        warning(f"[{balance['account_id']}] Skipped duplicate balance")
+
+    # Commit changes and close the connection
+    conn.commit()
+    conn.close()
+
+    success(f"[{balance['account_id']}] Inserted balance of type {balance['type']}")
+
+    return balance
+
+
+def persist_transactions(ctx: click.Context, account: str, transactions: list) -> list:
     # Connect to SQLite database
     conn = sqlite3.connect("./leggen.db")
     cursor = conn.cursor()

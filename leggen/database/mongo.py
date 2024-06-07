@@ -5,6 +5,25 @@ from pymongo.errors import DuplicateKeyError
 from leggen.utils.text import success, warning
 
 
+def persist_balances(ctx: click.Context, balance: dict) -> None:
+    # Connect to MongoDB
+    mongo_uri = ctx.obj.get("database", {}).get("mongodb", {}).get("uri")
+    client = MongoClient(mongo_uri)
+    db = client["leggen"]
+    balances_collection = db["balances"]
+
+    # Insert balance into MongoDB
+    try:
+        balances_collection.insert_one(balance)
+        success(
+            f"[{balance['account_id']}] Inserted new balance if type {balance['type']}"
+        )
+    except DuplicateKeyError:
+        warning(f"[{balance['account_id']}] Skipped duplicate balance")
+
+    client.close()
+
+
 def persist_transactions(ctx: click.Context, account: str, transactions: list) -> list:
     # Connect to MongoDB
     mongo_uri = ctx.obj.get("database", {}).get("mongodb", {}).get("uri")

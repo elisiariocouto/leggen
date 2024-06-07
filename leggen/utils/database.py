@@ -8,6 +8,21 @@ from leggen.utils.network import get
 from leggen.utils.text import info, warning
 
 
+def persist_balance(ctx: click.Context, account: str, balance: dict) -> None:
+    sqlite = ctx.obj.get("database", {}).get("sqlite", False)
+    mongodb = ctx.obj.get("database", {}).get("mongodb", False)
+
+    if not sqlite and not mongodb:
+        warning("No database engine is enabled, skipping balance saving")
+
+    if sqlite:
+        info(f"[{account}] Fetched balances, saving to SQLite")
+        sqlite_engine.persist_balances(ctx, balance)
+    else:
+        info(f"[{account}] Fetched balances, saving to MongoDB")
+        mongodb_engine.persist_balances(ctx, balance)
+
+
 def persist_transactions(ctx: click.Context, account: str, transactions: list) -> list:
     sqlite = ctx.obj.get("database", {}).get("sqlite", False)
     mongodb = ctx.obj.get("database", {}).get("mongodb", False)
