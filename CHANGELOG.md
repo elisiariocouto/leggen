@@ -1,3 +1,17 @@
+## 0.6.0 (2024/06/07)
+
+### Features
+
+- **sync:** Save account balances in new table. ([332d4d51](https://github.com/elisiariocouto/leggen/commit/332d4d51d00286ecec71703aaa39e590f506d2cb))
+- **sync:** Enable expiration notifications. ([3b1738ba](https://github.com/elisiariocouto/leggen/commit/3b1738bae491f78788b37c32d2e733f7741d41f3))
+
+
+### Miscellaneous Tasks
+
+- **deps:** Bump the pip group across 1 directory with 3 updates ([410e6006](https://github.com/elisiariocouto/leggen/commit/410e600673a1aabcede6f9961c1d10f476ae1077))
+- **deps:** Update black, ruff and pre-commit to latest versions. ([7672533e](https://github.com/elisiariocouto/leggen/commit/7672533e8626f5cb04e2bf1f00fbe389f6135f5c))
+
+
 ## 0.5.0 (2024/03/29)
 
 ### Features
