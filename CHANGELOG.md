@@ -1,3 +1,10 @@
+## 0.6.3 (2024/06/07)
+
+### Features
+
+- **sync:** Correctly calculate days left, based on the default 90 days period. ([3cb38e2e](https://github.com/elisiariocouto/leggen/commit/3cb38e2e9fb08e07664caa7daa9aa651262bd213))
+
+
 ## 0.6.2 (2024/06/07)
 
 ### Bug Fixes
