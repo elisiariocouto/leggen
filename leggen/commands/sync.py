@@ -27,13 +27,14 @@ def sync(ctx: click.Context):
         if account_status != "LINKED":
             created_at = datetime.datetime.fromisoformat(r["created"])
             now = datetime.datetime.now(tz=datetime.timezone.utc)
-            if (created_at - now).days <= 15:
+            days_left = 90 - (created_at - now).days
+            if days_left <= 15:
                 n = {
                     "bank": r["institution_id"],
                     "status": REQUISITION_STATUS.get(r["status"], "UNKNOWN"),
                     "created_at": created_at.timestamp(),
                     "requisition_id": r["id"],
-                    "days_left": (created_at - now).days,
+                    "days_left": days_left,
                 }
                 send_expire_notification(ctx, n)
 
