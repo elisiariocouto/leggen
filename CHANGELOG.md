@@ -1,3 +1,10 @@
+## 0.6.1 (2024/06/07)
+
+### Bug Fixes
+
+- **sync:** Get correct parameter for requisition creation time. ([b60ba068](https://github.com/elisiariocouto/leggen/commit/b60ba068cd7facea5f60fca61bf5845cabf0c2c6))
+
+
 ## 0.6.0 (2024/06/07)
 
 ### Features
