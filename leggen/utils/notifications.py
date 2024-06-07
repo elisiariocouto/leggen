@@ -2,7 +2,26 @@ import click
 
 import leggen.notifications.discord as discord
 import leggen.notifications.telegram as telegram
-from leggen.utils.text import info, warning
+from leggen.utils.text import error, info, warning
+
+
+def send_expire_notification(ctx: click.Context, notification: dict):
+    discord_enabled = ctx.obj.get("notifications", {}).get("discord", False)
+    telegram_enabled = ctx.obj.get("notifications", {}).get("telegram", False)
+
+    if not discord_enabled and not telegram_enabled:
+        warning("No notification engine is enabled, skipping notifications")
+        error(
+            f"Your account {notification['bank']} ({notification['requisition_id']}) is in {notification['status']} status. Days left: {notification['days_left']}"
+        )
+
+    if discord_enabled:
+        info("Sending expiration notification to Discord")
+        discord.send_expire_notification(ctx, notification)
+
+    if telegram_enabled:
+        info("Sending expiration notification to Telegram")
+        telegram.send_expire_notification(ctx, notification)
 
 
 def send_notification(ctx: click.Context, transactions: list):
@@ -39,8 +58,8 @@ def send_notification(ctx: click.Context, transactions: list):
 
     if discord_enabled:
         info(f"Sending {len(notification_transactions)} transactions to Discord")
-        discord.send_message(ctx, notification_transactions)
+        discord.send_transactions_message(ctx, notification_transactions)
 
     if telegram_enabled:
         info(f"Sending {len(notification_transactions)} transactions to Telegram")
-        telegram.send_message(ctx, notification_transactions)
+        telegram.send_transaction_message(ctx, notification_transactions)

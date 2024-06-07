@@ -4,8 +4,9 @@ import click
 
 from leggen.main import cli
 from leggen.utils.database import persist_balance, save_transactions
+from leggen.utils.gocardless import REQUISITION_STATUS
 from leggen.utils.network import get
-from leggen.utils.notifications import send_notification
+from leggen.utils.notifications import send_expire_notification, send_notification
 from leggen.utils.text import error, info
 
 
@@ -20,6 +21,21 @@ def sync(ctx: click.Context):
     accounts = set()
     for r in res.get("results", []):
         accounts.update(r.get("accounts", []))
+
+    for r in res["results"]:
+        account_status = REQUISITION_STATUS.get(r["status"], "UNKNOWN")
+        if account_status != "LINKED":
+            created_at = datetime.fromisoformat(r["createdAt"])
+            now = datetime.now()
+            if (created_at - now).days <= 15:
+                n = {
+                    "bank": r["institution_id"],
+                    "status": REQUISITION_STATUS.get(r["status"], "UNKNOWN"),
+                    "created_at": created_at.timestamp(),
+                    "requisition_id": r["id"],
+                    "days_left": (created_at - now).days,
+                }
+                send_expire_notification(ctx, n)
 
     info(f"Syncing balances for {len(accounts)} accounts")
 

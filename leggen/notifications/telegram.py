@@ -15,7 +15,30 @@ def escape_markdown(text: str) -> str:
     )
 
 
-def send_message(ctx: click.Context, transactions: list):
+def send_expire_notification(ctx: click.Context, notification: dict):
+    token = ctx.obj["notifications"]["telegram"]["api-key"]
+    chat_id = ctx.obj["notifications"]["telegram"]["chat-id"]
+    bot_url = f"https://api.telegram.org/bot{token}/sendMessage"
+    info("Sending expiration notification to Telegram")
+    message = "*💲 [Leggen](https://github.com/elisiariocouto/leggen)*\n"
+    message += f"Your account {notification['bank']} ({notification['requisition_id']}) is in {notification['status']} status. Days left: {notification['days_left']}\n"
+
+    res = requests.post(
+        bot_url,
+        json={
+            "chat_id": chat_id,
+            "text": escape_markdown(message),
+            "parse_mode": "MarkdownV2",
+        },
+    )
+
+    try:
+        res.raise_for_status()
+    except Exception as e:
+        raise Exception(f"Telegram notification failed: {e}\n{res.text}") from e
+
+
+def send_transaction_message(ctx: click.Context, transactions: list):
     token = ctx.obj["notifications"]["telegram"]["api-key"]
     chat_id = ctx.obj["notifications"]["telegram"]["chat-id"]
     bot_url = f"https://api.telegram.org/bot{token}/sendMessage"
