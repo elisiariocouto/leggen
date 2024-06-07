@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 import click
 
@@ -25,8 +25,8 @@ def sync(ctx: click.Context):
     for r in res.get("results", []):
         account_status = REQUISITION_STATUS.get(r["status"], "UNKNOWN")
         if account_status != "LINKED":
-            created_at = datetime.fromisoformat(r["created"])
-            now = datetime.now()
+            created_at = datetime.datetime.fromisoformat(r["created"])
+            now = datetime.datetime.now(tz=datetime.timezone.utc)
             if (created_at - now).days <= 15:
                 n = {
                     "bank": r["institution_id"],
@@ -55,7 +55,7 @@ def sync(ctx: click.Context):
                 "amount": amount,
                 "currency": balance_amount["currency"],
                 "type": balance["balanceType"],
-                "timestamp": datetime.now().timestamp(),
+                "timestamp": datetime.datetime.now().timestamp(),
             }
             try:
                 persist_balance(ctx, account, balance_document)
