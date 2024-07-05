@@ -41,30 +41,28 @@ def sync(ctx: click.Context):
     info(f"Syncing balances for {len(accounts)} accounts")
 
     for account in accounts:
-        account_details = get(ctx, f"/accounts/{account}")
-        account_balances = get(ctx, f"/accounts/{account}/balances/").get(
-            "balances", []
-        )
-        for balance in account_balances:
-            balance_amount = balance["balanceAmount"]
-            amount = round(float(balance_amount["amount"]), 2)
-            balance_document = {
-                "account_id": account,
-                "bank": account_details["institution_id"],
-                "status": account_details["status"],
-                "iban": account_details.get("iban", "N/A"),
-                "amount": amount,
-                "currency": balance_amount["currency"],
-                "type": balance["balanceType"],
-                "timestamp": datetime.datetime.now().timestamp(),
-            }
-            try:
+        try:
+            account_details = get(ctx, f"/accounts/{account}")
+            account_balances = get(ctx, f"/accounts/{account}/balances/").get(
+                "balances", []
+            )
+            for balance in account_balances:
+                balance_amount = balance["balanceAmount"]
+                amount = round(float(balance_amount["amount"]), 2)
+                balance_document = {
+                    "account_id": account,
+                    "bank": account_details["institution_id"],
+                    "status": account_details["status"],
+                    "iban": account_details.get("iban", "N/A"),
+                    "amount": amount,
+                    "currency": balance_amount["currency"],
+                    "type": balance["balanceType"],
+                    "timestamp": datetime.datetime.now().timestamp(),
+                }
                 persist_balance(ctx, account, balance_document)
-            except Exception as e:
-                error(
-                    f"[{account}] Error: Sync failed, skipping account, exception: {e}"
-                )
-                continue
+        except Exception as e:
+            error(f"[{account}] Error: Sync failed, skipping account, exception: {e}")
+            continue
 
     info(f"Syncing transactions for {len(accounts)} accounts")
 
