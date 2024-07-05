@@ -1,3 +1,15 @@
+## 0.6.5 (2024/07/05)
+
+### Bug Fixes
+
+- **sync:** Continue on account deactivation. ([758a3a22](https://github.com/elisiariocouto/leggen/commit/758a3a2257c490a92fb0b0673c74d720ad7e87f7))
+
+
+### Miscellaneous Tasks
+
+-  Bump dependencies. ([effabf06](https://github.com/elisiariocouto/leggen/commit/effabf06954b08e05e3084fdbc54518ea5d947dc))
+
+
 ## 0.6.4 (2024/06/07)
 
 ### Bug Fixes
