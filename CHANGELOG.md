@@ -1,3 +1,17 @@
+
+## 0.6.6 (2024/08/21)
+
+### Bug Fixes
+
+- **commands/status:** Handle exception when no `last_accessed` is returned from GoCardless API. ([c70a4e5c](https://github.com/elisiariocouto/leggen/commit/c70a4e5cb87a19a5a0ed194838e323c6246856ab))
+- **notifications/telegram:** Escape parenthesis. ([a29bd1ab](https://github.com/elisiariocouto/leggen/commit/a29bd1ab683bc9e068aefb722e9e87bb4fe6aa76))
+
+
+### Miscellaneous Tasks
+
+-  Update dependencies, use ruff to format code. ([59346334](https://github.com/elisiariocouto/leggen/commit/59346334dbe999ccfd70f6687130aaedb50254fa))
+
+
 ## 0.6.5 (2024/07/05)
 
 ### Bug Fixes
