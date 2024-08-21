@@ -12,6 +12,8 @@ def escape_markdown(text: str) -> str:
         .replace(".", "\\.")
         .replace("$", "\\$")
         .replace("+", "\\+")
+        .replace("(", "\\(")
+        .replace(")", "\\)")
     )
 
 
