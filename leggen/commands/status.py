@@ -39,7 +39,11 @@ def status(ctx: click.Context):
                 "Status": details["status"],
                 "IBAN": details.get("iban", "N/A"),
                 "Created at": datefmt(details["created"]),
-                "Last accessed at": datefmt(details["last_accessed"]),
+                "Last accessed at": (
+                    datefmt(details["last_accessed"])
+                    if details.get("last_accessed")
+                    else "N/A"
+                ),
             }
         )
     echo()
