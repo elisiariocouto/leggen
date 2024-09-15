@@ -7,13 +7,24 @@ from leggen.utils.text import info
 def escape_markdown(text: str) -> str:
     return (
         str(text)
-        .replace("-", "\\-")
-        .replace("#", "\\#")
-        .replace(".", "\\.")
-        .replace("$", "\\$")
-        .replace("+", "\\+")
+        .replace("_", "\\_")
+        .replace("*", "\\*")
+        .replace("[", "\\[")
+        .replace("]", "\\]")
         .replace("(", "\\(")
         .replace(")", "\\)")
+        .replace("~", "\\~")
+        .replace("`", "\\`")
+        .replace(">", "\\>")
+        .replace("#", "\\#")
+        .replace("+", "\\+")
+        .replace("-", "\\-")
+        .replace("=", "\\=")
+        .replace("|", "\\|")
+        .replace("{", "\\{")
+        .replace("}", "\\}")
+        .replace(".", "\\.")
+        .replace("!", "\\!")
     )
 
 
@@ -23,13 +34,15 @@ def send_expire_notification(ctx: click.Context, notification: dict):
     bot_url = f"https://api.telegram.org/bot{token}/sendMessage"
     info("Sending expiration notification to Telegram")
     message = "*💲 [Leggen](https://github.com/elisiariocouto/leggen)*\n"
-    message += f"Your account {notification['bank']} ({notification['requisition_id']}) is in {notification['status']} status. Days left: {notification['days_left']}\n"
+    message += escape_markdown(
+        f"Your account {notification['bank']} ({notification['requisition_id']}) is in {notification['status']} status. Days left: {notification['days_left']}\n"
+    )
 
     res = requests.post(
         bot_url,
         json={
             "chat_id": chat_id,
-            "text": escape_markdown(message),
+            "text": message,
             "parse_mode": "MarkdownV2",
         },
     )
@@ -49,15 +62,15 @@ def send_transaction_message(ctx: click.Context, transactions: list):
     message += f"{len(transactions)} new transaction matches\n\n"
 
     for transaction in transactions:
-        message += f"*Name*: {transaction['name']}\n"
-        message += f"*Value*: {transaction['value']}{transaction['currency']}\n"
-        message += f"*Date*: {transaction['date']}\n\n"
+        message += f"*Name*: {escape_markdown(transaction['name'])}\n"
+        message += f"*Value*: {escape_markdown(transaction['value'])}{escape_markdown(transaction['currency'])}\n"
+        message += f"*Date*: {escape_markdown(transaction['date'])}\n\n"
 
     res = requests.post(
         bot_url,
         json={
             "chat_id": chat_id,
-            "text": escape_markdown(message),
+            "text": message,
             "parse_mode": "MarkdownV2",
         },
     )
