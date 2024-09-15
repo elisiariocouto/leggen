@@ -1,4 +1,17 @@
 
+## 0.6.7 (2024/09/15)
+
+### Bug Fixes
+
+- **notifications/telegram:** Escape characters when notifying via Telegram. ([7efbccfc](https://github.com/elisiariocouto/leggen/commit/7efbccfc90ea601da9029909bdd4f21640d73e6a))
+
+
+### Miscellaneous Tasks
+
+-  Bump dependencies. ([75ca7f17](https://github.com/elisiariocouto/leggen/commit/75ca7f177fb9992395e576ba9038a63e90612e5c))
+
+
+
 ## 0.6.6 (2024/08/21)
 
 ### Bug Fixes
