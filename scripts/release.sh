@@ -21,7 +21,7 @@ fi
 CURRENT_VERSION=$(uvx poetry version -s)
 echo " > Current version is $CURRENT_VERSION"
 
-poetry uvx version "$1"
+uvx poetry version "$1"
 NEXT_VERSION=$(uvx poetry version -s)
 
 echo " > leggen bumped to $NEXT_VERSION"
