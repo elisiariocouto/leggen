@@ -1,4 +1,13 @@
 
+## 0.6.8 (2025/01/13)
+
+### Miscellaneous Tasks
+
+-  Migrate from Poetry to uv, bump dependencies and python version. ([33006f8f](https://github.com/elisiariocouto/leggen/commit/33006f8f437da2b9b3c860f22a1fda2a2e5b19a1))
+-  Fix typo in release script. ([eb734018](https://github.com/elisiariocouto/leggen/commit/eb734018964d8281450a8713d0a15688d2cb42bf))
+
+
+
 ## 0.6.7 (2024/09/15)
 
 ### Bug Fixes
