@@ -1,4 +1,12 @@
 
+## 0.6.10 (2025/01/14)
+
+### Bug Fixes
+
+- **ci:** Install uv before publishing. ([74800944](https://github.com/elisiariocouto/leggen/commit/7480094419697a46515a88a635d4e73820b0d283))
+
+
+
 ## 0.6.9 (2025/01/14)
 
 ### Miscellaneous Tasks
