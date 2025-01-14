@@ -1,4 +1,12 @@
 
+## 0.6.9 (2025/01/14)
+
+### Miscellaneous Tasks
+
+-  Setup PyPI Trusted Publishing. ([ca29d527](https://github.com/elisiariocouto/leggen/commit/ca29d527c9e5f9391dfcad6601ad9c585b511b47))
+
+
+
 ## 0.6.8 (2025/01/13)
 
 ### Miscellaneous Tasks
