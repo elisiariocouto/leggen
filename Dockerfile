@@ -15,6 +15,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM python:3.13-alpine
 
+WORKDIR /app
+
 LABEL org.opencontainers.image.source="https://github.com/elisiariocouto/leggen"
 LABEL org.opencontainers.image.authors="Elisiário Couto <elisiario@couto.io>"
 LABEL org.opencontainers.image.licenses="MIT"
