@@ -1,4 +1,12 @@
 
+## 0.6.11 (2025/02/23)
+
+### Bug Fixes
+
+-  Add workdir to dockerfile last stage. ([355fa5cf](https://github.com/elisiariocouto/leggen/commit/355fa5cfb6ccc4ca225d921cdc2ad77d6bb9b2e6))
+
+
+
 ## 0.6.10 (2025/01/14)
 
 ### Bug Fixes
