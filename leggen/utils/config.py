@@ -1,7 +1,7 @@
 import sys
+import tomllib
 
 import click
-import tomllib
 
 from leggen.utils.text import error
 

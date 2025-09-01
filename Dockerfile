@@ -11,11 +11,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY . /app
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-editable
+    uv sync --frozen --no-editable --no-group dev
 
 FROM python:3.13-alpine
-
-WORKDIR /app
 
 LABEL org.opencontainers.image.source="https://github.com/elisiariocouto/leggen"
 LABEL org.opencontainers.image.authors="Elisiário Couto <elisiario@couto.io>"
@@ -24,8 +22,9 @@ LABEL org.opencontainers.image.title="leggen"
 LABEL org.opencontainers.image.description="An Open Banking CLI"
 LABEL org.opencontainers.image.url="https://github.com/elisiariocouto/leggen"
 
-# Copy the environment, but not the source code
+WORKDIR /app
+ENV PATH="/app/.venv/bin:$PATH"
+
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 
-# Run the application
 ENTRYPOINT ["/app/.venv/bin/leggen"]
