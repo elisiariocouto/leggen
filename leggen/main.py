@@ -87,13 +87,21 @@ class Group(click.Group):
     show_envvar=True,
     help="Path to TOML configuration file",
 )
+@click.option(
+    "--api-url",
+    type=str,
+    default=None,
+    envvar="LEGGEND_API_URL",
+    show_envvar=True,
+    help="URL of the leggend API service (default: http://localhost:8000)",
+)
 @click.group(
     cls=Group,
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 @click.version_option(package_name="leggen")
 @click.pass_context
-def cli(ctx: click.Context):
+def cli(ctx: click.Context, api_url: str):
     """
     Leggen: An Open Banking CLI
     """
@@ -102,5 +110,15 @@ def cli(ctx: click.Context):
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
         return
 
-    token = get_token(ctx)
-    ctx.obj["headers"] = {"Authorization": f"Bearer {token}"}
+    # Store API URL in context for commands to use
+    if api_url:
+        ctx.obj["api_url"] = api_url
+    
+    # For backwards compatibility, still support direct GoCardless calls
+    # This will be used as fallback if leggend service is not available
+    try:
+        token = get_token(ctx)
+        ctx.obj["headers"] = {"Authorization": f"Bearer {token}"}
+    except Exception:
+        # If we can't get token, commands will rely on API service
+        pass

@@ -1,8 +1,7 @@
 import click
 
 from leggen.main import cli
-from leggen.utils.gocardless import REQUISITION_STATUS
-from leggen.utils.network import get
+from leggen.api_client import LeggendAPIClient
 from leggen.utils.text import datefmt, echo, info, print_table
 
 
@@ -12,36 +11,42 @@ def status(ctx: click.Context):
     """
     List all connected banks and their status
     """
+    api_client = LeggendAPIClient(ctx.obj.get("api_url"))
+    
+    # Check if leggend service is available
+    if not api_client.health_check():
+        click.echo("Error: Cannot connect to leggend service. Please ensure it's running.")
+        return
 
-    res = get(ctx, "/requisitions/")
+    # Get bank connection status
+    bank_connections = api_client.get_bank_status()
     requisitions = []
-    accounts = set()
-    for r in res["results"]:
+    for conn in bank_connections:
         requisitions.append(
             {
-                "Bank": r["institution_id"],
-                "Status": REQUISITION_STATUS.get(r["status"], "UNKNOWN"),
-                "Created at": datefmt(r["created"]),
-                "Requisition ID": r["id"],
+                "Bank": conn["bank_id"],
+                "Status": conn["status_display"],
+                "Created at": datefmt(conn["created_at"]),
+                "Requisition ID": conn["requisition_id"],
             }
         )
-        accounts.update(r.get("accounts", []))
     info("Banks")
     print_table(requisitions)
 
+    # Get account details
+    accounts = api_client.get_accounts()
     account_details = []
     for account in accounts:
-        details = get(ctx, f"/accounts/{account}")
         account_details.append(
             {
-                "ID": details["id"],
-                "Bank": details["institution_id"],
-                "Status": details["status"],
-                "IBAN": details.get("iban", "N/A"),
-                "Created at": datefmt(details["created"]),
+                "ID": account["id"],
+                "Bank": account["institution_id"],
+                "Status": account["status"],
+                "IBAN": account.get("iban", "N/A"),
+                "Created at": datefmt(account["created"]),
                 "Last accessed at": (
-                    datefmt(details["last_accessed"])
-                    if details.get("last_accessed")
+                    datefmt(account["last_accessed"])
+                    if account.get("last_accessed")
                     else "N/A"
                 ),
             }

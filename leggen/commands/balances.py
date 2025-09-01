@@ -1,7 +1,7 @@
 import click
 
 from leggen.main import cli
-from leggen.utils.network import get
+from leggen.api_client import LeggendAPIClient
 from leggen.utils.text import datefmt, print_table
 
 
@@ -11,36 +11,35 @@ def balances(ctx: click.Context):
     """
     List balances of all connected accounts
     """
+    api_client = LeggendAPIClient(ctx.obj.get("api_url"))
+    
+    # Check if leggend service is available
+    if not api_client.health_check():
+        click.echo("Error: Cannot connect to leggend service. Please ensure it's running.")
+        return
 
-    res = get(ctx, "/requisitions/")
-    accounts = set()
-    for r in res.get("results", []):
-        accounts.update(r.get("accounts", []))
+    accounts = api_client.get_accounts()
 
     all_balances = []
     for account in accounts:
-        account_ballances = get(ctx, f"/accounts/{account}/balances/").get(
-            "balances", []
-        )
-        for balance in account_ballances:
-            balance_amount = balance["balanceAmount"]
-            amount = round(float(balance_amount["amount"]), 2)
+        for balance in account.get("balances", []):
+            amount = round(float(balance["amount"]), 2)
             symbol = (
                 "€"
-                if balance_amount["currency"] == "EUR"
-                else f" {balance_amount['currency']}"
+                if balance["currency"] == "EUR"
+                else f" {balance['currency']}"
             )
             amount_str = f"{amount}{symbol}"
             date = (
-                datefmt(balance.get("lastChangeDateTime"))
-                if balance.get("lastChangeDateTime")
+                datefmt(balance.get("last_change_date"))
+                if balance.get("last_change_date")
                 else ""
             )
             all_balances.append(
                 {
-                    "Account": account,
+                    "Account": account["id"],
                     "Amount": amount_str,
-                    "Type": balance["balanceType"],
+                    "Type": balance["balance_type"],
                     "Last change at": date,
                 }
             )

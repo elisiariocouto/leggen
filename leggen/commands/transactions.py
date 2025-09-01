@@ -1,31 +1,16 @@
 import click
 
 from leggen.main import cli
-from leggen.utils.network import get
-from leggen.utils.text import info, print_table
-
-
-def print_transactions(
-    ctx: click.Context, account_info: dict, account_transactions: dict
-):
-    info(f"Bank: {account_info['institution_id']}")
-    info(f"IBAN: {account_info.get('iban', 'N/A')}")
-    all_transactions = []
-    for transaction in account_transactions.get("booked", []):
-        transaction["TYPE"] = "booked"
-        all_transactions.append(transaction)
-
-    for transaction in account_transactions.get("pending", []):
-        transaction["TYPE"] = "pending"
-        all_transactions.append(transaction)
-
-    print_table(all_transactions)
+from leggen.api_client import LeggendAPIClient
+from leggen.utils.text import datefmt, info, print_table
 
 
 @cli.command()
 @click.option("-a", "--account", type=str, help="Account ID")
+@click.option("-l", "--limit", type=int, default=50, help="Number of transactions to show")
+@click.option("--full", is_flag=True, help="Show full transaction details")
 @click.pass_context
-def transactions(ctx: click.Context, account: str):
+def transactions(ctx: click.Context, account: str, limit: int, full: bool):
     """
     List transactions
 
@@ -33,20 +18,61 @@ def transactions(ctx: click.Context, account: str):
 
     If the --account option is used, it will only list transactions for that account.
     """
-    if account:
-        account_info = get(ctx, f"/accounts/{account}")
-        account_transactions = get(ctx, f"/accounts/{account}/transactions/").get(
-            "transactions", []
-        )
-        print_transactions(ctx, account_info, account_transactions)
-    else:
-        res = get(ctx, "/requisitions/")
-        accounts = set()
-        for r in res["results"]:
-            accounts.update(r.get("accounts", []))
-        for account in accounts:
-            account_details = get(ctx, f"/accounts/{account}")
-            account_transactions = get(ctx, f"/accounts/{account}/transactions/").get(
-                "transactions", []
+    api_client = LeggendAPIClient(ctx.obj.get("api_url"))
+    
+    # Check if leggend service is available
+    if not api_client.health_check():
+        click.echo("Error: Cannot connect to leggend service. Please ensure it's running.")
+        return
+
+    try:
+        if account:
+            # Get transactions for specific account
+            account_details = api_client.get_account_details(account)
+            transactions_data = api_client.get_account_transactions(
+                account, limit=limit, summary_only=not full
             )
-            print_transactions(ctx, account_details, account_transactions)
+            
+            info(f"Bank: {account_details['institution_id']}")
+            info(f"IBAN: {account_details.get('iban', 'N/A')}")
+            
+        else:
+            # Get all transactions
+            transactions_data = api_client.get_all_transactions(
+                limit=limit, 
+                summary_only=not full,
+                account_id=account
+            )
+
+        # Format transactions for display
+        if full:
+            # Full transaction details
+            formatted_transactions = []
+            for txn in transactions_data:
+                formatted_transactions.append({
+                    "ID": txn["internal_transaction_id"][:12] + "...",
+                    "Date": datefmt(txn["transaction_date"]),
+                    "Description": txn["description"][:50] + "..." if len(txn["description"]) > 50 else txn["description"],
+                    "Amount": f"{txn['transaction_value']:.2f} {txn['transaction_currency']}",
+                    "Status": txn["transaction_status"].upper(),
+                    "Account": txn["account_id"][:8] + "...",
+                })
+        else:
+            # Summary view
+            formatted_transactions = []
+            for txn in transactions_data:
+                formatted_transactions.append({
+                    "Date": datefmt(txn["date"]),
+                    "Description": txn["description"][:60] + "..." if len(txn["description"]) > 60 else txn["description"],
+                    "Amount": f"{txn['amount']:.2f} {txn['currency']}",
+                    "Status": txn["status"].upper(),
+                })
+
+        if formatted_transactions:
+            print_table(formatted_transactions)
+            info(f"Showing {len(formatted_transactions)} transactions")
+        else:
+            info("No transactions found")
+
+    except Exception as e:
+        click.echo(f"Error: Failed to get transactions: {str(e)}")
