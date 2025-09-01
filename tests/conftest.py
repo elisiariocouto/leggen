@@ -29,8 +29,7 @@ def mock_config(temp_config_dir):
             "url": "https://bankaccountdata.gocardless.com/api/v2"
         },
         "database": {
-            "sqlite": True,
-            "mongodb": False
+            "sqlite": True
         },
         "scheduler": {
             "sync": {
