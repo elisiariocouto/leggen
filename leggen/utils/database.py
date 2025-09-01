@@ -2,43 +2,33 @@ from datetime import datetime
 
 import click
 
-import leggen.database.mongo as mongodb_engine
 import leggen.database.sqlite as sqlite_engine
 from leggen.utils.network import get
 from leggen.utils.text import info, warning
 
 
 def persist_balance(ctx: click.Context, account: str, balance: dict) -> None:
-    sqlite = ctx.obj.get("database", {}).get("sqlite", False)
-    mongodb = ctx.obj.get("database", {}).get("mongodb", False)
+    sqlite = ctx.obj.get("database", {}).get("sqlite", True)
 
-    if not sqlite and not mongodb:
-        warning("No database engine is enabled, skipping balance saving")
+    if not sqlite:
+        warning("SQLite database is disabled, skipping balance saving")
+        return
 
-    if sqlite:
-        info(f"[{account}] Fetched balances, saving to SQLite")
-        sqlite_engine.persist_balances(ctx, balance)
-    else:
-        info(f"[{account}] Fetched balances, saving to MongoDB")
-        mongodb_engine.persist_balances(ctx, balance)
+    info(f"[{account}] Fetched balances, saving to SQLite")
+    sqlite_engine.persist_balances(ctx, balance)
 
 
 def persist_transactions(ctx: click.Context, account: str, transactions: list) -> list:
-    sqlite = ctx.obj.get("database", {}).get("sqlite", False)
-    mongodb = ctx.obj.get("database", {}).get("mongodb", False)
+    sqlite = ctx.obj.get("database", {}).get("sqlite", True)
 
-    if not sqlite and not mongodb:
-        warning("No database engine is enabled, skipping transaction saving")
+    if not sqlite:
+        warning("SQLite database is disabled, skipping transaction saving")
         # WARNING: This will return the transactions list as is, without saving it to any database
         # Possible duplicate notifications will be sent if the filters are enabled
         return transactions
 
-    if sqlite:
-        info(f"[{account}] Fetched {len(transactions)} transactions, saving to SQLite")
-        return sqlite_engine.persist_transactions(ctx, account, transactions)
-    else:
-        info(f"[{account}] Fetched {len(transactions)} transactions, saving to MongoDB")
-        return mongodb_engine.persist_transactions(ctx, account, transactions)
+    info(f"[{account}] Fetched {len(transactions)} transactions, saving to SQLite")
+    return sqlite_engine.persist_transactions(ctx, account, transactions)
 
 
 def save_transactions(ctx: click.Context, account: str) -> list:

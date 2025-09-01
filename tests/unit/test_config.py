@@ -107,7 +107,7 @@ class TestConfig:
     def test_update_section_success(self, temp_config_dir):
         """Test updating entire configuration section."""
         initial_config = {
-            "database": {"sqlite": True, "mongodb": False}
+            "database": {"sqlite": True}
         }
         
         config_file = temp_config_dir / "config.toml"
@@ -119,7 +119,7 @@ class TestConfig:
         config._config = None
         config.load_config(str(config_file))
         
-        new_db_config = {"sqlite": False, "mongodb": True, "uri": "mongodb://localhost"}
+        new_db_config = {"sqlite": False, "path": "./custom.db"}
         config.update_section("database", new_db_config)
         
         assert config.database_config == new_db_config

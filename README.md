@@ -17,7 +17,6 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 
   ### 📦 Storage
   - [SQLite](https://www.sqlite.org): for storing transactions, simple and easy to use
-  - [MongoDB](https://www.mongodb.com/docs/): alternative store for transactions, good balance between performance and query capabilities
 
   ### 📊 Visualization
   - [NocoDB](https://github.com/nocodb/nocodb): for visualizing and querying transactions, a simple and easy to use interface for SQLite
@@ -32,7 +31,7 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 - Support for both booked and pending transactions
 
 ### 🔄 Data Management
-- Sync all transactions with SQLite and/or MongoDB databases
+- Sync all transactions with SQLite database
 - Background sync scheduling with configurable cron expressions
 - Automatic transaction deduplication and status tracking
 - Real-time sync status monitoring
@@ -105,11 +104,6 @@ url = "https://bankaccountdata.gocardless.com/api/v2"
 
 [database]
 sqlite = true
-mongodb = false
-
-# Optional: MongoDB configuration
-[database.mongodb]
-uri = "mongodb://localhost:27017"
 
 # Optional: Background sync scheduling
 [scheduler.sync]
