@@ -49,6 +49,11 @@ leggend = "leggend.main:main"
 dev = [
     "ruff>=0.6.1",
     "pre-commit>=3.6.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-mock>=3.12.0", 
+    "respx>=0.21.0",
+    "requests-mock>=1.12.0",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -64,3 +69,24 @@ build-backend = "hatchling.build"
 [tool.ruff]
 lint.ignore = ["E501", "B008", "B006"]
 lint.extend-select = ["B", "C4", "PIE", "T20", "SIM", "TCH"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*" 
+python_functions = "test_*"
+addopts = [
+    "-v",
+    "--tb=short", 
+    "--strict-markers",
+    "--disable-warnings"
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow running tests", 
+    "api: API endpoint tests",
+    "cli: CLI command tests"
+]

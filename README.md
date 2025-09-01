@@ -260,6 +260,38 @@ uv run leggend --reload
 uv run leggen status
 ```
 
+### Testing
+
+Run the comprehensive test suite with:
+
+```bash
+# Run all tests
+uv run pytest
+
+# Run unit tests only  
+uv run pytest tests/unit/
+
+# Run with verbose output
+uv run pytest tests/unit/ -v
+
+# Run specific test files
+uv run pytest tests/unit/test_config.py -v
+uv run pytest tests/unit/test_scheduler.py -v
+uv run pytest tests/unit/test_api_banks.py -v
+
+# Run tests by markers
+uv run pytest -m unit      # Unit tests
+uv run pytest -m api       # API endpoint tests
+uv run pytest -m cli       # CLI tests
+```
+
+The test suite includes:
+- **Configuration management tests** - TOML config loading/saving
+- **API endpoint tests** - FastAPI route testing with mocked dependencies
+- **CLI API client tests** - HTTP client integration testing
+- **Background scheduler tests** - APScheduler job management
+- **Mock data and fixtures** - Realistic test data for banks, accounts, transactions
+
 ### Code Structure
 ```
 leggen/              # CLI application
@@ -272,6 +304,15 @@ leggend/             # FastAPI backend service
 ├── services/        # Business logic
 ├── background/      # Background job scheduler
 └── main.py          # FastAPI application
+
+tests/               # Test suite
+├── conftest.py      # Shared test fixtures
+└── unit/            # Unit tests
+    ├── test_config.py      # Configuration tests
+    ├── test_scheduler.py   # Background scheduler tests
+    ├── test_api_banks.py   # Banks API tests
+    ├── test_api_accounts.py # Accounts API tests
+    └── test_api_client.py  # CLI API client tests
 ```
 
 ### Contributing
