@@ -28,7 +28,7 @@ def get_token(ctx: click.Context) -> str:
     """
     Get the token from the auth file or request a new one
     """
-    auth_file = click.get_app_dir("leggen") / Path("auth.json")
+    auth_file = Path.home() / ".config" / "leggen" / "auth.json"
     if auth_file.exists():
         with click.open_file(str(auth_file), "r") as f:
             auth = json.load(f)
@@ -54,8 +54,9 @@ def get_token(ctx: click.Context) -> str:
 
 
 def save_auth(d: dict):
-    Path.mkdir(Path(click.get_app_dir("leggen")), exist_ok=True)
-    auth_file = click.get_app_dir("leggen") / Path("auth.json")
+    auth_dir = Path.home() / ".config" / "leggen"
+    auth_dir.mkdir(parents=True, exist_ok=True)
+    auth_file = auth_dir / "auth.json"
 
     with click.open_file(str(auth_file), "w") as f:
         json.dump(d, f)

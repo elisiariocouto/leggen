@@ -70,14 +70,47 @@ def create_app() -> FastAPI:
 
 
 def main():
-    app = create_app()
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        log_level="info",
-        access_log=True,
+    import argparse
+    parser = argparse.ArgumentParser(description="Start the Leggend API service")
+    parser.add_argument(
+        "--reload", 
+        action="store_true", 
+        help="Enable auto-reload for development"
     )
+    parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Host to bind to (default: 0.0.0.0)"
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to bind to (default: 8000)"
+    )
+    args = parser.parse_args()
+    
+    if args.reload:
+        # Use string import for reload to work properly
+        uvicorn.run(
+            "leggend.main:create_app",
+            factory=True,
+            host=args.host,
+            port=args.port,
+            log_level="info",
+            access_log=True,
+            reload=True,
+            reload_dirs=["leggend", "leggen"],  # Watch both directories
+        )
+    else:
+        app = create_app()
+        uvicorn.run(
+            app,
+            host=args.host,
+            port=args.port,
+            log_level="info",
+            access_log=True,
+        )
 
 
 if __name__ == "__main__":
