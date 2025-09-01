@@ -78,7 +78,7 @@ class Group(click.Group):
     "-c",
     "--config",
     type=click.Path(dir_okay=False),
-    default=click.get_app_dir("leggen") / Path("config.toml"),
+    default=Path.home() / ".config" / "leggen" / "config.toml",
     show_default=True,
     callback=load_config,
     is_eager=True,
