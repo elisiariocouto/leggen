@@ -1,9 +1,9 @@
 import click
 
 from leggen.main import cli
+from leggen.api_client import LeggendAPIClient
 from leggen.utils.disk import save_file
-from leggen.utils.network import get, post
-from leggen.utils.text import info, print_table, warning
+from leggen.utils.text import info, print_table, warning, success
 
 
 @cli.command()
@@ -12,69 +12,64 @@ def add(ctx):
     """
     Connect to a bank
     """
-    country = click.prompt(
-        "Bank Country",
-        type=click.Choice(
-            [
-                "AT",
-                "BE",
-                "BG",
-                "HR",
-                "CY",
-                "CZ",
-                "DK",
-                "EE",
-                "FI",
-                "FR",
-                "DE",
-                "GR",
-                "HU",
-                "IS",
-                "IE",
-                "IT",
-                "LV",
-                "LI",
-                "LT",
-                "LU",
-                "MT",
-                "NL",
-                "NO",
-                "PL",
-                "PT",
-                "RO",
-                "SK",
-                "SI",
-                "ES",
-                "SE",
-                "GB",
-            ],
-            case_sensitive=True,
-        ),
-        default="PT",
-    )
-    info(f"Getting bank list for country: {country}")
-    banks = get(ctx, "/institutions/", {"country": country})
-    filtered_banks = [
-        {
-            "id": bank["id"],
-            "name": bank["name"],
-            "max_transaction_days": bank["transaction_total_days"],
-        }
-        for bank in banks
-    ]
-    print_table(filtered_banks)
-    allowed_ids = [str(bank["id"]) for bank in banks]
-    bank_id = click.prompt("Bank ID", type=click.Choice(allowed_ids))
-    click.confirm("Do you agree to connect to this bank?", abort=True)
+    api_client = LeggendAPIClient(ctx.obj.get("api_url"))
+    
+    # Check if leggend service is available
+    if not api_client.health_check():
+        click.echo("Error: Cannot connect to leggend service. Please ensure it's running.")
+        return
 
-    info(f"Connecting to bank with ID: {bank_id}")
+    try:
+        # Get supported countries
+        countries = api_client.get_supported_countries()
+        country_codes = [c["code"] for c in countries]
+        
+        country = click.prompt(
+            "Bank Country",
+            type=click.Choice(country_codes, case_sensitive=True),
+            default="PT",
+        )
+        
+        info(f"Getting bank list for country: {country}")
+        banks = api_client.get_institutions(country)
+        
+        if not banks:
+            warning(f"No banks available for country {country}")
+            return
+        
+        filtered_banks = [
+            {
+                "id": bank["id"],
+                "name": bank["name"],
+                "max_transaction_days": bank["transaction_total_days"],
+            }
+            for bank in banks
+        ]
+        print_table(filtered_banks)
+        
+        allowed_ids = [str(bank["id"]) for bank in banks]
+        bank_id = click.prompt("Bank ID", type=click.Choice(allowed_ids))
+        
+        # Show bank details
+        selected_bank = next(bank for bank in banks if bank["id"] == bank_id)
+        info(f"Selected bank: {selected_bank['name']}")
+        
+        click.confirm("Do you agree to connect to this bank?", abort=True)
 
-    res = post(
-        ctx,
-        "/requisitions/",
-        {"institution_id": bank_id, "redirect": "http://localhost:8000/"},
-    )
+        info(f"Connecting to bank with ID: {bank_id}")
 
-    save_file(f"req_{res['id']}.json", res)
+        # Connect to bank via API
+        result = api_client.connect_to_bank(bank_id, "http://localhost:8000/")
 
-    warning(f"Please open the following URL in your browser to accept: {res['link']}")
+        # Save requisition details
+        save_file(f"req_{result['id']}.json", result)
+
+        success("Bank connection request created successfully!")
+        warning(f"Please open the following URL in your browser to complete the authorization:")
+        click.echo(f"\n{result['link']}\n")
+        
+        info(f"Requisition ID: {result['id']}")
+        info("After completing the authorization, you can check the connection status with 'leggen status'")
+
+    except Exception as e:
+        click.echo(f"Error: Failed to connect to bank: {str(e)}")

@@ -1,79 +1,59 @@
-import datetime
-
 import click
 
 from leggen.main import cli
-from leggen.utils.database import persist_balance, save_transactions
-from leggen.utils.gocardless import REQUISITION_STATUS
-from leggen.utils.network import get
-from leggen.utils.notifications import send_expire_notification, send_notification
-from leggen.utils.text import error, info
+from leggen.api_client import LeggendAPIClient
+from leggen.utils.text import error, info, success
 
 
 @cli.command()
+@click.option('--wait', is_flag=True, help='Wait for sync to complete (synchronous)')
+@click.option('--force', is_flag=True, help='Force sync even if already running')
 @click.pass_context
-def sync(ctx: click.Context):
+def sync(ctx: click.Context, wait: bool, force: bool):
     """
     Sync all transactions with database
     """
-    info("Getting accounts details")
-    res = get(ctx, "/requisitions/")
-    accounts = set()
-    for r in res.get("results", []):
-        accounts.update(r.get("accounts", []))
+    api_client = LeggendAPIClient(ctx.obj.get("api_url"))
+    
+    # Check if leggend service is available
+    if not api_client.health_check():
+        error("Cannot connect to leggend service. Please ensure it's running.")
+        return
 
-    for r in res.get("results", []):
-        account_status = REQUISITION_STATUS.get(r["status"], "UNKNOWN")
-        if account_status != "LINKED":
-            created_at = datetime.datetime.fromisoformat(r["created"])
-            now = datetime.datetime.now(tz=datetime.timezone.utc)
-            days_left = 90 - (now - created_at).days
-            if days_left <= 15:
-                n = {
-                    "bank": r["institution_id"],
-                    "status": REQUISITION_STATUS.get(r["status"], "UNKNOWN"),
-                    "created_at": created_at.timestamp(),
-                    "requisition_id": r["id"],
-                    "days_left": days_left,
-                }
-                send_expire_notification(ctx, n)
-
-    info(f"Syncing balances for {len(accounts)} accounts")
-
-    for account in accounts:
-        try:
-            account_details = get(ctx, f"/accounts/{account}")
-            account_balances = get(ctx, f"/accounts/{account}/balances/").get(
-                "balances", []
-            )
-            for balance in account_balances:
-                balance_amount = balance["balanceAmount"]
-                amount = round(float(balance_amount["amount"]), 2)
-                balance_document = {
-                    "account_id": account,
-                    "bank": account_details["institution_id"],
-                    "status": account_details["status"],
-                    "iban": account_details.get("iban", "N/A"),
-                    "amount": amount,
-                    "currency": balance_amount["currency"],
-                    "type": balance["balanceType"],
-                    "timestamp": datetime.datetime.now().timestamp(),
-                }
-                persist_balance(ctx, account, balance_document)
-        except Exception as e:
-            error(f"[{account}] Error: Sync failed, skipping account, exception: {e}")
-            continue
-
-    info(f"Syncing transactions for {len(accounts)} accounts")
-
-    for account in accounts:
-        try:
-            new_transactions = save_transactions(ctx, account)
-        except Exception as e:
-            error(f"[{account}] Error: Sync failed, skipping account, exception: {e}")
-            continue
-        try:
-            send_notification(ctx, new_transactions)
-        except Exception as e:
-            error(f"[{account}] Error: Notification failed, exception: {e}")
-            continue
+    try:
+        if wait:
+            # Run sync synchronously and wait for completion
+            info("Starting synchronous sync...")
+            result = api_client.sync_now(force=force)
+            
+            if result.get("success"):
+                success(f"Sync completed successfully!")
+                info(f"Accounts processed: {result.get('accounts_processed', 0)}")
+                info(f"Transactions added: {result.get('transactions_added', 0)}")
+                info(f"Balances updated: {result.get('balances_updated', 0)}")
+                if result.get('duration_seconds'):
+                    info(f"Duration: {result['duration_seconds']:.2f} seconds")
+                
+                if result.get('errors'):
+                    error(f"Errors encountered: {len(result['errors'])}")
+                    for err in result['errors']:
+                        error(f"  - {err}")
+            else:
+                error("Sync failed")
+                if result.get('errors'):
+                    for err in result['errors']:
+                        error(f"  - {err}")
+        else:
+            # Trigger async sync
+            info("Starting background sync...")
+            result = api_client.trigger_sync(force=force)
+            
+            if result.get("sync_started"):
+                success("Sync started successfully in the background")
+                info("Use 'leggen sync --wait' to run synchronously or check status with API")
+            else:
+                error("Failed to start sync")
+                
+    except Exception as e:
+        error(f"Sync failed: {str(e)}")
+        return
