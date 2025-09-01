@@ -3,7 +3,7 @@ name = "leggen"
 version = "0.6.11"
 description = "An Open Banking CLI"
 authors = [{ name = "Elisiário Couto", email = "elisiario@couto.io" }]
-requires-python = "=3.12.0"
+requires-python = "~=3.12.0"
 readme = "README.md"
 license = "MIT"
 keywords = [
@@ -35,6 +35,7 @@ dependencies = [
     "uvicorn[standard]>=0.24.0,<1",
     "apscheduler>=3.10.0,<4",
     "tomli-w>=1.0.0,<2",
+    "httpx>=0.28.1",
 ]
 
 [project.urls]
@@ -51,10 +52,10 @@ dev = [
 ]
 
 [tool.hatch.build.targets.sdist]
-include = ["leggen"]
+include = ["leggen", "leggend"]
 
 [tool.hatch.build.targets.wheel]
-include = ["leggen"]
+include = ["leggen", "leggend"]
 
 [build-system]
 requires = ["hatchling"]
