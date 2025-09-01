@@ -9,33 +9,23 @@ from leggend.config import config
 class DatabaseService:
     def __init__(self):
         self.db_config = config.database_config
-        self.sqlite_enabled = self.db_config.get("sqlite", False)
-        self.mongodb_enabled = self.db_config.get("mongodb", False)
+        self.sqlite_enabled = self.db_config.get("sqlite", True)
 
     async def persist_balance(self, account_id: str, balance_data: Dict[str, Any]) -> None:
         """Persist account balance data"""
-        if not self.sqlite_enabled and not self.mongodb_enabled:
-            logger.warning("No database engine enabled, skipping balance persistence")
+        if not self.sqlite_enabled:
+            logger.warning("SQLite database disabled, skipping balance persistence")
             return
 
-        if self.sqlite_enabled:
-            await self._persist_balance_sqlite(account_id, balance_data)
-        
-        if self.mongodb_enabled:
-            await self._persist_balance_mongodb(account_id, balance_data)
+        await self._persist_balance_sqlite(account_id, balance_data)
 
     async def persist_transactions(self, account_id: str, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Persist transactions and return new transactions"""
-        if not self.sqlite_enabled and not self.mongodb_enabled:
-            logger.warning("No database engine enabled, skipping transaction persistence")
+        if not self.sqlite_enabled:
+            logger.warning("SQLite database disabled, skipping transaction persistence")
             return transactions
 
-        if self.sqlite_enabled:
-            return await self._persist_transactions_sqlite(account_id, transactions)
-        elif self.mongodb_enabled:
-            return await self._persist_transactions_mongodb(account_id, transactions)
-
-        return []
+        return await self._persist_transactions_sqlite(account_id, transactions)
 
     def process_transactions(self, account_id: str, account_info: Dict[str, Any], transaction_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Process raw transaction data into standardized format"""
@@ -96,19 +86,8 @@ class DatabaseService:
         # Would import and use leggen.database.sqlite
         logger.info(f"Persisting balance to SQLite for account {account_id}")
 
-    async def _persist_balance_mongodb(self, account_id: str, balance_data: Dict[str, Any]) -> None:
-        """Persist balance to MongoDB - placeholder implementation"""
-        # Would import and use leggen.database.mongo
-        logger.info(f"Persisting balance to MongoDB for account {account_id}")
-
     async def _persist_transactions_sqlite(self, account_id: str, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Persist transactions to SQLite - placeholder implementation"""
         # Would import and use leggen.database.sqlite
         logger.info(f"Persisting {len(transactions)} transactions to SQLite for account {account_id}")
-        return transactions  # Return new transactions for notifications
-
-    async def _persist_transactions_mongodb(self, account_id: str, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Persist transactions to MongoDB - placeholder implementation"""
-        # Would import and use leggen.database.mongo  
-        logger.info(f"Persisting {len(transactions)} transactions to MongoDB for account {account_id}")
         return transactions  # Return new transactions for notifications
