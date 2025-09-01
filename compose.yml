@@ -1,12 +1,36 @@
 services:
-  # Defaults to `sync` command.
+  # FastAPI backend service
+  leggend:
+    build:
+      context: .
+      dockerfile: Dockerfile.leggend
+    restart: "unless-stopped"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - "./leggen:/root/.config/leggen" # Configuration file directory
+      - "./db:/app" # Database storage
+    environment:
+      - LEGGEN_CONFIG_FILE=/root/.config/leggen/config.toml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # CLI for one-off operations (uses leggend API)
   leggen:
     image: elisiariocouto/leggen:latest
-    command: sync
+    command: sync --wait
     restart: "no"
     volumes:
-      - "./leggen:/root/.config/leggen" # Default configuration file should be in this directory, named `config.toml`
+      - "./leggen:/root/.config/leggen"
       - "./db:/app"
+    environment:
+      - LEGGEND_API_URL=http://leggend:8000
+    depends_on:
+      leggend:
+        condition: service_healthy
 
   nocodb:
     image: nocodb/nocodb:latest
@@ -17,20 +41,8 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
-      - leggen
-
-  # Recommended: Run `leggen sync` every day.
-  ofelia:
-    image: mcuadros/ofelia:latest
-    restart: "unless-stopped"
-    depends_on:
-      - leggen
-    command: daemon --docker -f label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-      ofelia.job-run.leggen-sync.schedule: "0 0 3 * * *"
-      ofelia.job-run.leggen-sync.container: ${COMPOSE_PROJECT_NAME}-leggen-1
+      leggend:
+        condition: service_healthy
 
   # Optional: If you want to have a mongodb, uncomment the following lines
   # mongo:
