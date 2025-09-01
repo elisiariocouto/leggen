@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv run pytest:*)"
     ],
     "deny": [],
     "ask": []
