@@ -4,11 +4,11 @@ from loguru import logger
 
 from leggend.api.models.common import APIResponse
 from leggend.api.models.notifications import (
-    NotificationSettings, 
-    NotificationTest, 
+    NotificationSettings,
+    NotificationTest,
     DiscordConfig,
     TelegramConfig,
-    NotificationFilters
+    NotificationFilters,
 )
 from leggend.services.notification_service import NotificationService
 from leggend.config import config
@@ -23,38 +23,44 @@ async def get_notification_settings() -> APIResponse:
     try:
         notifications_config = config.notifications_config
         filters_config = config.filters_config
-        
+
         # Build response safely without exposing secrets
         discord_config = notifications_config.get("discord", {})
         telegram_config = notifications_config.get("telegram", {})
-        
+
         settings = NotificationSettings(
             discord=DiscordConfig(
                 webhook="***" if discord_config.get("webhook") else "",
-                enabled=discord_config.get("enabled", True)
-            ) if discord_config.get("webhook") else None,
+                enabled=discord_config.get("enabled", True),
+            )
+            if discord_config.get("webhook")
+            else None,
             telegram=TelegramConfig(
                 token="***" if telegram_config.get("token") else "",
                 chat_id=telegram_config.get("chat_id", 0),
-                enabled=telegram_config.get("enabled", True)
-            ) if telegram_config.get("token") else None,
+                enabled=telegram_config.get("enabled", True),
+            )
+            if telegram_config.get("token")
+            else None,
             filters=NotificationFilters(
                 case_insensitive=filters_config.get("case-insensitive", {}),
                 case_sensitive=filters_config.get("case-sensitive"),
                 amount_threshold=filters_config.get("amount_threshold"),
-                keywords=filters_config.get("keywords", [])
-            )
+                keywords=filters_config.get("keywords", []),
+            ),
         )
-        
+
         return APIResponse(
             success=True,
             data=settings,
-            message="Notification settings retrieved successfully"
+            message="Notification settings retrieved successfully",
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to get notification settings: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get notification settings: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get notification settings: {str(e)}"
+        )
 
 
 @router.put("/notifications/settings", response_model=APIResponse)
@@ -63,20 +69,20 @@ async def update_notification_settings(settings: NotificationSettings) -> APIRes
     try:
         # Update notifications config
         notifications_config = {}
-        
+
         if settings.discord:
             notifications_config["discord"] = {
                 "webhook": settings.discord.webhook,
-                "enabled": settings.discord.enabled
+                "enabled": settings.discord.enabled,
             }
-        
+
         if settings.telegram:
             notifications_config["telegram"] = {
                 "token": settings.telegram.token,
                 "chat_id": settings.telegram.chat_id,
-                "enabled": settings.telegram.enabled
+                "enabled": settings.telegram.enabled,
             }
-        
+
         # Update filters config
         filters_config = {}
         if settings.filters.case_insensitive:
@@ -87,22 +93,24 @@ async def update_notification_settings(settings: NotificationSettings) -> APIRes
             filters_config["amount_threshold"] = settings.filters.amount_threshold
         if settings.filters.keywords:
             filters_config["keywords"] = settings.filters.keywords
-        
+
         # Save to config
         if notifications_config:
             config.update_section("notifications", notifications_config)
         if filters_config:
             config.update_section("filters", filters_config)
-        
+
         return APIResponse(
             success=True,
             data={"updated": True},
-            message="Notification settings updated successfully"
+            message="Notification settings updated successfully",
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to update notification settings: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update notification settings: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update notification settings: {str(e)}"
+        )
 
 
 @router.post("/notifications/test", response_model=APIResponse)
@@ -110,25 +118,26 @@ async def test_notification(test_request: NotificationTest) -> APIResponse:
     """Send a test notification"""
     try:
         success = await notification_service.send_test_notification(
-            test_request.service, 
-            test_request.message
+            test_request.service, test_request.message
         )
-        
+
         if success:
             return APIResponse(
                 success=True,
                 data={"sent": True},
-                message=f"Test notification sent to {test_request.service} successfully"
+                message=f"Test notification sent to {test_request.service} successfully",
             )
         else:
             return APIResponse(
                 success=False,
-                message=f"Failed to send test notification to {test_request.service}"
+                message=f"Failed to send test notification to {test_request.service}",
             )
-        
+
     except Exception as e:
         logger.error(f"Failed to send test notification: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to send test notification: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to send test notification: {str(e)}"
+        )
 
 
 @router.get("/notifications/services", response_model=APIResponse)
@@ -136,37 +145,41 @@ async def get_notification_services() -> APIResponse:
     """Get available notification services and their status"""
     try:
         notifications_config = config.notifications_config
-        
+
         services = {
             "discord": {
                 "name": "Discord",
                 "enabled": bool(notifications_config.get("discord", {}).get("webhook")),
-                "configured": bool(notifications_config.get("discord", {}).get("webhook")),
-                "active": notifications_config.get("discord", {}).get("enabled", True)
+                "configured": bool(
+                    notifications_config.get("discord", {}).get("webhook")
+                ),
+                "active": notifications_config.get("discord", {}).get("enabled", True),
             },
             "telegram": {
-                "name": "Telegram", 
+                "name": "Telegram",
                 "enabled": bool(
-                    notifications_config.get("telegram", {}).get("token") and
-                    notifications_config.get("telegram", {}).get("chat_id")
+                    notifications_config.get("telegram", {}).get("token")
+                    and notifications_config.get("telegram", {}).get("chat_id")
                 ),
                 "configured": bool(
-                    notifications_config.get("telegram", {}).get("token") and
-                    notifications_config.get("telegram", {}).get("chat_id")
+                    notifications_config.get("telegram", {}).get("token")
+                    and notifications_config.get("telegram", {}).get("chat_id")
                 ),
-                "active": notifications_config.get("telegram", {}).get("enabled", True)
-            }
+                "active": notifications_config.get("telegram", {}).get("enabled", True),
+            },
         }
-        
+
         return APIResponse(
             success=True,
             data=services,
-            message="Notification services status retrieved successfully"
+            message="Notification services status retrieved successfully",
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to get notification services: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get notification services: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get notification services: {str(e)}"
+        )
 
 
 @router.delete("/notifications/settings/{service}", response_model=APIResponse)
@@ -174,19 +187,23 @@ async def delete_notification_service(service: str) -> APIResponse:
     """Delete/disable a notification service"""
     try:
         if service not in ["discord", "telegram"]:
-            raise HTTPException(status_code=400, detail="Service must be 'discord' or 'telegram'")
-        
+            raise HTTPException(
+                status_code=400, detail="Service must be 'discord' or 'telegram'"
+            )
+
         notifications_config = config.notifications_config.copy()
         if service in notifications_config:
             del notifications_config[service]
             config.update_section("notifications", notifications_config)
-        
+
         return APIResponse(
             success=True,
             data={"deleted": service},
-            message=f"{service.capitalize()} notification service deleted successfully"
+            message=f"{service.capitalize()} notification service deleted successfully",
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to delete notification service {service}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete notification service: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to delete notification service: {str(e)}"
+        )

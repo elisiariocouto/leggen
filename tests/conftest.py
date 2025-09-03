@@ -1,4 +1,5 @@
 """Pytest configuration and shared fixtures."""
+
 import pytest
 import tempfile
 import json
@@ -19,34 +20,27 @@ def temp_config_dir():
         yield config_dir
 
 
-@pytest.fixture 
+@pytest.fixture
 def mock_config(temp_config_dir):
     """Mock configuration for testing."""
     config_data = {
         "gocardless": {
             "key": "test-key",
-            "secret": "test-secret", 
-            "url": "https://bankaccountdata.gocardless.com/api/v2"
+            "secret": "test-secret",
+            "url": "https://bankaccountdata.gocardless.com/api/v2",
         },
-        "database": {
-            "sqlite": True
-        },
-        "scheduler": {
-            "sync": {
-                "enabled": True,
-                "hour": 3,
-                "minute": 0
-            }
-        }
+        "database": {"sqlite": True},
+        "scheduler": {"sync": {"enabled": True, "hour": 3, "minute": 0}},
     }
-    
+
     config_file = temp_config_dir / "config.toml"
     with open(config_file, "wb") as f:
         import tomli_w
+
         tomli_w.dump(config_data, f)
-    
+
     # Mock the config path
-    with patch.object(Config, 'load_config') as mock_load:
+    with patch.object(Config, "load_config") as mock_load:
         mock_load.return_value = config_data
         config = Config()
         config._config = config_data
@@ -57,15 +51,12 @@ def mock_config(temp_config_dir):
 @pytest.fixture
 def mock_auth_token(temp_config_dir):
     """Mock GoCardless authentication token."""
-    auth_data = {
-        "access": "mock-access-token",
-        "refresh": "mock-refresh-token"
-    }
-    
-    auth_file = temp_config_dir / "auth.json" 
+    auth_data = {"access": "mock-access-token", "refresh": "mock-refresh-token"}
+
+    auth_file = temp_config_dir / "auth.json"
     with open(auth_file, "w") as f:
         json.dump(auth_data, f)
-    
+
     return auth_data
 
 
@@ -88,17 +79,17 @@ def sample_bank_data():
         {
             "id": "REVOLUT_REVOLT21",
             "name": "Revolut",
-            "bic": "REVOLT21", 
+            "bic": "REVOLT21",
             "transaction_total_days": 90,
-            "countries": ["GB", "LT"]
+            "countries": ["GB", "LT"],
         },
         {
             "id": "BANCOBPI_BBPIPTPL",
             "name": "Banco BPI",
             "bic": "BBPIPTPL",
-            "transaction_total_days": 90, 
-            "countries": ["PT"]
-        }
+            "transaction_total_days": 90,
+            "countries": ["PT"],
+        },
     ]
 
 
@@ -107,31 +98,28 @@ def sample_account_data():
     """Sample account data for testing."""
     return {
         "id": "test-account-123",
-        "institution_id": "REVOLUT_REVOLT21", 
+        "institution_id": "REVOLUT_REVOLT21",
         "status": "READY",
         "iban": "LT313250081177977789",
         "created": "2024-02-13T23:56:00Z",
-        "last_accessed": "2025-09-01T09:30:00Z"
+        "last_accessed": "2025-09-01T09:30:00Z",
     }
 
 
 @pytest.fixture
 def sample_transaction_data():
-    """Sample transaction data for testing.""" 
+    """Sample transaction data for testing."""
     return {
         "transactions": {
             "booked": [
                 {
                     "internalTransactionId": "txn-123",
                     "bookingDate": "2025-09-01",
-                    "valueDate": "2025-09-01", 
-                    "transactionAmount": {
-                        "amount": "-10.50",
-                        "currency": "EUR"
-                    },
-                    "remittanceInformationUnstructured": "Coffee Shop Payment"
+                    "valueDate": "2025-09-01",
+                    "transactionAmount": {"amount": "-10.50", "currency": "EUR"},
+                    "remittanceInformationUnstructured": "Coffee Shop Payment",
                 }
             ],
-            "pending": []
+            "pending": [],
         }
     }

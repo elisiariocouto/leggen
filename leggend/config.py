@@ -24,7 +24,7 @@ class Config:
         if config_path is None:
             config_path = os.environ.get(
                 "LEGGEN_CONFIG_FILE",
-                str(Path.home() / ".config" / "leggen" / "config.toml")
+                str(Path.home() / ".config" / "leggen" / "config.toml"),
             )
 
         self._config_path = config_path
@@ -42,15 +42,17 @@ class Config:
 
         return self._config
 
-    def save_config(self, config_data: Dict[str, Any] = None, config_path: str = None) -> None:
+    def save_config(
+        self, config_data: Dict[str, Any] = None, config_path: str = None
+    ) -> None:
         """Save configuration to TOML file"""
         if config_data is None:
             config_data = self._config
-        
+
         if config_path is None:
             config_path = self._config_path or os.environ.get(
                 "LEGGEN_CONFIG_FILE",
-                str(Path.home() / ".config" / "leggen" / "config.toml")
+                str(Path.home() / ".config" / "leggen" / "config.toml"),
             )
 
         # Ensure directory exists
@@ -59,7 +61,7 @@ class Config:
         try:
             with open(config_path, "wb") as f:
                 tomli_w.dump(config_data, f)
-            
+
             # Update in-memory config
             self._config = config_data
             self._config_path = config_path
@@ -72,10 +74,10 @@ class Config:
         """Update a specific configuration value"""
         if self._config is None:
             self.load_config()
-        
+
         if section not in self._config:
             self._config[section] = {}
-        
+
         self._config[section][key] = value
         self.save_config()
 
@@ -83,7 +85,7 @@ class Config:
         """Update an entire configuration section"""
         if self._config is None:
             self.load_config()
-        
+
         self._config[section] = data
         self.save_config()
 
@@ -117,7 +119,7 @@ class Config:
                 "enabled": True,
                 "hour": 3,
                 "minute": 0,
-                "cron": None  # Optional custom cron expression
+                "cron": None,  # Optional custom cron expression
             }
         }
         return self.config.get("scheduler", default_schedule)

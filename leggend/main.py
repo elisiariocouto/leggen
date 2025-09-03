@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
+from importlib import metadata
 
 import uvicorn
 from fastapi import FastAPI
@@ -15,7 +16,7 @@ from leggend.config import config
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting leggend service...")
-    
+
     # Load configuration
     try:
         config.load_config()
@@ -27,26 +28,35 @@ async def lifespan(app: FastAPI):
     # Start background scheduler
     scheduler.start()
     logger.info("Background scheduler started")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down leggend service...")
     scheduler.shutdown()
 
 
 def create_app() -> FastAPI:
+    # Get version dynamically from package metadata
+    try:
+        version = metadata.version("leggen")
+    except metadata.PackageNotFoundError:
+        version = "unknown"
+
     app = FastAPI(
         title="Leggend API",
         description="Open Banking API for Leggen",
-        version="0.6.11",
+        version=version,
         lifespan=lifespan,
     )
 
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:5173"],  # SvelteKit dev servers
+        allow_origins=[
+            "http://localhost:3000",
+            "http://localhost:5173",
+        ],  # SvelteKit dev servers
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -60,7 +70,12 @@ def create_app() -> FastAPI:
 
     @app.get("/")
     async def root():
-        return {"message": "Leggend API is running", "version": "0.6.11"}
+        # Get version dynamically
+        try:
+            version = metadata.version("leggen")
+        except metadata.PackageNotFoundError:
+            version = "unknown"
+        return {"message": "Leggend API is running", "version": version}
 
     @app.get("/health")
     async def health():
@@ -71,25 +86,19 @@ def create_app() -> FastAPI:
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="Start the Leggend API service")
     parser.add_argument(
-        "--reload", 
-        action="store_true", 
-        help="Enable auto-reload for development"
+        "--reload", action="store_true", help="Enable auto-reload for development"
     )
     parser.add_argument(
-        "--host",
-        default="0.0.0.0",
-        help="Host to bind to (default: 0.0.0.0)"
+        "--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"
     )
     parser.add_argument(
-        "--port",
-        type=int,
-        default=8000,
-        help="Port to bind to (default: 8000)"
+        "--port", type=int, default=8000, help="Port to bind to (default: 8000)"
     )
     args = parser.parse_args()
-    
+
     if args.reload:
         # Use string import for reload to work properly
         uvicorn.run(

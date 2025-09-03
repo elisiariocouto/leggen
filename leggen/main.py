@@ -90,10 +90,10 @@ class Group(click.Group):
 @click.option(
     "--api-url",
     type=str,
-    default=None,
+    default="http://localhost:8000",
     envvar="LEGGEND_API_URL",
     show_envvar=True,
-    help="URL of the leggend API service (default: http://localhost:8000)",
+    help="URL of the leggend API service",
 )
 @click.group(
     cls=Group,
@@ -113,7 +113,7 @@ def cli(ctx: click.Context, api_url: str):
     # Store API URL in context for commands to use
     if api_url:
         ctx.obj["api_url"] = api_url
-    
+
     # For backwards compatibility, still support direct GoCardless calls
     # This will be used as fallback if leggend service is not available
     try:

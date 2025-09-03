@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 class BankInstitution(BaseModel):
     """Bank institution model"""
+
     id: str
     name: str
     bic: Optional[str] = None
@@ -16,12 +17,14 @@ class BankInstitution(BaseModel):
 
 class BankConnectionRequest(BaseModel):
     """Request to connect to a bank"""
+
     institution_id: str
     redirect_url: Optional[str] = "http://localhost:8000/"
 
 
 class BankRequisition(BaseModel):
     """Bank requisition/connection model"""
+
     id: str
     institution_id: str
     status: str
@@ -29,15 +32,14 @@ class BankRequisition(BaseModel):
     created: datetime
     link: str
     accounts: List[str] = []
-    
+
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 class BankConnectionStatus(BaseModel):
     """Bank connection status response"""
+
     bank_id: str
     bank_name: str
     status: str
@@ -45,8 +47,6 @@ class BankConnectionStatus(BaseModel):
     created_at: datetime
     requisition_id: str
     accounts_count: int
-    
+
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}
