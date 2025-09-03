@@ -51,9 +51,13 @@ def transactions(ctx: click.Context, account: str, limit: int, full: bool):
             # Full transaction details
             formatted_transactions = []
             for txn in transactions_data:
+                # Handle optional internal_transaction_id
+                txn_id = txn.get("internal_transaction_id")
+                txn_id_display = txn_id[:12] + "..." if txn_id else "N/A"
+
                 formatted_transactions.append(
                     {
-                        "ID": txn["internal_transaction_id"][:12] + "...",
+                        "ID": txn_id_display,
                         "Date": datefmt(txn["transaction_date"]),
                         "Description": txn["description"][:50] + "..."
                         if len(txn["description"]) > 50
@@ -67,6 +71,9 @@ def transactions(ctx: click.Context, account: str, limit: int, full: bool):
             # Summary view
             formatted_transactions = []
             for txn in transactions_data:
+                # Handle optional internal_transaction_id
+                txn_id = txn.get("internal_transaction_id")
+
                 formatted_transactions.append(
                     {
                         "Date": datefmt(txn["date"]),
