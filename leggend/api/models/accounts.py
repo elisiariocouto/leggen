@@ -36,7 +36,7 @@ class AccountDetails(BaseModel):
 class Transaction(BaseModel):
     """Transaction model"""
 
-    internal_transaction_id: str
+    internal_transaction_id: Optional[str] = None
     institution_id: str
     iban: Optional[str] = None
     account_id: str
@@ -54,7 +54,7 @@ class Transaction(BaseModel):
 class TransactionSummary(BaseModel):
     """Transaction summary for lists"""
 
-    internal_transaction_id: str
+    internal_transaction_id: Optional[str] = None
     date: datetime
     description: str
     amount: float
