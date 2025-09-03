@@ -11,7 +11,9 @@ class DatabaseService:
         self.db_config = config.database_config
         self.sqlite_enabled = self.db_config.get("sqlite", True)
 
-    async def persist_balance(self, account_id: str, balance_data: Dict[str, Any]) -> None:
+    async def persist_balance(
+        self, account_id: str, balance_data: Dict[str, Any]
+    ) -> None:
         """Persist account balance data"""
         if not self.sqlite_enabled:
             logger.warning("SQLite database disabled, skipping balance persistence")
@@ -19,7 +21,9 @@ class DatabaseService:
 
         await self._persist_balance_sqlite(account_id, balance_data)
 
-    async def persist_transactions(self, account_id: str, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def persist_transactions(
+        self, account_id: str, transactions: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Persist transactions and return new transactions"""
         if not self.sqlite_enabled:
             logger.warning("SQLite database disabled, skipping transaction persistence")
@@ -27,32 +31,48 @@ class DatabaseService:
 
         return await self._persist_transactions_sqlite(account_id, transactions)
 
-    def process_transactions(self, account_id: str, account_info: Dict[str, Any], transaction_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def process_transactions(
+        self,
+        account_id: str,
+        account_info: Dict[str, Any],
+        transaction_data: Dict[str, Any],
+    ) -> List[Dict[str, Any]]:
         """Process raw transaction data into standardized format"""
         transactions = []
-        
+
         # Process booked transactions
         for transaction in transaction_data.get("transactions", {}).get("booked", []):
-            processed = self._process_single_transaction(account_id, account_info, transaction, "booked")
+            processed = self._process_single_transaction(
+                account_id, account_info, transaction, "booked"
+            )
             transactions.append(processed)
 
-        # Process pending transactions  
+        # Process pending transactions
         for transaction in transaction_data.get("transactions", {}).get("pending", []):
-            processed = self._process_single_transaction(account_id, account_info, transaction, "pending")
+            processed = self._process_single_transaction(
+                account_id, account_info, transaction, "pending"
+            )
             transactions.append(processed)
 
         return transactions
 
-    def _process_single_transaction(self, account_id: str, account_info: Dict[str, Any], transaction: Dict[str, Any], status: str) -> Dict[str, Any]:
+    def _process_single_transaction(
+        self,
+        account_id: str,
+        account_info: Dict[str, Any],
+        transaction: Dict[str, Any],
+        status: str,
+    ) -> Dict[str, Any]:
         """Process a single transaction into standardized format"""
         # Extract dates
-        booked_date = transaction.get("bookingDateTime") or transaction.get("bookingDate")
+        booked_date = transaction.get("bookingDateTime") or transaction.get(
+            "bookingDate"
+        )
         value_date = transaction.get("valueDateTime") or transaction.get("valueDate")
-        
+
         if booked_date and value_date:
             min_date = min(
-                datetime.fromisoformat(booked_date), 
-                datetime.fromisoformat(value_date)
+                datetime.fromisoformat(booked_date), datetime.fromisoformat(value_date)
             )
         else:
             min_date = datetime.fromisoformat(booked_date or value_date)
@@ -65,7 +85,7 @@ class DatabaseService:
         # Extract description
         description = transaction.get(
             "remittanceInformationUnstructured",
-            ",".join(transaction.get("remittanceInformationUnstructuredArray", []))
+            ",".join(transaction.get("remittanceInformationUnstructuredArray", [])),
         )
 
         return {
@@ -81,13 +101,19 @@ class DatabaseService:
             "rawTransaction": transaction,
         }
 
-    async def _persist_balance_sqlite(self, account_id: str, balance_data: Dict[str, Any]) -> None:
+    async def _persist_balance_sqlite(
+        self, account_id: str, balance_data: Dict[str, Any]
+    ) -> None:
         """Persist balance to SQLite - placeholder implementation"""
         # Would import and use leggen.database.sqlite
         logger.info(f"Persisting balance to SQLite for account {account_id}")
 
-    async def _persist_transactions_sqlite(self, account_id: str, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def _persist_transactions_sqlite(
+        self, account_id: str, transactions: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Persist transactions to SQLite - placeholder implementation"""
         # Would import and use leggen.database.sqlite
-        logger.info(f"Persisting {len(transactions)} transactions to SQLite for account {account_id}")
+        logger.info(
+            f"Persisting {len(transactions)} transactions to SQLite for account {account_id}"
+        )
         return transactions  # Return new transactions for notifications

@@ -3,7 +3,6 @@ services:
   leggend:
     build:
       context: .
-      dockerfile: Dockerfile.leggend
     restart: "unless-stopped"
     ports:
       - "127.0.0.1:8000:8000"
@@ -17,20 +16,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # CLI for one-off operations (uses leggend API)
-  leggen:
-    image: elisiariocouto/leggen:latest
-    command: sync --wait
-    restart: "no"
-    volumes:
-      - "./leggen:/root/.config/leggen"
-      - "./db:/app"
-    environment:
-      - LEGGEND_API_URL=http://leggend:8000
-    depends_on:
-      leggend:
-        condition: service_healthy
 
   nocodb:
     image: nocodb/nocodb:latest

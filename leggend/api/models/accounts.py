@@ -6,19 +6,19 @@ from pydantic import BaseModel
 
 class AccountBalance(BaseModel):
     """Account balance model"""
+
     amount: float
     currency: str
     balance_type: str
     last_change_date: Optional[datetime] = None
-    
+
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
 
 
 class AccountDetails(BaseModel):
     """Account details model"""
+
     id: str
     institution_id: str
     status: str
@@ -28,15 +28,14 @@ class AccountDetails(BaseModel):
     created: datetime
     last_accessed: Optional[datetime] = None
     balances: List[AccountBalance] = []
-    
+
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
 
 
 class Transaction(BaseModel):
     """Transaction model"""
+
     internal_transaction_id: str
     institution_id: str
     iban: Optional[str] = None
@@ -47,15 +46,14 @@ class Transaction(BaseModel):
     transaction_currency: str
     transaction_status: str  # "booked" or "pending"
     raw_transaction: Dict[str, Any]
-    
+
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 class TransactionSummary(BaseModel):
     """Transaction summary for lists"""
+
     internal_transaction_id: str
     date: datetime
     description: str
@@ -63,8 +61,6 @@ class TransactionSummary(BaseModel):
     currency: str
     status: str
     account_id: str
-    
+
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}

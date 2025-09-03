@@ -8,19 +8,20 @@ from leggen.utils.text import error
 
 class LeggendAPIClient:
     """Client for communicating with the leggend FastAPI service"""
-    
+
     def __init__(self, base_url: Optional[str] = None):
-        self.base_url = base_url or os.environ.get("LEGGEND_API_URL", "http://localhost:8000")
+        self.base_url = base_url or os.environ.get(
+            "LEGGEND_API_URL", "http://localhost:8000"
+        )
         self.session = requests.Session()
-        self.session.headers.update({
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-        })
+        self.session.headers.update(
+            {"Content-Type": "application/json", "Accept": "application/json"}
+        )
 
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """Make HTTP request to the API"""
         url = urljoin(self.base_url, endpoint)
-        
+
         try:
             response = self.session.request(method, url, **kwargs)
             response.raise_for_status()
@@ -53,15 +54,19 @@ class LeggendAPIClient:
     # Bank endpoints
     def get_institutions(self, country: str = "PT") -> List[Dict[str, Any]]:
         """Get bank institutions for a country"""
-        response = self._make_request("GET", "/api/v1/banks/institutions", params={"country": country})
+        response = self._make_request(
+            "GET", "/api/v1/banks/institutions", params={"country": country}
+        )
         return response.get("data", [])
 
-    def connect_to_bank(self, institution_id: str, redirect_url: str = "http://localhost:8000/") -> Dict[str, Any]:
+    def connect_to_bank(
+        self, institution_id: str, redirect_url: str = "http://localhost:8000/"
+    ) -> Dict[str, Any]:
         """Connect to a bank"""
         response = self._make_request(
-            "POST", 
+            "POST",
             "/api/v1/banks/connect",
-            json={"institution_id": institution_id, "redirect_url": redirect_url}
+            json={"institution_id": institution_id, "redirect_url": redirect_url},
         )
         return response.get("data", {})
 
@@ -91,31 +96,39 @@ class LeggendAPIClient:
         response = self._make_request("GET", f"/api/v1/accounts/{account_id}/balances")
         return response.get("data", [])
 
-    def get_account_transactions(self, account_id: str, limit: int = 100, summary_only: bool = False) -> List[Dict[str, Any]]:
+    def get_account_transactions(
+        self, account_id: str, limit: int = 100, summary_only: bool = False
+    ) -> List[Dict[str, Any]]:
         """Get account transactions"""
         response = self._make_request(
-            "GET", 
+            "GET",
             f"/api/v1/accounts/{account_id}/transactions",
-            params={"limit": limit, "summary_only": summary_only}
+            params={"limit": limit, "summary_only": summary_only},
         )
         return response.get("data", [])
 
-    # Transaction endpoints  
-    def get_all_transactions(self, limit: int = 100, summary_only: bool = True, **filters) -> List[Dict[str, Any]]:
+    # Transaction endpoints
+    def get_all_transactions(
+        self, limit: int = 100, summary_only: bool = True, **filters
+    ) -> List[Dict[str, Any]]:
         """Get all transactions with optional filters"""
         params = {"limit": limit, "summary_only": summary_only}
         params.update(filters)
-        
+
         response = self._make_request("GET", "/api/v1/transactions", params=params)
         return response.get("data", [])
 
-    def get_transaction_stats(self, days: int = 30, account_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_transaction_stats(
+        self, days: int = 30, account_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Get transaction statistics"""
         params = {"days": days}
         if account_id:
             params["account_id"] = account_id
-            
-        response = self._make_request("GET", "/api/v1/transactions/stats", params=params)
+
+        response = self._make_request(
+            "GET", "/api/v1/transactions/stats", params=params
+        )
         return response.get("data", {})
 
     # Sync endpoints
@@ -124,21 +137,25 @@ class LeggendAPIClient:
         response = self._make_request("GET", "/api/v1/sync/status")
         return response.get("data", {})
 
-    def trigger_sync(self, account_ids: Optional[List[str]] = None, force: bool = False) -> Dict[str, Any]:
+    def trigger_sync(
+        self, account_ids: Optional[List[str]] = None, force: bool = False
+    ) -> Dict[str, Any]:
         """Trigger a sync"""
         data = {"force": force}
         if account_ids:
             data["account_ids"] = account_ids
-            
+
         response = self._make_request("POST", "/api/v1/sync", json=data)
         return response.get("data", {})
 
-    def sync_now(self, account_ids: Optional[List[str]] = None, force: bool = False) -> Dict[str, Any]:
+    def sync_now(
+        self, account_ids: Optional[List[str]] = None, force: bool = False
+    ) -> Dict[str, Any]:
         """Run sync synchronously"""
         data = {"force": force}
         if account_ids:
             data["account_ids"] = account_ids
-            
+
         response = self._make_request("POST", "/api/v1/sync/now", json=data)
         return response.get("data", {})
 
@@ -147,11 +164,17 @@ class LeggendAPIClient:
         response = self._make_request("GET", "/api/v1/sync/scheduler")
         return response.get("data", {})
 
-    def update_scheduler_config(self, enabled: bool = True, hour: int = 3, minute: int = 0, cron: Optional[str] = None) -> Dict[str, Any]:
+    def update_scheduler_config(
+        self,
+        enabled: bool = True,
+        hour: int = 3,
+        minute: int = 0,
+        cron: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Update scheduler configuration"""
         data = {"enabled": enabled, "hour": hour, "minute": minute}
         if cron:
             data["cron"] = cron
-            
+
         response = self._make_request("PUT", "/api/v1/sync/scheduler", json=data)
         return response.get("data", {})
