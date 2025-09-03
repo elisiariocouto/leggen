@@ -1,8 +1,6 @@
 """Tests for configuration management."""
 
 import pytest
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 from leggend.config import Config
@@ -164,9 +162,11 @@ class TestConfig:
             config = Config()
             config._config = None
 
-            with patch("builtins.open", side_effect=FileNotFoundError):
-                with pytest.raises(FileNotFoundError):
-                    config.load_config()
+            with (
+                patch("builtins.open", side_effect=FileNotFoundError),
+                pytest.raises(FileNotFoundError),
+            ):
+                config.load_config()
 
     def test_notifications_config(self):
         """Test notifications configuration access."""

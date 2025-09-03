@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 from loguru import logger
 
@@ -75,7 +75,10 @@ class DatabaseService:
                 datetime.fromisoformat(booked_date), datetime.fromisoformat(value_date)
             )
         else:
-            min_date = datetime.fromisoformat(booked_date or value_date)
+            date_str = booked_date or value_date
+            if not date_str:
+                raise ValueError("No valid date found in transaction")
+            min_date = datetime.fromisoformat(date_str)
 
         # Extract amount and currency
         transaction_amount = transaction.get("transactionAmount", {})

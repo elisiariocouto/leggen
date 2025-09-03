@@ -69,7 +69,7 @@ class NotificationService:
             description = transaction.get("description", "").lower()
 
             # Check case-insensitive filters
-            for filter_name, filter_value in filters_case_insensitive.items():
+            for _filter_name, filter_value in filters_case_insensitive.items():
                 if filter_value.lower() in description:
                     matching.append(
                         {

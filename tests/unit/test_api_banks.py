@@ -5,8 +5,6 @@ import respx
 import httpx
 from unittest.mock import patch
 
-from leggend.services.gocardless_service import GoCardlessService
-
 
 @pytest.mark.api
 class TestBanksAPI:

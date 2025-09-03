@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, List, Union
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
@@ -74,7 +74,9 @@ async def get_all_accounts() -> APIResponse:
 
     except Exception as e:
         logger.error(f"Failed to get accounts: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get accounts: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get accounts: {str(e)}"
+        ) from e
 
 
 @router.get("/accounts/{account_id}", response_model=APIResponse)
@@ -117,7 +119,9 @@ async def get_account_details(account_id: str) -> APIResponse:
 
     except Exception as e:
         logger.error(f"Failed to get account details for {account_id}: {e}")
-        raise HTTPException(status_code=404, detail=f"Account not found: {str(e)}")
+        raise HTTPException(
+            status_code=404, detail=f"Account not found: {str(e)}"
+        ) from e
 
 
 @router.get("/accounts/{account_id}/balances", response_model=APIResponse)
@@ -146,7 +150,9 @@ async def get_account_balances(account_id: str) -> APIResponse:
 
     except Exception as e:
         logger.error(f"Failed to get balances for account {account_id}: {e}")
-        raise HTTPException(status_code=404, detail=f"Failed to get balances: {str(e)}")
+        raise HTTPException(
+            status_code=404, detail=f"Failed to get balances: {str(e)}"
+        ) from e
 
 
 @router.get("/accounts/{account_id}/transactions", response_model=APIResponse)
@@ -172,11 +178,17 @@ async def get_account_transactions(
 
         # Apply pagination
         total_transactions = len(processed_transactions)
-        paginated_transactions = processed_transactions[offset : offset + limit]
+        actual_offset = offset or 0
+        actual_limit = limit or 100
+        paginated_transactions = processed_transactions[
+            actual_offset : actual_offset + actual_limit
+        ]
+
+        data: Union[List[TransactionSummary], List[Transaction]]
 
         if summary_only:
             # Return simplified transaction summaries
-            summaries = [
+            data = [
                 TransactionSummary(
                     internal_transaction_id=txn["internalTransactionId"],
                     date=txn["transactionDate"],
@@ -188,10 +200,9 @@ async def get_account_transactions(
                 )
                 for txn in paginated_transactions
             ]
-            data = summaries
         else:
             # Return full transaction details
-            transactions = [
+            data = [
                 Transaction(
                     internal_transaction_id=txn["internalTransactionId"],
                     institution_id=txn["institutionId"],
@@ -206,16 +217,15 @@ async def get_account_transactions(
                 )
                 for txn in paginated_transactions
             ]
-            data = transactions
 
         return APIResponse(
             success=True,
             data=data,
-            message=f"Retrieved {len(data)} transactions (showing {offset + 1}-{offset + len(data)} of {total_transactions})",
+            message=f"Retrieved {len(data)} transactions (showing {actual_offset + 1}-{actual_offset + len(data)} of {total_transactions})",
         )
 
     except Exception as e:
         logger.error(f"Failed to get transactions for account {account_id}: {e}")
         raise HTTPException(
             status_code=404, detail=f"Failed to get transactions: {str(e)}"
-        )
+        ) from e

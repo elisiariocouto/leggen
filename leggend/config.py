@@ -17,7 +17,7 @@ class Config:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def load_config(self, config_path: str = None) -> Dict[str, Any]:
+    def load_config(self, config_path: Optional[str] = None) -> Dict[str, Any]:
         if self._config is not None:
             return self._config
 
@@ -43,7 +43,9 @@ class Config:
         return self._config
 
     def save_config(
-        self, config_data: Dict[str, Any] = None, config_path: str = None
+        self,
+        config_data: Optional[Dict[str, Any]] = None,
+        config_path: Optional[str] = None,
     ) -> None:
         """Save configuration to TOML file"""
         if config_data is None:
@@ -54,6 +56,11 @@ class Config:
                 "LEGGEN_CONFIG_FILE",
                 str(Path.home() / ".config" / "leggen" / "config.toml"),
             )
+
+        if config_path is None:
+            raise ValueError("No config path specified")
+        if config_data is None:
+            raise ValueError("No config data to save")
 
         # Ensure directory exists
         Path(config_path).parent.mkdir(parents=True, exist_ok=True)
@@ -75,6 +82,9 @@ class Config:
         if self._config is None:
             self.load_config()
 
+        if self._config is None:
+            raise RuntimeError("Failed to load config")
+
         if section not in self._config:
             self._config[section] = {}
 
@@ -86,6 +96,9 @@ class Config:
         if self._config is None:
             self.load_config()
 
+        if self._config is None:
+            raise RuntimeError("Failed to load config")
+
         self._config[section] = data
         self.save_config()
 
@@ -93,6 +106,8 @@ class Config:
     def config(self) -> Dict[str, Any]:
         if self._config is None:
             self.load_config()
+        if self._config is None:
+            raise RuntimeError("Failed to load config")
         return self._config
 
     @property

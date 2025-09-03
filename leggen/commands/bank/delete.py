@@ -1,7 +1,6 @@
 import click
 
 from leggen.main import cli
-from leggen.utils.network import delete as http_delete
 from leggen.utils.text import info, success
 
 
@@ -16,11 +15,12 @@ def delete(ctx, requisition_id: str):
 
     Check `leggen status` to get the REQUISITION_ID
     """
+    import requests
+
     info(f"Deleting Bank Requisition: {requisition_id}")
 
-    _ = http_delete(
-        ctx,
-        f"/requisitions/{requisition_id}",
-    )
+    api_url = ctx.obj.get("api_url", "http://localhost:8000")
+    res = requests.delete(f"{api_url}/requisitions/{requisition_id}")
+    res.raise_for_status()
 
     success(f"Bank Requisition {requisition_id} deleted")

@@ -1,13 +1,10 @@
 """Tests for background scheduler."""
 
 import pytest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock
 from datetime import datetime
-from apscheduler.schedulers.blocking import BlockingScheduler
 
 from leggend.background.scheduler import BackgroundScheduler
-from leggend.services.sync_service import SyncService
 
 
 @pytest.mark.unit

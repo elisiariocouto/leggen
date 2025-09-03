@@ -3,7 +3,6 @@ from datetime import datetime
 import click
 
 import leggen.database.sqlite as sqlite_engine
-from leggen.utils.network import get
 from leggen.utils.text import info, warning
 
 
@@ -32,15 +31,21 @@ def persist_transactions(ctx: click.Context, account: str, transactions: list) -
 
 
 def save_transactions(ctx: click.Context, account: str) -> list:
+    import requests
+
+    api_url = ctx.obj.get("api_url", "http://localhost:8000")
+
     info(f"[{account}] Getting account details")
-    account_info = get(ctx, f"/accounts/{account}")
+    res = requests.get(f"{api_url}/accounts/{account}")
+    res.raise_for_status()
+    account_info = res.json()
 
     info(f"[{account}] Getting transactions")
     transactions = []
 
-    account_transactions = get(ctx, f"/accounts/{account}/transactions/").get(
-        "transactions", []
-    )
+    res = requests.get(f"{api_url}/accounts/{account}/transactions/")
+    res.raise_for_status()
+    account_transactions = res.json().get("transactions", [])
 
     for transaction in account_transactions.get("booked", []):
         booked_date = transaction.get("bookingDateTime") or transaction.get(

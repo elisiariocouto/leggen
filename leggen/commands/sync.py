@@ -27,7 +27,7 @@ def sync(ctx: click.Context, wait: bool, force: bool):
             result = api_client.sync_now(force=force)
 
             if result.get("success"):
-                success(f"Sync completed successfully!")
+                success("Sync completed successfully!")
                 info(f"Accounts processed: {result.get('accounts_processed', 0)}")
                 info(f"Transactions added: {result.get('transactions_added', 0)}")
                 info(f"Balances updated: {result.get('balances_updated', 0)}")

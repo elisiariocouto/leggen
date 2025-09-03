@@ -5,7 +5,6 @@ from pathlib import Path
 
 import click
 
-from leggen.utils.auth import get_token
 from leggen.utils.config import load_config
 from leggen.utils.text import error
 
@@ -111,14 +110,4 @@ def cli(ctx: click.Context, api_url: str):
         return
 
     # Store API URL in context for commands to use
-    if api_url:
-        ctx.obj["api_url"] = api_url
-
-    # For backwards compatibility, still support direct GoCardless calls
-    # This will be used as fallback if leggend service is not available
-    try:
-        token = get_token(ctx)
-        ctx.obj["headers"] = {"Authorization": f"Bearer {token}"}
-    except Exception:
-        # If we can't get token, commands will rely on API service
-        pass
+    ctx.obj["api_url"] = api_url

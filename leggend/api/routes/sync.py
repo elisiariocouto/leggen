@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from loguru import logger
 
 from leggend.api.models.common import APIResponse
-from leggend.api.models.sync import SyncRequest, SyncStatus, SyncResult, SchedulerConfig
+from leggend.api.models.sync import SyncRequest, SchedulerConfig
 from leggend.services.sync_service import SyncService
 from leggend.background.scheduler import scheduler
 from leggend.config import config
@@ -31,7 +31,7 @@ async def get_sync_status() -> APIResponse:
         logger.error(f"Failed to get sync status: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get sync status: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/sync", response_model=APIResponse)
@@ -78,7 +78,9 @@ async def trigger_sync(
 
     except Exception as e:
         logger.error(f"Failed to trigger sync: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to trigger sync: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to trigger sync: {str(e)}"
+        ) from e
 
 
 @router.post("/sync/now", response_model=APIResponse)
@@ -104,7 +106,9 @@ async def sync_now(sync_request: Optional[SyncRequest] = None) -> APIResponse:
 
     except Exception as e:
         logger.error(f"Failed to run sync: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to run sync: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to run sync: {str(e)}"
+        ) from e
 
 
 @router.get("/sync/scheduler", response_model=APIResponse)
@@ -134,7 +138,7 @@ async def get_scheduler_config() -> APIResponse:
         logger.error(f"Failed to get scheduler config: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get scheduler config: {str(e)}"
-        )
+        ) from e
 
 
 @router.put("/sync/scheduler", response_model=APIResponse)
@@ -152,7 +156,7 @@ async def update_scheduler_config(scheduler_config: SchedulerConfig) -> APIRespo
             except Exception as e:
                 raise HTTPException(
                     status_code=400, detail=f"Invalid cron expression: {str(e)}"
-                )
+                ) from e
 
         # Update configuration
         schedule_data = scheduler_config.dict(exclude_none=True)
@@ -171,7 +175,7 @@ async def update_scheduler_config(scheduler_config: SchedulerConfig) -> APIRespo
         logger.error(f"Failed to update scheduler config: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to update scheduler config: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/sync/scheduler/start", response_model=APIResponse)
@@ -188,7 +192,7 @@ async def start_scheduler() -> APIResponse:
         logger.error(f"Failed to start scheduler: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to start scheduler: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/sync/scheduler/stop", response_model=APIResponse)
@@ -205,4 +209,4 @@ async def stop_scheduler() -> APIResponse:
         logger.error(f"Failed to stop scheduler: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to stop scheduler: {str(e)}"
-        )
+        ) from e
