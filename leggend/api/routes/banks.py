@@ -1,8 +1,7 @@
-from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from leggend.api.models.common import APIResponse, ErrorResponse
+from leggend.api.models.common import APIResponse
 from leggend.api.models.banks import (
     BankInstitution,
     BankConnectionRequest,
@@ -46,15 +45,16 @@ async def get_bank_institutions(
         logger.error(f"Failed to get institutions for {country}: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get institutions: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/banks/connect", response_model=APIResponse)
 async def connect_to_bank(request: BankConnectionRequest) -> APIResponse:
     """Create a connection to a bank (requisition)"""
     try:
+        redirect_url = request.redirect_url or "http://localhost:8000/"
         requisition_data = await gocardless_service.create_requisition(
-            request.institution_id, request.redirect_url
+            request.institution_id, redirect_url
         )
 
         requisition = BankRequisition(
@@ -69,14 +69,14 @@ async def connect_to_bank(request: BankConnectionRequest) -> APIResponse:
         return APIResponse(
             success=True,
             data=requisition,
-            message=f"Bank connection created. Please visit the link to authorize.",
+            message="Bank connection created. Please visit the link to authorize.",
         )
 
     except Exception as e:
         logger.error(f"Failed to connect to bank {request.institution_id}: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to connect to bank: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/banks/status", response_model=APIResponse)
@@ -114,7 +114,7 @@ async def get_bank_connections_status() -> APIResponse:
         logger.error(f"Failed to get bank connection status: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get bank status: {str(e)}"
-        )
+        ) from e
 
 
 @router.delete("/banks/connections/{requisition_id}", response_model=APIResponse)
@@ -132,7 +132,7 @@ async def delete_bank_connection(requisition_id: str) -> APIResponse:
         logger.error(f"Failed to delete bank connection {requisition_id}: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to delete connection: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/banks/countries", response_model=APIResponse)

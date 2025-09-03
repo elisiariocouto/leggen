@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, List, Union
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
@@ -120,7 +120,13 @@ async def get_all_transactions(
 
         # Apply pagination
         total_transactions = len(filtered_transactions)
-        paginated_transactions = filtered_transactions[offset : offset + limit]
+        actual_offset = offset or 0
+        actual_limit = limit or 100
+        paginated_transactions = filtered_transactions[
+            actual_offset : actual_offset + actual_limit
+        ]
+
+        data: Union[List[TransactionSummary], List[Transaction]]
 
         if summary_only:
             # Return simplified transaction summaries
@@ -157,14 +163,14 @@ async def get_all_transactions(
         return APIResponse(
             success=True,
             data=data,
-            message=f"Retrieved {len(data)} transactions (showing {offset + 1}-{offset + len(data)} of {total_transactions})",
+            message=f"Retrieved {len(data)} transactions (showing {actual_offset + 1}-{actual_offset + len(data)} of {total_transactions})",
         )
 
     except Exception as e:
         logger.error(f"Failed to get transactions: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get transactions: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/transactions/stats", response_model=APIResponse)
@@ -270,4 +276,4 @@ async def get_transaction_stats(
         logger.error(f"Failed to get transaction stats: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get transaction stats: {str(e)}"
-        )
+        ) from e

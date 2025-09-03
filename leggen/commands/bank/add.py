@@ -68,7 +68,7 @@ def add(ctx):
 
         success("Bank connection request created successfully!")
         warning(
-            f"Please open the following URL in your browser to complete the authorization:"
+            "Please open the following URL in your browser to complete the authorization:"
         )
         click.echo(f"\n{result['link']}\n")
 

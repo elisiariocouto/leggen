@@ -1,10 +1,8 @@
-import asyncio
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List
 
 from loguru import logger
 
-from leggend.config import config
 from leggend.api.models.sync import SyncResult, SyncStatus
 from leggend.services.gocardless_service import GoCardlessService
 from leggend.services.database_service import DatabaseService

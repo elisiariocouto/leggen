@@ -1,6 +1,6 @@
 import os
 import requests
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from urllib.parse import urljoin
 
 from leggen.utils.text import error
@@ -9,9 +9,13 @@ from leggen.utils.text import error
 class LeggendAPIClient:
     """Client for communicating with the leggend FastAPI service"""
 
+    base_url: str
+
     def __init__(self, base_url: Optional[str] = None):
-        self.base_url = base_url or os.environ.get(
-            "LEGGEND_API_URL", "http://localhost:8000"
+        self.base_url = (
+            base_url
+            or os.environ.get("LEGGEND_API_URL", "http://localhost:8000")
+            or "http://localhost:8000"
         )
         self.session = requests.Session()
         self.session.headers.update(
@@ -36,7 +40,7 @@ class LeggendAPIClient:
                 try:
                     error_data = response.json()
                     error(f"Error details: {error_data.get('detail', 'Unknown error')}")
-                except:
+                except Exception:
                     error(f"Response: {response.text}")
             raise
         except Exception as e:
@@ -48,7 +52,7 @@ class LeggendAPIClient:
         try:
             response = self._make_request("GET", "/health")
             return response.get("status") == "healthy"
-        except:
+        except Exception:
             return False
 
     # Bank endpoints
@@ -122,7 +126,7 @@ class LeggendAPIClient:
         self, days: int = 30, account_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get transaction statistics"""
-        params = {"days": days}
+        params: Dict[str, Union[int, str]] = {"days": days}
         if account_id:
             params["account_id"] = account_id
 
@@ -141,7 +145,7 @@ class LeggendAPIClient:
         self, account_ids: Optional[List[str]] = None, force: bool = False
     ) -> Dict[str, Any]:
         """Trigger a sync"""
-        data = {"force": force}
+        data: Dict[str, Union[bool, List[str]]] = {"force": force}
         if account_ids:
             data["account_ids"] = account_ids
 
@@ -152,7 +156,7 @@ class LeggendAPIClient:
         self, account_ids: Optional[List[str]] = None, force: bool = False
     ) -> Dict[str, Any]:
         """Run sync synchronously"""
-        data = {"force": force}
+        data: Dict[str, Union[bool, List[str]]] = {"force": force}
         if account_ids:
             data["account_ids"] = account_ids
 
@@ -172,7 +176,11 @@ class LeggendAPIClient:
         cron: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Update scheduler configuration"""
-        data = {"enabled": enabled, "hour": hour, "minute": minute}
+        data: Dict[str, Union[bool, int, str]] = {
+            "enabled": enabled,
+            "hour": hour,
+            "minute": minute,
+        }
         if cron:
             data["cron"] = cron
 
