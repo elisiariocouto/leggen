@@ -1,0 +1,368 @@
+"""Tests for SQLite database functions."""
+
+import pytest
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+from datetime import datetime
+
+import leggen.database.sqlite as sqlite_db
+
+
+@pytest.fixture
+def temp_db_path():
+    """Create a temporary database file for testing."""
+    import uuid
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / f"test_{uuid.uuid4().hex}.db"
+        yield db_path
+
+
+@pytest.fixture
+def mock_home_db_path(temp_db_path):
+    """Mock the home database path to use temp file."""
+    config_dir = temp_db_path.parent / ".config" / "leggen"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    db_file = config_dir / "leggen.db"
+
+    with patch("pathlib.Path.home") as mock_home:
+        mock_home.return_value = temp_db_path.parent
+        yield db_file
+
+
+@pytest.fixture
+def sample_transactions():
+    """Sample transaction data for testing."""
+    return [
+        {
+            "internalTransactionId": "txn-001",
+            "institutionId": "REVOLUT_REVOLT21",
+            "iban": "LT313250081177977789",
+            "transactionDate": datetime(2025, 9, 1, 9, 30),
+            "description": "Coffee Shop Payment",
+            "transactionValue": -10.50,
+            "transactionCurrency": "EUR",
+            "transactionStatus": "booked",
+            "accountId": "test-account-123",
+            "rawTransaction": {"some": "data"},
+        },
+        {
+            "internalTransactionId": "txn-002",
+            "institutionId": "REVOLUT_REVOLT21",
+            "iban": "LT313250081177977789",
+            "transactionDate": datetime(2025, 9, 2, 14, 15),
+            "description": "Grocery Store",
+            "transactionValue": -45.30,
+            "transactionCurrency": "EUR",
+            "transactionStatus": "booked",
+            "accountId": "test-account-123",
+            "rawTransaction": {"other": "data"},
+        },
+    ]
+
+
+@pytest.fixture
+def sample_balance():
+    """Sample balance data for testing."""
+    return {
+        "account_id": "test-account-123",
+        "bank": "REVOLUT_REVOLT21",
+        "status": "active",
+        "iban": "LT313250081177977789",
+        "amount": 1000.00,
+        "currency": "EUR",
+        "type": "interimAvailable",
+        "timestamp": datetime.now(),
+    }
+
+
+class MockContext:
+    """Mock context for testing."""
+
+
+class TestSQLiteDatabase:
+    """Test SQLite database operations."""
+
+    def test_persist_transactions(self, mock_home_db_path, sample_transactions):
+        """Test persisting transactions to database."""
+        ctx = MockContext()
+
+        # Mock the database path
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            # Persist transactions
+            new_transactions = sqlite_db.persist_transactions(
+                ctx, "test-account-123", sample_transactions
+            )
+
+            # Should return all transactions as new
+            assert len(new_transactions) == 2
+            assert new_transactions[0]["internalTransactionId"] == "txn-001"
+
+    def test_persist_transactions_duplicates(
+        self, mock_home_db_path, sample_transactions
+    ):
+        """Test handling duplicate transactions."""
+        ctx = MockContext()
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            # Insert transactions twice
+            new_transactions_1 = sqlite_db.persist_transactions(
+                ctx, "test-account-123", sample_transactions
+            )
+            new_transactions_2 = sqlite_db.persist_transactions(
+                ctx, "test-account-123", sample_transactions
+            )
+
+            # First time should return all as new
+            assert len(new_transactions_1) == 2
+            # Second time should return none (all duplicates)
+            assert len(new_transactions_2) == 0
+
+    def test_get_transactions_all(self, mock_home_db_path, sample_transactions):
+        """Test retrieving all transactions."""
+        ctx = MockContext()
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            # Insert test data
+            sqlite_db.persist_transactions(ctx, "test-account-123", sample_transactions)
+
+            # Get all transactions
+            transactions = sqlite_db.get_transactions()
+
+            assert len(transactions) == 2
+            assert (
+                transactions[0]["internalTransactionId"] == "txn-002"
+            )  # Ordered by date DESC
+            assert transactions[1]["internalTransactionId"] == "txn-001"
+
+    def test_get_transactions_filtered_by_account(
+        self, mock_home_db_path, sample_transactions
+    ):
+        """Test filtering transactions by account ID."""
+        ctx = MockContext()
+
+        # Add transaction for different account
+        other_account_transaction = sample_transactions[0].copy()
+        other_account_transaction["internalTransactionId"] = "txn-003"
+        other_account_transaction["accountId"] = "other-account"
+
+        all_transactions = sample_transactions + [other_account_transaction]
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            sqlite_db.persist_transactions(ctx, "test-account-123", all_transactions)
+
+            # Filter by account
+            transactions = sqlite_db.get_transactions(account_id="test-account-123")
+
+            assert len(transactions) == 2
+            for txn in transactions:
+                assert txn["accountId"] == "test-account-123"
+
+    def test_get_transactions_with_pagination(
+        self, mock_home_db_path, sample_transactions
+    ):
+        """Test transaction pagination."""
+        ctx = MockContext()
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            sqlite_db.persist_transactions(ctx, "test-account-123", sample_transactions)
+
+            # Get first page
+            transactions_page1 = sqlite_db.get_transactions(limit=1, offset=0)
+            assert len(transactions_page1) == 1
+
+            # Get second page
+            transactions_page2 = sqlite_db.get_transactions(limit=1, offset=1)
+            assert len(transactions_page2) == 1
+
+            # Should be different transactions
+            assert (
+                transactions_page1[0]["internalTransactionId"]
+                != transactions_page2[0]["internalTransactionId"]
+            )
+
+    def test_get_transactions_with_amount_filter(
+        self, mock_home_db_path, sample_transactions
+    ):
+        """Test filtering transactions by amount."""
+        ctx = MockContext()
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            sqlite_db.persist_transactions(ctx, "test-account-123", sample_transactions)
+
+            # Filter by minimum amount (should exclude coffee shop payment)
+            transactions = sqlite_db.get_transactions(min_amount=-20.0)
+            assert len(transactions) == 1
+            assert transactions[0]["transactionValue"] == -10.50
+
+    def test_get_transactions_with_search(self, mock_home_db_path, sample_transactions):
+        """Test searching transactions by description."""
+        ctx = MockContext()
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            sqlite_db.persist_transactions(ctx, "test-account-123", sample_transactions)
+
+            # Search for "Coffee"
+            transactions = sqlite_db.get_transactions(search="Coffee")
+            assert len(transactions) == 1
+            assert "Coffee" in transactions[0]["description"]
+
+    def test_get_transactions_empty_database(self, mock_home_db_path):
+        """Test getting transactions from empty database."""
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            transactions = sqlite_db.get_transactions()
+            assert transactions == []
+
+    def test_get_transactions_nonexistent_database(self):
+        """Test getting transactions when database doesn't exist."""
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = Path("/nonexistent")
+
+            transactions = sqlite_db.get_transactions()
+            assert transactions == []
+
+    def test_persist_balances(self, mock_home_db_path, sample_balance):
+        """Test persisting balance data."""
+        ctx = MockContext()
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            result = sqlite_db.persist_balances(ctx, sample_balance)
+
+            # Should return the balance data
+            assert result["account_id"] == "test-account-123"
+
+    def test_get_balances(self, mock_home_db_path, sample_balance):
+        """Test retrieving balances."""
+        ctx = MockContext()
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            # Insert test balance
+            sqlite_db.persist_balances(ctx, sample_balance)
+
+            # Get balances
+            balances = sqlite_db.get_balances()
+
+            assert len(balances) == 1
+            assert balances[0]["account_id"] == "test-account-123"
+            assert balances[0]["amount"] == 1000.00
+
+    def test_get_balances_filtered_by_account(self, mock_home_db_path, sample_balance):
+        """Test filtering balances by account ID."""
+        ctx = MockContext()
+
+        # Create balance for different account
+        other_balance = sample_balance.copy()
+        other_balance["account_id"] = "other-account"
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            sqlite_db.persist_balances(ctx, sample_balance)
+            sqlite_db.persist_balances(ctx, other_balance)
+
+            # Filter by account
+            balances = sqlite_db.get_balances(account_id="test-account-123")
+
+            assert len(balances) == 1
+            assert balances[0]["account_id"] == "test-account-123"
+
+    def test_get_account_summary(self, mock_home_db_path, sample_transactions):
+        """Test getting account summary from transactions."""
+        ctx = MockContext()
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            sqlite_db.persist_transactions(ctx, "test-account-123", sample_transactions)
+
+            summary = sqlite_db.get_account_summary("test-account-123")
+
+            assert summary is not None
+            assert summary["accountId"] == "test-account-123"
+            assert summary["institutionId"] == "REVOLUT_REVOLT21"
+            assert summary["iban"] == "LT313250081177977789"
+
+    def test_get_account_summary_nonexistent(self, mock_home_db_path):
+        """Test getting summary for nonexistent account."""
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            summary = sqlite_db.get_account_summary("nonexistent")
+            assert summary is None
+
+    def test_get_transaction_count(self, mock_home_db_path, sample_transactions):
+        """Test getting transaction count."""
+        ctx = MockContext()
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            sqlite_db.persist_transactions(ctx, "test-account-123", sample_transactions)
+
+            # Get total count
+            count = sqlite_db.get_transaction_count()
+            assert count == 2
+
+            # Get count for specific account
+            count_filtered = sqlite_db.get_transaction_count(
+                account_id="test-account-123"
+            )
+            assert count_filtered == 2
+
+            # Get count for nonexistent account
+            count_none = sqlite_db.get_transaction_count(account_id="nonexistent")
+            assert count_none == 0
+
+    def test_get_transaction_count_with_filters(
+        self, mock_home_db_path, sample_transactions
+    ):
+        """Test getting transaction count with filters."""
+        ctx = MockContext()
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            sqlite_db.persist_transactions(ctx, "test-account-123", sample_transactions)
+
+            # Filter by search
+            count = sqlite_db.get_transaction_count(search="Coffee")
+            assert count == 1
+
+            # Filter by amount
+            count = sqlite_db.get_transaction_count(min_amount=-20.0)
+            assert count == 1
+
+    def test_database_indexes_created(self, mock_home_db_path, sample_transactions):
+        """Test that database indexes are created properly."""
+        ctx = MockContext()
+
+        with patch("pathlib.Path.home") as mock_home:
+            mock_home.return_value = mock_home_db_path.parent / ".."
+
+            # Persist transactions to create tables and indexes
+            sqlite_db.persist_transactions(ctx, "test-account-123", sample_transactions)
+
+            # Get transactions to ensure we can query the table (indexes working)
+            transactions = sqlite_db.get_transactions(account_id="test-account-123")
+            assert len(transactions) == 2

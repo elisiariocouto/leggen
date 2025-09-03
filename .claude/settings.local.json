@@ -6,7 +6,8 @@
       "Bash(uv run pytest:*)",
       "Bash(git commit:*)",
       "Bash(ruff check:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(mypy:*)"
     ],
     "deny": [],
     "ask": []
