@@ -1,6 +1,7 @@
 """Tests for CLI API client."""
 
 import pytest
+import requests
 import requests_mock
 from unittest.mock import patch
 
@@ -85,7 +86,7 @@ class TestLeggendAPIClient:
         """Test handling of connection errors."""
         client = LeggendAPIClient("http://localhost:9999")  # Non-existent service
 
-        with pytest.raises(Exception):
+        with pytest.raises((requests.ConnectionError, requests.RequestException)):
             client.get_accounts()
 
     def test_http_error_handling(self):
@@ -99,7 +100,7 @@ class TestLeggendAPIClient:
                 json={"detail": "Internal server error"},
             )
 
-            with pytest.raises(Exception):
+            with pytest.raises((requests.HTTPError, requests.RequestException)):
                 client.get_accounts()
 
     def test_custom_api_url(self):

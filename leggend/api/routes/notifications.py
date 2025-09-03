@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, Any
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
@@ -60,7 +60,7 @@ async def get_notification_settings() -> APIResponse:
         logger.error(f"Failed to get notification settings: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get notification settings: {str(e)}"
-        )
+        ) from e
 
 
 @router.put("/notifications/settings", response_model=APIResponse)
@@ -84,7 +84,7 @@ async def update_notification_settings(settings: NotificationSettings) -> APIRes
             }
 
         # Update filters config
-        filters_config = {}
+        filters_config: Dict[str, Any] = {}
         if settings.filters.case_insensitive:
             filters_config["case-insensitive"] = settings.filters.case_insensitive
         if settings.filters.case_sensitive:
@@ -110,7 +110,7 @@ async def update_notification_settings(settings: NotificationSettings) -> APIRes
         logger.error(f"Failed to update notification settings: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to update notification settings: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/notifications/test", response_model=APIResponse)
@@ -137,7 +137,7 @@ async def test_notification(test_request: NotificationTest) -> APIResponse:
         logger.error(f"Failed to send test notification: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to send test notification: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/notifications/services", response_model=APIResponse)
@@ -179,7 +179,7 @@ async def get_notification_services() -> APIResponse:
         logger.error(f"Failed to get notification services: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get notification services: {str(e)}"
-        )
+        ) from e
 
 
 @router.delete("/notifications/settings/{service}", response_model=APIResponse)
@@ -206,4 +206,4 @@ async def delete_notification_service(service: str) -> APIResponse:
         logger.error(f"Failed to delete notification service {service}: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to delete notification service: {str(e)}"
-        )
+        ) from e
