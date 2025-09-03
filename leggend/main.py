@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-from leggend.api.routes import banks, accounts, sync, notifications
+from leggend.api.routes import banks, accounts, sync, notifications, transactions
 from leggend.background.scheduler import scheduler
 from leggend.config import config
 
@@ -64,6 +64,7 @@ def create_app() -> FastAPI:
     # Include API routes
     app.include_router(banks.router, prefix="/api/v1", tags=["banks"])
     app.include_router(accounts.router, prefix="/api/v1", tags=["accounts"])
+    app.include_router(transactions.router, prefix="/api/v1", tags=["transactions"])
     app.include_router(sync.router, prefix="/api/v1", tags=["sync"])
     app.include_router(notifications.router, prefix="/api/v1", tags=["notifications"])
 
