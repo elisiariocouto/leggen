@@ -8,6 +8,19 @@ from loguru import logger
 from leggend.config import config
 
 
+def _log_rate_limits(response):
+    """Log GoCardless API rate limit headers"""
+    limit = response.headers.get("X-RateLimit-Limit")
+    remaining = response.headers.get("X-RateLimit-Remaining")
+    reset = response.headers.get("X-RateLimit-Reset")
+    account_success_reset = response.headers.get("X-RateLimit-Account-Success-Reset")
+
+    if limit or remaining or reset or account_success_reset:
+        logger.info(
+            f"GoCardless rate limits - Limit: {limit}, Remaining: {remaining}, Reset: {reset}s, Account Success Reset: {account_success_reset}"
+        )
+
+
 class GoCardlessService:
     def __init__(self):
         self.config = config.gocardless_config
@@ -42,6 +55,7 @@ class GoCardlessService:
                                 f"{self.base_url}/token/refresh/",
                                 json={"refresh": auth["refresh"]},
                             )
+                            _log_rate_limits(response)
                             response.raise_for_status()
                             auth.update(response.json())
                             self._save_auth(auth)
@@ -69,6 +83,7 @@ class GoCardlessService:
                         "secret_key": self.config["secret"],
                     },
                 )
+                _log_rate_limits(response)
                 response.raise_for_status()
                 auth = response.json()
                 self._save_auth(auth)
@@ -95,6 +110,7 @@ class GoCardlessService:
                 headers=headers,
                 params={"country": country},
             )
+            _log_rate_limits(response)
             response.raise_for_status()
             return response.json()
 
@@ -109,6 +125,7 @@ class GoCardlessService:
                 headers=headers,
                 json={"institution_id": institution_id, "redirect": redirect_url},
             )
+            _log_rate_limits(response)
             response.raise_for_status()
             return response.json()
 
@@ -119,6 +136,7 @@ class GoCardlessService:
             response = await client.get(
                 f"{self.base_url}/requisitions/", headers=headers
             )
+            _log_rate_limits(response)
             response.raise_for_status()
             return response.json()
 
@@ -129,6 +147,7 @@ class GoCardlessService:
             response = await client.get(
                 f"{self.base_url}/accounts/{account_id}/", headers=headers
             )
+            _log_rate_limits(response)
             response.raise_for_status()
             return response.json()
 
@@ -139,6 +158,7 @@ class GoCardlessService:
             response = await client.get(
                 f"{self.base_url}/accounts/{account_id}/balances/", headers=headers
             )
+            _log_rate_limits(response)
             response.raise_for_status()
             return response.json()
 
@@ -149,5 +169,6 @@ class GoCardlessService:
             response = await client.get(
                 f"{self.base_url}/accounts/{account_id}/transactions/", headers=headers
             )
+            _log_rate_limits(response)
             response.raise_for_status()
             return response.json()
