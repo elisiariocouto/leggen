@@ -126,19 +126,19 @@ async def get_account_details(account_id: str) -> APIResponse:
 
 @router.get("/accounts/{account_id}/balances", response_model=APIResponse)
 async def get_account_balances(account_id: str) -> APIResponse:
-    """Get balances for a specific account"""
+    """Get balances for a specific account from database"""
     try:
-        balances_data = await gocardless_service.get_account_balances(account_id)
+        # Get balances from database instead of GoCardless API
+        db_balances = await database_service.get_balances_from_db(account_id=account_id)
 
         balances = []
-        for balance in balances_data.get("balances", []):
-            balance_amount = balance["balanceAmount"]
+        for balance in db_balances:
             balances.append(
                 AccountBalance(
-                    amount=float(balance_amount["amount"]),
-                    currency=balance_amount["currency"],
-                    balance_type=balance["balanceType"],
-                    last_change_date=balance.get("lastChangeDateTime"),
+                    amount=balance["amount"],
+                    currency=balance["currency"],
+                    balance_type=balance["type"],
+                    last_change_date=balance.get("timestamp"),
                 )
             )
 
@@ -149,7 +149,9 @@ async def get_account_balances(account_id: str) -> APIResponse:
         )
 
     except Exception as e:
-        logger.error(f"Failed to get balances for account {account_id}: {e}")
+        logger.error(
+            f"Failed to get balances from database for account {account_id}: {e}"
+        )
         raise HTTPException(
             status_code=404, detail=f"Failed to get balances: {str(e)}"
         ) from e
@@ -164,25 +166,19 @@ async def get_account_transactions(
         default=False, description="Return transaction summaries only"
     ),
 ) -> APIResponse:
-    """Get transactions for a specific account"""
+    """Get transactions for a specific account from database"""
     try:
-        account_details = await gocardless_service.get_account_details(account_id)
-        transactions_data = await gocardless_service.get_account_transactions(
-            account_id
+        # Get transactions from database instead of GoCardless API
+        db_transactions = await database_service.get_transactions_from_db(
+            account_id=account_id,
+            limit=limit,
+            offset=offset,
         )
 
-        # Process transactions
-        processed_transactions = database_service.process_transactions(
-            account_id, account_details, transactions_data
+        # Get total count for pagination info
+        total_transactions = await database_service.get_transaction_count_from_db(
+            account_id=account_id,
         )
-
-        # Apply pagination
-        total_transactions = len(processed_transactions)
-        actual_offset = offset or 0
-        actual_limit = limit or 100
-        paginated_transactions = processed_transactions[
-            actual_offset : actual_offset + actual_limit
-        ]
 
         data: Union[List[TransactionSummary], List[Transaction]]
 
@@ -198,7 +194,7 @@ async def get_account_transactions(
                     status=txn["transactionStatus"],
                     account_id=txn["accountId"],
                 )
-                for txn in paginated_transactions
+                for txn in db_transactions
             ]
         else:
             # Return full transaction details
@@ -215,9 +211,10 @@ async def get_account_transactions(
                     transaction_status=txn["transactionStatus"],
                     raw_transaction=txn["rawTransaction"],
                 )
-                for txn in paginated_transactions
+                for txn in db_transactions
             ]
 
+        actual_offset = offset or 0
         return APIResponse(
             success=True,
             data=data,
@@ -225,7 +222,9 @@ async def get_account_transactions(
         )
 
     except Exception as e:
-        logger.error(f"Failed to get transactions for account {account_id}: {e}")
+        logger.error(
+            f"Failed to get transactions from database for account {account_id}: {e}"
+        )
         raise HTTPException(
             status_code=404, detail=f"Failed to get transactions: {str(e)}"
         ) from e

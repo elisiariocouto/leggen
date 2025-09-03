@@ -37,94 +37,29 @@ async def get_all_transactions(
     ),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
 ) -> APIResponse:
-    """Get all transactions across all accounts with filtering options"""
+    """Get all transactions from database with filtering options"""
     try:
-        # Get all requisitions and accounts
-        requisitions_data = await gocardless_service.get_requisitions()
-        all_accounts = set()
+        # Get transactions from database instead of GoCardless API
+        db_transactions = await database_service.get_transactions_from_db(
+            account_id=account_id,
+            limit=limit,
+            offset=offset,
+            date_from=date_from,
+            date_to=date_to,
+            min_amount=min_amount,
+            max_amount=max_amount,
+            search=search,
+        )
 
-        for req in requisitions_data.get("results", []):
-            all_accounts.update(req.get("accounts", []))
-
-        # Filter by specific account if requested
-        if account_id:
-            if account_id not in all_accounts:
-                raise HTTPException(status_code=404, detail="Account not found")
-            all_accounts = {account_id}
-
-        all_transactions = []
-
-        # Collect transactions from all accounts
-        for acc_id in all_accounts:
-            try:
-                account_details = await gocardless_service.get_account_details(acc_id)
-                transactions_data = await gocardless_service.get_account_transactions(
-                    acc_id
-                )
-
-                processed_transactions = database_service.process_transactions(
-                    acc_id, account_details, transactions_data
-                )
-                all_transactions.extend(processed_transactions)
-
-            except Exception as e:
-                logger.error(f"Failed to get transactions for account {acc_id}: {e}")
-                continue
-
-        # Apply filters
-        filtered_transactions = all_transactions
-
-        # Date range filter
-        if date_from:
-            from_date = datetime.fromisoformat(date_from)
-            filtered_transactions = [
-                txn
-                for txn in filtered_transactions
-                if txn["transactionDate"] >= from_date
-            ]
-
-        if date_to:
-            to_date = datetime.fromisoformat(date_to)
-            filtered_transactions = [
-                txn
-                for txn in filtered_transactions
-                if txn["transactionDate"] <= to_date
-            ]
-
-        # Amount filters
-        if min_amount is not None:
-            filtered_transactions = [
-                txn
-                for txn in filtered_transactions
-                if txn["transactionValue"] >= min_amount
-            ]
-
-        if max_amount is not None:
-            filtered_transactions = [
-                txn
-                for txn in filtered_transactions
-                if txn["transactionValue"] <= max_amount
-            ]
-
-        # Search filter
-        if search:
-            search_lower = search.lower()
-            filtered_transactions = [
-                txn
-                for txn in filtered_transactions
-                if search_lower in txn["description"].lower()
-            ]
-
-        # Sort by date (newest first)
-        filtered_transactions.sort(key=lambda x: x["transactionDate"], reverse=True)
-
-        # Apply pagination
-        total_transactions = len(filtered_transactions)
-        actual_offset = offset or 0
-        actual_limit = limit or 100
-        paginated_transactions = filtered_transactions[
-            actual_offset : actual_offset + actual_limit
-        ]
+        # Get total count for pagination info
+        total_transactions = await database_service.get_transaction_count_from_db(
+            account_id=account_id,
+            date_from=date_from,
+            date_to=date_to,
+            min_amount=min_amount,
+            max_amount=max_amount,
+            search=search,
+        )
 
         data: Union[List[TransactionSummary], List[Transaction]]
 
@@ -140,7 +75,7 @@ async def get_all_transactions(
                     status=txn["transactionStatus"],
                     account_id=txn["accountId"],
                 )
-                for txn in paginated_transactions
+                for txn in db_transactions
             ]
         else:
             # Return full transaction details
@@ -157,9 +92,10 @@ async def get_all_transactions(
                     transaction_status=txn["transactionStatus"],
                     raw_transaction=txn["rawTransaction"],
                 )
-                for txn in paginated_transactions
+                for txn in db_transactions
             ]
 
+        actual_offset = offset or 0
         return APIResponse(
             success=True,
             data=data,
@@ -167,7 +103,7 @@ async def get_all_transactions(
         )
 
     except Exception as e:
-        logger.error(f"Failed to get transactions: {e}")
+        logger.error(f"Failed to get transactions from database: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get transactions: {str(e)}"
         ) from e
@@ -178,49 +114,23 @@ async def get_transaction_stats(
     days: int = Query(default=30, description="Number of days to include in stats"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
 ) -> APIResponse:
-    """Get transaction statistics for the last N days"""
+    """Get transaction statistics for the last N days from database"""
     try:
         # Date range for stats
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
 
-        # Get all transactions (reuse the existing endpoint logic)
-        # This is a simplified implementation - in practice you might want to optimize this
-        requisitions_data = await gocardless_service.get_requisitions()
-        all_accounts = set()
+        # Format dates for database query
+        date_from = start_date.isoformat()
+        date_to = end_date.isoformat()
 
-        for req in requisitions_data.get("results", []):
-            all_accounts.update(req.get("accounts", []))
-
-        if account_id:
-            if account_id not in all_accounts:
-                raise HTTPException(status_code=404, detail="Account not found")
-            all_accounts = {account_id}
-
-        all_transactions = []
-
-        for acc_id in all_accounts:
-            try:
-                account_details = await gocardless_service.get_account_details(acc_id)
-                transactions_data = await gocardless_service.get_account_transactions(
-                    acc_id
-                )
-
-                processed_transactions = database_service.process_transactions(
-                    acc_id, account_details, transactions_data
-                )
-                all_transactions.extend(processed_transactions)
-
-            except Exception as e:
-                logger.error(f"Failed to get transactions for account {acc_id}: {e}")
-                continue
-
-        # Filter transactions by date range
-        recent_transactions = [
-            txn
-            for txn in all_transactions
-            if start_date <= txn["transactionDate"] <= end_date
-        ]
+        # Get transactions from database
+        recent_transactions = await database_service.get_transactions_from_db(
+            account_id=account_id,
+            date_from=date_from,
+            date_to=date_to,
+            limit=None,  # Get all matching transactions for stats
+        )
 
         # Calculate stats
         total_transactions = len(recent_transactions)
@@ -248,6 +158,9 @@ async def get_transaction_stats(
             ]
         )
 
+        # Count unique accounts
+        unique_accounts = len({txn["accountId"] for txn in recent_transactions})
+
         stats = {
             "period_days": days,
             "total_transactions": total_transactions,
@@ -263,7 +176,7 @@ async def get_transaction_stats(
             )
             if total_transactions > 0
             else 0,
-            "accounts_included": len(all_accounts),
+            "accounts_included": unique_accounts,
         }
 
         return APIResponse(
@@ -273,7 +186,7 @@ async def get_transaction_stats(
         )
 
     except Exception as e:
-        logger.error(f"Failed to get transaction stats: {e}")
+        logger.error(f"Failed to get transaction stats from database: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get transaction stats: {str(e)}"
         ) from e
