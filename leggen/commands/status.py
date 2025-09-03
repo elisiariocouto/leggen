@@ -12,10 +12,12 @@ def status(ctx: click.Context):
     List all connected banks and their status
     """
     api_client = LeggendAPIClient(ctx.obj.get("api_url"))
-    
+
     # Check if leggend service is available
     if not api_client.health_check():
-        click.echo("Error: Cannot connect to leggend service. Please ensure it's running.")
+        click.echo(
+            "Error: Cannot connect to leggend service. Please ensure it's running."
+        )
         return
 
     # Get bank connection status

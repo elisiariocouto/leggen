@@ -12,10 +12,12 @@ def balances(ctx: click.Context):
     List balances of all connected accounts
     """
     api_client = LeggendAPIClient(ctx.obj.get("api_url"))
-    
+
     # Check if leggend service is available
     if not api_client.health_check():
-        click.echo("Error: Cannot connect to leggend service. Please ensure it's running.")
+        click.echo(
+            "Error: Cannot connect to leggend service. Please ensure it's running."
+        )
         return
 
     accounts = api_client.get_accounts()
@@ -24,11 +26,7 @@ def balances(ctx: click.Context):
     for account in accounts:
         for balance in account.get("balances", []):
             amount = round(float(balance["amount"]), 2)
-            symbol = (
-                "€"
-                if balance["currency"] == "EUR"
-                else f" {balance['currency']}"
-            )
+            symbol = "€" if balance["currency"] == "EUR" else f" {balance['currency']}"
             amount_str = f"{amount}{symbol}"
             date = (
                 datefmt(balance.get("last_change_date"))
