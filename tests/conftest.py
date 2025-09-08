@@ -21,7 +21,18 @@ def temp_config_dir():
 
 
 @pytest.fixture
-def mock_config(temp_config_dir):
+def temp_db_path():
+    """Create a temporary database file for testing."""
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp_file:
+        db_path = Path(tmp_file.name)
+        yield db_path
+    # Clean up the temporary database file after test
+    if db_path.exists():
+        db_path.unlink()
+
+
+@pytest.fixture
+def mock_config(temp_config_dir, temp_db_path):
     """Mock configuration for testing."""
     config_data = {
         "gocardless": {
@@ -70,6 +81,28 @@ def fastapi_app():
 def api_client(fastapi_app):
     """Create FastAPI test client."""
     return TestClient(fastapi_app)
+
+
+@pytest.fixture
+def mock_db_path(temp_db_path):
+    """Mock the database path to use temporary database for testing."""
+    from pathlib import Path
+
+    # Create the expected directory structure
+    temp_home = temp_db_path.parent
+    config_dir = temp_home / ".config" / "leggen"
+    config_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create the expected database path
+    expected_db_path = config_dir / "leggen.db"
+
+    # Mock Path.home to return our temp directory
+    def mock_home():
+        return temp_home
+
+    # Patch Path.home in the main pathlib module
+    with patch.object(Path, "home", staticmethod(mock_home)):
+        yield expected_db_path
 
 
 @pytest.fixture
