@@ -1,13 +1,20 @@
+export interface AccountBalance {
+  amount: number;
+  currency: string;
+  balance_type: string;
+  last_change_date?: string;
+}
+
 export interface Account {
   id: string;
-  name: string;
-  bank_name: string;
-  account_type: string;
-  currency: string;
-  balance?: number;
+  institution_id: string;
+  status: string;
   iban?: string;
-  created_at: string;
-  updated_at: string;
+  name?: string;
+  currency?: string;
+  created: string;
+  last_accessed?: string;
+  balances: AccountBalance[];
 }
 
 export interface Transaction {

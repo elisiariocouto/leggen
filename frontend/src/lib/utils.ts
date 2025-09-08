@@ -5,10 +5,22 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number, currency: string = 'EUR'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency,
-  }).format(amount);
+  // Validate currency code - must be 3 letters and a valid ISO 4217 code
+  const validCurrency = currency && /^[A-Z]{3}$/.test(currency) ? currency : 'EUR';
+
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: validCurrency,
+    }).format(amount);
+  } catch (error) {
+    // Fallback if currency is still invalid
+    console.warn(`Invalid currency code: ${currency}, falling back to EUR`);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount);
+  }
 }
 
 export function formatDate(date: string): string {

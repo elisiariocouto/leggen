@@ -164,6 +164,56 @@ async def get_account_balances(account_id: str) -> APIResponse:
         ) from e
 
 
+@router.get("/balances", response_model=APIResponse)
+async def get_all_balances() -> APIResponse:
+    """Get all balances from all accounts in database"""
+    try:
+        # Get all accounts first to iterate through them
+        db_accounts = await database_service.get_accounts_from_db()
+
+        all_balances = []
+        for db_account in db_accounts:
+            try:
+                # Get balances for this account
+                db_balances = await database_service.get_balances_from_db(
+                    account_id=db_account["id"]
+                )
+
+                # Process balances and add account info
+                for balance in db_balances:
+                    balance_data = {
+                        "id": f"{db_account['id']}_{balance['type']}",  # Create unique ID
+                        "account_id": db_account["id"],
+                        "balance_amount": balance["amount"],
+                        "balance_type": balance["type"],
+                        "currency": balance["currency"],
+                        "reference_date": balance.get(
+                            "timestamp", db_account.get("last_accessed")
+                        ),
+                        "created_at": db_account.get("created"),
+                        "updated_at": db_account.get("last_accessed"),
+                    }
+                    all_balances.append(balance_data)
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to get balances for account {db_account['id']}: {e}"
+                )
+                continue
+
+        return APIResponse(
+            success=True,
+            data=all_balances,
+            message=f"Retrieved {len(all_balances)} balances from {len(db_accounts)} accounts",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get all balances: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get balances: {str(e)}"
+        ) from e
+
+
 @router.get("/accounts/{account_id}/transactions", response_model=APIResponse)
 async def get_account_transactions(
     account_id: str,
