@@ -11,21 +11,22 @@ export interface Account {
 }
 
 export interface Transaction {
-  id: string;
-  internal_id?: string;
+  internal_transaction_id: string | null;
   account_id: string;
   amount: number;
   currency: string;
   description: string;
-  transaction_date: string;
+  date: string;
+  status: string;
+  // Optional fields that may be present in some transactions
   booking_date?: string;
   value_date?: string;
   creditor_name?: string;
   debtor_name?: string;
   reference?: string;
   category?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Type for raw transaction data from API (before sanitization)
@@ -68,7 +69,7 @@ export interface Bank {
 export interface ApiResponse<T> {
   data: T;
   message?: string;
-  status: string;
+  success: boolean;
 }
 
 export interface PaginatedResponse<T> {
