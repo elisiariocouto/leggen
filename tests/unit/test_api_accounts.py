@@ -1,8 +1,6 @@
 """Tests for accounts API endpoints."""
 
 import pytest
-import respx
-import httpx
 from unittest.mock import patch
 
 
@@ -10,44 +8,46 @@ from unittest.mock import patch
 class TestAccountsAPI:
     """Test account-related API endpoints."""
 
-    @respx.mock
     def test_get_all_accounts_success(
         self, api_client, mock_config, mock_auth_token, sample_account_data
     ):
-        """Test successful retrieval of all accounts."""
-        requisitions_data = {
-            "results": [{"id": "req-123", "accounts": ["test-account-123"]}]
-        }
+        """Test successful retrieval of all accounts from database."""
+        mock_accounts = [
+            {
+                "id": "test-account-123",
+                "institution_id": "REVOLUT_REVOLT21",
+                "status": "READY",
+                "iban": "LT313250081177977789",
+                "created": "2024-02-13T23:56:00Z",
+                "last_accessed": "2025-09-01T09:30:00Z",
+            }
+        ]
 
-        balances_data = {
-            "balances": [
-                {
-                    "balanceAmount": {"amount": "100.50", "currency": "EUR"},
-                    "balanceType": "interimAvailable",
-                    "lastChangeDateTime": "2025-09-01T09:30:00Z",
-                }
-            ]
-        }
+        mock_balances = [
+            {
+                "id": 1,
+                "account_id": "test-account-123",
+                "bank": "REVOLUT_REVOLT21",
+                "status": "active",
+                "iban": "LT313250081177977789",
+                "amount": 100.50,
+                "currency": "EUR",
+                "type": "interimAvailable",
+                "timestamp": "2025-09-01T09:30:00Z",
+            }
+        ]
 
-        # Mock GoCardless token creation
-        respx.post("https://bankaccountdata.gocardless.com/api/v2/token/new/").mock(
-            return_value=httpx.Response(
-                200, json={"access": "test-token", "refresh": "test-refresh"}
-            )
-        )
-
-        # Mock GoCardless API calls
-        respx.get("https://bankaccountdata.gocardless.com/api/v2/requisitions/").mock(
-            return_value=httpx.Response(200, json=requisitions_data)
-        )
-        respx.get(
-            "https://bankaccountdata.gocardless.com/api/v2/accounts/test-account-123/"
-        ).mock(return_value=httpx.Response(200, json=sample_account_data))
-        respx.get(
-            "https://bankaccountdata.gocardless.com/api/v2/accounts/test-account-123/balances/"
-        ).mock(return_value=httpx.Response(200, json=balances_data))
-
-        with patch("leggend.config.config", mock_config):
+        with (
+            patch("leggend.config.config", mock_config),
+            patch(
+                "leggend.api.routes.accounts.database_service.get_accounts_from_db",
+                return_value=mock_accounts,
+            ),
+            patch(
+                "leggend.api.routes.accounts.database_service.get_balances_from_db",
+                return_value=mock_balances,
+            ),
+        ):
             response = api_client.get("/api/v1/accounts")
 
         assert response.status_code == 200
@@ -60,36 +60,44 @@ class TestAccountsAPI:
         assert len(account["balances"]) == 1
         assert account["balances"][0]["amount"] == 100.50
 
-    @respx.mock
     def test_get_account_details_success(
         self, api_client, mock_config, mock_auth_token, sample_account_data
     ):
-        """Test successful retrieval of specific account details."""
-        balances_data = {
-            "balances": [
-                {
-                    "balanceAmount": {"amount": "250.75", "currency": "EUR"},
-                    "balanceType": "interimAvailable",
-                }
-            ]
+        """Test successful retrieval of specific account details from database."""
+        mock_account = {
+            "id": "test-account-123",
+            "institution_id": "REVOLUT_REVOLT21",
+            "status": "READY",
+            "iban": "LT313250081177977789",
+            "created": "2024-02-13T23:56:00Z",
+            "last_accessed": "2025-09-01T09:30:00Z",
         }
 
-        # Mock GoCardless token creation
-        respx.post("https://bankaccountdata.gocardless.com/api/v2/token/new/").mock(
-            return_value=httpx.Response(
-                200, json={"access": "test-token", "refresh": "test-refresh"}
-            )
-        )
+        mock_balances = [
+            {
+                "id": 1,
+                "account_id": "test-account-123",
+                "bank": "REVOLUT_REVOLT21",
+                "status": "active",
+                "iban": "LT313250081177977789",
+                "amount": 250.75,
+                "currency": "EUR",
+                "type": "interimAvailable",
+                "timestamp": "2025-09-01T09:30:00Z",
+            }
+        ]
 
-        # Mock GoCardless API calls
-        respx.get(
-            "https://bankaccountdata.gocardless.com/api/v2/accounts/test-account-123/"
-        ).mock(return_value=httpx.Response(200, json=sample_account_data))
-        respx.get(
-            "https://bankaccountdata.gocardless.com/api/v2/accounts/test-account-123/balances/"
-        ).mock(return_value=httpx.Response(200, json=balances_data))
-
-        with patch("leggend.config.config", mock_config):
+        with (
+            patch("leggend.config.config", mock_config),
+            patch(
+                "leggend.api.routes.accounts.database_service.get_account_details_from_db",
+                return_value=mock_account,
+            ),
+            patch(
+                "leggend.api.routes.accounts.database_service.get_balances_from_db",
+                return_value=mock_balances,
+            ),
+        ):
             response = api_client.get("/api/v1/accounts/test-account-123")
 
         assert response.status_code == 200
@@ -248,22 +256,13 @@ class TestAccountsAPI:
 
     def test_get_account_not_found(self, api_client, mock_config, mock_auth_token):
         """Test handling of non-existent account."""
-        # Mock 404 response from GoCardless
-        with respx.mock:
-            # Mock GoCardless token creation
-            respx.post("https://bankaccountdata.gocardless.com/api/v2/token/new/").mock(
-                return_value=httpx.Response(
-                    200, json={"access": "test-token", "refresh": "test-refresh"}
-                )
-            )
+        with (
+            patch("leggend.config.config", mock_config),
+            patch(
+                "leggend.api.routes.accounts.database_service.get_account_details_from_db",
+                return_value=None,
+            ),
+        ):
+            response = api_client.get("/api/v1/accounts/nonexistent")
 
-            respx.get(
-                "https://bankaccountdata.gocardless.com/api/v2/accounts/nonexistent/"
-            ).mock(
-                return_value=httpx.Response(404, json={"detail": "Account not found"})
-            )
-
-            with patch("leggend.config.config", mock_config):
-                response = api_client.get("/api/v1/accounts/nonexistent")
-
-            assert response.status_code == 404
+        assert response.status_code == 404
