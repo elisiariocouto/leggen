@@ -13,6 +13,7 @@ import {
 import { apiClient } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import LoadingSpinner from './LoadingSpinner';
+import type { Account, Transaction } from '../types/api';
 
 export default function TransactionsList() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,7 +24,7 @@ export default function TransactionsList() {
 
   const {
     data: accounts
-  } = useQuery({
+  } = useQuery<Account[]>({
     queryKey: ['accounts'],
     queryFn: apiClient.getAccounts,
   });
@@ -33,18 +34,18 @@ export default function TransactionsList() {
     isLoading: transactionsLoading,
     error: transactionsError,
     refetch: refetchTransactions
-  } = useQuery({
+  } = useQuery<Transaction[]>({
     queryKey: ['transactions', selectedAccount, startDate, endDate],
     queryFn: () => apiClient.getTransactions({
-      account_id: selectedAccount || undefined,
-      start_date: startDate || undefined,
-      end_date: endDate || undefined,
+      accountId: selectedAccount || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
     }),
   });
 
   const filteredTransactions = (transactions || []).filter(transaction => {
     // Additional validation (API client should have already filtered out invalid ones)
-    if (!transaction || !transaction.id) {
+    if (!transaction || !transaction.account_id) {
       console.warn('Invalid transaction found after API filtering:', transaction);
       return false;
     }
@@ -239,7 +240,7 @@ export default function TransactionsList() {
             const isPositive = transaction.amount > 0;
 
             return (
-              <div key={transaction.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={transaction.internal_transaction_id || `${transaction.account_id}-${transaction.date}-${transaction.amount}`} className="p-6 hover:bg-gray-50 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-start space-x-3">
@@ -274,8 +275,8 @@ export default function TransactionsList() {
                             <p>Ref: {transaction.reference}</p>
                           )}
 
-                          {transaction.internal_id && (
-                            <p>ID: {transaction.internal_id}</p>
+                          {transaction.internal_transaction_id && (
+                            <p>ID: {transaction.internal_transaction_id}</p>
                           )}
                         </div>
                       </div>
@@ -289,9 +290,9 @@ export default function TransactionsList() {
                       {isPositive ? '+' : ''}{formatCurrency(transaction.amount, transaction.currency)}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {transaction.transaction_date ? formatDate(transaction.transaction_date) : 'No date'}
+                      {transaction.date ? formatDate(transaction.date) : 'No date'}
                     </p>
-                    {transaction.booking_date && transaction.booking_date !== transaction.transaction_date && (
+                    {transaction.booking_date && transaction.booking_date !== transaction.date && (
                       <p className="text-xs text-gray-400">
                         Booked: {formatDate(transaction.booking_date)}
                       </p>

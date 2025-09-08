@@ -15,6 +15,7 @@ import AccountsOverview from './AccountsOverview';
 import TransactionsList from './TransactionsList';
 import ErrorBoundary from './ErrorBoundary';
 import { cn } from '../lib/utils';
+import type { Account } from '../types/api';
 
 type TabType = 'overview' | 'transactions' | 'analytics';
 
@@ -22,7 +23,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const { data: accounts } = useQuery({
+  const { data: accounts } = useQuery<Account[]>({
     queryKey: ['accounts'],
     queryFn: apiClient.getAccounts,
   });
