@@ -5,11 +5,9 @@ from loguru import logger
 
 from leggend.api.models.common import APIResponse
 from leggend.api.models.accounts import Transaction, TransactionSummary
-from leggend.services.gocardless_service import GoCardlessService
 from leggend.services.database_service import DatabaseService
 
 router = APIRouter()
-gocardless_service = GoCardlessService()
 database_service = DatabaseService()
 
 

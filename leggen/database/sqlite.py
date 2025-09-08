@@ -16,6 +16,31 @@ def persist_balances(ctx: click.Context, balance: dict):
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
 
+    # Create the accounts table if it doesn't exist
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS accounts (
+        id TEXT PRIMARY KEY,
+        institution_id TEXT,
+        status TEXT,
+        iban TEXT,
+        name TEXT,
+        currency TEXT,
+        created DATETIME,
+        last_accessed DATETIME,
+        last_updated DATETIME
+    )"""
+    )
+
+    # Create indexes for accounts table
+    cursor.execute(
+        """CREATE INDEX IF NOT EXISTS idx_accounts_institution_id
+           ON accounts(institution_id)"""
+    )
+    cursor.execute(
+        """CREATE INDEX IF NOT EXISTS idx_accounts_status
+           ON accounts(status)"""
+    )
+
     # Create the balances table if it doesn't exist
     cursor.execute(
         """CREATE TABLE IF NOT EXISTS balances (
@@ -377,6 +402,136 @@ def get_transaction_count(account_id=None, **filters):
         count = cursor.fetchone()[0]
         conn.close()
         return count
+
+    except Exception as e:
+        conn.close()
+        raise e
+
+
+def persist_account(account_data: dict):
+    """Persist account details to SQLite database"""
+    from pathlib import Path
+
+    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+
+    # Create the accounts table if it doesn't exist
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS accounts (
+        id TEXT PRIMARY KEY,
+        institution_id TEXT,
+        status TEXT,
+        iban TEXT,
+        name TEXT,
+        currency TEXT,
+        created DATETIME,
+        last_accessed DATETIME,
+        last_updated DATETIME
+    )"""
+    )
+
+    # Create indexes for accounts table
+    cursor.execute(
+        """CREATE INDEX IF NOT EXISTS idx_accounts_institution_id
+           ON accounts(institution_id)"""
+    )
+    cursor.execute(
+        """CREATE INDEX IF NOT EXISTS idx_accounts_status
+           ON accounts(status)"""
+    )
+
+    try:
+        # Insert or replace account data
+        cursor.execute(
+            """INSERT OR REPLACE INTO accounts (
+            id,
+            institution_id,
+            status,
+            iban,
+            name,
+            currency,
+            created,
+            last_accessed,
+            last_updated
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                account_data["id"],
+                account_data["institution_id"],
+                account_data["status"],
+                account_data.get("iban"),
+                account_data.get("name"),
+                account_data.get("currency"),
+                account_data["created"],
+                account_data.get("last_accessed"),
+                account_data.get("last_updated", account_data["created"]),
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        success(f"[{account_data['id']}] Account details persisted to database")
+        return account_data
+
+    except Exception as e:
+        conn.close()
+        raise e
+
+
+def get_accounts(account_ids=None):
+    """Get account details from SQLite database"""
+    from pathlib import Path
+
+    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+    if not db_path.exists():
+        return []
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    query = "SELECT * FROM accounts"
+    params = []
+
+    if account_ids:
+        placeholders = ",".join("?" * len(account_ids))
+        query += f" WHERE id IN ({placeholders})"
+        params.extend(account_ids)
+
+    query += " ORDER BY created DESC"
+
+    try:
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+
+        accounts = [dict(row) for row in rows]
+        conn.close()
+        return accounts
+
+    except Exception as e:
+        conn.close()
+        raise e
+
+
+def get_account(account_id: str):
+    """Get specific account details from SQLite database"""
+    from pathlib import Path
+
+    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+    if not db_path.exists():
+        return None
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT * FROM accounts WHERE id = ?", (account_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return dict(row)
+        return None
 
     except Exception as e:
         conn.close()
