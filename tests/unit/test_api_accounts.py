@@ -9,7 +9,12 @@ class TestAccountsAPI:
     """Test account-related API endpoints."""
 
     def test_get_all_accounts_success(
-        self, api_client, mock_config, mock_auth_token, sample_account_data
+        self,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        sample_account_data,
+        mock_db_path,
     ):
         """Test successful retrieval of all accounts from database."""
         mock_accounts = [
@@ -61,7 +66,12 @@ class TestAccountsAPI:
         assert account["balances"][0]["amount"] == 100.50
 
     def test_get_account_details_success(
-        self, api_client, mock_config, mock_auth_token, sample_account_data
+        self,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        sample_account_data,
+        mock_db_path,
     ):
         """Test successful retrieval of specific account details from database."""
         mock_account = {
@@ -109,7 +119,7 @@ class TestAccountsAPI:
         assert len(account["balances"]) == 1
 
     def test_get_account_balances_success(
-        self, api_client, mock_config, mock_auth_token
+        self, api_client, mock_config, mock_auth_token, mock_db_path
     ):
         """Test successful retrieval of account balances from database."""
         mock_balances = [
@@ -161,6 +171,7 @@ class TestAccountsAPI:
         mock_auth_token,
         sample_account_data,
         sample_transaction_data,
+        mock_db_path,
     ):
         """Test successful retrieval of account transactions from database."""
         mock_transactions = [
@@ -211,6 +222,7 @@ class TestAccountsAPI:
         mock_auth_token,
         sample_account_data,
         sample_transaction_data,
+        mock_db_path,
     ):
         """Test retrieval of full transaction details from database."""
         mock_transactions = [
@@ -254,7 +266,9 @@ class TestAccountsAPI:
         assert transaction["iban"] == "LT313250081177977789"
         assert "raw_transaction" in transaction
 
-    def test_get_account_not_found(self, api_client, mock_config, mock_auth_token):
+    def test_get_account_not_found(
+        self, api_client, mock_config, mock_auth_token, mock_db_path
+    ):
         """Test handling of non-existent account."""
         with (
             patch("leggend.config.config", mock_config),
