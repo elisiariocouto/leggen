@@ -77,9 +77,32 @@ def create_app() -> FastAPI:
             version = "unknown"
         return {"message": "Leggend API is running", "version": version}
 
-    @app.get("/health")
+    @app.get("/api/v1/health")
     async def health():
-        return {"status": "healthy", "config_loaded": config._config is not None}
+        """Health check endpoint for API connectivity"""
+        try:
+            from leggend.api.models.common import APIResponse
+
+            config_loaded = config._config is not None
+
+            return APIResponse(
+                success=True,
+                data={
+                    "status": "healthy",
+                    "config_loaded": config_loaded,
+                    "message": "API is running and responsive",
+                },
+                message="Health check successful",
+            )
+        except Exception as e:
+            logger.error(f"Health check failed: {e}")
+            from leggend.api.models.common import APIResponse
+
+            return APIResponse(
+                success=False,
+                data={"status": "unhealthy", "error": str(e)},
+                message="Health check failed",
+            )
 
     return app
 

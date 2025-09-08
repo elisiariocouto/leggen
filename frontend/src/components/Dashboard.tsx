@@ -8,7 +8,9 @@ import {
   X,
   Home,
   List,
-  BarChart3
+  BarChart3,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import AccountsOverview from './AccountsOverview';
@@ -26,6 +28,16 @@ export default function Dashboard() {
   const { data: accounts } = useQuery<Account[]>({
     queryKey: ['accounts'],
     queryFn: apiClient.getAccounts,
+  });
+
+  const { data: healthStatus, isLoading: healthLoading } = useQuery({
+    queryKey: ['health'],
+    queryFn: async () => {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/health`);
+      return response.json();
+    },
+    refetchInterval: 30000, // Check every 30 seconds
+    retry: 3,
   });
 
   const navigation = [
@@ -129,8 +141,22 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center space-x-2">
               <div className="flex items-center space-x-1">
-                <Activity className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-gray-600">Connected</span>
+                {healthLoading ? (
+                  <>
+                    <Activity className="h-4 w-4 text-yellow-500 animate-pulse" />
+                    <span className="text-sm text-gray-600">Checking...</span>
+                  </>
+                ) : healthStatus?.success ? (
+                  <>
+                    <Wifi className="h-4 w-4 text-green-500" />
+                    <span className="text-sm text-gray-600">Connected</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-4 w-4 text-red-500" />
+                    <span className="text-sm text-red-500">Disconnected</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
