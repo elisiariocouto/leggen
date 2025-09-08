@@ -55,6 +55,10 @@ class SyncService:
                         account_id
                     )
 
+                    # Persist account details to database
+                    if account_details:
+                        await self.database.persist_account_details(account_details)
+
                     # Get and save balances
                     balances = await self.gocardless.get_account_balances(account_id)
                     if balances:

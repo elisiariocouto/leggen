@@ -124,8 +124,8 @@ class DatabaseService:
         try:
             transactions = sqlite_db.get_transactions(
                 account_id=account_id,
-                limit=limit,
-                offset=offset,
+                limit=limit or 100,
+                offset=offset or 0,
                 date_from=date_from,
                 date_to=date_to,
                 min_amount=min_amount,
@@ -201,6 +201,49 @@ class DatabaseService:
             return summary
         except Exception as e:
             logger.error(f"Failed to get account summary from database: {e}")
+            return None
+
+    async def persist_account_details(self, account_data: Dict[str, Any]) -> None:
+        """Persist account details to database"""
+        if not self.sqlite_enabled:
+            logger.warning("SQLite database disabled, skipping account persistence")
+            return
+
+        await self._persist_account_details_sqlite(account_data)
+
+    async def get_accounts_from_db(
+        self, account_ids: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """Get account details from database"""
+        if not self.sqlite_enabled:
+            logger.warning("SQLite database disabled, cannot read accounts")
+            return []
+
+        try:
+            accounts = sqlite_db.get_accounts(account_ids=account_ids)
+            logger.debug(f"Retrieved {len(accounts)} accounts from database")
+            return accounts
+        except Exception as e:
+            logger.error(f"Failed to get accounts from database: {e}")
+            return []
+
+    async def get_account_details_from_db(
+        self, account_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get specific account details from database"""
+        if not self.sqlite_enabled:
+            logger.warning("SQLite database disabled, cannot read account")
+            return None
+
+        try:
+            account = sqlite_db.get_account(account_id)
+            if account:
+                logger.debug(
+                    f"Retrieved account details from database for {account_id}"
+                )
+            return account
+        except Exception as e:
+            logger.error(f"Failed to get account details from database: {e}")
             return None
 
     async def _persist_balance_sqlite(
@@ -380,4 +423,24 @@ class DatabaseService:
             return new_transactions
         except Exception as e:
             logger.error(f"Failed to persist transactions to SQLite: {e}")
+            raise
+
+    async def _persist_account_details_sqlite(
+        self, account_data: Dict[str, Any]
+    ) -> None:
+        """Persist account details to SQLite"""
+        try:
+            from pathlib import Path
+
+            db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Use the sqlite_db module function
+            sqlite_db.persist_account(account_data)
+
+            logger.info(
+                f"Persisted account details to SQLite for account {account_data['id']}"
+            )
+        except Exception as e:
+            logger.error(f"Failed to persist account details to SQLite: {e}")
             raise

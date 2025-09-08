@@ -9,67 +9,65 @@ from leggend.api.models.accounts import (
     Transaction,
     TransactionSummary,
 )
-from leggend.services.gocardless_service import GoCardlessService
 from leggend.services.database_service import DatabaseService
 
 router = APIRouter()
-gocardless_service = GoCardlessService()
 database_service = DatabaseService()
 
 
 @router.get("/accounts", response_model=APIResponse)
 async def get_all_accounts() -> APIResponse:
-    """Get all connected accounts"""
+    """Get all connected accounts from database"""
     try:
-        requisitions_data = await gocardless_service.get_requisitions()
-
-        all_accounts = set()
-        for req in requisitions_data.get("results", []):
-            all_accounts.update(req.get("accounts", []))
-
         accounts = []
-        for account_id in all_accounts:
+
+        # Get all account details from database
+        db_accounts = await database_service.get_accounts_from_db()
+
+        # Process accounts found in database
+        for db_account in db_accounts:
             try:
-                account_details = await gocardless_service.get_account_details(
-                    account_id
-                )
-                balances_data = await gocardless_service.get_account_balances(
-                    account_id
+                # Get latest balances from database for this account
+                balances_data = await database_service.get_balances_from_db(
+                    db_account["id"]
                 )
 
                 # Process balances
                 balances = []
-                for balance in balances_data.get("balances", []):
-                    balance_amount = balance["balanceAmount"]
+                for balance in balances_data:
                     balances.append(
                         AccountBalance(
-                            amount=float(balance_amount["amount"]),
-                            currency=balance_amount["currency"],
-                            balance_type=balance["balanceType"],
-                            last_change_date=balance.get("lastChangeDateTime"),
+                            amount=balance["amount"],
+                            currency=balance["currency"],
+                            balance_type=balance["type"],
+                            last_change_date=balance.get("timestamp"),
                         )
                     )
 
                 accounts.append(
                     AccountDetails(
-                        id=account_details["id"],
-                        institution_id=account_details["institution_id"],
-                        status=account_details["status"],
-                        iban=account_details.get("iban"),
-                        name=account_details.get("name"),
-                        currency=account_details.get("currency"),
-                        created=account_details["created"],
-                        last_accessed=account_details.get("last_accessed"),
+                        id=db_account["id"],
+                        institution_id=db_account["institution_id"],
+                        status=db_account["status"],
+                        iban=db_account.get("iban"),
+                        name=db_account.get("name"),
+                        currency=db_account.get("currency"),
+                        created=db_account["created"],
+                        last_accessed=db_account.get("last_accessed"),
                         balances=balances,
                     )
                 )
 
             except Exception as e:
-                logger.error(f"Failed to get details for account {account_id}: {e}")
+                logger.error(
+                    f"Failed to process database account {db_account['id']}: {e}"
+                )
                 continue
 
         return APIResponse(
-            success=True, data=accounts, message=f"Retrieved {len(accounts)} accounts"
+            success=True,
+            data=accounts,
+            message=f"Retrieved {len(accounts)} accounts from database",
         )
 
     except Exception as e:
@@ -81,46 +79,55 @@ async def get_all_accounts() -> APIResponse:
 
 @router.get("/accounts/{account_id}", response_model=APIResponse)
 async def get_account_details(account_id: str) -> APIResponse:
-    """Get details for a specific account"""
+    """Get details for a specific account from database"""
     try:
-        account_details = await gocardless_service.get_account_details(account_id)
-        balances_data = await gocardless_service.get_account_balances(account_id)
+        # Get account details from database
+        db_account = await database_service.get_account_details_from_db(account_id)
+
+        if not db_account:
+            raise HTTPException(
+                status_code=404, detail=f"Account {account_id} not found in database"
+            )
+
+        # Get latest balances from database for this account
+        balances_data = await database_service.get_balances_from_db(account_id)
 
         # Process balances
         balances = []
-        for balance in balances_data.get("balances", []):
-            balance_amount = balance["balanceAmount"]
+        for balance in balances_data:
             balances.append(
                 AccountBalance(
-                    amount=float(balance_amount["amount"]),
-                    currency=balance_amount["currency"],
-                    balance_type=balance["balanceType"],
-                    last_change_date=balance.get("lastChangeDateTime"),
+                    amount=balance["amount"],
+                    currency=balance["currency"],
+                    balance_type=balance["type"],
+                    last_change_date=balance.get("timestamp"),
                 )
             )
 
         account = AccountDetails(
-            id=account_details["id"],
-            institution_id=account_details["institution_id"],
-            status=account_details["status"],
-            iban=account_details.get("iban"),
-            name=account_details.get("name"),
-            currency=account_details.get("currency"),
-            created=account_details["created"],
-            last_accessed=account_details.get("last_accessed"),
+            id=db_account["id"],
+            institution_id=db_account["institution_id"],
+            status=db_account["status"],
+            iban=db_account.get("iban"),
+            name=db_account.get("name"),
+            currency=db_account.get("currency"),
+            created=db_account["created"],
+            last_accessed=db_account.get("last_accessed"),
             balances=balances,
         )
 
         return APIResponse(
             success=True,
             data=account,
-            message=f"Account details retrieved for {account_id}",
+            message=f"Account details retrieved from database for {account_id}",
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to get account details for {account_id}: {e}")
         raise HTTPException(
-            status_code=404, detail=f"Account not found: {str(e)}"
+            status_code=500, detail=f"Failed to get account details: {str(e)}"
         ) from e
 
 
