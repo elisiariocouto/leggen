@@ -61,9 +61,13 @@ export default function AccountsOverview() {
     );
   }
 
-  const totalBalance = accounts?.reduce((sum, account) => sum + (account.balance || 0), 0) || 0;
+  const totalBalance = accounts?.reduce((sum, account) => {
+    // Get the first available balance from the balances array
+    const primaryBalance = account.balances?.[0]?.amount || 0;
+    return sum + primaryBalance;
+  }, 0) || 0;
   const totalAccounts = accounts?.length || 0;
-  const uniqueBanks = new Set(accounts?.map(acc => acc.bank_name) || []).size;
+  const uniqueBanks = new Set(accounts?.map(acc => acc.institution_id) || []).size;
 
   return (
     <div className="space-y-6">
@@ -125,54 +129,57 @@ export default function AccountsOverview() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {accounts.map((account) => {
-              const accountBalance = balances?.find(b => b.account_id === account.id);
-              const balance = account.balance || accountBalance?.balance_amount || 0;
-              const isPositive = balance >= 0;
+             {accounts.map((account) => {
+               // Get balance from account's balances array or fallback to balances query
+               const accountBalance = account.balances?.[0];
+               const fallbackBalance = balances?.find(b => b.account_id === account.id);
+               const balance = accountBalance?.amount || fallbackBalance?.balance_amount || 0;
+               const currency = accountBalance?.currency || fallbackBalance?.currency || account.currency || 'EUR';
+               const isPositive = balance >= 0;
 
-              return (
-                <div key={account.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-3 bg-gray-100 rounded-full">
-                        <Building2 className="h-6 w-6 text-gray-600" />
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-medium text-gray-900">
-                          {account.name}
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          {account.bank_name} • {account.account_type}
-                        </p>
-                        {account.iban && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            IBAN: {account.iban}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+               return (
+                 <div key={account.id} className="p-6 hover:bg-gray-50 transition-colors">
+                   <div className="flex items-center justify-between">
+                     <div className="flex items-center space-x-4">
+                       <div className="p-3 bg-gray-100 rounded-full">
+                         <Building2 className="h-6 w-6 text-gray-600" />
+                       </div>
+                       <div>
+                         <h4 className="text-lg font-medium text-gray-900">
+                           {account.name || 'Unnamed Account'}
+                         </h4>
+                         <p className="text-sm text-gray-600">
+                           {account.institution_id} • {account.status}
+                         </p>
+                         {account.iban && (
+                           <p className="text-xs text-gray-500 mt-1">
+                             IBAN: {account.iban}
+                           </p>
+                         )}
+                       </div>
+                     </div>
 
-                    <div className="text-right">
-                      <div className="flex items-center space-x-2">
-                        {isPositive ? (
-                          <TrendingUp className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <TrendingDown className="h-4 w-4 text-red-500" />
-                        )}
-                        <p className={`text-lg font-semibold ${
-                          isPositive ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {formatCurrency(balance, account.currency)}
-                        </p>
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        Updated {formatDate(account.updated_at)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                     <div className="text-right">
+                       <div className="flex items-center space-x-2">
+                         {isPositive ? (
+                           <TrendingUp className="h-4 w-4 text-green-500" />
+                         ) : (
+                           <TrendingDown className="h-4 w-4 text-red-500" />
+                         )}
+                         <p className={`text-lg font-semibold ${
+                           isPositive ? 'text-green-600' : 'text-red-600'
+                         }`}>
+                           {formatCurrency(balance, currency)}
+                         </p>
+                       </div>
+                       <p className="text-sm text-gray-500">
+                         Updated {formatDate(account.last_accessed || account.created)}
+                       </p>
+                     </div>
+                   </div>
+                 </div>
+               );
+             })}
           </div>
         )}
       </div>

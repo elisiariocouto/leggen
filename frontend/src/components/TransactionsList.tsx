@@ -163,11 +163,11 @@ export default function TransactionsList() {
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">All accounts</option>
-                  {accounts?.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name} ({account.bank_name})
-                    </option>
-                  ))}
+                   {accounts?.map((account) => (
+                     <option key={account.id} value={account.id}>
+                       {account.name || 'Unnamed Account'} ({account.institution_id})
+                     </option>
+                   ))}
                 </select>
               </div>
 
@@ -259,10 +259,10 @@ export default function TransactionsList() {
                           {transaction.description}
                         </h4>
 
-                        <div className="text-xs text-gray-500 space-y-1">
-                          {account && (
-                            <p>{account.name} • {account.bank_name}</p>
-                          )}
+                         <div className="text-xs text-gray-500 space-y-1">
+                           {account && (
+                             <p>{account.name || 'Unnamed Account'} • {account.institution_id}</p>
+                           )}
 
                           {(transaction.creditor_name || transaction.debtor_name) && (
                             <p>
