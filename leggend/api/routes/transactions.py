@@ -18,6 +18,9 @@ async def get_all_transactions(
     summary_only: bool = Query(
         default=True, description="Return transaction summaries only"
     ),
+    hide_missing_ids: bool = Query(
+        default=True, description="Hide transactions without internalTransactionId"
+    ),
     date_from: Optional[str] = Query(
         default=None, description="Filter from date (YYYY-MM-DD)"
     ),
@@ -47,6 +50,18 @@ async def get_all_transactions(
             min_amount=min_amount,
             max_amount=max_amount,
             search=search,
+            hide_missing_ids=hide_missing_ids,
+        )
+
+        # Get total count for pagination info (respecting the same filters)
+        total_transactions = await database_service.get_transaction_count_from_db(
+            account_id=account_id,
+            date_from=date_from,
+            date_to=date_to,
+            min_amount=min_amount,
+            max_amount=max_amount,
+            search=search,
+            hide_missing_ids=hide_missing_ids,
         )
 
         # Get total count for pagination info
@@ -111,6 +126,9 @@ async def get_all_transactions(
 async def get_transaction_stats(
     days: int = Query(default=30, description="Number of days to include in stats"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
+    hide_missing_ids: bool = Query(
+        default=True, description="Hide transactions without internalTransactionId"
+    ),
 ) -> APIResponse:
     """Get transaction statistics for the last N days from database"""
     try:
@@ -128,6 +146,7 @@ async def get_transaction_stats(
             date_from=date_from,
             date_to=date_to,
             limit=None,  # Get all matching transactions for stats
+            hide_missing_ids=hide_missing_ids,
         )
 
         # Calculate stats
