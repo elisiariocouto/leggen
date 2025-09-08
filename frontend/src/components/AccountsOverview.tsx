@@ -10,6 +10,7 @@ import {
 import { apiClient } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import LoadingSpinner from './LoadingSpinner';
+import type { Account, Balance } from '../types/api';
 
 export default function AccountsOverview() {
   const {
@@ -17,14 +18,14 @@ export default function AccountsOverview() {
     isLoading: accountsLoading,
     error: accountsError,
     refetch: refetchAccounts
-  } = useQuery({
+  } = useQuery<Account[]>({
     queryKey: ['accounts'],
     queryFn: apiClient.getAccounts,
   });
 
   const {
     data: balances
-  } = useQuery({
+  } = useQuery<Balance[]>({
     queryKey: ['balances'],
     queryFn: () => apiClient.getBalances(),
   });
