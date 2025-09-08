@@ -115,6 +115,7 @@ class DatabaseService:
         min_amount: Optional[float] = None,
         max_amount: Optional[float] = None,
         search: Optional[str] = None,
+        hide_missing_ids: bool = True,
     ) -> List[Dict[str, Any]]:
         """Get transactions from SQLite database"""
         if not self.sqlite_enabled:
@@ -131,6 +132,7 @@ class DatabaseService:
                 min_amount=min_amount,
                 max_amount=max_amount,
                 search=search,
+                hide_missing_ids=hide_missing_ids,
             )
             logger.debug(f"Retrieved {len(transactions)} transactions from database")
             return transactions
@@ -146,6 +148,7 @@ class DatabaseService:
         min_amount: Optional[float] = None,
         max_amount: Optional[float] = None,
         search: Optional[str] = None,
+        hide_missing_ids: bool = True,
     ) -> int:
         """Get total count of transactions from SQLite database"""
         if not self.sqlite_enabled:
@@ -162,7 +165,9 @@ class DatabaseService:
             # Remove None values
             filters = {k: v for k, v in filters.items() if v is not None}
 
-            count = sqlite_db.get_transaction_count(account_id=account_id, **filters)
+            count = sqlite_db.get_transaction_count(
+                account_id=account_id, hide_missing_ids=hide_missing_ids, **filters
+            )
             logger.debug(f"Total transaction count: {count}")
             return count
         except Exception as e:

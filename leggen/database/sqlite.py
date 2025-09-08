@@ -210,6 +210,7 @@ def get_transactions(
     min_amount=None,
     max_amount=None,
     search=None,
+    hide_missing_ids=True,
 ):
     """Get transactions from SQLite database with optional filtering"""
     from pathlib import Path
@@ -248,6 +249,11 @@ def get_transactions(
     if search:
         query += " AND description LIKE ?"
         params.append(f"%{search}%")
+
+    if hide_missing_ids:
+        query += (
+            " AND internalTransactionId IS NOT NULL AND internalTransactionId != ''"
+        )
 
     # Add ordering and pagination
     query += " ORDER BY transactionDate DESC"
@@ -396,6 +402,11 @@ def get_transaction_count(account_id=None, **filters):
     if filters.get("search"):
         query += " AND description LIKE ?"
         params.append(f"%{filters['search']}%")
+
+    if filters.get("hide_missing_ids", True):
+        query += (
+            " AND internalTransactionId IS NOT NULL AND internalTransactionId != ''"
+        )
 
     try:
         cursor.execute(query, params)
