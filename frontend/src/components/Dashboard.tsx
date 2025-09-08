@@ -34,7 +34,11 @@ export default function Dashboard() {
     { name: 'Analytics', icon: BarChart3, id: 'analytics' as TabType },
   ];
 
-  const totalBalance = accounts?.reduce((sum, account) => sum + (account.balance || 0), 0) || 0;
+  const totalBalance = accounts?.reduce((sum, account) => {
+    // Get the first available balance from the balances array
+    const primaryBalance = account.balances?.[0]?.amount || 0;
+    return sum + primaryBalance;
+  }, 0) || 0;
 
   return (
     <div className="flex h-screen bg-gray-100">
