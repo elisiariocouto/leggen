@@ -38,4 +38,5 @@
 ### General
 - **Formatting**: ruff for Python, ESLint for TypeScript
 - **Commits**: Use conventional commits, run pre-commit hooks before pushing
+  - Avoid including specific numbers, counts, or data-dependent information that may become outdated
 - **Security**: Never log sensitive data, use environment variables for secrets
