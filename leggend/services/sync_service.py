@@ -68,6 +68,9 @@ class SyncService:
                             account_details.get("institution_id")
                         )
                         balances_with_account_info["iban"] = account_details.get("iban")
+                        balances_with_account_info["account_status"] = (
+                            account_details.get("status")
+                        )
                         await self.database.persist_balance(
                             account_id, balances_with_account_info
                         )

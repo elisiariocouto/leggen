@@ -446,7 +446,7 @@ class DatabaseService:
                         (
                             account_id,
                             balance_data.get("institution_id", "unknown"),
-                            "active",
+                            balance_data.get("account_status"),
                             balance_data.get("iban", "N/A"),
                             float(balance_amount["amount"]),
                             balance_amount["currency"],
