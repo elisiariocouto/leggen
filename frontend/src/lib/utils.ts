@@ -13,9 +13,9 @@ export function formatCurrency(amount: number, currency: string = 'EUR'): string
       style: 'currency',
       currency: validCurrency,
     }).format(amount);
-  } catch (error) {
-    // Fallback if currency is still invalid
-    console.warn(`Invalid currency code: ${currency}, falling back to EUR`);
+   } catch {
+     // Fallback if currency is still invalid
+     console.warn(`Invalid currency code: ${currency}, falling back to EUR`);
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'EUR',
