@@ -1,4 +1,40 @@
 
+## 2025.9.1 (2025/09/09)
+
+### Bug Fixes
+
+-  Handle duplicate transactionId values in migration ([8fabaf7b](https://github.com/elisiariocouto/leggen/commit/8fabaf7b86fde921c61266568ecb0403d3102671))
+
+
+### Miscellaneous Tasks
+
+-  Improve AGENTS.md. ([3270dc45](https://github.com/elisiariocouto/leggen/commit/3270dc4585e6b33d55aef0deecd849753d36fa74))
+
+
+### Refactor
+
+-  Remove unused hide_missing_ids functionality ([8006e5e1](https://github.com/elisiariocouto/leggen/commit/8006e5e1f6373aae39d3c38068d694e142bc85a5))
+
+
+
+## 2025.9.1 (2025/09/09)
+
+### Bug Fixes
+
+-  Handle duplicate transactionId values in migration ([8fabaf7b](https://github.com/elisiariocouto/leggen/commit/8fabaf7b86fde921c61266568ecb0403d3102671))
+
+
+### Miscellaneous Tasks
+
+-  Improve AGENTS.md. ([3270dc45](https://github.com/elisiariocouto/leggen/commit/3270dc4585e6b33d55aef0deecd849753d36fa74))
+
+
+### Refactor
+
+-  Remove unused hide_missing_ids functionality ([8006e5e1](https://github.com/elisiariocouto/leggen/commit/8006e5e1f6373aae39d3c38068d694e142bc85a5))
+
+
+
 ## 2025.9.0 (2025/09/09)
 
 ### Bug Fixes
