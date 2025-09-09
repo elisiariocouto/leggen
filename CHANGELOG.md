@@ -1,4 +1,92 @@
 
+## 2025.9.0 (2025/09/09)
+
+### Bug Fixes
+
+- **cli:** Show transactions without internal ID when using --full. ([46f3f5c4](https://github.com/elisiariocouto/leggen/commit/46f3f5c4984224c3f4b421e1a06dcf44d4f211e0))
+-  Do not install development dependencies. ([73d6bd32](https://github.com/elisiariocouto/leggen/commit/73d6bd32dbc59608ef1472dc65d9e18450f00896))
+-  Implement proper GoCardless authentication and add dev features ([f0fee4fd](https://github.com/elisiariocouto/leggen/commit/f0fee4fd82e1c788614d73fcd0075f5e16976650))
+-  Make internal transcation ID optional. ([6bce7eb6](https://github.com/elisiariocouto/leggen/commit/6bce7eb6be5f9a5286eb27e777fbf83a6b1c5f8d))
+-  Resolve 404 balances endpoint and currency formatting errors ([417b7753](https://github.com/elisiariocouto/leggen/commit/417b77539fc275493d55efb29f92abcea666b210))
+-  Merge account details into balance data to prevent unknown/N/A values ([eaaea6e4](https://github.com/elisiariocouto/leggen/commit/eaaea6e4598e9c81997573e19f4ef1c58ebe320f))
+-  Use account status for balance records instead of hardcoded 'active' ([541cb262](https://github.com/elisiariocouto/leggen/commit/541cb262ee5783eedf2b154c148c28ec89845da5))
+
+
+### Documentation
+
+-  Update README for new web architecture ([4018b263](https://github.com/elisiariocouto/leggen/commit/4018b263f27c2b59af31428d7a0878280a291c85))
+
+
+### Features
+
+-  Transform to web architecture with FastAPI backend ([91f53b35](https://github.com/elisiariocouto/leggen/commit/91f53b35b18740869ee9cebfac394db2e12db099))
+-  Add comprehensive test suite with 46 passing tests ([34e793c7](https://github.com/elisiariocouto/leggen/commit/34e793c75c8df1e57ea240b92ccf0843a80c2a14))
+-  Add mypy to pre-commit. ([ec8ef834](https://github.com/elisiariocouto/leggen/commit/ec8ef8346add878f3ff4e8ed928b952d9b5dd584))
+-  Implement database-first architecture to minimize GoCardless API calls ([155c3055](https://github.com/elisiariocouto/leggen/commit/155c30559f4cacd76ef01e50ec29ee436d3f9d56))
+-  Implement dynamic API connection status ([cb2e70e4](https://github.com/elisiariocouto/leggen/commit/cb2e70e42d1122e9c2e5420b095aeb1e55454c24))
+-  Add automatic balance timestamp migration mechanism ([34501f5f](https://github.com/elisiariocouto/leggen/commit/34501f5f0d3b3dff68364b60be77bfb99071b269))
+-  Improve notification filters configuration format ([2191fe90](https://github.com/elisiariocouto/leggen/commit/2191fe906659f4fd22c25b6cb9fbb95c03472f00))
+-  Add notifications view and update branding ([abf39abe](https://github.com/elisiariocouto/leggen/commit/abf39abe74b75d8cb980109fbcbdd940066cc90b))
+-  Make API URL configurable and improve code quality ([37949a4e](https://github.com/elisiariocouto/leggen/commit/37949a4e1f25a2656f6abef75ba942f7b205c130))
+-  Change versioning scheme to calver. ([f2e05484](https://github.com/elisiariocouto/leggen/commit/f2e05484dc688409b6db6bd16858b066d3a16976))
+
+
+### Miscellaneous Tasks
+
+-  Implement code review suggestions and format code. ([de3da84d](https://github.com/elisiariocouto/leggen/commit/de3da84dffd83e0b232cf76836935a66eb704aee))
+
+
+### Refactor
+
+-  Remove MongoDB support, simplify to SQLite-only architecture ([47164e85](https://github.com/elisiariocouto/leggen/commit/47164e854600dfcac482449769b1d2e55c842570))
+-  Remove unused amount_threshold and keywords from notification filters ([95709978](https://github.com/elisiariocouto/leggen/commit/957099786cb0e48c9ffbda11b3172ec9fae9ac37))
+
+
+
+## 2025.9.0 (2025/09/09)
+
+### Bug Fixes
+
+- **cli:** Show transactions without internal ID when using --full. ([46f3f5c4](https://github.com/elisiariocouto/leggen/commit/46f3f5c4984224c3f4b421e1a06dcf44d4f211e0))
+-  Do not install development dependencies. ([73d6bd32](https://github.com/elisiariocouto/leggen/commit/73d6bd32dbc59608ef1472dc65d9e18450f00896))
+-  Implement proper GoCardless authentication and add dev features ([f0fee4fd](https://github.com/elisiariocouto/leggen/commit/f0fee4fd82e1c788614d73fcd0075f5e16976650))
+-  Make internal transcation ID optional. ([6bce7eb6](https://github.com/elisiariocouto/leggen/commit/6bce7eb6be5f9a5286eb27e777fbf83a6b1c5f8d))
+-  Resolve 404 balances endpoint and currency formatting errors ([417b7753](https://github.com/elisiariocouto/leggen/commit/417b77539fc275493d55efb29f92abcea666b210))
+-  Merge account details into balance data to prevent unknown/N/A values ([eaaea6e4](https://github.com/elisiariocouto/leggen/commit/eaaea6e4598e9c81997573e19f4ef1c58ebe320f))
+-  Use account status for balance records instead of hardcoded 'active' ([541cb262](https://github.com/elisiariocouto/leggen/commit/541cb262ee5783eedf2b154c148c28ec89845da5))
+
+
+### Documentation
+
+-  Update README for new web architecture ([4018b263](https://github.com/elisiariocouto/leggen/commit/4018b263f27c2b59af31428d7a0878280a291c85))
+
+
+### Features
+
+-  Transform to web architecture with FastAPI backend ([91f53b35](https://github.com/elisiariocouto/leggen/commit/91f53b35b18740869ee9cebfac394db2e12db099))
+-  Add comprehensive test suite with 46 passing tests ([34e793c7](https://github.com/elisiariocouto/leggen/commit/34e793c75c8df1e57ea240b92ccf0843a80c2a14))
+-  Add mypy to pre-commit. ([ec8ef834](https://github.com/elisiariocouto/leggen/commit/ec8ef8346add878f3ff4e8ed928b952d9b5dd584))
+-  Implement database-first architecture to minimize GoCardless API calls ([155c3055](https://github.com/elisiariocouto/leggen/commit/155c30559f4cacd76ef01e50ec29ee436d3f9d56))
+-  Implement dynamic API connection status ([cb2e70e4](https://github.com/elisiariocouto/leggen/commit/cb2e70e42d1122e9c2e5420b095aeb1e55454c24))
+-  Add automatic balance timestamp migration mechanism ([34501f5f](https://github.com/elisiariocouto/leggen/commit/34501f5f0d3b3dff68364b60be77bfb99071b269))
+-  Improve notification filters configuration format ([2191fe90](https://github.com/elisiariocouto/leggen/commit/2191fe906659f4fd22c25b6cb9fbb95c03472f00))
+-  Add notifications view and update branding ([abf39abe](https://github.com/elisiariocouto/leggen/commit/abf39abe74b75d8cb980109fbcbdd940066cc90b))
+-  Make API URL configurable and improve code quality ([37949a4e](https://github.com/elisiariocouto/leggen/commit/37949a4e1f25a2656f6abef75ba942f7b205c130))
+-  Change versioning scheme to calver. ([f2e05484](https://github.com/elisiariocouto/leggen/commit/f2e05484dc688409b6db6bd16858b066d3a16976))
+
+
+### Miscellaneous Tasks
+
+-  Implement code review suggestions and format code. ([de3da84d](https://github.com/elisiariocouto/leggen/commit/de3da84dffd83e0b232cf76836935a66eb704aee))
+
+
+### Refactor
+
+-  Remove MongoDB support, simplify to SQLite-only architecture ([47164e85](https://github.com/elisiariocouto/leggen/commit/47164e854600dfcac482449769b1d2e55c842570))
+-  Remove unused amount_threshold and keywords from notification filters ([95709978](https://github.com/elisiariocouto/leggen/commit/957099786cb0e48c9ffbda11b3172ec9fae9ac37))
+
+
+
 ## 0.6.11 (2025/02/23)
 
 ### Bug Fixes
