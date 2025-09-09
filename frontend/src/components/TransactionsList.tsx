@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Filter,
   Search,
@@ -8,24 +8,22 @@ import {
   Calendar,
   RefreshCw,
   AlertCircle,
-  X
-} from 'lucide-react';
-import { apiClient } from '../lib/api';
-import { formatCurrency, formatDate } from '../lib/utils';
-import LoadingSpinner from './LoadingSpinner';
-import type { Account, Transaction } from '../types/api';
+  X,
+} from "lucide-react";
+import { apiClient } from "../lib/api";
+import { formatCurrency, formatDate } from "../lib/utils";
+import LoadingSpinner from "./LoadingSpinner";
+import type { Account, Transaction } from "../types/api";
 
 export default function TransactionsList() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedAccount, setSelectedAccount] = useState<string>('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState<string>("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const {
-    data: accounts
-  } = useQuery<Account[]>({
-    queryKey: ['accounts'],
+  const { data: accounts } = useQuery<Account[]>({
+    queryKey: ["accounts"],
     queryFn: apiClient.getAccounts,
   });
 
@@ -33,29 +31,34 @@ export default function TransactionsList() {
     data: transactions,
     isLoading: transactionsLoading,
     error: transactionsError,
-    refetch: refetchTransactions
+    refetch: refetchTransactions,
   } = useQuery<Transaction[]>({
-    queryKey: ['transactions', selectedAccount, startDate, endDate],
-    queryFn: () => apiClient.getTransactions({
-      accountId: selectedAccount || undefined,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-    }),
+    queryKey: ["transactions", selectedAccount, startDate, endDate],
+    queryFn: () =>
+      apiClient.getTransactions({
+        accountId: selectedAccount || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      }),
   });
 
-  const filteredTransactions = (transactions || []).filter(transaction => {
+  const filteredTransactions = (transactions || []).filter((transaction) => {
     // Additional validation (API client should have already filtered out invalid ones)
     if (!transaction || !transaction.account_id) {
-      console.warn('Invalid transaction found after API filtering:', transaction);
+      console.warn(
+        "Invalid transaction found after API filtering:",
+        transaction,
+      );
       return false;
     }
 
-    const description = transaction.description || '';
-    const creditorName = transaction.creditor_name || '';
-    const debtorName = transaction.debtor_name || '';
-    const reference = transaction.reference || '';
+    const description = transaction.description || "";
+    const creditorName = transaction.creditor_name || "";
+    const debtorName = transaction.debtor_name || "";
+    const reference = transaction.reference || "";
 
-    const matchesSearch = searchTerm === '' ||
+    const matchesSearch =
+      searchTerm === "" ||
       description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       creditorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       debtorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,13 +68,14 @@ export default function TransactionsList() {
   });
 
   const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedAccount('');
-    setStartDate('');
-    setEndDate('');
+    setSearchTerm("");
+    setSelectedAccount("");
+    setStartDate("");
+    setEndDate("");
   };
 
-  const hasActiveFilters = searchTerm || selectedAccount || startDate || endDate;
+  const hasActiveFilters =
+    searchTerm || selectedAccount || startDate || endDate;
 
   if (transactionsLoading) {
     return (
@@ -87,7 +91,9 @@ export default function TransactionsList() {
         <div className="flex items-center justify-center text-center">
           <div>
             <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load transactions</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Failed to load transactions
+            </h3>
             <p className="text-gray-600 mb-4">
               Unable to fetch transactions from the Leggen API.
             </p>
@@ -163,11 +169,12 @@ export default function TransactionsList() {
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">All accounts</option>
-                   {accounts?.map((account) => (
-                     <option key={account.id} value={account.id}>
-                       {account.name || 'Unnamed Account'} ({account.institution_id})
-                     </option>
-                   ))}
+                  {accounts?.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name || "Unnamed Account"} (
+                      {account.institution_id})
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -209,10 +216,11 @@ export default function TransactionsList() {
         {/* Results Summary */}
         <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
           <p className="text-sm text-gray-600">
-            Showing {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
+            Showing {filteredTransactions.length} transaction
+            {filteredTransactions.length !== 1 ? "s" : ""}
             {selectedAccount && accounts && (
               <span className="ml-1">
-                for {accounts.find(acc => acc.id === selectedAccount)?.name}
+                for {accounts.find((acc) => acc.id === selectedAccount)?.name}
               </span>
             )}
           </p>
@@ -225,28 +233,39 @@ export default function TransactionsList() {
           <div className="text-gray-400 mb-4">
             <TrendingUp className="h-12 w-12 mx-auto" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No transactions found</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No transactions found
+          </h3>
           <p className="text-gray-600">
-            {hasActiveFilters ?
-              "Try adjusting your filters to see more results." :
-              "No transactions are available for the selected criteria."
-            }
+            {hasActiveFilters
+              ? "Try adjusting your filters to see more results."
+              : "No transactions are available for the selected criteria."}
           </p>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow divide-y divide-gray-200">
           {filteredTransactions.map((transaction) => {
-            const account = accounts?.find(acc => acc.id === transaction.account_id);
+            const account = accounts?.find(
+              (acc) => acc.id === transaction.account_id,
+            );
             const isPositive = transaction.amount > 0;
 
             return (
-              <div key={transaction.internal_transaction_id || `${transaction.account_id}-${transaction.date}-${transaction.amount}`} className="p-6 hover:bg-gray-50 transition-colors">
+              <div
+                key={
+                  transaction.internal_transaction_id ||
+                  `${transaction.account_id}-${transaction.date}-${transaction.amount}`
+                }
+                className="p-6 hover:bg-gray-50 transition-colors"
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-start space-x-3">
-                      <div className={`p-2 rounded-full ${
-                        isPositive ? 'bg-green-100' : 'bg-red-100'
-                      }`}>
+                      <div
+                        className={`p-2 rounded-full ${
+                          isPositive ? "bg-green-100" : "bg-red-100"
+                        }`}
+                      >
                         {isPositive ? (
                           <TrendingUp className="h-4 w-4 text-green-600" />
                         ) : (
@@ -259,15 +278,20 @@ export default function TransactionsList() {
                           {transaction.description}
                         </h4>
 
-                         <div className="text-xs text-gray-500 space-y-1">
-                           {account && (
-                             <p>{account.name || 'Unnamed Account'} • {account.institution_id}</p>
-                           )}
-
-                          {(transaction.creditor_name || transaction.debtor_name) && (
+                        <div className="text-xs text-gray-500 space-y-1">
+                          {account && (
                             <p>
-                              {isPositive ? 'From: ' : 'To: '}
-                              {transaction.creditor_name || transaction.debtor_name}
+                              {account.name || "Unnamed Account"} •{" "}
+                              {account.institution_id}
+                            </p>
+                          )}
+
+                          {(transaction.creditor_name ||
+                            transaction.debtor_name) && (
+                            <p>
+                              {isPositive ? "From: " : "To: "}
+                              {transaction.creditor_name ||
+                                transaction.debtor_name}
                             </p>
                           )}
 
@@ -284,19 +308,25 @@ export default function TransactionsList() {
                   </div>
 
                   <div className="text-right ml-4">
-                    <p className={`text-lg font-semibold ${
-                      isPositive ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {isPositive ? '+' : ''}{formatCurrency(transaction.amount, transaction.currency)}
+                    <p
+                      className={`text-lg font-semibold ${
+                        isPositive ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {isPositive ? "+" : ""}
+                      {formatCurrency(transaction.amount, transaction.currency)}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {transaction.date ? formatDate(transaction.date) : 'No date'}
+                      {transaction.date
+                        ? formatDate(transaction.date)
+                        : "No date"}
                     </p>
-                    {transaction.booking_date && transaction.booking_date !== transaction.date && (
-                      <p className="text-xs text-gray-400">
-                        Booked: {formatDate(transaction.booking_date)}
-                      </p>
-                    )}
+                    {transaction.booking_date &&
+                      transaction.booking_date !== transaction.date && (
+                        <p className="text-xs text-gray-400">
+                          Booked: {formatDate(transaction.booking_date)}
+                        </p>
+                      )}
                   </div>
                 </div>
               </div>

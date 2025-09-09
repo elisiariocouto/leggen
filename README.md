@@ -17,7 +17,10 @@ Having your bank data accessible through both CLI and REST API gives you the pow
   - [SQLite](https://www.sqlite.org): for storing transactions, simple and easy to use
 
   ### Frontend
-  [ADD INFO]
+  - [React](https://reactjs.org/): Modern web interface with TypeScript
+  - [Vite](https://vitejs.dev/): Fast build tool and development server
+  - [Tailwind CSS](https://tailwindcss.com/): Utility-first CSS framework
+  - [TanStack Query](https://tanstack.com/query): Powerful data synchronization for React
 
 ## ✨ Features
 
@@ -53,7 +56,7 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 ### Installation Options
 
 #### Option 1: Docker Compose (Recommended)
-The easiest way to get started is with Docker Compose:
+The easiest way to get started is with Docker Compose, which includes both the React frontend and FastAPI backend:
 
 ```bash
 # Clone the repository
@@ -64,8 +67,11 @@ cd leggen
 mkdir -p leggen && cp config.example.toml leggen/config.toml
 # Edit leggen/config.toml with your GoCardless credentials
 
-# Start all services
+# Start all services (frontend + backend)
 docker compose up -d
+
+# Access the web interface at http://localhost:3000
+# API is available at http://localhost:8000
 ```
 
 #### Option 2: Local Development
@@ -183,17 +189,21 @@ leggen status
 ### Docker Usage
 
 ```bash
-# Start all services
+# Start all services (frontend + backend)
 docker compose up -d
 
-# Connect to a bank
-docker compose run leggen bank add
-
-# Run a sync
-docker compose run leggen sync --wait
+# View service status
+docker compose ps
 
 # Check logs
+docker compose logs frontend
 docker compose logs leggend
+
+# Access the web interface at http://localhost:3000
+# API documentation at http://localhost:8000/docs
+
+# Stop all services
+docker compose down
 ```
 
 ## 🔌 API Endpoints
@@ -307,6 +317,6 @@ tests/               # Test suite
 
 ## ⚠️ Notes
 - This project is in active development
-- Web frontend planned for future releases
 - GoCardless API rate limits apply
 - Some banks may require additional authorization steps
+- Docker images are automatically built and published on releases
