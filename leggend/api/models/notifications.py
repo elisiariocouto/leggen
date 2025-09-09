@@ -1,4 +1,4 @@
-from typing import Dict, Optional, List
+from typing import Optional, List
 
 from pydantic import BaseModel
 
@@ -21,8 +21,8 @@ class TelegramConfig(BaseModel):
 class NotificationFilters(BaseModel):
     """Notification filters configuration"""
 
-    case_insensitive: Dict[str, str] = {}
-    case_sensitive: Optional[Dict[str, str]] = None
+    case_insensitive: List[str] = []
+    case_sensitive: Optional[List[str]] = None
     amount_threshold: Optional[float] = None
     keywords: List[str] = []
 

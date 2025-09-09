@@ -63,14 +63,29 @@ class NotificationService:
     ) -> List[Dict[str, Any]]:
         """Filter transactions based on notification criteria"""
         matching = []
-        filters_case_insensitive = self.filters_config.get("case-insensitive", {})
+        filters_case_insensitive = self.filters_config.get("case-insensitive", [])
+        filters_case_sensitive = self.filters_config.get("case-sensitive", [])
 
         for transaction in transactions:
-            description = transaction.get("description", "").lower()
+            description = transaction.get("description", "")
+            description_lower = description.lower()
 
             # Check case-insensitive filters
-            for _filter_name, filter_value in filters_case_insensitive.items():
-                if filter_value.lower() in description:
+            for filter_value in filters_case_insensitive:
+                if filter_value.lower() in description_lower:
+                    matching.append(
+                        {
+                            "name": transaction["description"],
+                            "value": transaction["transactionValue"],
+                            "currency": transaction["transactionCurrency"],
+                            "date": transaction["transactionDate"],
+                        }
+                    )
+                    break
+
+            # Check case-sensitive filters
+            for filter_value in filters_case_sensitive:
+                if filter_value in description:
                     matching.append(
                         {
                             "name": transaction["description"],

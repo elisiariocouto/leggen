@@ -46,7 +46,7 @@ async def get_notification_settings() -> APIResponse:
             if (telegram_config.get("token") or telegram_config.get("api-key"))
             else None,
             filters=NotificationFilters(
-                case_insensitive=filters_config.get("case-insensitive", {}),
+                case_insensitive=filters_config.get("case-insensitive", []),
                 case_sensitive=filters_config.get("case-sensitive"),
                 amount_threshold=filters_config.get("amount_threshold"),
                 keywords=filters_config.get("keywords", []),
