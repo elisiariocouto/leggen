@@ -424,6 +424,7 @@ class DatabaseService:
 
     async def _migrate_null_transaction_ids(self):
         """Populate null internalTransactionId fields using transactionId from raw data"""
+        import uuid
         from pathlib import Path
 
         db_path = Path.home() / ".config" / "leggen" / "leggen.db"
@@ -459,20 +460,38 @@ class DatabaseService:
             # Update in batches
             batch_size = 100
             migrated_count = 0
+            skipped_duplicates = 0
 
             for i in range(0, total_records, batch_size):
                 batch = null_records[i : i + batch_size]
 
                 for rowid, transaction_id in batch:
                     try:
-                        # Update the record with the transactionId from raw data
+                        # Check if this transactionId is already used by another record
+                        cursor.execute(
+                            "SELECT COUNT(*) FROM transactions WHERE internalTransactionId = ?",
+                            (str(transaction_id),),
+                        )
+                        existing_count = cursor.fetchone()[0]
+
+                        if existing_count > 0:
+                            # Generate a unique ID to avoid constraint violation
+                            unique_id = f"{str(transaction_id)}_{uuid.uuid4().hex[:8]}"
+                            logger.debug(
+                                f"Generated unique ID for duplicate transactionId: {unique_id}"
+                            )
+                        else:
+                            # Use the original transactionId
+                            unique_id = str(transaction_id)
+
+                        # Update the record
                         cursor.execute(
                             """
                             UPDATE transactions
                             SET internalTransactionId = ?
                             WHERE rowid = ?
                             """,
-                            (str(transaction_id), rowid),
+                            (unique_id, rowid),
                         )
 
                         migrated_count += 1
@@ -491,6 +510,10 @@ class DatabaseService:
 
             conn.close()
             logger.info(f"Successfully migrated {migrated_count} transaction records")
+            if skipped_duplicates > 0:
+                logger.info(
+                    f"Generated unique IDs for {skipped_duplicates} duplicate transactionIds"
+                )
 
         except Exception as e:
             logger.error(f"Null transaction IDs migration failed: {e}")
