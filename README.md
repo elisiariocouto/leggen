@@ -2,9 +2,7 @@
 
 An Open Banking CLI and API service for managing bank connections and transactions.
 
-This tool provides both a **FastAPI backend service** (`leggend`) and a **command-line interface** (`leggen`) to connect to banks using the GoCardless Open Banking API.
-
-**New in v0.6.11**: Web-ready architecture with FastAPI backend, enhanced CLI, and background job scheduling.
+This tool provides **FastAPI backend service** (`leggend`), a **React Web Interface** and a **command-line interface** (`leggen`) to connect to banks using the GoCardless Open Banking API.
 
 Having your bank data accessible through both CLI and REST API gives you the power to backup, analyze, create reports, and integrate with other applications.
 
@@ -18,8 +16,8 @@ Having your bank data accessible through both CLI and REST API gives you the pow
   ### 📦 Storage
   - [SQLite](https://www.sqlite.org): for storing transactions, simple and easy to use
 
-  ### 📊 Visualization
-  - [NocoDB](https://github.com/nocodb/nocodb): for visualizing and querying transactions, a simple and easy to use interface for SQLite
+  ### Frontend
+  [ADD INFO]
 
 ## ✨ Features
 
@@ -39,20 +37,12 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 ### 📡 API & Integration
 - **REST API**: Complete FastAPI backend with comprehensive endpoints
 - **CLI Interface**: Enhanced command-line tools with new options
-- **Health Checks**: Service monitoring and dependency management
-- **Auto-reload**: Development mode with file watching
 
 ### 🔔 Notifications & Monitoring
 - Discord and Telegram notifications for filtered transactions
 - Configurable transaction filters (case-sensitive/insensitive)
 - Account expiry notifications and status alerts
 - Comprehensive logging and error handling
-
-### 📊 Visualization & Analysis
-- NocoDB integration for visual data exploration
-- Transaction statistics and reporting
-- Account balance tracking over time
-- Export capabilities for further analysis
 
 ## 🚀 Quick Start
 
@@ -216,7 +206,7 @@ The FastAPI backend provides comprehensive REST endpoints:
 - `GET /api/v1/banks/status` - Connection status
 - `GET /api/v1/banks/countries` - Supported countries
 
-### Accounts & Balances  
+### Accounts & Balances
 - `GET /api/v1/accounts` - List all accounts
 - `GET /api/v1/accounts/{id}` - Account details
 - `GET /api/v1/accounts/{id}/balances` - Account balances
@@ -262,7 +252,7 @@ Run the comprehensive test suite with:
 # Run all tests
 uv run pytest
 
-# Run unit tests only  
+# Run unit tests only
 uv run pytest tests/unit/
 
 # Run with verbose output
@@ -293,7 +283,7 @@ leggen/              # CLI application
 ├── utils/           # Shared utilities
 └── api_client.py    # API client for leggend service
 
-leggend/             # FastAPI backend service  
+leggend/             # FastAPI backend service
 ├── api/             # API routes and models
 ├── services/        # Business logic
 ├── background/      # Background job scheduler
