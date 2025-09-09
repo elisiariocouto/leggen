@@ -114,9 +114,9 @@ chat_id = 12345
 enabled = true
 
 # Optional: Transaction filters for notifications
-[filters.case-insensitive]
-salary = "salary"
-bills = "utility"
+[filters]
+case-insensitive = ["salary", "utility"]
+case-sensitive = ["SpecificStore"]
 ```
 
 ## 📖 Usage
