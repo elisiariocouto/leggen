@@ -99,7 +99,6 @@ class TestDatabaseService:
                 min_amount=None,
                 max_amount=None,
                 search=None,
-                hide_missing_ids=True,
             )
 
     async def test_get_transactions_from_db_with_filters(
@@ -130,7 +129,6 @@ class TestDatabaseService:
                 min_amount=-50.0,
                 max_amount=0.0,
                 search="Coffee",
-                hide_missing_ids=True,
             )
 
     async def test_get_transactions_from_db_sqlite_disabled(self, database_service):
@@ -160,9 +158,7 @@ class TestDatabaseService:
             )
 
             assert result == 42
-            mock_get_count.assert_called_once_with(
-                account_id="test-account-123", hide_missing_ids=True
-            )
+            mock_get_count.assert_called_once_with(account_id="test-account-123")
 
     async def test_get_transaction_count_from_db_with_filters(self, database_service):
         """Test getting transaction count with filters."""
@@ -182,7 +178,6 @@ class TestDatabaseService:
                 date_from="2025-09-01",
                 min_amount=-100.0,
                 search="Coffee",
-                hide_missing_ids=True,
             )
 
     async def test_get_transaction_count_from_db_sqlite_disabled(

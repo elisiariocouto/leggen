@@ -93,8 +93,13 @@ class DatabaseService:
             ",".join(transaction.get("remittanceInformationUnstructuredArray", [])),
         )
 
+        # Extract transaction ID, using transactionId as fallback when internalTransactionId is missing
+        transaction_id = transaction.get("internalTransactionId") or transaction.get(
+            "transactionId"
+        )
+
         return {
-            "internalTransactionId": transaction.get("internalTransactionId"),
+            "internalTransactionId": transaction_id,
             "institutionId": account_info["institution_id"],
             "iban": account_info.get("iban", "N/A"),
             "transactionDate": min_date,
@@ -116,7 +121,6 @@ class DatabaseService:
         min_amount: Optional[float] = None,
         max_amount: Optional[float] = None,
         search: Optional[str] = None,
-        hide_missing_ids: bool = True,
     ) -> List[Dict[str, Any]]:
         """Get transactions from SQLite database"""
         if not self.sqlite_enabled:
@@ -133,7 +137,6 @@ class DatabaseService:
                 min_amount=min_amount,
                 max_amount=max_amount,
                 search=search,
-                hide_missing_ids=hide_missing_ids,
             )
             logger.debug(f"Retrieved {len(transactions)} transactions from database")
             return transactions
@@ -149,7 +152,6 @@ class DatabaseService:
         min_amount: Optional[float] = None,
         max_amount: Optional[float] = None,
         search: Optional[str] = None,
-        hide_missing_ids: bool = True,
     ) -> int:
         """Get total count of transactions from SQLite database"""
         if not self.sqlite_enabled:
@@ -166,9 +168,7 @@ class DatabaseService:
             # Remove None values
             filters = {k: v for k, v in filters.items() if v is not None}
 
-            count = sqlite_db.get_transaction_count(
-                account_id=account_id, hide_missing_ids=hide_missing_ids, **filters
-            )
+            count = sqlite_db.get_transaction_count(account_id=account_id, **filters)
             logger.debug(f"Total transaction count: {count}")
             return count
         except Exception as e:
@@ -259,6 +259,7 @@ class DatabaseService:
             return
 
         await self._migrate_balance_timestamps_if_needed()
+        await self._migrate_null_transaction_ids_if_needed()
 
     async def _migrate_balance_timestamps_if_needed(self):
         """Check and migrate balance timestamps if needed"""
@@ -377,6 +378,122 @@ class DatabaseService:
 
         except Exception as e:
             logger.error(f"Balance timestamp migration failed: {e}")
+            raise
+
+    async def _migrate_null_transaction_ids_if_needed(self):
+        """Check and migrate null transaction IDs if needed"""
+        try:
+            if await self._check_null_transaction_ids_migration_needed():
+                logger.info("Null transaction IDs migration needed, starting...")
+                await self._migrate_null_transaction_ids()
+                logger.info("Null transaction IDs migration completed")
+            else:
+                logger.info("No null transaction IDs found to migrate")
+        except Exception as e:
+            logger.error(f"Null transaction IDs migration failed: {e}")
+            raise
+
+    async def _check_null_transaction_ids_migration_needed(self) -> bool:
+        """Check if null transaction IDs need migration"""
+        from pathlib import Path
+
+        db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+        if not db_path.exists():
+            return False
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            # Check for transactions with null or empty internalTransactionId
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM transactions
+                WHERE (internalTransactionId IS NULL OR internalTransactionId = '')
+                AND json_extract(rawTransaction, '$.transactionId') IS NOT NULL
+            """)
+
+            count = cursor.fetchone()[0]
+            conn.close()
+
+            return count > 0
+
+        except Exception as e:
+            logger.error(f"Failed to check null transaction IDs migration status: {e}")
+            return False
+
+    async def _migrate_null_transaction_ids(self):
+        """Populate null internalTransactionId fields using transactionId from raw data"""
+        from pathlib import Path
+
+        db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+        if not db_path.exists():
+            logger.warning("Database file not found, skipping migration")
+            return
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            # Get all transactions with null/empty internalTransactionId but valid transactionId in raw data
+            cursor.execute("""
+                SELECT rowid, json_extract(rawTransaction, '$.transactionId') as transactionId
+                FROM transactions
+                WHERE (internalTransactionId IS NULL OR internalTransactionId = '')
+                AND json_extract(rawTransaction, '$.transactionId') IS NOT NULL
+                ORDER BY rowid
+            """)
+
+            null_records = cursor.fetchall()
+            total_records = len(null_records)
+
+            if total_records == 0:
+                logger.info("No null transaction IDs found to migrate")
+                conn.close()
+                return
+
+            logger.info(
+                f"Migrating {total_records} transaction records with null internalTransactionId"
+            )
+
+            # Update in batches
+            batch_size = 100
+            migrated_count = 0
+
+            for i in range(0, total_records, batch_size):
+                batch = null_records[i : i + batch_size]
+
+                for rowid, transaction_id in batch:
+                    try:
+                        # Update the record with the transactionId from raw data
+                        cursor.execute(
+                            """
+                            UPDATE transactions
+                            SET internalTransactionId = ?
+                            WHERE rowid = ?
+                            """,
+                            (str(transaction_id), rowid),
+                        )
+
+                        migrated_count += 1
+
+                        if migrated_count % 100 == 0:
+                            logger.info(
+                                f"Migrated {migrated_count}/{total_records} transaction records"
+                            )
+
+                    except Exception as e:
+                        logger.error(f"Failed to migrate record {rowid}: {e}")
+                        continue
+
+                # Commit batch
+                conn.commit()
+
+            conn.close()
+            logger.info(f"Successfully migrated {migrated_count} transaction records")
+
+        except Exception as e:
+            logger.error(f"Null transaction IDs migration failed: {e}")
             raise
 
     def _unix_to_datetime_string(self, unix_timestamp: float) -> str:

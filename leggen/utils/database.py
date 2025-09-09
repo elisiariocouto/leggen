@@ -69,8 +69,13 @@ def save_transactions(ctx: click.Context, account: str) -> list:
             ",".join(transaction.get("remittanceInformationUnstructuredArray", [])),
         )
 
+        # Extract transaction ID, using transactionId as fallback when internalTransactionId is missing
+        transaction_id = transaction.get("internalTransactionId") or transaction.get(
+            "transactionId"
+        )
+
         t = {
-            "internalTransactionId": transaction.get("internalTransactionId"),
+            "internalTransactionId": transaction_id,
             "institutionId": account_info["institution_id"],
             "iban": account_info.get("iban", "N/A"),
             "transactionDate": min_date,
@@ -105,8 +110,13 @@ def save_transactions(ctx: click.Context, account: str) -> list:
             ",".join(transaction.get("remittanceInformationUnstructuredArray", [])),
         )
 
+        # Extract transaction ID, using transactionId as fallback when internalTransactionId is missing
+        transaction_id = transaction.get("internalTransactionId") or transaction.get(
+            "transactionId"
+        )
+
         t = {
-            "internalTransactionId": transaction.get("internalTransactionId"),
+            "internalTransactionId": transaction_id,
             "institutionId": account_info["institution_id"],
             "iban": account_info.get("iban", "N/A"),
             "transactionDate": min_date,
