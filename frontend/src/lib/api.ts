@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Account, Transaction, Balance, ApiResponse } from '../types/api';
+import type { Account, Transaction, Balance, ApiResponse, NotificationSettings, NotificationTest, NotificationService, NotificationServicesResponse } from '../types/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
@@ -61,6 +61,36 @@ export const apiClient = {
   getTransaction: async (id: string): Promise<Transaction> => {
     const response = await api.get<ApiResponse<Transaction>>(`/transactions/${id}`);
     return response.data.data;
+  },
+
+  // Get notification settings
+  getNotificationSettings: async (): Promise<NotificationSettings> => {
+    const response = await api.get<ApiResponse<NotificationSettings>>('/notifications/settings');
+    return response.data.data;
+  },
+
+  // Update notification settings
+  updateNotificationSettings: async (settings: NotificationSettings): Promise<NotificationSettings> => {
+    const response = await api.put<ApiResponse<NotificationSettings>>('/notifications/settings', settings);
+    return response.data.data;
+  },
+
+  // Test notification
+  testNotification: async (test: NotificationTest): Promise<void> => {
+    await api.post('/notifications/test', test);
+  },
+
+  // Get notification services
+  getNotificationServices: async (): Promise<NotificationService[]> => {
+    const response = await api.get<ApiResponse<NotificationServicesResponse>>('/notifications/services');
+    // Convert object to array format
+    const servicesData = response.data.data;
+    return Object.values(servicesData);
+  },
+
+  // Delete notification service
+  deleteNotificationService: async (service: string): Promise<void> => {
+    await api.delete(`/notifications/settings/${service}`);
   },
 };
 
