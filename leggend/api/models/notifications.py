@@ -23,8 +23,6 @@ class NotificationFilters(BaseModel):
 
     case_insensitive: List[str] = []
     case_sensitive: Optional[List[str]] = None
-    amount_threshold: Optional[float] = None
-    keywords: List[str] = []
 
 
 class NotificationSettings(BaseModel):
