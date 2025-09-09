@@ -86,3 +86,42 @@ export interface PaginatedResponse<T> {
   per_page: number;
   total_pages: number;
 }
+
+// Notification types
+export interface DiscordConfig {
+  webhook: string;
+  enabled: boolean;
+}
+
+export interface TelegramConfig {
+  token: string;
+  chat_id: number;
+  enabled: boolean;
+}
+
+export interface NotificationFilters {
+  case_insensitive: string[];
+  case_sensitive?: string[];
+}
+
+export interface NotificationSettings {
+  discord?: DiscordConfig;
+  telegram?: TelegramConfig;
+  filters: NotificationFilters;
+}
+
+export interface NotificationTest {
+  service: string;
+  message?: string;
+}
+
+export interface NotificationService {
+  name: string;
+  enabled: boolean;
+  configured: boolean;
+  active?: boolean;
+}
+
+export interface NotificationServicesResponse {
+  [serviceName: string]: NotificationService;
+}

@@ -10,16 +10,18 @@ import {
   List,
   BarChart3,
   Wifi,
-  WifiOff
+  WifiOff,
+  Bell
 } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import AccountsOverview from './AccountsOverview';
 import TransactionsList from './TransactionsList';
+import Notifications from './Notifications';
 import ErrorBoundary from './ErrorBoundary';
 import { cn } from '../lib/utils';
 import type { Account } from '../types/api';
 
-type TabType = 'overview' | 'transactions' | 'analytics';
+type TabType = 'overview' | 'transactions' | 'analytics' | 'notifications';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -47,6 +49,7 @@ export default function Dashboard() {
     { name: 'Overview', icon: Home, id: 'overview' as TabType },
     { name: 'Transactions', icon: List, id: 'transactions' as TabType },
     { name: 'Analytics', icon: BarChart3, id: 'analytics' as TabType },
+    { name: 'Notifications', icon: Bell, id: 'notifications' as TabType },
   ];
 
   const totalBalance = accounts?.reduce((sum, account) => {
@@ -176,6 +179,7 @@ export default function Dashboard() {
                 <p className="text-gray-600">Analytics dashboard coming soon...</p>
               </div>
             )}
+            {activeTab === 'notifications' && <Notifications />}
           </ErrorBoundary>
         </main>
       </div>
