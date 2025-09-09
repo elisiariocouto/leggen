@@ -24,6 +24,17 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to load configuration: {e}")
         raise
 
+    # Run database migrations
+    try:
+        from leggend.services.database_service import DatabaseService
+
+        db_service = DatabaseService()
+        await db_service.run_migrations_if_needed()
+        logger.info("Database migrations completed")
+    except Exception as e:
+        logger.error(f"Database migration failed: {e}")
+        raise
+
     # Start background scheduler
     scheduler.start()
     logger.info("Background scheduler started")
