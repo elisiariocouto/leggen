@@ -95,7 +95,8 @@ class NotificationService:
         telegram_config = self.notifications_config.get("telegram", {})
         return bool(
             telegram_config.get("token")
-            and telegram_config.get("chat_id")
+            or telegram_config.get("api-key")
+            and (telegram_config.get("chat_id") or telegram_config.get("chat-id"))
             and telegram_config.get("enabled", True)
         )
 
@@ -117,11 +118,67 @@ class NotificationService:
 
     async def _send_discord_test(self, message: str) -> None:
         """Send Discord test notification"""
-        logger.info(f"Sending Discord test: {message}")
+        try:
+            from leggen.notifications.discord import send_expire_notification
+            import click
+
+            # Create a mock context with the webhook
+            ctx = click.Context(click.Command("test"))
+            ctx.obj = {
+                "notifications": {
+                    "discord": {
+                        "webhook": self.notifications_config.get("discord", {}).get(
+                            "webhook"
+                        )
+                    }
+                }
+            }
+
+            # Send test notification using the actual implementation
+            test_notification = {
+                "bank": "Test",
+                "requisition_id": "test-123",
+                "status": "active",
+                "days_left": 30,
+            }
+            send_expire_notification(ctx, test_notification)
+            logger.info(f"Discord test notification sent: {message}")
+        except Exception as e:
+            logger.error(f"Failed to send Discord test notification: {e}")
+            raise
 
     async def _send_telegram_test(self, message: str) -> None:
         """Send Telegram test notification"""
-        logger.info(f"Sending Telegram test: {message}")
+        try:
+            from leggen.notifications.telegram import send_expire_notification
+            import click
+
+            # Create a mock context with the telegram config
+            ctx = click.Context(click.Command("test"))
+            telegram_config = self.notifications_config.get("telegram", {})
+            ctx.obj = {
+                "notifications": {
+                    "telegram": {
+                        "api-key": telegram_config.get("token")
+                        or telegram_config.get("api-key"),
+                        "chat-id": telegram_config.get("chat_id")
+                        or telegram_config.get("chat-id"),
+                    }
+                }
+            }
+
+            # Send test notification using the actual implementation
+            test_notification = {
+                "bank": "Test",
+                "requisition_id": "test-123",
+                "status": "active",
+                "days_left": 30,
+            }
+            send_expire_notification(ctx, test_notification)
+            logger.info(f"Telegram test notification sent: {message}")
+        except Exception as e:
+            logger.error(f"Failed to send Telegram test notification: {e}")
+            raise
 
     async def _send_discord_expiry(self, notification_data: Dict[str, Any]) -> None:
         """Send Discord expiry notification"""
