@@ -30,10 +30,13 @@ export default function Dashboard() {
     queryFn: apiClient.getAccounts,
   });
 
-  const { data: healthStatus, isLoading: healthLoading } = useQuery({
+  const { data: healthStatus, isLoading: healthLoading, isError: healthError } = useQuery({
     queryKey: ['health'],
     queryFn: async () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/health`);
+      if (!response.ok) {
+        throw new Error(`Health check failed: ${response.status}`);
+      }
       return response.json();
     },
     refetchInterval: 30000, // Check every 30 seconds
@@ -146,15 +149,15 @@ export default function Dashboard() {
                     <Activity className="h-4 w-4 text-yellow-500 animate-pulse" />
                     <span className="text-sm text-gray-600">Checking...</span>
                   </>
-                ) : healthStatus?.success ? (
-                  <>
-                    <Wifi className="h-4 w-4 text-green-500" />
-                    <span className="text-sm text-gray-600">Connected</span>
-                  </>
-                ) : (
+                ) : healthError || !healthStatus?.success ? (
                   <>
                     <WifiOff className="h-4 w-4 text-red-500" />
                     <span className="text-sm text-red-500">Disconnected</span>
+                  </>
+                ) : (
+                  <>
+                    <Wifi className="h-4 w-4 text-green-500" />
+                    <span className="text-sm text-gray-600">Connected</span>
                   </>
                 )}
               </div>
