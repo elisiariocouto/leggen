@@ -125,3 +125,11 @@ export interface NotificationService {
 export interface NotificationServicesResponse {
   [serviceName: string]: NotificationService;
 }
+
+// Health check response data
+export interface HealthData {
+  status: string;
+  config_loaded?: boolean;
+  message?: string;
+  error?: string;
+}
