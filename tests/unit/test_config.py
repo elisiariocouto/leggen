@@ -190,7 +190,6 @@ class TestConfig:
             "filters": {
                 "case-insensitive": ["salary", "utility"],
                 "case-sensitive": ["SpecificStore"],
-                "amount_threshold": 100.0,
             }
         }
 
@@ -201,4 +200,3 @@ class TestConfig:
         assert "salary" in filters["case-insensitive"]
         assert "utility" in filters["case-insensitive"]
         assert "SpecificStore" in filters["case-sensitive"]
-        assert filters["amount_threshold"] == 100.0

@@ -48,8 +48,6 @@ async def get_notification_settings() -> APIResponse:
             filters=NotificationFilters(
                 case_insensitive=filters_config.get("case-insensitive", []),
                 case_sensitive=filters_config.get("case-sensitive"),
-                amount_threshold=filters_config.get("amount_threshold"),
-                keywords=filters_config.get("keywords", []),
             ),
         )
 
@@ -92,10 +90,6 @@ async def update_notification_settings(settings: NotificationSettings) -> APIRes
             filters_config["case-insensitive"] = settings.filters.case_insensitive
         if settings.filters.case_sensitive:
             filters_config["case-sensitive"] = settings.filters.case_sensitive
-        if settings.filters.amount_threshold:
-            filters_config["amount_threshold"] = settings.filters.amount_threshold
-        if settings.filters.keywords:
-            filters_config["keywords"] = settings.filters.keywords
 
         # Save to config
         if notifications_config:
