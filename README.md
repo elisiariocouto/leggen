@@ -64,8 +64,8 @@ git clone https://github.com/elisiariocouto/leggen.git
 cd leggen
 
 # Create your configuration
-mkdir -p leggen && cp config.example.toml leggen/config.toml
-# Edit leggen/config.toml with your GoCardless credentials
+mkdir -p data && cp config.example.toml data/config.toml
+# Edit data/config.toml with your GoCardless credentials
 
 # Start all services (frontend + backend)
 docker compose up -d
@@ -73,6 +73,31 @@ docker compose up -d
 # Access the web interface at http://localhost:3000
 # API is available at http://localhost:8000
 ```
+
+#### Production Deployment
+
+For production deployment using published Docker images:
+
+```bash
+# Clone the repository
+git clone https://github.com/elisiariocouto/leggen.git
+cd leggen
+
+# Create your configuration
+mkdir -p data && cp config.example.toml data/config.toml
+# Edit data/config.toml with your GoCardless credentials
+
+# Start production services
+docker compose up -d
+
+# Access the web interface at http://localhost:3000
+# API is available at http://localhost:8000
+```
+
+### Development vs Production
+
+- **Development**: Use `docker compose -f compose.dev.yml up -d` (builds from source)
+- **Production**: Use `docker compose up -d` (uses published images)
 
 #### Option 2: Local Development
 For development or local installation:
@@ -90,7 +115,7 @@ uv run leggen --help
 
 ### Configuration
 
-Create a configuration file at `~/.config/leggen/config.toml`:
+Create a configuration file at `./data/config.toml` (for Docker) or `~/.config/leggen/config.toml` (for local development):
 
 ```toml
 [gocardless]
@@ -188,8 +213,25 @@ leggen status
 
 ### Docker Usage
 
+#### Development (build from source)
 ```bash
-# Start all services (frontend + backend)
+# Start development services
+docker compose -f compose.dev.yml up -d
+
+# View service status
+docker compose -f compose.dev.yml ps
+
+# Check logs
+docker compose -f compose.dev.yml logs frontend
+docker compose -f compose.dev.yml logs leggend
+
+# Stop development services
+docker compose -f compose.dev.yml down
+```
+
+#### Production (use published images)
+```bash
+# Start production services
 docker compose up -d
 
 # View service status
@@ -202,7 +244,7 @@ docker compose logs leggend
 # Access the web interface at http://localhost:3000
 # API documentation at http://localhost:8000/docs
 
-# Stop all services
+# Stop production services
 docker compose down
 ```
 

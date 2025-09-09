@@ -1,19 +1,25 @@
 services:
   # React frontend service
   frontend:
-    image: ghcr.io/elisiariocouto/leggen:latest-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     restart: "unless-stopped"
     ports:
       - "127.0.0.1:3000:80"
+    environment:
+      - API_BACKEND_URL=${API_BACKEND_URL:-http://leggend:8000}
     depends_on:
       leggend:
         condition: service_healthy
 
   # FastAPI backend service
   leggend:
-    image: ghcr.io/elisiariocouto/leggen:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: "unless-stopped"
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
-      - "./data:/root/.config/leggen"  # Configuration and database directory
+      - "./data:/root/.config/leggen"
