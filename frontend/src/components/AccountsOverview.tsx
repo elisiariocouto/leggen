@@ -1,32 +1,30 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 import {
   CreditCard,
   TrendingUp,
   TrendingDown,
   Building2,
   RefreshCw,
-  AlertCircle
-} from 'lucide-react';
-import { apiClient } from '../lib/api';
-import { formatCurrency, formatDate } from '../lib/utils';
-import LoadingSpinner from './LoadingSpinner';
-import type { Account, Balance } from '../types/api';
+  AlertCircle,
+} from "lucide-react";
+import { apiClient } from "../lib/api";
+import { formatCurrency, formatDate } from "../lib/utils";
+import LoadingSpinner from "./LoadingSpinner";
+import type { Account, Balance } from "../types/api";
 
 export default function AccountsOverview() {
   const {
     data: accounts,
     isLoading: accountsLoading,
     error: accountsError,
-    refetch: refetchAccounts
+    refetch: refetchAccounts,
   } = useQuery<Account[]>({
-    queryKey: ['accounts'],
+    queryKey: ["accounts"],
     queryFn: apiClient.getAccounts,
   });
 
-  const {
-    data: balances
-  } = useQuery<Balance[]>({
-    queryKey: ['balances'],
+  const { data: balances } = useQuery<Balance[]>({
+    queryKey: ["balances"],
     queryFn: () => apiClient.getBalances(),
   });
 
@@ -44,9 +42,12 @@ export default function AccountsOverview() {
         <div className="flex items-center justify-center text-center">
           <div>
             <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load accounts</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Failed to load accounts
+            </h3>
             <p className="text-gray-600 mb-4">
-              Unable to connect to the Leggen API. Make sure the server is running on localhost:8000.
+              Unable to connect to the Leggen API. Please check your
+              configuration and ensure the API server is running.
             </p>
             <button
               onClick={() => refetchAccounts()}
@@ -61,13 +62,15 @@ export default function AccountsOverview() {
     );
   }
 
-  const totalBalance = accounts?.reduce((sum, account) => {
-    // Get the first available balance from the balances array
-    const primaryBalance = account.balances?.[0]?.amount || 0;
-    return sum + primaryBalance;
-  }, 0) || 0;
+  const totalBalance =
+    accounts?.reduce((sum, account) => {
+      // Get the first available balance from the balances array
+      const primaryBalance = account.balances?.[0]?.amount || 0;
+      return sum + primaryBalance;
+    }, 0) || 0;
   const totalAccounts = accounts?.length || 0;
-  const uniqueBanks = new Set(accounts?.map(acc => acc.institution_id) || []).size;
+  const uniqueBanks = new Set(accounts?.map((acc) => acc.institution_id) || [])
+    .size;
 
   return (
     <div className="space-y-6">
@@ -90,8 +93,12 @@ export default function AccountsOverview() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Accounts</p>
-              <p className="text-2xl font-bold text-gray-900">{totalAccounts}</p>
+              <p className="text-sm font-medium text-gray-600">
+                Total Accounts
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {totalAccounts}
+              </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
               <CreditCard className="h-6 w-6 text-blue-600" />
@@ -102,7 +109,9 @@ export default function AccountsOverview() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Connected Banks</p>
+              <p className="text-sm font-medium text-gray-600">
+                Connected Banks
+              </p>
               <p className="text-2xl font-bold text-gray-900">{uniqueBanks}</p>
             </div>
             <div className="p-3 bg-purple-100 rounded-full">
@@ -116,70 +125,87 @@ export default function AccountsOverview() {
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">Bank Accounts</h3>
-          <p className="text-sm text-gray-600">Manage your connected bank accounts</p>
+          <p className="text-sm text-gray-600">
+            Manage your connected bank accounts
+          </p>
         </div>
 
         {!accounts || accounts.length === 0 ? (
           <div className="p-6 text-center">
             <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No accounts found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No accounts found
+            </h3>
             <p className="text-gray-600">
               Connect your first bank account to get started with Leggen.
             </p>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-             {accounts.map((account) => {
-               // Get balance from account's balances array or fallback to balances query
-               const accountBalance = account.balances?.[0];
-               const fallbackBalance = balances?.find(b => b.account_id === account.id);
-               const balance = accountBalance?.amount || fallbackBalance?.balance_amount || 0;
-               const currency = accountBalance?.currency || fallbackBalance?.currency || account.currency || 'EUR';
-               const isPositive = balance >= 0;
+            {accounts.map((account) => {
+              // Get balance from account's balances array or fallback to balances query
+              const accountBalance = account.balances?.[0];
+              const fallbackBalance = balances?.find(
+                (b) => b.account_id === account.id,
+              );
+              const balance =
+                accountBalance?.amount || fallbackBalance?.balance_amount || 0;
+              const currency =
+                accountBalance?.currency ||
+                fallbackBalance?.currency ||
+                account.currency ||
+                "EUR";
+              const isPositive = balance >= 0;
 
-               return (
-                 <div key={account.id} className="p-6 hover:bg-gray-50 transition-colors">
-                   <div className="flex items-center justify-between">
-                     <div className="flex items-center space-x-4">
-                       <div className="p-3 bg-gray-100 rounded-full">
-                         <Building2 className="h-6 w-6 text-gray-600" />
-                       </div>
-                       <div>
-                         <h4 className="text-lg font-medium text-gray-900">
-                           {account.name || 'Unnamed Account'}
-                         </h4>
-                         <p className="text-sm text-gray-600">
-                           {account.institution_id} • {account.status}
-                         </p>
-                         {account.iban && (
-                           <p className="text-xs text-gray-500 mt-1">
-                             IBAN: {account.iban}
-                           </p>
-                         )}
-                       </div>
-                     </div>
+              return (
+                <div
+                  key={account.id}
+                  className="p-6 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-3 bg-gray-100 rounded-full">
+                        <Building2 className="h-6 w-6 text-gray-600" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-medium text-gray-900">
+                          {account.name || "Unnamed Account"}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {account.institution_id} • {account.status}
+                        </p>
+                        {account.iban && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            IBAN: {account.iban}
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-                     <div className="text-right">
-                       <div className="flex items-center space-x-2">
-                         {isPositive ? (
-                           <TrendingUp className="h-4 w-4 text-green-500" />
-                         ) : (
-                           <TrendingDown className="h-4 w-4 text-red-500" />
-                         )}
-                         <p className={`text-lg font-semibold ${
-                           isPositive ? 'text-green-600' : 'text-red-600'
-                         }`}>
-                           {formatCurrency(balance, currency)}
-                         </p>
-                       </div>
-                       <p className="text-sm text-gray-500">
-                         Updated {formatDate(account.last_accessed || account.created)}
-                       </p>
-                     </div>
-                   </div>
-                 </div>
-               );
-             })}
+                    <div className="text-right">
+                      <div className="flex items-center space-x-2">
+                        {isPositive ? (
+                          <TrendingUp className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-red-500" />
+                        )}
+                        <p
+                          className={`text-lg font-semibold ${
+                            isPositive ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {formatCurrency(balance, currency)}
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        Updated{" "}
+                        {formatDate(account.last_accessed || account.created)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

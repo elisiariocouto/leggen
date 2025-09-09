@@ -1,6 +1,6 @@
-import { Component } from 'react';
-import type { ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Component } from "react";
+import type { ErrorInfo, ReactNode } from "react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -24,7 +24,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
     this.setState({ error, errorInfo });
   }
 
@@ -43,9 +43,12 @@ class ErrorBoundary extends Component<Props, State> {
           <div className="flex items-center justify-center text-center">
             <div>
               <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Something went wrong</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Something went wrong
+              </h3>
               <p className="text-gray-600 mb-4">
-                An error occurred while rendering this component. Please try refreshing or check the console for more details.
+                An error occurred while rendering this component. Please try
+                refreshing or check the console for more details.
               </p>
 
               {this.state.error && (
@@ -55,7 +58,9 @@ class ErrorBoundary extends Component<Props, State> {
                   </p>
                   {this.state.error.stack && (
                     <details className="mt-2">
-                      <summary className="text-sm text-red-600 cursor-pointer">Stack trace</summary>
+                      <summary className="text-sm text-red-600 cursor-pointer">
+                        Stack trace
+                      </summary>
                       <pre className="text-xs text-red-700 mt-1 whitespace-pre-wrap">
                         {this.state.error.stack}
                       </pre>

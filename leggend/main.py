@@ -66,7 +66,8 @@ def create_app() -> FastAPI:
         allow_origins=[
             "http://localhost:3000",
             "http://localhost:5173",
-        ],  # SvelteKit dev servers
+            "http://frontend:80",
+        ],  # Frontend container and dev servers
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

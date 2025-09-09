@@ -1,56 +1,25 @@
 services:
-  # FastAPI backend service
-  leggend:
+  # React frontend service
+  frontend:
     build:
-      context: .
+      context: ./frontend
+      dockerfile: Dockerfile
     restart: "unless-stopped"
     ports:
-      - "127.0.0.1:8000:8000"
-    volumes:
-      - "./leggen:/root/.config/leggen" # Configuration file directory
-      - "./db:/app" # Database storage
+      - "127.0.0.1:3000:80"
     environment:
-      - LEGGEN_CONFIG_FILE=/root/.config/leggen/config.toml
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  nocodb:
-    image: nocodb/nocodb:latest
-    restart: "unless-stopped"
-    volumes:
-      - "./nocodb:/usr/app/data/"
-      - "./db:/usr/leggen:ro"
-    ports:
-      - "127.0.0.1:8080:8080"
+      - API_BACKEND_URL=${API_BACKEND_URL:-http://leggend:8000}
     depends_on:
       leggend:
         condition: service_healthy
 
-  # Optional: If you want to have a mongodb, uncomment the following lines
-  # mongo:
-  #   image: mongo:7
-  #   restart: "unless-stopped"
-  #   # If you want to expose the mongodb port to the host, uncomment the following lines
-  #   # ports:
-  #   #   - 127.0.0.1:27017:27017
-  #   volumes:
-  #     - "./data:/data/db"
-  #   environment:
-  #     MONGO_INITDB_ROOT_USERNAME: "leggen"
-  #     MONGO_INITDB_ROOT_PASSWORD: "changeme"
-
-  # Optional: If you want to have an admin interface for your mongodb, uncomment the following lines
-  # mongo-express:
-  #   image: mongo-express
-  #   restart: "unless-stopped"
-  #   # By default, we are exposing the mongo-express port to the host
-  #   ports:
-  #     - 127.0.0.1:8081:8081
-  #   environment:
-  #     ME_CONFIG_MONGODB_URL: "mongodb://leggen:changeme@mongo:27017/"
-  #     ME_CONFIG_BASICAUTH_USERNAME: ""
-  #   depends_on:
-  #     - mongo
+  # FastAPI backend service
+  leggend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: "unless-stopped"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - "./data:/root/.config/leggen"

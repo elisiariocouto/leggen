@@ -13,16 +13,18 @@ A modern React dashboard for the Leggen Open Banking CLI tool. This frontend pro
 ## Prerequisites
 
 - Node.js 18+ and npm
-- Leggen API server running on `localhost:8000`
+- Leggen API server running (configurable via environment variables)
 
 ## Getting Started
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Start the development server:**
+
    ```bash
    npm run dev
    ```
@@ -69,7 +71,7 @@ src/
 
 ## API Integration
 
-The frontend connects to the Leggen API server running on `localhost:8000`. The API client handles:
+The frontend connects to the Leggen API server (configurable via environment variables). The API client handles:
 
 - Account retrieval and management
 - Transaction fetching with filtering
@@ -78,7 +80,27 @@ The frontend connects to the Leggen API server running on `localhost:8000`. The 
 
 ## Configuration
 
-The API base URL is configured in `src/lib/api.ts`. Update the `API_BASE_URL` constant if your Leggen server runs on a different port or host.
+### API URL Configuration
+
+The frontend supports configurable API URLs through environment variables:
+
+**Development:**
+
+- Set `VITE_API_URL` to call external APIs during development
+- Example: `VITE_API_URL=https://staging-api.example.com npm run dev`
+
+**Production:**
+
+- Uses relative URLs (`/api/v1`) that nginx proxies to the backend
+- Configure nginx proxy target via `API_BACKEND_URL` environment variable
+- Default: `http://leggend:8000`
+
+**Docker Compose:**
+
+```bash
+# Override API backend URL
+API_BACKEND_URL=https://prod-api.example.com docker-compose up
+```
 
 ## Development
 

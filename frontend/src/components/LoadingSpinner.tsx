@@ -1,10 +1,12 @@
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw } from "lucide-react";
 
 interface LoadingSpinnerProps {
   message?: string;
 }
 
-export default function LoadingSpinner({ message = 'Loading...' }: LoadingSpinnerProps) {
+export default function LoadingSpinner({
+  message = "Loading...",
+}: LoadingSpinnerProps) {
   return (
     <div className="flex items-center justify-center p-8">
       <div className="text-center">

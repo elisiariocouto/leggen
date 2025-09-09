@@ -1,19 +1,30 @@
-import axios from 'axios';
-import type { Account, Transaction, Balance, ApiResponse, NotificationSettings, NotificationTest, NotificationService, NotificationServicesResponse } from '../types/api';
+import axios from "axios";
+import type {
+  Account,
+  Transaction,
+  Balance,
+  ApiResponse,
+  NotificationSettings,
+  NotificationTest,
+  NotificationService,
+  NotificationServicesResponse,
+  HealthData,
+} from "../types/api";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+// Use VITE_API_URL for development, relative URLs for production
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
 export const apiClient = {
   // Get all accounts
   getAccounts: async (): Promise<Account[]> => {
-    const response = await api.get<ApiResponse<Account[]>>('/accounts');
+    const response = await api.get<ApiResponse<Account[]>>("/accounts");
     return response.data.data;
   },
 
@@ -25,13 +36,15 @@ export const apiClient = {
 
   // Get all balances
   getBalances: async (): Promise<Balance[]> => {
-    const response = await api.get<ApiResponse<Balance[]>>('/balances');
+    const response = await api.get<ApiResponse<Balance[]>>("/balances");
     return response.data.data;
   },
 
   // Get balances for specific account
   getAccountBalances: async (accountId: string): Promise<Balance[]> => {
-    const response = await api.get<ApiResponse<Balance[]>>(`/accounts/${accountId}/balances`);
+    const response = await api.get<ApiResponse<Balance[]>>(
+      `/accounts/${accountId}/balances`,
+    );
     return response.data.data;
   },
 
@@ -46,43 +59,57 @@ export const apiClient = {
   }): Promise<Transaction[]> => {
     const queryParams = new URLSearchParams();
 
-    if (params?.accountId) queryParams.append('account_id', params.accountId);
-    if (params?.startDate) queryParams.append('start_date', params.startDate);
-    if (params?.endDate) queryParams.append('end_date', params.endDate);
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.perPage) queryParams.append('per_page', params.perPage.toString());
-    if (params?.search) queryParams.append('search', params.search);
+    if (params?.accountId) queryParams.append("account_id", params.accountId);
+    if (params?.startDate) queryParams.append("start_date", params.startDate);
+    if (params?.endDate) queryParams.append("end_date", params.endDate);
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.perPage)
+      queryParams.append("per_page", params.perPage.toString());
+    if (params?.search) queryParams.append("search", params.search);
 
-    const response = await api.get<ApiResponse<Transaction[]>>(`/transactions?${queryParams.toString()}`);
+    const response = await api.get<ApiResponse<Transaction[]>>(
+      `/transactions?${queryParams.toString()}`,
+    );
     return response.data.data;
   },
 
   // Get transaction by ID
   getTransaction: async (id: string): Promise<Transaction> => {
-    const response = await api.get<ApiResponse<Transaction>>(`/transactions/${id}`);
+    const response = await api.get<ApiResponse<Transaction>>(
+      `/transactions/${id}`,
+    );
     return response.data.data;
   },
 
   // Get notification settings
   getNotificationSettings: async (): Promise<NotificationSettings> => {
-    const response = await api.get<ApiResponse<NotificationSettings>>('/notifications/settings');
+    const response = await api.get<ApiResponse<NotificationSettings>>(
+      "/notifications/settings",
+    );
     return response.data.data;
   },
 
   // Update notification settings
-  updateNotificationSettings: async (settings: NotificationSettings): Promise<NotificationSettings> => {
-    const response = await api.put<ApiResponse<NotificationSettings>>('/notifications/settings', settings);
+  updateNotificationSettings: async (
+    settings: NotificationSettings,
+  ): Promise<NotificationSettings> => {
+    const response = await api.put<ApiResponse<NotificationSettings>>(
+      "/notifications/settings",
+      settings,
+    );
     return response.data.data;
   },
 
   // Test notification
   testNotification: async (test: NotificationTest): Promise<void> => {
-    await api.post('/notifications/test', test);
+    await api.post("/notifications/test", test);
   },
 
   // Get notification services
   getNotificationServices: async (): Promise<NotificationService[]> => {
-    const response = await api.get<ApiResponse<NotificationServicesResponse>>('/notifications/services');
+    const response = await api.get<ApiResponse<NotificationServicesResponse>>(
+      "/notifications/services",
+    );
     // Convert object to array format
     const servicesData = response.data.data;
     return Object.values(servicesData);
@@ -91,6 +118,12 @@ export const apiClient = {
   // Delete notification service
   deleteNotificationService: async (service: string): Promise<void> => {
     await api.delete(`/notifications/settings/${service}`);
+  },
+
+  // Health check
+  getHealth: async (): Promise<HealthData> => {
+    const response = await api.get<ApiResponse<HealthData>>("/health");
+    return response.data.data;
   },
 };
 
