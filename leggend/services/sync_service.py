@@ -61,8 +61,16 @@ class SyncService:
 
                     # Get and save balances
                     balances = await self.gocardless.get_account_balances(account_id)
-                    if balances:
-                        await self.database.persist_balance(account_id, balances)
+                    if balances and account_details:
+                        # Merge account details into balances data for proper persistence
+                        balances_with_account_info = balances.copy()
+                        balances_with_account_info["institution_id"] = (
+                            account_details.get("institution_id")
+                        )
+                        balances_with_account_info["iban"] = account_details.get("iban")
+                        await self.database.persist_balance(
+                            account_id, balances_with_account_info
+                        )
                         balances_updated += len(balances.get("balances", []))
 
                     # Get and save transactions
