@@ -1,4 +1,20 @@
 
+## 2025.9.3 (2025/09/10)
+
+### Miscellaneous Tasks
+
+- **ci:** Fix GitHub Actions syntax. ([90e58734](https://github.com/elisiariocouto/leggen/commit/90e58734adb9638efd695719321874658529561d))
+
+
+
+## 2025.9.3 (2025/09/10)
+
+### Miscellaneous Tasks
+
+- **ci:** Fix GitHub Actions syntax. ([90e58734](https://github.com/elisiariocouto/leggen/commit/90e58734adb9638efd695719321874658529561d))
+
+
+
 ## 2025.9.2 (2025/09/10)
 
 ### Bug Fixes
