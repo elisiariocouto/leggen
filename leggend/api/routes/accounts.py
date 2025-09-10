@@ -243,7 +243,8 @@ async def get_account_transactions(
             # Return simplified transaction summaries
             data = [
                 TransactionSummary(
-                    internal_transaction_id=txn["internalTransactionId"],
+                    transaction_id=txn["transactionId"],  # NEW: stable bank-provided ID
+                    internal_transaction_id=txn.get("internalTransactionId"),
                     date=txn["transactionDate"],
                     description=txn["description"],
                     amount=txn["transactionValue"],
@@ -257,7 +258,8 @@ async def get_account_transactions(
             # Return full transaction details
             data = [
                 Transaction(
-                    internal_transaction_id=txn["internalTransactionId"],
+                    transaction_id=txn["transactionId"],  # NEW: stable bank-provided ID
+                    internal_transaction_id=txn.get("internalTransactionId"),
                     institution_id=txn["institutionId"],
                     iban=txn["iban"],
                     account_id=txn["accountId"],

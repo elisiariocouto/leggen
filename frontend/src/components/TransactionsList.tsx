@@ -267,10 +267,7 @@ export default function TransactionsList() {
 
             return (
               <div
-                key={
-                  transaction.internal_transaction_id ||
-                   `${transaction.account_id}-${transaction.transaction_date}-${transaction.transaction_value}`
-                }
+                 key={`${transaction.account_id}-${transaction.transaction_id}`}
                 className="p-6 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-start justify-between">
@@ -365,7 +362,7 @@ export default function TransactionsList() {
         isOpen={showRawModal}
         onClose={handleCloseModal}
         rawTransaction={selectedTransaction?.raw_transaction}
-        transactionId={selectedTransaction?.internal_transaction_id || "unknown"}
+        transactionId={selectedTransaction?.transaction_id || "unknown"}
       />
     </div>
   );

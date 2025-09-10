@@ -15,6 +15,7 @@ class TestTransactionsAPI:
         """Test successful retrieval of all transactions from database."""
         mock_transactions = [
             {
+                "transactionId": "bank-txn-001",  # NEW: stable bank-provided ID
                 "internalTransactionId": "txn-001",
                 "institutionId": "REVOLUT_REVOLT21",
                 "iban": "LT313250081177977789",
@@ -24,9 +25,10 @@ class TestTransactionsAPI:
                 "transactionCurrency": "EUR",
                 "transactionStatus": "booked",
                 "accountId": "test-account-123",
-                "rawTransaction": {"some": "data"},
+                "rawTransaction": {"transactionId": "bank-txn-001", "some": "data"},
             },
             {
+                "transactionId": "bank-txn-002",  # NEW: stable bank-provided ID
                 "internalTransactionId": "txn-002",
                 "institutionId": "REVOLUT_REVOLT21",
                 "iban": "LT313250081177977789",
@@ -36,7 +38,7 @@ class TestTransactionsAPI:
                 "transactionCurrency": "EUR",
                 "transactionStatus": "booked",
                 "accountId": "test-account-123",
-                "rawTransaction": {"other": "data"},
+                "rawTransaction": {"transactionId": "bank-txn-002", "other": "data"},
             },
         ]
 
@@ -73,6 +75,7 @@ class TestTransactionsAPI:
         """Test retrieval of full transaction details from database."""
         mock_transactions = [
             {
+                "transactionId": "bank-txn-001",  # NEW: stable bank-provided ID
                 "internalTransactionId": "txn-001",
                 "institutionId": "REVOLUT_REVOLT21",
                 "iban": "LT313250081177977789",
@@ -82,7 +85,7 @@ class TestTransactionsAPI:
                 "transactionCurrency": "EUR",
                 "transactionStatus": "booked",
                 "accountId": "test-account-123",
-                "rawTransaction": {"some": "raw_data"},
+                "rawTransaction": {"transactionId": "bank-txn-001", "some": "raw_data"},
             }
         ]
 
@@ -105,6 +108,7 @@ class TestTransactionsAPI:
         assert len(data["data"]) == 1
 
         transaction = data["data"][0]
+        assert transaction["transaction_id"] == "bank-txn-001"  # NEW: check stable ID
         assert transaction["internal_transaction_id"] == "txn-001"
         assert transaction["institution_id"] == "REVOLUT_REVOLT21"
         assert transaction["iban"] == "LT313250081177977789"
@@ -116,6 +120,7 @@ class TestTransactionsAPI:
         """Test getting transactions with various filters."""
         mock_transactions = [
             {
+                "transactionId": "bank-txn-001",  # NEW: stable bank-provided ID
                 "internalTransactionId": "txn-001",
                 "institutionId": "REVOLUT_REVOLT21",
                 "iban": "LT313250081177977789",
@@ -125,7 +130,7 @@ class TestTransactionsAPI:
                 "transactionCurrency": "EUR",
                 "transactionStatus": "booked",
                 "accountId": "test-account-123",
-                "rawTransaction": {"some": "data"},
+                "rawTransaction": {"transactionId": "bank-txn-001", "some": "data"},
             }
         ]
 

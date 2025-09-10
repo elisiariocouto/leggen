@@ -36,7 +36,8 @@ class AccountDetails(BaseModel):
 class Transaction(BaseModel):
     """Transaction model"""
 
-    internal_transaction_id: Optional[str] = None
+    transaction_id: str  # NEW: stable bank-provided transaction ID
+    internal_transaction_id: Optional[str] = None  # OLD: unstable GoCardless ID
     institution_id: str
     iban: Optional[str] = None
     account_id: str
@@ -54,6 +55,7 @@ class Transaction(BaseModel):
 class TransactionSummary(BaseModel):
     """Transaction summary for lists"""
 
+    transaction_id: str  # NEW: stable bank-provided transaction ID
     internal_transaction_id: Optional[str] = None
     date: datetime
     description: str
