@@ -1,4 +1,20 @@
 
+## 2025.9.6 (2025/09/10)
+
+### Features
+
+- **db:** Migrate transactions table to composite primary key ([a00d6ce2](https://github.com/elisiariocouto/leggen/commit/a00d6ce2ce2c4a070e9fae56c0cea58b3aab6cec))
+
+
+
+## 2025.9.6 (2025/09/10)
+
+### Features
+
+- **db:** Migrate transactions table to composite primary key ([a00d6ce2](https://github.com/elisiariocouto/leggen/commit/a00d6ce2ce2c4a070e9fae56c0cea58b3aab6cec))
+
+
+
 ## 2025.9.5 (2025/09/10)
 
 ### Bug Fixes
