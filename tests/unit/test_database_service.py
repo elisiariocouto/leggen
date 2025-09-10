@@ -18,6 +18,8 @@ def sample_transactions_db_format():
     """Sample transactions in database format."""
     return [
         {
+            "accountId": "test-account-123",
+            "transactionId": "txn-001",
             "internalTransactionId": "txn-001",
             "institutionId": "REVOLUT_REVOLT21",
             "iban": "LT313250081177977789",
@@ -26,10 +28,11 @@ def sample_transactions_db_format():
             "transactionValue": -10.50,
             "transactionCurrency": "EUR",
             "transactionStatus": "booked",
-            "accountId": "test-account-123",
-            "rawTransaction": {"some": "data"},
+            "rawTransaction": {"transactionId": "txn-001", "some": "data"},
         },
         {
+            "accountId": "test-account-123",
+            "transactionId": "txn-002",
             "internalTransactionId": "txn-002",
             "institutionId": "REVOLUT_REVOLT21",
             "iban": "LT313250081177977789",
@@ -38,8 +41,7 @@ def sample_transactions_db_format():
             "transactionValue": -45.30,
             "transactionCurrency": "EUR",
             "transactionStatus": "booked",
-            "accountId": "test-account-123",
-            "rawTransaction": {"other": "data"},
+            "rawTransaction": {"transactionId": "txn-002", "other": "data"},
         },
     ]
 
@@ -351,6 +353,7 @@ class TestDatabaseService:
                 "booked": [
                     {
                         "internalTransactionId": "txn-001",
+                        "transactionId": "txn-001",
                         "bookingDate": "2025-09-01",
                         "transactionAmount": {"amount": "-10.50", "currency": "EUR"},
                         "remittanceInformationUnstructured": "Coffee Shop",
@@ -359,6 +362,7 @@ class TestDatabaseService:
                 "pending": [
                     {
                         "internalTransactionId": "txn-002",
+                        "transactionId": "txn-002",
                         "bookingDate": "2025-09-02",
                         "transactionAmount": {"amount": "-25.00", "currency": "EUR"},
                         "remittanceInformationUnstructured": "Gas Station",
@@ -375,12 +379,14 @@ class TestDatabaseService:
 
         # Check booked transaction
         booked_txn = next(t for t in result if t["transactionStatus"] == "booked")
+        assert booked_txn["transactionId"] == "txn-001"
         assert booked_txn["internalTransactionId"] == "txn-001"
         assert booked_txn["transactionValue"] == -10.50
         assert booked_txn["description"] == "Coffee Shop"
 
         # Check pending transaction
         pending_txn = next(t for t in result if t["transactionStatus"] == "pending")
+        assert pending_txn["transactionId"] == "txn-002"
         assert pending_txn["internalTransactionId"] == "txn-002"
         assert pending_txn["transactionValue"] == -25.00
         assert pending_txn["description"] == "Gas Station"
@@ -416,6 +422,7 @@ class TestDatabaseService:
                 "booked": [
                     {
                         "internalTransactionId": "txn-001",
+                        "transactionId": "txn-001",
                         "bookingDate": "2025-09-01",
                         "transactionAmount": {"amount": "-10.50", "currency": "EUR"},
                         "remittanceInformationUnstructuredArray": ["Line 1", "Line 2"],
