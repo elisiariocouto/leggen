@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CreditCard,
   TrendingUp,
@@ -6,6 +7,9 @@ import {
   Building2,
   RefreshCw,
   AlertCircle,
+  Edit2,
+  Check,
+  X,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
@@ -27,6 +31,43 @@ export default function AccountsOverview() {
     queryKey: ["balances"],
     queryFn: () => apiClient.getBalances(),
   });
+
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+
+  const queryClient = useQueryClient();
+
+  const updateAccountMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      apiClient.updateAccount(id, { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      setEditingAccountId(null);
+      setEditingName("");
+    },
+    onError: (error) => {
+      console.error("Failed to update account:", error);
+    },
+  });
+
+  const handleEditStart = (account: Account) => {
+    setEditingAccountId(account.id);
+    setEditingName(account.name || "");
+  };
+
+  const handleEditSave = () => {
+    if (editingAccountId && editingName.trim()) {
+      updateAccountMutation.mutate({
+        id: editingAccountId,
+        name: editingName.trim(),
+      });
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingAccountId(null);
+    setEditingName("");
+  };
 
   if (accountsLoading) {
     return (
@@ -167,19 +208,69 @@ export default function AccountsOverview() {
                       <div className="p-3 bg-gray-100 rounded-full">
                         <Building2 className="h-6 w-6 text-gray-600" />
                       </div>
-                      <div>
-                        <h4 className="text-lg font-medium text-gray-900">
-                          {account.name || "Unnamed Account"}
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          {account.institution_id} • {account.status}
-                        </p>
-                        {account.iban && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            IBAN: {account.iban}
-                          </p>
-                        )}
-                      </div>
+                       <div className="flex-1">
+                         {editingAccountId === account.id ? (
+                           <div className="space-y-2">
+                             <div className="flex items-center space-x-2">
+                               <input
+                                 type="text"
+                                 value={editingName}
+                                 onChange={(e) => setEditingName(e.target.value)}
+                                 className="flex-1 px-3 py-1 text-lg font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                 placeholder="Account name"
+                                 name="search"
+                                 autoComplete="off"
+                                 onKeyDown={(e) => {
+                                   if (e.key === "Enter") handleEditSave();
+                                   if (e.key === "Escape") handleEditCancel();
+                                 }}
+                                 autoFocus
+                               />
+                               <button
+                                 onClick={handleEditSave}
+                                 disabled={!editingName.trim() || updateAccountMutation.isPending}
+                                 className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                 title="Save changes"
+                               >
+                                 <Check className="h-4 w-4" />
+                               </button>
+                               <button
+                                 onClick={handleEditCancel}
+                                 className="p-1 text-gray-600 hover:text-gray-700"
+                                 title="Cancel editing"
+                               >
+                                 <X className="h-4 w-4" />
+                               </button>
+                             </div>
+                             <p className="text-sm text-gray-600">
+                               {account.institution_id} • {account.status}
+                             </p>
+                           </div>
+                         ) : (
+                           <div>
+                             <div className="flex items-center space-x-2">
+                               <h4 className="text-lg font-medium text-gray-900">
+                                 {account.name || "Unnamed Account"}
+                               </h4>
+                               <button
+                                 onClick={() => handleEditStart(account)}
+                                 className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                 title="Edit account name"
+                               >
+                                 <Edit2 className="h-4 w-4" />
+                               </button>
+                             </div>
+                             <p className="text-sm text-gray-600">
+                               {account.institution_id} • {account.status}
+                             </p>
+                             {account.iban && (
+                               <p className="text-xs text-gray-500 mt-1">
+                                 IBAN: {account.iban}
+                               </p>
+                             )}
+                           </div>
+                         )}
+                       </div>
                     </div>
 
                     <div className="text-right">

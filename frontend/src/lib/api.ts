@@ -9,6 +9,7 @@ import type {
   NotificationService,
   NotificationServicesResponse,
   HealthData,
+  AccountUpdate,
 } from "../types/api";
 
 // Use VITE_API_URL for development, relative URLs for production
@@ -31,6 +32,12 @@ export const apiClient = {
   // Get account by ID
   getAccount: async (id: string): Promise<Account> => {
     const response = await api.get<ApiResponse<Account>>(`/accounts/${id}`);
+    return response.data.data;
+  },
+
+  // Update account details
+  updateAccount: async (id: string, updates: AccountUpdate): Promise<{ id: string; name?: string }> => {
+    const response = await api.put<ApiResponse<{ id: string; name?: string }>>(`/accounts/${id}`, updates);
     return response.data.data;
   },
 

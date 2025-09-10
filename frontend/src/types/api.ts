@@ -17,6 +17,10 @@ export interface Account {
   balances: AccountBalance[];
 }
 
+export interface AccountUpdate {
+  name?: string;
+}
+
 export interface RawTransactionData {
   transactionId?: string;
   bookingDate?: string;
