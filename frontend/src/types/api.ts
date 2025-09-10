@@ -17,15 +17,55 @@ export interface Account {
   balances: AccountBalance[];
 }
 
+export interface RawTransactionData {
+  transactionId?: string;
+  bookingDate?: string;
+  valueDate?: string;
+  bookingDateTime?: string;
+  valueDateTime?: string;
+  transactionAmount?: {
+    amount: string;
+    currency: string;
+  };
+  currencyExchange?: {
+    instructedAmount?: {
+      amount: string;
+      currency: string;
+    };
+    sourceCurrency?: string;
+    exchangeRate?: string;
+    unitCurrency?: string;
+    targetCurrency?: string;
+  };
+  creditorName?: string;
+  debtorName?: string;
+  debtorAccount?: {
+    iban?: string;
+  };
+  remittanceInformationUnstructuredArray?: string[];
+  proprietaryBankTransactionCode?: string;
+  balanceAfterTransaction?: {
+    balanceAmount: {
+      amount: string;
+      currency: string;
+    };
+    balanceType: string;
+  };
+  internalTransactionId?: string;
+  [key: string]: unknown; // Allow additional fields
+}
+
 export interface Transaction {
   internal_transaction_id: string | null;
   account_id: string;
-  amount: number;
-  currency: string;
+  transaction_value: number;
+  transaction_currency: string;
   description: string;
-  date: string;
-  status: string;
+  transaction_date: string;
+  transaction_status: string;
   // Optional fields that may be present in some transactions
+  institution_id?: string;
+  iban?: string;
   booking_date?: string;
   value_date?: string;
   creditor_name?: string;
@@ -34,6 +74,8 @@ export interface Transaction {
   category?: string;
   created_at?: string;
   updated_at?: string;
+  // Raw transaction data (only present when summary_only=false)
+  raw_transaction?: RawTransactionData;
 }
 
 // Type for raw transaction data from API (before sanitization)

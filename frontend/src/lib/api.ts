@@ -56,6 +56,7 @@ export const apiClient = {
     page?: number;
     perPage?: number;
     search?: string;
+    summaryOnly?: boolean;
   }): Promise<Transaction[]> => {
     const queryParams = new URLSearchParams();
 
@@ -66,6 +67,9 @@ export const apiClient = {
     if (params?.perPage)
       queryParams.append("per_page", params.perPage.toString());
     if (params?.search) queryParams.append("search", params.search);
+    if (params?.summaryOnly !== undefined) {
+      queryParams.append("summary_only", params.summaryOnly.toString());
+    }
 
     const response = await api.get<ApiResponse<Transaction[]>>(
       `/transactions?${queryParams.toString()}`,
