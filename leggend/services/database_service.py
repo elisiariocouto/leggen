@@ -548,6 +548,14 @@ class DatabaseService:
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
 
+            # Check if transactions table exists
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'"
+            )
+            if not cursor.fetchone():
+                conn.close()
+                return False
+
             # Check if transactions table has the old primary key structure
             cursor.execute("PRAGMA table_info(transactions)")
             columns = cursor.fetchall()
@@ -558,26 +566,19 @@ class DatabaseService:
                 for col in columns
             )
 
-            # If internalTransactionId is still the primary key, migration is needed
-            if internal_transaction_id_is_pk:
-                # Check if there are duplicate (accountId, transactionId) pairs
-                cursor.execute("""
-                    SELECT COUNT(*) as duplicates
-                    FROM (
-                        SELECT accountId, json_extract(rawTransaction, '$.transactionId') as transactionId, COUNT(*) as cnt
-                        FROM transactions
-                        WHERE json_extract(rawTransaction, '$.transactionId') IS NOT NULL
-                        GROUP BY accountId, json_extract(rawTransaction, '$.transactionId')
-                        HAVING COUNT(*) > 1
-                    )
-                """)
-                duplicates = cursor.fetchone()[0]
-                conn.close()
-                return duplicates > 0
-            else:
-                # Migration already completed
-                conn.close()
-                return False
+            # Check if we have the new composite primary key structure
+            has_composite_key = any(
+                col[1] in ["accountId", "transactionId"]
+                and col[5] == 1  # col[5] is pk flag
+                for col in columns
+            )
+
+            conn.close()
+
+            # Migration is needed if:
+            # 1. internalTransactionId is still the primary key (old structure), OR
+            # 2. We don't have the new composite key structure yet
+            return internal_transaction_id_is_pk or not has_composite_key
 
         except Exception as e:
             logger.error(f"Failed to check composite key migration status: {e}")

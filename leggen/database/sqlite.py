@@ -118,7 +118,9 @@ def persist_transactions(ctx: click.Context, account: str, transactions: list) -
     # Create the transactions table if it doesn't exist
     cursor.execute(
         """CREATE TABLE IF NOT EXISTS transactions (
-        internalTransactionId TEXT PRIMARY KEY,
+        accountId TEXT NOT NULL,
+        transactionId TEXT NOT NULL,
+        internalTransactionId TEXT,
         institutionId TEXT,
         iban TEXT,
         transactionDate DATETIME,
@@ -126,15 +128,15 @@ def persist_transactions(ctx: click.Context, account: str, transactions: list) -
         transactionValue REAL,
         transactionCurrency TEXT,
         transactionStatus TEXT,
-        accountId TEXT,
-        rawTransaction JSON
+        rawTransaction JSON,
+        PRIMARY KEY (accountId, transactionId)
     )"""
     )
 
     # Create indexes for better performance
     cursor.execute(
-        """CREATE INDEX IF NOT EXISTS idx_transactions_account_id
-           ON transactions(accountId)"""
+        """CREATE INDEX IF NOT EXISTS idx_transactions_internal_id
+           ON transactions(internalTransactionId)"""
     )
     cursor.execute(
         """CREATE INDEX IF NOT EXISTS idx_transactions_date
@@ -153,7 +155,9 @@ def persist_transactions(ctx: click.Context, account: str, transactions: list) -
     duplicates_count = 0
 
     # Prepare an SQL statement for inserting data
-    insert_sql = """INSERT INTO transactions (
+    insert_sql = """INSERT OR REPLACE INTO transactions (
+        accountId,
+        transactionId,
         internalTransactionId,
         institutionId,
         iban,
@@ -162,9 +166,8 @@ def persist_transactions(ctx: click.Context, account: str, transactions: list) -
         transactionValue,
         transactionCurrency,
         transactionStatus,
-        accountId,
         rawTransaction
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
     new_transactions = []
 
@@ -173,7 +176,9 @@ def persist_transactions(ctx: click.Context, account: str, transactions: list) -
             cursor.execute(
                 insert_sql,
                 (
-                    transaction["internalTransactionId"],
+                    transaction["accountId"],
+                    transaction["transactionId"],
+                    transaction.get("internalTransactionId"),
                     transaction["institutionId"],
                     transaction["iban"],
                     transaction["transactionDate"],
@@ -181,7 +186,6 @@ def persist_transactions(ctx: click.Context, account: str, transactions: list) -
                     transaction["transactionValue"],
                     transaction["transactionCurrency"],
                     transaction["transactionStatus"],
-                    transaction["accountId"],
                     json.dumps(transaction["rawTransaction"]),
                 ),
             )

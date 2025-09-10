@@ -36,6 +36,7 @@ def sample_transactions():
     """Sample transaction data for testing."""
     return [
         {
+            "transactionId": "bank-txn-001",  # NEW: stable bank-provided ID
             "internalTransactionId": "txn-001",
             "institutionId": "REVOLUT_REVOLT21",
             "iban": "LT313250081177977789",
@@ -45,9 +46,10 @@ def sample_transactions():
             "transactionCurrency": "EUR",
             "transactionStatus": "booked",
             "accountId": "test-account-123",
-            "rawTransaction": {"some": "data"},
+            "rawTransaction": {"transactionId": "bank-txn-001", "some": "data"},
         },
         {
+            "transactionId": "bank-txn-002",  # NEW: stable bank-provided ID
             "internalTransactionId": "txn-002",
             "institutionId": "REVOLUT_REVOLT21",
             "iban": "LT313250081177977789",
@@ -57,7 +59,7 @@ def sample_transactions():
             "transactionCurrency": "EUR",
             "transactionStatus": "booked",
             "accountId": "test-account-123",
-            "rawTransaction": {"other": "data"},
+            "rawTransaction": {"transactionId": "bank-txn-002", "other": "data"},
         },
     ]
 
@@ -120,8 +122,8 @@ class TestSQLiteDatabase:
 
             # First time should return all as new
             assert len(new_transactions_1) == 2
-            # Second time should return none (all duplicates)
-            assert len(new_transactions_2) == 0
+            # Second time should also return all (INSERT OR REPLACE behavior with composite key)
+            assert len(new_transactions_2) == 2
 
     def test_get_transactions_all(self, mock_home_db_path, sample_transactions):
         """Test retrieving all transactions."""
