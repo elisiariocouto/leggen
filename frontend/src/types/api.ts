@@ -60,8 +60,8 @@ export interface RawTransactionData {
 }
 
 export interface Transaction {
-  transaction_id: string;  // NEW: stable bank-provided transaction ID
-  internal_transaction_id: string | null;  // OLD: unstable GoCardless ID
+  transaction_id: string; // NEW: stable bank-provided transaction ID
+  internal_transaction_id: string | null; // OLD: unstable GoCardless ID
   account_id: string;
   transaction_value: number;
   transaction_currency: string;

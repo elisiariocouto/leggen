@@ -36,8 +36,14 @@ export const apiClient = {
   },
 
   // Update account details
-  updateAccount: async (id: string, updates: AccountUpdate): Promise<{ id: string; name?: string }> => {
-    const response = await api.put<ApiResponse<{ id: string; name?: string }>>(`/accounts/${id}`, updates);
+  updateAccount: async (
+    id: string,
+    updates: AccountUpdate,
+  ): Promise<{ id: string; name?: string }> => {
+    const response = await api.put<ApiResponse<{ id: string; name?: string }>>(
+      `/accounts/${id}`,
+      updates,
+    );
     return response.data.data;
   },
 

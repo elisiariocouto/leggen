@@ -24,7 +24,7 @@ export default function RawTransactionModal({
 
     try {
       await navigator.clipboard.writeText(
-        JSON.stringify(rawTransaction, null, 2)
+        JSON.stringify(rawTransaction, null, 2),
       );
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -78,7 +78,10 @@ export default function RawTransactionModal({
 
             <div className="mb-4">
               <p className="text-sm text-gray-600">
-                Transaction ID: <code className="bg-gray-100 px-2 py-1 rounded text-xs">{transactionId}</code>
+                Transaction ID:{" "}
+                <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                  {transactionId}
+                </code>
               </p>
             </div>
 
@@ -94,7 +97,8 @@ export default function RawTransactionModal({
                   Raw transaction data is not available for this transaction.
                 </p>
                 <p className="text-sm text-gray-500 mt-2">
-                  Try refreshing the page or check if the transaction was fetched with summary_only=false.
+                  Try refreshing the page or check if the transaction was
+                  fetched with summary_only=false.
                 </p>
               </div>
             )}

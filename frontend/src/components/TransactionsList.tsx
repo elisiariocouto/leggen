@@ -24,7 +24,8 @@ export default function TransactionsList() {
   const [endDate, setEndDate] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showRawModal, setShowRawModal] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
 
   const { data: accounts } = useQuery<Account[]>({
     queryKey: ["accounts"],
@@ -263,11 +264,11 @@ export default function TransactionsList() {
             const account = accounts?.find(
               (acc) => acc.id === transaction.account_id,
             );
-             const isPositive = transaction.transaction_value > 0;
+            const isPositive = transaction.transaction_value > 0;
 
             return (
               <div
-                 key={`${transaction.account_id}-${transaction.transaction_id}`}
+                key={`${transaction.account_id}-${transaction.transaction_id}`}
                 className="p-6 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-start justify-between">
@@ -319,37 +320,41 @@ export default function TransactionsList() {
                     </div>
                   </div>
 
-                   <div className="text-right ml-4">
-                     <div className="flex items-center justify-end space-x-2 mb-2">
-                       <button
-                         onClick={() => handleViewRaw(transaction)}
-                         className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                         title="View raw transaction data"
-                       >
-                         <Eye className="h-3 w-3 mr-1" />
-                         Raw
-                       </button>
-                     </div>
-                     <p
-                       className={`text-lg font-semibold ${
-                         isPositive ? "text-green-600" : "text-red-600"
-                       }`}
-                     >
-                       {isPositive ? "+" : ""}
-                        {formatCurrency(transaction.transaction_value, transaction.transaction_currency)}
-                     </p>
-                     <p className="text-sm text-gray-500">
-                        {transaction.transaction_date
-                          ? formatDate(transaction.transaction_date)
-                          : "No date"}
-                     </p>
-                      {transaction.booking_date &&
-                        transaction.booking_date !== transaction.transaction_date && (
-                         <p className="text-xs text-gray-400">
-                           Booked: {formatDate(transaction.booking_date)}
-                         </p>
-                       )}
-                   </div>
+                  <div className="text-right ml-4">
+                    <div className="flex items-center justify-end space-x-2 mb-2">
+                      <button
+                        onClick={() => handleViewRaw(transaction)}
+                        className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                        title="View raw transaction data"
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        Raw
+                      </button>
+                    </div>
+                    <p
+                      className={`text-lg font-semibold ${
+                        isPositive ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {isPositive ? "+" : ""}
+                      {formatCurrency(
+                        transaction.transaction_value,
+                        transaction.transaction_currency,
+                      )}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {transaction.transaction_date
+                        ? formatDate(transaction.transaction_date)
+                        : "No date"}
+                    </p>
+                    {transaction.booking_date &&
+                      transaction.booking_date !==
+                        transaction.transaction_date && (
+                        <p className="text-xs text-gray-400">
+                          Booked: {formatDate(transaction.booking_date)}
+                        </p>
+                      )}
+                  </div>
                 </div>
               </div>
             );
