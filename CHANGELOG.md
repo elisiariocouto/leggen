@@ -1,4 +1,30 @@
 
+## 2025.9.2 (2025/09/10)
+
+### Bug Fixes
+
+- **ci:** Prevent duplicate Docker tags in GitHub Actions ([53e08e8e](https://github.com/elisiariocouto/leggen/commit/53e08e8e4b909b4895b5a447cfbce515893d31a5))
+
+
+### Features
+
+- **docker:** Add Docker containerization for React frontend ([84fe79b3](https://github.com/elisiariocouto/leggen/commit/84fe79b37b4f154fa0758f8d037cdba0d166dd3b))
+
+
+
+## 2025.9.2 (2025/09/10)
+
+### Bug Fixes
+
+- **ci:** Prevent duplicate Docker tags in GitHub Actions ([53e08e8e](https://github.com/elisiariocouto/leggen/commit/53e08e8e4b909b4895b5a447cfbce515893d31a5))
+
+
+### Features
+
+- **docker:** Add Docker containerization for React frontend ([84fe79b3](https://github.com/elisiariocouto/leggen/commit/84fe79b37b4f154fa0758f8d037cdba0d166dd3b))
+
+
+
 ## 2025.9.1 (2025/09/09)
 
 ### Bug Fixes
