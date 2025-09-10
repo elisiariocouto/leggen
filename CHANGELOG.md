@@ -1,4 +1,20 @@
 
+## 2025.9.5 (2025/09/10)
+
+### Bug Fixes
+
+-  Correct composite key migration check ([c0ee21d6](https://github.com/elisiariocouto/leggen/commit/c0ee21d6fa8d5d61c029bd9334a7674fce99f729))
+
+
+
+## 2025.9.5 (2025/09/10)
+
+### Bug Fixes
+
+-  Correct composite key migration check ([c0ee21d6](https://github.com/elisiariocouto/leggen/commit/c0ee21d6fa8d5d61c029bd9334a7674fce99f729))
+
+
+
 ## 2025.9.4 (2025/09/10)
 
 ### Bug Fixes
