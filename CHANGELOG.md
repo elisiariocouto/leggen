@@ -1,4 +1,55 @@
 
+## 2025.9.4 (2025/09/10)
+
+### Bug Fixes
+
+- **api:** Resolve duplicate transactions with composite key migration ([13e92ccd](https://github.com/elisiariocouto/leggen/commit/13e92ccd3497bacf3b8639f6332cd3f4b682bd0a))
+
+
+### Features
+
+- **api:** Add currency extraction and account name updates ([d9c50d12](https://github.com/elisiariocouto/leggen/commit/d9c50d129825529e0fb6477e5b62c0f990523bca))
+- **frontend:** Adapt to composite key transaction structure ([61fafecb](https://github.com/elisiariocouto/leggen/commit/61fafecb780a877a69ecca27ea95a1494669b70d))
+- **frontend:** Add account name editing functionality ([aa97f368](https://github.com/elisiariocouto/leggen/commit/aa97f36819f15f1afc34f45642abdc6e2ce6c883))
+- **frontend:** Implement TanStack Router with mobile sidebar ([ca41b7af](https://github.com/elisiariocouto/leggen/commit/ca41b7af0a5e50e0350857a4ace7979b7b29eab2))
+- **web:** Add modal to view raw transaction. ([433ba3fa](https://github.com/elisiariocouto/leggen/commit/433ba3faf9937613786e66e9ee13152f96d00c43))
+
+
+
+## 2025.9.4 (2025/09/10)
+
+### Bug Fixes
+
+- **api:** Resolve duplicate transactions with composite key migration ([13e92ccd](https://github.com/elisiariocouto/leggen/commit/13e92ccd3497bacf3b8639f6332cd3f4b682bd0a))
+
+
+### Features
+
+- **api:** Add currency extraction and account name updates ([d9c50d12](https://github.com/elisiariocouto/leggen/commit/d9c50d129825529e0fb6477e5b62c0f990523bca))
+- **frontend:** Adapt to composite key transaction structure ([61fafecb](https://github.com/elisiariocouto/leggen/commit/61fafecb780a877a69ecca27ea95a1494669b70d))
+- **frontend:** Add account name editing functionality ([aa97f368](https://github.com/elisiariocouto/leggen/commit/aa97f36819f15f1afc34f45642abdc6e2ce6c883))
+- **frontend:** Implement TanStack Router with mobile sidebar ([ca41b7af](https://github.com/elisiariocouto/leggen/commit/ca41b7af0a5e50e0350857a4ace7979b7b29eab2))
+- **web:** Add modal to view raw transaction. ([433ba3fa](https://github.com/elisiariocouto/leggen/commit/433ba3faf9937613786e66e9ee13152f96d00c43))
+
+
+
+## 2025.9.4 (2025/09/10)
+
+### Bug Fixes
+
+- **api:** Resolve duplicate transactions with composite key migration ([13e92ccd](https://github.com/elisiariocouto/leggen/commit/13e92ccd3497bacf3b8639f6332cd3f4b682bd0a))
+
+
+### Features
+
+- **api:** Add currency extraction and account name updates ([d9c50d12](https://github.com/elisiariocouto/leggen/commit/d9c50d129825529e0fb6477e5b62c0f990523bca))
+- **frontend:** Adapt to composite key transaction structure ([61fafecb](https://github.com/elisiariocouto/leggen/commit/61fafecb780a877a69ecca27ea95a1494669b70d))
+- **frontend:** Add account name editing functionality ([aa97f368](https://github.com/elisiariocouto/leggen/commit/aa97f36819f15f1afc34f45642abdc6e2ce6c883))
+- **frontend:** Implement TanStack Router with mobile sidebar ([ca41b7af](https://github.com/elisiariocouto/leggen/commit/ca41b7af0a5e50e0350857a4ace7979b7b29eab2))
+- **web:** Add modal to view raw transaction. ([433ba3fa](https://github.com/elisiariocouto/leggen/commit/433ba3faf9937613786e66e9ee13152f96d00c43))
+
+
+
 ## 2025.9.3 (2025/09/10)
 
 ### Miscellaneous Tasks
