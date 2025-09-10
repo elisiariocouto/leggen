@@ -8,6 +8,7 @@ from leggend.api.models.accounts import (
     AccountBalance,
     Transaction,
     TransactionSummary,
+    AccountUpdate,
 )
 from leggend.services.database_service import DatabaseService
 
@@ -286,4 +287,41 @@ async def get_account_transactions(
         )
         raise HTTPException(
             status_code=404, detail=f"Failed to get transactions: {str(e)}"
+        ) from e
+
+
+@router.put("/accounts/{account_id}", response_model=APIResponse)
+async def update_account_details(
+    account_id: str, update_data: AccountUpdate
+) -> APIResponse:
+    """Update account details (currently only name)"""
+    try:
+        # Get current account details
+        current_account = await database_service.get_account_details_from_db(account_id)
+
+        if not current_account:
+            raise HTTPException(
+                status_code=404, detail=f"Account {account_id} not found"
+            )
+
+        # Prepare updated account data
+        updated_account_data = current_account.copy()
+        if update_data.name is not None:
+            updated_account_data["name"] = update_data.name
+
+        # Persist updated account details
+        await database_service.persist_account_details(updated_account_data)
+
+        return APIResponse(
+            success=True,
+            data={"id": account_id, "name": update_data.name},
+            message=f"Account {account_id} name updated successfully",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update account {account_id}: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update account: {str(e)}"
         ) from e

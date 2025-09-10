@@ -55,26 +55,45 @@ class SyncService:
                         account_id
                     )
 
-                    # Persist account details to database
-                    if account_details:
-                        await self.database.persist_account_details(account_details)
-
-                    # Get and save balances
+                    # Get balances to extract currency information
                     balances = await self.gocardless.get_account_balances(account_id)
-                    if balances and account_details:
+
+                    # Enrich account details with currency and persist
+                    if account_details and balances:
+                        enriched_account_details = account_details.copy()
+
+                        # Extract currency from first balance
+                        balances_list = balances.get("balances", [])
+                        if balances_list:
+                            first_balance = balances_list[0]
+                            balance_amount = first_balance.get("balanceAmount", {})
+                            currency = balance_amount.get("currency")
+                            if currency:
+                                enriched_account_details["currency"] = currency
+
+                        # Persist enriched account details to database
+                        await self.database.persist_account_details(
+                            enriched_account_details
+                        )
+
                         # Merge account details into balances data for proper persistence
                         balances_with_account_info = balances.copy()
                         balances_with_account_info["institution_id"] = (
-                            account_details.get("institution_id")
+                            enriched_account_details.get("institution_id")
                         )
-                        balances_with_account_info["iban"] = account_details.get("iban")
+                        balances_with_account_info["iban"] = (
+                            enriched_account_details.get("iban")
+                        )
                         balances_with_account_info["account_status"] = (
-                            account_details.get("status")
+                            enriched_account_details.get("status")
                         )
                         await self.database.persist_balance(
                             account_id, balances_with_account_info
                         )
                         balances_updated += len(balances.get("balances", []))
+                    elif account_details:
+                        # Fallback: persist account details without currency if balances failed
+                        await self.database.persist_account_details(account_details)
 
                     # Get and save transactions
                     transactions = await self.gocardless.get_account_transactions(

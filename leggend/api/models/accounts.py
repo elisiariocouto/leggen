@@ -33,6 +33,15 @@ class AccountDetails(BaseModel):
         json_encoders = {datetime: lambda v: v.isoformat() if v else None}
 
 
+class AccountUpdate(BaseModel):
+    """Account update model"""
+
+    name: Optional[str] = None
+
+    class Config:
+        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
+
+
 class Transaction(BaseModel):
     """Transaction model"""
 
