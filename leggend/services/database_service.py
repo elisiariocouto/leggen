@@ -551,10 +551,15 @@ class DatabaseService:
             # Check if transactions table has the old primary key structure
             cursor.execute("PRAGMA table_info(transactions)")
             columns = cursor.fetchall()
-            column_names = [col[1] for col in columns]
 
-            # If we have internalTransactionId as primary key, migration is needed
-            if "internalTransactionId" in column_names:
+            # Check if internalTransactionId is the primary key (old structure)
+            internal_transaction_id_is_pk = any(
+                col[1] == "internalTransactionId" and col[5] == 1  # col[5] is pk flag
+                for col in columns
+            )
+
+            # If internalTransactionId is still the primary key, migration is needed
+            if internal_transaction_id_is_pk:
                 # Check if there are duplicate (accountId, transactionId) pairs
                 cursor.execute("""
                     SELECT COUNT(*) as duplicates
@@ -570,6 +575,7 @@ class DatabaseService:
                 conn.close()
                 return duplicates > 0
             else:
+                # Migration already completed
                 conn.close()
                 return False
 
