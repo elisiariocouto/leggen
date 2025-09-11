@@ -1,4 +1,32 @@
 
+## 2025.9.7 (2025/09/11)
+
+### Bug Fixes
+
+-  Simplify notification settings and fix notification test on dashboard. ([91020e32](https://github.com/elisiariocouto/leggen/commit/91020e32ea836ee8af4aeaf5d49525c24b566aed))
+
+
+### Features
+
+- **frontend:** Implement TanStack Table for transactions view ([544527f2](https://github.com/elisiariocouto/leggen/commit/544527f28284fb9644bec6e721fa5da8ce10739f))
+-  Improve transactions API pagination and search ([2d6800ef](https://github.com/elisiariocouto/leggen/commit/2d6800eff8e484d3d175225f94d854706584a773))
+
+
+
+## 2025.9.7 (2025/09/11)
+
+### Bug Fixes
+
+-  Simplify notification settings and fix notification test on dashboard. ([91020e32](https://github.com/elisiariocouto/leggen/commit/91020e32ea836ee8af4aeaf5d49525c24b566aed))
+
+
+### Features
+
+- **frontend:** Implement TanStack Table for transactions view ([544527f2](https://github.com/elisiariocouto/leggen/commit/544527f28284fb9644bec6e721fa5da8ce10739f))
+-  Improve transactions API pagination and search ([2d6800ef](https://github.com/elisiariocouto/leggen/commit/2d6800eff8e484d3d175225f94d854706584a773))
+
+
+
 ## 2025.9.6 (2025/09/10)
 
 ### Features
