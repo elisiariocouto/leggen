@@ -121,6 +121,8 @@ def create_app() -> FastAPI:
 
 def main():
     import argparse
+    from pathlib import Path
+    from leggen.utils.paths import path_manager
 
     parser = argparse.ArgumentParser(description="Start the Leggend API service")
     parser.add_argument(
@@ -132,7 +134,23 @@ def main():
     parser.add_argument(
         "--port", type=int, default=8000, help="Port to bind to (default: 8000)"
     )
+    parser.add_argument(
+        "--config-dir",
+        type=Path,
+        help="Directory containing configuration files (default: ~/.config/leggen)",
+    )
+    parser.add_argument(
+        "--database",
+        type=Path,
+        help="Path to SQLite database file (default: <config-dir>/leggen.db)",
+    )
     args = parser.parse_args()
+
+    # Set up path manager with user-provided paths
+    if args.config_dir:
+        path_manager.set_config_dir(args.config_dir)
+    if args.database:
+        path_manager.set_database_path(args.database)
 
     if args.reload:
         # Use string import for reload to work properly

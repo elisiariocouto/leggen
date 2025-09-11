@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 from loguru import logger
 
 from leggend.config import config
+from leggen.utils.paths import path_manager
 
 
 def _log_rate_limits(response):
@@ -39,8 +40,8 @@ class GoCardlessService:
         if self._token:
             return self._token
 
-        # Use ~/.config/leggen for consistency with main config
-        auth_file = Path.home() / ".config" / "leggen" / "auth.json"
+        # Use path manager for auth file
+        auth_file = path_manager.get_auth_file_path()
 
         if auth_file.exists():
             try:
