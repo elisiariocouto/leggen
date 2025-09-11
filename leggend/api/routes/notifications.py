@@ -36,14 +36,11 @@ async def get_notification_settings() -> APIResponse:
             if discord_config.get("webhook")
             else None,
             telegram=TelegramConfig(
-                token="***"
-                if (telegram_config.get("token") or telegram_config.get("api-key"))
-                else "",
-                chat_id=telegram_config.get("chat_id")
-                or telegram_config.get("chat-id", 0),
+                token="***" if telegram_config.get("api-key") else "",
+                chat_id=telegram_config.get("chat-id", 0),
                 enabled=telegram_config.get("enabled", True),
             )
-            if (telegram_config.get("token") or telegram_config.get("api-key"))
+            if telegram_config.get("api-key")
             else None,
             filters=NotificationFilters(
                 case_insensitive=filters_config.get("case-insensitive", []),
@@ -79,8 +76,8 @@ async def update_notification_settings(settings: NotificationSettings) -> APIRes
 
         if settings.telegram:
             notifications_config["telegram"] = {
-                "token": settings.telegram.token,
-                "chat_id": settings.telegram.chat_id,
+                "api-key": settings.telegram.token,
+                "chat-id": settings.telegram.chat_id,
                 "enabled": settings.telegram.enabled,
             }
 
@@ -155,24 +152,12 @@ async def get_notification_services() -> APIResponse:
             "telegram": {
                 "name": "Telegram",
                 "enabled": bool(
-                    (
-                        notifications_config.get("telegram", {}).get("token")
-                        or notifications_config.get("telegram", {}).get("api-key")
-                    )
-                    and (
-                        notifications_config.get("telegram", {}).get("chat_id")
-                        or notifications_config.get("telegram", {}).get("chat-id")
-                    )
+                    notifications_config.get("telegram", {}).get("api-key")
+                    and notifications_config.get("telegram", {}).get("chat-id")
                 ),
                 "configured": bool(
-                    (
-                        notifications_config.get("telegram", {}).get("token")
-                        or notifications_config.get("telegram", {}).get("api-key")
-                    )
-                    and (
-                        notifications_config.get("telegram", {}).get("chat_id")
-                        or notifications_config.get("telegram", {}).get("chat-id")
-                    )
+                    notifications_config.get("telegram", {}).get("api-key")
+                    and notifications_config.get("telegram", {}).get("chat-id")
                 ),
                 "active": notifications_config.get("telegram", {}).get("enabled", True),
             },

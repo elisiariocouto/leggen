@@ -109,9 +109,8 @@ class NotificationService:
         """Check if Telegram notifications are enabled"""
         telegram_config = self.notifications_config.get("telegram", {})
         return bool(
-            telegram_config.get("token")
-            or telegram_config.get("api-key")
-            and (telegram_config.get("chat_id") or telegram_config.get("chat-id"))
+            telegram_config.get("api-key")
+            and telegram_config.get("chat-id")
             and telegram_config.get("enabled", True)
         )
 
@@ -174,10 +173,8 @@ class NotificationService:
             ctx.obj = {
                 "notifications": {
                     "telegram": {
-                        "api-key": telegram_config.get("token")
-                        or telegram_config.get("api-key"),
-                        "chat-id": telegram_config.get("chat_id")
-                        or telegram_config.get("chat-id"),
+                        "api-key": telegram_config.get("api-key"),
+                        "chat-id": telegram_config.get("chat-id"),
                     }
                 }
             }

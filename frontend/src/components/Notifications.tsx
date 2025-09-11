@@ -102,7 +102,7 @@ export default function Notifications() {
     if (!testService) return;
 
     testMutation.mutate({
-      service: testService,
+      service: testService.toLowerCase(),
       message: testMessage,
     });
   };
@@ -113,7 +113,7 @@ export default function Notifications() {
         `Are you sure you want to delete the ${serviceName} notification service?`,
       )
     ) {
-      deleteServiceMutation.mutate(serviceName);
+      deleteServiceMutation.mutate(serviceName.toLowerCase());
     }
   };
 
