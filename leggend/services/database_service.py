@@ -6,6 +6,7 @@ from loguru import logger
 
 from leggend.config import config
 import leggen.database.sqlite as sqlite_db
+from leggen.utils.paths import path_manager
 
 
 class DatabaseService:
@@ -280,9 +281,7 @@ class DatabaseService:
 
     async def _check_balance_timestamp_migration_needed(self) -> bool:
         """Check if balance timestamps need migration"""
-        from pathlib import Path
-
-        db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+        db_path = path_manager.get_database_path()
         if not db_path.exists():
             return False
 
@@ -310,9 +309,7 @@ class DatabaseService:
 
     async def _migrate_balance_timestamps(self):
         """Convert all Unix timestamps to datetime strings"""
-        from pathlib import Path
-
-        db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+        db_path = path_manager.get_database_path()
         if not db_path.exists():
             logger.warning("Database file not found, skipping migration")
             return
@@ -399,9 +396,7 @@ class DatabaseService:
 
     async def _check_null_transaction_ids_migration_needed(self) -> bool:
         """Check if null transaction IDs need migration"""
-        from pathlib import Path
-
-        db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+        db_path = path_manager.get_database_path()
         if not db_path.exists():
             return False
 
@@ -429,9 +424,8 @@ class DatabaseService:
     async def _migrate_null_transaction_ids(self):
         """Populate null internalTransactionId fields using transactionId from raw data"""
         import uuid
-        from pathlib import Path
-
-        db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+        
+        db_path = path_manager.get_database_path()
         if not db_path.exists():
             logger.warning("Database file not found, skipping migration")
             return
@@ -538,9 +532,7 @@ class DatabaseService:
 
     async def _check_composite_key_migration_needed(self) -> bool:
         """Check if composite key migration is needed"""
-        from pathlib import Path
-
-        db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+        db_path = path_manager.get_database_path()
         if not db_path.exists():
             return False
 
@@ -586,9 +578,7 @@ class DatabaseService:
 
     async def _migrate_to_composite_key(self):
         """Migrate transactions table to use composite primary key (accountId, transactionId)"""
-        from pathlib import Path
-
-        db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+        db_path = path_manager.get_database_path()
         if not db_path.exists():
             logger.warning("Database file not found, skipping migration")
             return
@@ -704,10 +694,8 @@ class DatabaseService:
         try:
             import sqlite3
 
-            from pathlib import Path
-
-            db_path = Path.home() / ".config" / "leggen" / "leggen.db"
-            db_path.parent.mkdir(parents=True, exist_ok=True)
+            db_path = path_manager.get_database_path()
+            path_manager.ensure_database_dir_exists()
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
 
@@ -786,10 +774,8 @@ class DatabaseService:
             import sqlite3
             import json
 
-            from pathlib import Path
-
-            db_path = Path.home() / ".config" / "leggen" / "leggen.db"
-            db_path.parent.mkdir(parents=True, exist_ok=True)
+            db_path = path_manager.get_database_path()
+            path_manager.ensure_database_dir_exists()
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
 
@@ -888,10 +874,7 @@ class DatabaseService:
     ) -> None:
         """Persist account details to SQLite"""
         try:
-            from pathlib import Path
-
-            db_path = Path.home() / ".config" / "leggen" / "leggen.db"
-            db_path.parent.mkdir(parents=True, exist_ok=True)
+            path_manager.ensure_database_dir_exists()
 
             # Use the sqlite_db module function
             sqlite_db.persist_account(account_data)

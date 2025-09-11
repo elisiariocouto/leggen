@@ -7,6 +7,7 @@ import click
 
 from leggen.utils.config import load_config
 from leggen.utils.text import error
+from leggen.utils.paths import path_manager
 
 cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "commands"))
 
@@ -77,7 +78,7 @@ class Group(click.Group):
     "-c",
     "--config",
     type=click.Path(dir_okay=False),
-    default=Path.home() / ".config" / "leggen" / "config.toml",
+    default=lambda: str(path_manager.get_config_file_path()),
     show_default=True,
     callback=load_config,
     is_eager=True,
@@ -85,6 +86,20 @@ class Group(click.Group):
     envvar="LEGGEN_CONFIG_FILE",
     show_envvar=True,
     help="Path to TOML configuration file",
+)
+@click.option(
+    "--config-dir",
+    type=click.Path(exists=False, file_okay=False, path_type=Path),
+    envvar="LEGGEN_CONFIG_DIR",
+    show_envvar=True,
+    help="Directory containing configuration files (default: ~/.config/leggen)",
+)
+@click.option(
+    "--database",
+    type=click.Path(dir_okay=False, path_type=Path),
+    envvar="LEGGEN_DATABASE_PATH",
+    show_envvar=True,
+    help="Path to SQLite database file (default: <config-dir>/leggen.db)",
 )
 @click.option(
     "--api-url",
@@ -100,7 +115,7 @@ class Group(click.Group):
 )
 @click.version_option(package_name="leggen")
 @click.pass_context
-def cli(ctx: click.Context, api_url: str):
+def cli(ctx: click.Context, config_dir: Path, database: Path, api_url: str):
     """
     Leggen: An Open Banking CLI
     """
@@ -108,6 +123,12 @@ def cli(ctx: click.Context, api_url: str):
     # Do not require authentication when printing help messages
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
         return
+
+    # Set up path manager with user-provided paths
+    if config_dir:
+        path_manager.set_config_dir(config_dir)
+    if database:
+        path_manager.set_database_path(database)
 
     # Store API URL in context for commands to use
     ctx.obj["api_url"] = api_url

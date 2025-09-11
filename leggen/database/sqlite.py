@@ -5,14 +5,13 @@ from sqlite3 import IntegrityError
 import click
 
 from leggen.utils.text import success, warning
+from leggen.utils.paths import path_manager
 
 
 def persist_balances(ctx: click.Context, balance: dict):
     # Connect to SQLite database
-    from pathlib import Path
-
-    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path = path_manager.get_database_path()
+    path_manager.ensure_database_dir_exists()
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
 
@@ -108,10 +107,8 @@ def persist_balances(ctx: click.Context, balance: dict):
 
 def persist_transactions(ctx: click.Context, account: str, transactions: list) -> list:
     # Connect to SQLite database
-    from pathlib import Path
-
-    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path = path_manager.get_database_path()
+    path_manager.ensure_database_dir_exists()
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
 
@@ -216,9 +213,7 @@ def get_transactions(
     search=None,
 ):
     """Get transactions from SQLite database with optional filtering"""
-    from pathlib import Path
-
-    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+    db_path = path_manager.get_database_path()
     if not db_path.exists():
         return []
     conn = sqlite3.connect(str(db_path))
@@ -288,9 +283,7 @@ def get_transactions(
 
 def get_balances(account_id=None):
     """Get latest balances from SQLite database"""
-    from pathlib import Path
-
-    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+    db_path = path_manager.get_database_path()
     if not db_path.exists():
         return []
     conn = sqlite3.connect(str(db_path))
@@ -329,9 +322,7 @@ def get_balances(account_id=None):
 
 def get_account_summary(account_id):
     """Get basic account info from transactions table (avoids GoCardless API call)"""
-    from pathlib import Path
-
-    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+    db_path = path_manager.get_database_path()
     if not db_path.exists():
         return None
     conn = sqlite3.connect(str(db_path))
@@ -365,9 +356,7 @@ def get_account_summary(account_id):
 
 def get_transaction_count(account_id=None, **filters):
     """Get total count of transactions matching filters"""
-    from pathlib import Path
-
-    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+    db_path = path_manager.get_database_path()
     if not db_path.exists():
         return 0
     conn = sqlite3.connect(str(db_path))
@@ -414,10 +403,8 @@ def get_transaction_count(account_id=None, **filters):
 
 def persist_account(account_data: dict):
     """Persist account details to SQLite database"""
-    from pathlib import Path
-
-    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path = path_manager.get_database_path()
+    path_manager.ensure_database_dir_exists()
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
 
@@ -485,9 +472,7 @@ def persist_account(account_data: dict):
 
 def get_accounts(account_ids=None):
     """Get account details from SQLite database"""
-    from pathlib import Path
-
-    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+    db_path = path_manager.get_database_path()
     if not db_path.exists():
         return []
     conn = sqlite3.connect(str(db_path))
@@ -519,9 +504,7 @@ def get_accounts(account_ids=None):
 
 def get_account(account_id: str):
     """Get specific account details from SQLite database"""
-    from pathlib import Path
-
-    db_path = Path.home() / ".config" / "leggen" / "leggen.db"
+    db_path = path_manager.get_database_path()
     if not db_path.exists():
         return None
     conn = sqlite3.connect(str(db_path))

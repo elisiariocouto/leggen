@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 from loguru import logger
+from leggen.utils.paths import path_manager
 
 
 class Config:
@@ -23,9 +24,10 @@ class Config:
 
         if config_path is None:
             config_path = os.environ.get(
-                "LEGGEN_CONFIG_FILE",
-                str(Path.home() / ".config" / "leggen" / "config.toml"),
+                "LEGGEN_CONFIG_FILE"
             )
+            if not config_path:
+                config_path = str(path_manager.get_config_file_path())
 
         self._config_path = config_path
 
@@ -53,9 +55,10 @@ class Config:
 
         if config_path is None:
             config_path = self._config_path or os.environ.get(
-                "LEGGEN_CONFIG_FILE",
-                str(Path.home() / ".config" / "leggen" / "config.toml"),
+                "LEGGEN_CONFIG_FILE"
             )
+            if not config_path:
+                config_path = str(path_manager.get_config_file_path())
 
         if config_path is None:
             raise ValueError("No config path specified")
