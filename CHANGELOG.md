@@ -1,4 +1,44 @@
 
+## 2025.9.9 (2025/09/11)
+
+### Bug Fixes
+
+- **core:** Handle permission errors gracefully in database path creation. ([4006dd12](https://github.com/elisiariocouto/leggen/commit/4006dd128e0896b338cb93fad60a1eca90c1873d))
+
+
+### Features
+
+- **frontend:** Improve transactions table mobile UX with responsive card layout ([1e94333d](https://github.com/elisiariocouto/leggen/commit/1e94333d8f0275542ae7fd6e49fb8b7f03ad3d11))
+- **frontend:** Improve transactions table mobile UX with responsive card layout ([1c901a9d](https://github.com/elisiariocouto/leggen/commit/1c901a9ddab0f6515dce56df8cce74518805a6bb))
+-  Remove config.toml file - should be created when needed ([a5d10b35](https://github.com/elisiariocouto/leggen/commit/a5d10b3539e7cfc649b0fee05b12c4a03681e135))
+
+
+### Refactor
+
+- **core:** Integrate directory creation with database path retrieval and remove backup file. ([7d9744a4](https://github.com/elisiariocouto/leggen/commit/7d9744a40e7898e5bbe52e2e9f54317aa5c1cdd6))
+
+
+
+## 2025.9.9 (2025/09/11)
+
+### Bug Fixes
+
+- **core:** Handle permission errors gracefully in database path creation. ([4006dd12](https://github.com/elisiariocouto/leggen/commit/4006dd128e0896b338cb93fad60a1eca90c1873d))
+
+
+### Features
+
+- **frontend:** Improve transactions table mobile UX with responsive card layout ([1e94333d](https://github.com/elisiariocouto/leggen/commit/1e94333d8f0275542ae7fd6e49fb8b7f03ad3d11))
+- **frontend:** Improve transactions table mobile UX with responsive card layout ([1c901a9d](https://github.com/elisiariocouto/leggen/commit/1c901a9ddab0f6515dce56df8cce74518805a6bb))
+-  Remove config.toml file - should be created when needed ([a5d10b35](https://github.com/elisiariocouto/leggen/commit/a5d10b3539e7cfc649b0fee05b12c4a03681e135))
+
+
+### Refactor
+
+- **core:** Integrate directory creation with database path retrieval and remove backup file. ([7d9744a4](https://github.com/elisiariocouto/leggen/commit/7d9744a40e7898e5bbe52e2e9f54317aa5c1cdd6))
+
+
+
 ## 2025.9.8 (2025/09/11)
 
 ### Bug Fixes
