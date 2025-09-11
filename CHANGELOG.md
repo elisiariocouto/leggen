@@ -1,4 +1,30 @@
 
+## 2025.9.8 (2025/09/11)
+
+### Bug Fixes
+
+-  Change branch name from develop to dev in CI workflow ([f4bf549b](https://github.com/elisiariocouto/leggen/commit/f4bf549b99197d70104abf5731ab1ccb67cc9a69))
+
+
+### Features
+
+-  Update CI workflow to use Node.js 20 instead of 18 ([e4e04ea3](https://github.com/elisiariocouto/leggen/commit/e4e04ea34ea568c08292562243b6e6c08234d918))
+
+
+
+## 2025.9.8 (2025/09/11)
+
+### Bug Fixes
+
+-  Change branch name from develop to dev in CI workflow ([f4bf549b](https://github.com/elisiariocouto/leggen/commit/f4bf549b99197d70104abf5731ab1ccb67cc9a69))
+
+
+### Features
+
+-  Update CI workflow to use Node.js 20 instead of 18 ([e4e04ea3](https://github.com/elisiariocouto/leggen/commit/e4e04ea34ea568c08292562243b6e6c08234d918))
+
+
+
 ## 2025.9.7 (2025/09/11)
 
 ### Bug Fixes
