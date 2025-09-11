@@ -86,23 +86,17 @@ def api_client(fastapi_app):
 @pytest.fixture
 def mock_db_path(temp_db_path):
     """Mock the database path to use temporary database for testing."""
-    from pathlib import Path
-
-    # Create the expected directory structure
-    temp_home = temp_db_path.parent
-    config_dir = temp_home / ".config" / "leggen"
-    config_dir.mkdir(parents=True, exist_ok=True)
-
-    # Create the expected database path
-    expected_db_path = config_dir / "leggen.db"
-
-    # Mock Path.home to return our temp directory
-    def mock_home():
-        return temp_home
-
-    # Patch Path.home in the main pathlib module
-    with patch.object(Path, "home", staticmethod(mock_home)):
-        yield expected_db_path
+    from leggen.utils.paths import path_manager
+    
+    # Set the path manager to use the temporary database
+    original_database_path = path_manager._database_path
+    path_manager.set_database_path(temp_db_path)
+    
+    try:
+        yield temp_db_path
+    finally:
+        # Restore original path
+        path_manager._database_path = original_database_path
 
 
 @pytest.fixture
