@@ -34,17 +34,21 @@ class PathManager:
         return self.get_config_dir() / "config.toml"
     
     def get_database_path(self) -> Path:
-        """Get the database file path."""
+        """Get the database file path and ensure the directory exists."""
         if self._database_path is not None:
-            return self._database_path
+            db_path = self._database_path
+        else:
+            # Check environment variable first
+            database_path = os.environ.get("LEGGEN_DATABASE_PATH")
+            if database_path:
+                db_path = Path(database_path)
+            else:
+                # Default to config_dir/leggen.db
+                db_path = self.get_config_dir() / "leggen.db"
         
-        # Check environment variable first
-        database_path = os.environ.get("LEGGEN_DATABASE_PATH")
-        if database_path:
-            return Path(database_path)
-        
-        # Default to config_dir/leggen.db
-        return self.get_config_dir() / "leggen.db"
+        # Ensure the directory exists
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        return db_path
     
     def set_database_path(self, path: Path) -> None:
         """Set the database file path."""
@@ -59,7 +63,11 @@ class PathManager:
         self.get_config_dir().mkdir(parents=True, exist_ok=True)
     
     def ensure_database_dir_exists(self) -> None:
-        """Ensure the database directory exists."""
+        """Ensure the database directory exists. 
+        
+        Note: get_database_path() now automatically ensures the directory exists,
+        so this method is mainly for explicit directory creation in tests.
+        """
         self.get_database_path().parent.mkdir(parents=True, exist_ok=True)
 
 

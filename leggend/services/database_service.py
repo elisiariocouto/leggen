@@ -695,7 +695,6 @@ class DatabaseService:
             import sqlite3
 
             db_path = path_manager.get_database_path()
-            path_manager.ensure_database_dir_exists()
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
 
@@ -775,7 +774,6 @@ class DatabaseService:
             import json
 
             db_path = path_manager.get_database_path()
-            path_manager.ensure_database_dir_exists()
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
 
@@ -874,8 +872,6 @@ class DatabaseService:
     ) -> None:
         """Persist account details to SQLite"""
         try:
-            path_manager.ensure_database_dir_exists()
-
             # Use the sqlite_db module function
             sqlite_db.persist_account(account_data)
 
