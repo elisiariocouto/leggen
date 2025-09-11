@@ -1,0 +1,7 @@
+[gocardless]
+key = "sandbox-key"
+secret = "sandbox-secret"
+url = "https://bankaccountdata.gocardless.com/api/v2"
+
+[database]
+sqlite = true
