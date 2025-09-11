@@ -70,12 +70,12 @@ export const apiClient = {
     perPage?: number;
     search?: string;
     summaryOnly?: boolean;
-  }): Promise<Transaction[]> => {
+  }): Promise<ApiResponse<Transaction[]>> => {
     const queryParams = new URLSearchParams();
 
     if (params?.accountId) queryParams.append("account_id", params.accountId);
-    if (params?.startDate) queryParams.append("start_date", params.startDate);
-    if (params?.endDate) queryParams.append("end_date", params.endDate);
+    if (params?.startDate) queryParams.append("date_from", params.startDate);
+    if (params?.endDate) queryParams.append("date_to", params.endDate);
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.perPage)
       queryParams.append("per_page", params.perPage.toString());
@@ -87,7 +87,7 @@ export const apiClient = {
     const response = await api.get<ApiResponse<Transaction[]>>(
       `/transactions?${queryParams.toString()}`,
     );
-    return response.data.data;
+    return response.data;
   },
 
   // Get transaction by ID

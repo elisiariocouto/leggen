@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
-  getPaginationRowModel,
   getFilteredRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import type { ColumnDef, SortingState, ColumnFiltersState } from "@tanstack/react-table";
+import type {
+  ColumnDef,
+  SortingState,
+  ColumnFiltersState,
+} from "@tanstack/react-table";
 import {
   Filter,
   Search,
@@ -26,7 +29,7 @@ import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
 import LoadingSpinner from "./LoadingSpinner";
 import RawTransactionModal from "./RawTransactionModal";
-import type { Account, Transaction } from "../types/api";
+import type { Account, Transaction, ApiResponse } from "../types/api";
 
 export default function TransactionsTable() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,11 +43,32 @@ export default function TransactionsTable() {
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
 
-  // Table state
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(50);
+
+  // Debounced search state
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  // Table state (remove pagination from table)
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
+  // Debounce search term to prevent excessive API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300); // 300ms delay
 
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset pagination when search term changes
+  useEffect(() => {
+    if (debouncedSearchTerm !== searchTerm) {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearchTerm, searchTerm]);
 
   const { data: accounts } = useQuery<Account[]>({
     queryKey: ["accounts"],
@@ -52,20 +76,44 @@ export default function TransactionsTable() {
   });
 
   const {
-    data: transactions,
+    data: transactionsResponse,
     isLoading: transactionsLoading,
     error: transactionsError,
     refetch: refetchTransactions,
-  } = useQuery<Transaction[]>({
-    queryKey: ["transactions", selectedAccount, startDate, endDate],
+  } = useQuery<ApiResponse<Transaction[]>>({
+    queryKey: [
+      "transactions",
+      selectedAccount,
+      startDate,
+      endDate,
+      currentPage,
+      perPage,
+      debouncedSearchTerm,
+    ],
     queryFn: () =>
       apiClient.getTransactions({
         accountId: selectedAccount || undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
+        page: currentPage,
+        perPage: perPage,
+        search: debouncedSearchTerm || undefined,
         summaryOnly: false,
       }),
   });
+
+  const transactions = transactionsResponse?.data || [];
+  const pagination = transactionsResponse?.pagination;
+
+  // Check if search is currently debouncing
+  const isSearchLoading = searchTerm !== debouncedSearchTerm;
+
+  // Reset pagination when total becomes 0 (no results)
+  useEffect(() => {
+    if (pagination && pagination.total === 0 && currentPage > 1) {
+      setCurrentPage(1);
+    }
+  }, [pagination, currentPage]);
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -75,6 +123,7 @@ export default function TransactionsTable() {
     setMinAmount("");
     setMaxAmount("");
     setColumnFilters([]);
+    setCurrentPage(1); // Reset to first page when clearing filters
   };
 
   const setQuickDateFilter = (days: number) => {
@@ -82,8 +131,9 @@ export default function TransactionsTable() {
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - days);
 
-    setStartDate(startDate.toISOString().split('T')[0]);
-    setEndDate(endDate.toISOString().split('T')[0]);
+    setStartDate(startDate.toISOString().split("T")[0]);
+    setEndDate(endDate.toISOString().split("T")[0]);
+    setCurrentPage(1); // Reset to first page when changing date filters
   };
 
   const setThisMonthFilter = () => {
@@ -91,9 +141,20 @@ export default function TransactionsTable() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    setStartDate(startOfMonth.toISOString().split('T')[0]);
-    setEndDate(endOfMonth.toISOString().split('T')[0]);
+    setStartDate(startOfMonth.toISOString().split("T")[0]);
+    setEndDate(endOfMonth.toISOString().split("T")[0]);
+    setCurrentPage(1); // Reset to first page when changing date filters
   };
+
+  // Reset pagination when account filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedAccount]);
+
+  // Reset pagination when date filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [startDate, endDate]);
 
   const handleViewRaw = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -106,7 +167,12 @@ export default function TransactionsTable() {
   };
 
   const hasActiveFilters =
-    searchTerm || selectedAccount || startDate || endDate || minAmount || maxAmount;
+    searchTerm ||
+    selectedAccount ||
+    startDate ||
+    endDate ||
+    minAmount ||
+    maxAmount;
 
   // Define columns
   const columns: ColumnDef<Transaction>[] = [
@@ -144,12 +210,10 @@ export default function TransactionsTable() {
                     {account.institution_id}
                   </p>
                 )}
-                {(transaction.creditor_name ||
-                  transaction.debtor_name) && (
+                {(transaction.creditor_name || transaction.debtor_name) && (
                   <p className="truncate">
                     {isPositive ? "From: " : "To: "}
-                    {transaction.creditor_name ||
-                      transaction.debtor_name}
+                    {transaction.creditor_name || transaction.debtor_name}
                   </p>
                 )}
                 {transaction.reference && (
@@ -196,8 +260,7 @@ export default function TransactionsTable() {
               ? formatDate(transaction.transaction_date)
               : "No date"}
             {transaction.booking_date &&
-              transaction.booking_date !==
-                transaction.transaction_date && (
+              transaction.booking_date !== transaction.transaction_date && (
                 <p className="text-xs text-gray-400">
                   Booked: {formatDate(transaction.booking_date)}
                 </p>
@@ -227,11 +290,10 @@ export default function TransactionsTable() {
   ];
 
   const table = useReactTable({
-    data: transactions || [],
+    data: transactions,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -365,6 +427,11 @@ export default function TransactionsTable() {
                     placeholder="Description, name, reference..."
                     className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
+                  {isSearchLoading && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-500 rounded-full"></div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -456,8 +523,21 @@ export default function TransactionsTable() {
         {/* Results Summary */}
         <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
           <p className="text-sm text-gray-600">
-            Showing {table.getFilteredRowModel().rows.length} transaction
-            {table.getFilteredRowModel().rows.length !== 1 ? "s" : ""}
+            Showing {transactions.length} transaction
+            {transactions.length !== 1 ? "s" : ""} (
+            {pagination ? (
+              <>
+                {(pagination.page - 1) * pagination.per_page + 1}-
+                {Math.min(
+                  pagination.page * pagination.per_page,
+                  pagination.total,
+                )}{" "}
+                of {pagination.total}
+              </>
+            ) : (
+              "loading..."
+            )}
+            )
             {selectedAccount && accounts && (
               <span className="ml-1">
                 for {accounts.find((acc) => acc.id === selectedAccount)?.name}
@@ -552,93 +632,125 @@ export default function TransactionsTable() {
         </div>
 
         {/* Pagination */}
-        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-          <div className="flex-1 flex justify-between sm:hidden">
-            <button
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div className="flex items-center space-x-2">
-              <p className="text-sm text-gray-700">
-                Showing{" "}
-                <span className="font-medium">
-                  {table.getState().pagination.pageIndex *
-                    table.getState().pagination.pageSize +
-                    1}
-                </span>{" "}
-                to{" "}
-                <span className="font-medium">
-                  {Math.min(
-                    (table.getState().pagination.pageIndex + 1) *
-                      table.getState().pagination.pageSize,
-                    table.getFilteredRowModel().rows.length,
-                  )}
-                </span>{" "}
-                of{" "}
-                <span className="font-medium">
-                  {table.getFilteredRowModel().rows.length}
-                </span>{" "}
-                results
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <label className="text-sm text-gray-700">Rows per page:</label>
-                <select
-                  value={table.getState().pagination.pageSize}
-                  onChange={(e) => {
-                    table.setPageSize(Number(e.target.value));
-                  }}
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
-                >
-                  {[10, 25, 50, 100].map((pageSize) => (
-                    <option key={pageSize} value={pageSize}>
-                      {pageSize}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center space-x-2">
+        {pagination && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <div className="flex space-x-2">
                 <button
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={pagination.page === 1}
+                  className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  First
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={!pagination.has_prev}
+                  className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
-                <span className="text-sm text-gray-700">
-                  Page{" "}
-                  <span className="font-medium">
-                    {table.getState().pagination.pageIndex + 1}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-medium">
-                    {table.getPageCount()}
-                  </span>
-                </span>
+              </div>
+              <div className="flex space-x-2">
                 <button
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                  className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setCurrentPage((prev) => prev + 1)}
+                  disabled={!pagination.has_next}
+                  className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
+                <button
+                  onClick={() => setCurrentPage(pagination.total_pages)}
+                  disabled={pagination.page === pagination.total_pages}
+                  className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Last
+                </button>
+              </div>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div className="flex items-center space-x-2">
+                <p className="text-sm text-gray-700">
+                  Showing{" "}
+                  <span className="font-medium">
+                    {(pagination.page - 1) * pagination.per_page + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-medium">
+                    {Math.min(
+                      pagination.page * pagination.per_page,
+                      pagination.total,
+                    )}
+                  </span>{" "}
+                  of <span className="font-medium">{pagination.total}</span>{" "}
+                  results
+                </p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm text-gray-700">
+                    Rows per page:
+                  </label>
+                  <select
+                    value={perPage}
+                    onChange={(e) => {
+                      setPerPage(Number(e.target.value));
+                      setCurrentPage(1); // Reset to first page when changing page size
+                    }}
+                    className="border border-gray-300 rounded px-2 py-1 text-sm"
+                  >
+                    {[10, 25, 50, 100].map((pageSize) => (
+                      <option key={pageSize} value={pageSize}>
+                        {pageSize}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={pagination.page === 1}
+                    className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    First
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={!pagination.has_prev}
+                    className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-gray-700">
+                    Page <span className="font-medium">{pagination.page}</span>{" "}
+                    of{" "}
+                    <span className="font-medium">
+                      {pagination.total_pages}
+                    </span>
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage((prev) => prev + 1)}
+                    disabled={!pagination.has_next}
+                    className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(pagination.total_pages)}
+                    disabled={pagination.page === pagination.total_pages}
+                    className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Last
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Raw Transaction Modal */}

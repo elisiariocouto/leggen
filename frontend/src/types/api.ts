@@ -124,6 +124,14 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   success: boolean;
+  pagination?: {
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
 }
 
 export interface PaginatedResponse<T> {

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from leggend.api.models.common import APIResponse
+from leggend.api.models.common import APIResponse, PaginatedResponse
 from leggend.api.models.accounts import Transaction, TransactionSummary
 from leggend.services.database_service import DatabaseService
 
@@ -11,10 +11,10 @@ router = APIRouter()
 database_service = DatabaseService()
 
 
-@router.get("/transactions", response_model=APIResponse)
+@router.get("/transactions", response_model=PaginatedResponse)
 async def get_all_transactions(
-    limit: Optional[int] = Query(default=100, le=500),
-    offset: Optional[int] = Query(default=0, ge=0),
+    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
+    per_page: int = Query(default=50, le=500, description="Items per page"),
     summary_only: bool = Query(
         default=True, description="Return transaction summaries only"
     ),
@@ -34,9 +34,13 @@ async def get_all_transactions(
         default=None, description="Search in transaction descriptions"
     ),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
-) -> APIResponse:
+) -> PaginatedResponse:
     """Get all transactions from database with filtering options"""
     try:
+        # Calculate offset from page and per_page
+        offset = (page - 1) * per_page
+        limit = per_page
+
         # Get transactions from database instead of GoCardless API
         db_transactions = await database_service.get_transactions_from_db(
             account_id=account_id,
@@ -50,16 +54,6 @@ async def get_all_transactions(
         )
 
         # Get total count for pagination info (respecting the same filters)
-        total_transactions = await database_service.get_transaction_count_from_db(
-            account_id=account_id,
-            date_from=date_from,
-            date_to=date_to,
-            min_amount=min_amount,
-            max_amount=max_amount,
-            search=search,
-        )
-
-        # Get total count for pagination info
         total_transactions = await database_service.get_transaction_count_from_db(
             account_id=account_id,
             date_from=date_from,
@@ -105,11 +99,19 @@ async def get_all_transactions(
                 for txn in db_transactions
             ]
 
-        actual_offset = offset or 0
-        return APIResponse(
+        total_pages = (total_transactions + per_page - 1) // per_page
+
+        return PaginatedResponse(
             success=True,
             data=data,
-            message=f"Retrieved {len(data)} transactions (showing {actual_offset + 1}-{actual_offset + len(data)} of {total_transactions})",
+            pagination={
+                "total": total_transactions,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": total_pages,
+                "has_next": page < total_pages,
+                "has_prev": page > 1,
+            },
         )
 
     except Exception as e:

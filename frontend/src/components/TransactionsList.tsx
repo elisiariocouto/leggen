@@ -15,7 +15,7 @@ import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
 import LoadingSpinner from "./LoadingSpinner";
 import RawTransactionModal from "./RawTransactionModal";
-import type { Account, Transaction } from "../types/api";
+import type { Account, Transaction, ApiResponse } from "../types/api";
 
 export default function TransactionsList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,11 +33,11 @@ export default function TransactionsList() {
   });
 
   const {
-    data: transactions,
+    data: transactionsResponse,
     isLoading: transactionsLoading,
     error: transactionsError,
     refetch: refetchTransactions,
-  } = useQuery<Transaction[]>({
+  } = useQuery<ApiResponse<Transaction[]>>({
     queryKey: ["transactions", selectedAccount, startDate, endDate],
     queryFn: () =>
       apiClient.getTransactions({
@@ -48,30 +48,34 @@ export default function TransactionsList() {
       }),
   });
 
-  const filteredTransactions = (transactions || []).filter((transaction) => {
-    // Additional validation (API client should have already filtered out invalid ones)
-    if (!transaction || !transaction.account_id) {
-      console.warn(
-        "Invalid transaction found after API filtering:",
-        transaction,
-      );
-      return false;
-    }
+  const transactions = transactionsResponse?.data || [];
 
-    const description = transaction.description || "";
-    const creditorName = transaction.creditor_name || "";
-    const debtorName = transaction.debtor_name || "";
-    const reference = transaction.reference || "";
+  const filteredTransactions = (transactions || []).filter(
+    (transaction: Transaction) => {
+      // Additional validation (API client should have already filtered out invalid ones)
+      if (!transaction || !transaction.account_id) {
+        console.warn(
+          "Invalid transaction found after API filtering:",
+          transaction,
+        );
+        return false;
+      }
 
-    const matchesSearch =
-      searchTerm === "" ||
-      description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      creditorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      debtorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reference.toLowerCase().includes(searchTerm.toLowerCase());
+      const description = transaction.description || "";
+      const creditorName = transaction.creditor_name || "";
+      const debtorName = transaction.debtor_name || "";
+      const reference = transaction.reference || "";
 
-    return matchesSearch;
-  });
+      const matchesSearch =
+        searchTerm === "" ||
+        description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        creditorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        debtorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        reference.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchesSearch;
+    },
+  );
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -260,7 +264,7 @@ export default function TransactionsList() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow divide-y divide-gray-200">
-          {filteredTransactions.map((transaction) => {
+          {filteredTransactions.map((transaction: Transaction) => {
             const account = accounts?.find(
               (acc) => acc.id === transaction.account_id,
             );
