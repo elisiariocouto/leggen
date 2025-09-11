@@ -153,8 +153,8 @@ class TestTransactionsAPI:
                 "min_amount=-50.0&"
                 "max_amount=0.0&"
                 "search=Coffee&"
-                "limit=10&"
-                "offset=5"
+                "page=2&"
+                "per_page=10"
             )
 
         assert response.status_code == 200
@@ -165,7 +165,7 @@ class TestTransactionsAPI:
         mock_get_transactions.assert_called_once_with(
             account_id="test-account-123",
             limit=10,
-            offset=5,
+            offset=10,  # (page-1) * per_page = (2-1) * 10 = 10
             date_from="2025-09-01",
             date_to="2025-09-02",
             min_amount=-50.0,
@@ -194,7 +194,9 @@ class TestTransactionsAPI:
         data = response.json()
         assert data["success"] is True
         assert len(data["data"]) == 0
-        assert "0 transactions" in data["message"]
+        assert data["pagination"]["total"] == 0
+        assert data["pagination"]["page"] == 1
+        assert data["pagination"]["total_pages"] == 0
 
     def test_get_transactions_database_error(
         self, api_client, mock_config, mock_auth_token
