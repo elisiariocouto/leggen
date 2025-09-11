@@ -11,7 +11,6 @@ from leggen.utils.paths import path_manager
 def persist_balances(ctx: click.Context, balance: dict):
     # Connect to SQLite database
     db_path = path_manager.get_database_path()
-    path_manager.ensure_database_dir_exists()
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
 
@@ -108,7 +107,6 @@ def persist_balances(ctx: click.Context, balance: dict):
 def persist_transactions(ctx: click.Context, account: str, transactions: list) -> list:
     # Connect to SQLite database
     db_path = path_manager.get_database_path()
-    path_manager.ensure_database_dir_exists()
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
 
@@ -404,7 +402,6 @@ def get_transaction_count(account_id=None, **filters):
 def persist_account(account_data: dict):
     """Persist account details to SQLite database"""
     db_path = path_manager.get_database_path()
-    path_manager.ensure_database_dir_exists()
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
 
