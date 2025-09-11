@@ -357,6 +357,10 @@ tests/               # Test suite
 3. Make your changes with tests
 4. Submit a pull request
 
+The repository uses GitHub Actions for CI/CD:
+- **CI**: Runs Python tests (`uv run pytest`) and frontend linting/build on every push
+- **Release**: Creates GitHub releases with changelog when tags are pushed
+
 ## ⚠️ Notes
 - This project is in active development
 - GoCardless API rate limits apply
