@@ -412,9 +412,9 @@ export default function TransactionsTable() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Search */}
-              <div>
+              <div className="sm:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Search
                 </label>
@@ -448,8 +448,7 @@ export default function TransactionsTable() {
                   <option value="">All accounts</option>
                   {accounts?.map((account) => (
                     <option key={account.id} value={account.id}>
-                      {account.name || "Unnamed Account"} (
-                      {account.institution_id})
+                      {account.name || "Unnamed Account"} ({account.institution_id})
                     </option>
                   ))}
                 </select>
@@ -489,7 +488,7 @@ export default function TransactionsTable() {
             </div>
 
             {/* Amount Range Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Min Amount
@@ -547,94 +546,206 @@ export default function TransactionsTable() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Responsive Table/Cards */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
-                        </span>
-                        {header.column.getCanSort() && (
-                          <div className="flex flex-col">
-                            <ChevronUp
-                              className={`h-3 w-3 ${
-                                header.column.getIsSorted() === "asc"
-                                  ? "text-blue-600"
-                                  : "text-gray-400"
-                              }`}
-                            />
-                            <ChevronDown
-                              className={`h-3 w-3 -mt-1 ${
-                                header.column.getIsSorted() === "desc"
-                                  ? "text-blue-600"
-                                  : "text-gray-400"
-                              }`}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {table.getRowModel().rows.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="px-6 py-12 text-center"
-                  >
-                    <div className="text-gray-400 mb-4">
-                      <TrendingUp className="h-12 w-12 mx-auto" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No transactions found
-                    </h3>
-                    <p className="text-gray-600">
-                      {hasActiveFilters
-                        ? "Try adjusting your filters to see more results."
-                        : "No transactions are available for the selected criteria."}
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50">
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
+        {/* Desktop Table View (hidden on mobile) */}
+        <div className="hidden md:block">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span>
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
+                          </span>
+                          {header.column.getCanSort() && (
+                            <div className="flex flex-col">
+                              <ChevronUp
+                                className={`h-3 w-3 ${
+                                  header.column.getIsSorted() === "asc"
+                                    ? "text-blue-600"
+                                    : "text-gray-400"
+                                }`}
+                              />
+                              <ChevronDown
+                                className={`h-3 w-3 -mt-1 ${
+                                  header.column.getIsSorted() === "desc"
+                                    ? "text-blue-600"
+                                    : "text-gray-400"
+                                }`}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </th>
                     ))}
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {table.getRowModel().rows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="px-6 py-12 text-center"
+                    >
+                      <div className="text-gray-400 mb-4">
+                        <TrendingUp className="h-12 w-12 mx-auto" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No transactions found
+                      </h3>
+                      <p className="text-gray-600">
+                        {hasActiveFilters
+                          ? "Try adjusting your filters to see more results."
+                          : "No transactions are available for the selected criteria."}
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  table.getRowModel().rows.map((row) => (
+                    <tr key={row.id} className="hover:bg-gray-50">
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Mobile Card View (visible only on mobile) */}
+        <div className="md:hidden">
+          {table.getRowModel().rows.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <div className="text-gray-400 mb-4">
+                <TrendingUp className="h-12 w-12 mx-auto" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No transactions found
+              </h3>
+              <p className="text-gray-600">
+                {hasActiveFilters
+                  ? "Try adjusting your filters to see more results."
+                  : "No transactions are available for the selected criteria."}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {table.getRowModel().rows.map((row) => {
+                const transaction = row.original;
+                const account = accounts?.find(
+                  (acc) => acc.id === transaction.account_id,
+                );
+                const isPositive = transaction.transaction_value > 0;
+
+                return (
+                  <div
+                    key={row.id}
+                    className="p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start space-x-3">
+                          <div
+                            className={`p-2 rounded-full flex-shrink-0 ${
+                              isPositive ? "bg-green-100" : "bg-red-100"
+                            }`}
+                          >
+                            {isPositive ? (
+                              <TrendingUp className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <TrendingDown className="h-4 w-4 text-red-600" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-medium text-gray-900 break-words">
+                              {transaction.description}
+                            </h4>
+                            <div className="text-xs text-gray-500 space-y-1 mt-1">
+                              {account && (
+                                <p className="break-words">
+                                  {account.name || "Unnamed Account"} •{" "}
+                                  {account.institution_id}
+                                </p>
+                              )}
+                              {(transaction.creditor_name || transaction.debtor_name) && (
+                                <p className="break-words">
+                                  {isPositive ? "From: " : "To: "}
+                                  {transaction.creditor_name || transaction.debtor_name}
+                                </p>
+                              )}
+                              {transaction.reference && (
+                                <p className="break-words">Ref: {transaction.reference}</p>
+                              )}
+                              <p className="text-gray-400">
+                                {transaction.transaction_date
+                                  ? formatDate(transaction.transaction_date)
+                                  : "No date"}
+                                {transaction.booking_date &&
+                                  transaction.booking_date !== transaction.transaction_date && (
+                                    <span className="ml-2">
+                                      (Booked: {formatDate(transaction.booking_date)})
+                                    </span>
+                                  )}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right ml-3 flex-shrink-0">
+                        <p
+                          className={`text-lg font-semibold mb-1 ${
+                            isPositive ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {isPositive ? "+" : ""}
+                          {formatCurrency(
+                            transaction.transaction_value,
+                            transaction.transaction_currency,
+                          )}
+                        </p>
+                        <button
+                          onClick={() => handleViewRaw(transaction)}
+                          className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                          title="View raw transaction data"
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          Raw
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Pagination */}
         {pagination && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
+          <div className="bg-white px-4 py-3 flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 space-y-3 sm:space-y-0">
+            {/* Mobile pagination controls */}
+            <div className="flex justify-between w-full sm:hidden">
               <div className="flex space-x-2">
                 <button
                   onClick={() => setCurrentPage(1)}
@@ -670,7 +781,22 @@ export default function TransactionsTable() {
                 </button>
               </div>
             </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            
+            {/* Mobile pagination info */}
+            <div className="text-center w-full sm:hidden">
+              <p className="text-sm text-gray-700">
+                Page <span className="font-medium">{pagination.page}</span> of{" "}
+                <span className="font-medium">{pagination.total_pages}</span>
+                <br />
+                <span className="text-xs text-gray-500">
+                  Showing {(pagination.page - 1) * pagination.per_page + 1}-
+                  {Math.min(pagination.page * pagination.per_page, pagination.total)} of {pagination.total}
+                </span>
+              </p>
+            </div>
+
+            {/* Desktop pagination */}
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div className="flex items-center space-x-2">
                 <p className="text-sm text-gray-700">
                   Showing{" "}
