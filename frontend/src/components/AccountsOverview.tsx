@@ -16,6 +16,40 @@ import { formatCurrency, formatDate } from "../lib/utils";
 import LoadingSpinner from "./LoadingSpinner";
 import type { Account, Balance } from "../types/api";
 
+// Helper function to get status indicator color and styles
+const getStatusIndicator = (status: string) => {
+  const statusLower = status.toLowerCase();
+  
+  switch (statusLower) {
+    case 'ready':
+      return {
+        color: 'bg-green-500',
+        tooltip: 'Ready',
+      };
+    case 'pending':
+      return {
+        color: 'bg-yellow-500',
+        tooltip: 'Pending',
+      };
+    case 'error':
+    case 'failed':
+      return {
+        color: 'bg-red-500',
+        tooltip: 'Error',
+      };
+    case 'inactive':
+      return {
+        color: 'bg-gray-500',
+        tooltip: 'Inactive',
+      };
+    default:
+      return {
+        color: 'bg-blue-500',
+        tooltip: status,
+      };
+  }
+};
+
 export default function AccountsOverview() {
   const {
     data: accounts,
@@ -247,7 +281,7 @@ export default function AccountsOverview() {
                               </button>
                             </div>
                             <p className="text-sm text-gray-600 truncate">
-                              {account.institution_id} • {account.status}
+                              {account.institution_id}
                             </p>
                           </div>
                         ) : (
@@ -265,7 +299,7 @@ export default function AccountsOverview() {
                               </button>
                             </div>
                             <p className="text-sm text-gray-600 truncate">
-                              {account.institution_id} • {account.status}
+                              {account.institution_id}
                             </p>
                             {account.iban && (
                               <p className="text-xs text-gray-500 mt-1 font-mono break-all sm:break-normal">
@@ -279,7 +313,30 @@ export default function AccountsOverview() {
 
                     {/* Balance and date section */}
                     <div className="flex items-center justify-between sm:flex-col sm:items-end sm:text-right flex-shrink-0">
-                      <div className="flex items-center space-x-2">
+                      {/* Mobile: date/status on left, balance on right */}
+                      {/* Desktop: balance on top, date/status on bottom */}
+                      
+                      {/* Date and status indicator - left on mobile, bottom on desktop */}
+                      <div className="flex items-center space-x-2 order-1 sm:order-2">
+                        <div 
+                          className={`w-3 h-3 rounded-full ${getStatusIndicator(account.status).color} relative group cursor-help`}
+                          role="img"
+                          aria-label={`Account status: ${getStatusIndicator(account.status).tooltip}`}
+                        >
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+                            {getStatusIndicator(account.status).tooltip}
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-2 border-transparent border-t-gray-900"></div>
+                          </div>
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+                          Updated{" "}
+                          {formatDate(account.last_accessed || account.created)}
+                        </p>
+                      </div>
+                      
+                      {/* Balance - right on mobile, top on desktop */}
+                      <div className="flex items-center space-x-2 order-2 sm:order-1">
                         {isPositive ? (
                           <TrendingUp className="h-4 w-4 text-green-500" />
                         ) : (
@@ -293,10 +350,6 @@ export default function AccountsOverview() {
                           {formatCurrency(balance, currency)}
                         </p>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
-                        Updated{" "}
-                        {formatDate(account.last_accessed || account.created)}
-                      </p>
                     </div>
                   </div>
                 </div>
