@@ -10,6 +10,7 @@ import type {
   NotificationServicesResponse,
   HealthData,
   AccountUpdate,
+  TransactionStats,
 } from "../types/api";
 
 // Use VITE_API_URL for development, relative URLs for production
@@ -140,6 +141,17 @@ export const apiClient = {
   // Health check
   getHealth: async (): Promise<HealthData> => {
     const response = await api.get<ApiResponse<HealthData>>("/health");
+    return response.data.data;
+  },
+
+  // Analytics endpoints
+  getTransactionStats: async (days?: number): Promise<TransactionStats> => {
+    const queryParams = new URLSearchParams();
+    if (days) queryParams.append("days", days.toString());
+    
+    const response = await api.get<ApiResponse<TransactionStats>>(
+      `/transactions/stats?${queryParams.toString()}`
+    );
     return response.data.data;
   },
 };

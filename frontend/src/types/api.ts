@@ -188,3 +188,16 @@ export interface HealthData {
   message?: string;
   error?: string;
 }
+
+// Analytics data types
+export interface TransactionStats {
+  period_days: number;
+  total_transactions: number;
+  booked_transactions: number;
+  pending_transactions: number;
+  total_income: number;
+  total_expenses: number;
+  net_change: number;
+  average_transaction: number;
+  accounts_included: number;
+}
