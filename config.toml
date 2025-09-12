@@ -1,0 +1,7 @@
+# Basic config for testing
+[api]
+database_url = "sqlite:///./leggen.db"
+
+[openbanking]
+secret_id = "fake_secret_id"
+secret_key = "fake_secret_key"
