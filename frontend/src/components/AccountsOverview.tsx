@@ -201,14 +201,15 @@ export default function AccountsOverview() {
               return (
                 <div
                   key={account.id}
-                  className="p-6 hover:bg-gray-50 transition-colors"
+                  className="p-4 sm:p-6 hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-3 bg-gray-100 rounded-full">
-                        <Building2 className="h-6 w-6 text-gray-600" />
+                  {/* Mobile layout - stack vertically */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                    <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
+                      <div className="flex-shrink-0 p-2 sm:p-3 bg-gray-100 rounded-full">
+                        <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         {editingAccountId === account.id ? (
                           <div className="space-y-2">
                             <div className="flex items-center space-x-2">
@@ -216,7 +217,7 @@ export default function AccountsOverview() {
                                 type="text"
                                 value={editingName}
                                 onChange={(e) => setEditingName(e.target.value)}
-                                className="flex-1 px-3 py-1 text-lg font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="flex-1 px-3 py-1 text-base sm:text-lg font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="Account name"
                                 name="search"
                                 autoComplete="off"
@@ -245,29 +246,29 @@ export default function AccountsOverview() {
                                 <X className="h-4 w-4" />
                               </button>
                             </div>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 truncate">
                               {account.institution_id} • {account.status}
                             </p>
                           </div>
                         ) : (
                           <div>
-                            <div className="flex items-center space-x-2">
-                              <h4 className="text-lg font-medium text-gray-900">
+                            <div className="flex items-center space-x-2 min-w-0">
+                              <h4 className="text-base sm:text-lg font-medium text-gray-900 truncate">
                                 {account.name || "Unnamed Account"}
                               </h4>
                               <button
                                 onClick={() => handleEditStart(account)}
-                                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
                                 title="Edit account name"
                               >
                                 <Edit2 className="h-4 w-4" />
                               </button>
                             </div>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 truncate">
                               {account.institution_id} • {account.status}
                             </p>
                             {account.iban && (
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-gray-500 mt-1 font-mono break-all sm:break-normal">
                                 IBAN: {account.iban}
                               </p>
                             )}
@@ -276,7 +277,8 @@ export default function AccountsOverview() {
                       </div>
                     </div>
 
-                    <div className="text-right">
+                    {/* Balance and date section */}
+                    <div className="flex items-center justify-between sm:flex-col sm:items-end sm:text-right flex-shrink-0">
                       <div className="flex items-center space-x-2">
                         {isPositive ? (
                           <TrendingUp className="h-4 w-4 text-green-500" />
@@ -284,14 +286,14 @@ export default function AccountsOverview() {
                           <TrendingDown className="h-4 w-4 text-red-500" />
                         )}
                         <p
-                          className={`text-lg font-semibold ${
+                          className={`text-base sm:text-lg font-semibold ${
                             isPositive ? "text-green-600" : "text-red-600"
                           }`}
                         >
                           {formatCurrency(balance, currency)}
                         </p>
                       </div>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
                         Updated{" "}
                         {formatDate(account.last_accessed || account.created)}
                       </p>
