@@ -3,7 +3,6 @@
 import click
 from pathlib import Path
 
-from leggen.utils.paths import path_manager
 
 
 @click.command()

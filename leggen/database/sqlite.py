@@ -581,7 +581,7 @@ def get_historical_balances(account_id=None, days=365):
         
         # Calculate historical balances by working backwards from current balance
         historical_balances = []
-        account_running_balances = {}
+        account_running_balances: dict[str, dict[str, float]] = {}
         
         # Initialize running balances with current balances
         for (acc_id, balance_type), balance_info in current_balances.items():
