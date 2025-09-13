@@ -1,5 +1,43 @@
 # Agent Guidelines for Leggen
 
+## Quick Setup for Development
+
+### Prerequisites
+- **uv** must be installed for Python dependency management (can be installed via `pip install uv`)
+
+### Generate Mock Database
+The leggen CLI provides a command to generate a mock database for testing:
+
+```bash
+# Generate sample database with default settings (3 accounts, 50 transactions each)
+uv run leggen generate_sample_db --database /path/to/test.db --force
+
+# Custom configuration
+uv run leggen generate_sample_db --database ./test-data.db --accounts 5 --transactions 100 --force
+```
+
+The command outputs instructions for setting the required environment variable to use the generated database.
+
+### Start the API Server
+1. Install uv if not already installed: `pip install uv`
+2. Set the database environment variable to point to your generated mock database:
+   ```bash
+   export LEGGEN_DATABASE_PATH=/path/to/your/generated/database.db
+   ```
+3. Start the API server:
+   ```bash
+   uv run leggend
+   ```
+   - For development mode with auto-reload: `uv run leggend --reload`
+   - API will be available at `http://localhost:8000` with docs at `http://localhost:8000/docs`
+
+### Start the Frontend
+1. Navigate to the frontend directory: `cd frontend`
+2. Install npm dependencies: `npm install`
+3. Start the development server: `npm run dev`
+   - Frontend will be available at `http://localhost:3000`
+   - The frontend is configured to connect to the API at `http://localhost:8000/api/v1`
+
 ## Build/Lint/Test Commands
 
 ### Frontend (React/TypeScript)
@@ -37,6 +75,20 @@
 
 ### General
 - **Formatting**: ruff for Python, ESLint for TypeScript
-- **Commits**: Use conventional commits, run pre-commit hooks before pushing
+- **Commits**: Use conventional commits with optional scopes, run pre-commit hooks before pushing
+  - Format: `type(scope): Description starting with uppercase and ending with period.`
+  - Scopes: `cli`, `api`, `frontend` (optional)
+  - Types: `feat`, `fix`, `refactor` (avoid too many different types)
+  - Examples:
+    - `feat(frontend): Add support for S3 backups.`
+    - `fix(api): Resolve authentication timeout issues.`
+    - `refactor(cli): Improve error handling for missing config.`
   - Avoid including specific numbers, counts, or data-dependent information that may become outdated
 - **Security**: Never log sensitive data, use environment variables for secrets
+
+## Contributing Guidelines
+
+This repository follows conventional changelog practices. Refer to `CONTRIBUTING.md` for detailed contribution guidelines including:
+- Commit message format and scoping
+- Release process using `scripts/release.sh`
+- Pre-commit hooks setup with `pre-commit install`
