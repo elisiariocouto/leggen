@@ -1,4 +1,20 @@
 
+## 2025.9.10 (2025/09/13)
+
+### Miscellaneous Tasks
+
+- **frontend:** Update dependencies. ([06cf02f4](https://github.com/elisiariocouto/leggen/commit/06cf02f43ff72e4e01692e3a94a06be48d9acb1f))
+
+
+
+## 2025.9.10 (2025/09/13)
+
+### Miscellaneous Tasks
+
+- **frontend:** Update dependencies. ([06cf02f4](https://github.com/elisiariocouto/leggen/commit/06cf02f43ff72e4e01692e3a94a06be48d9acb1f))
+
+
+
 ## 2025.9.9 (2025/09/11)
 
 ### Bug Fixes

@@ -220,7 +220,7 @@ wheels = [
 
 [[package]]
 name = "leggen"
-version = "2025.9.9"
+version = "2025.9.10"
 source = { editable = "." }
 dependencies = [
     { name = "apscheduler" },
