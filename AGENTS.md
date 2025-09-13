@@ -4,16 +4,20 @@
 
 ### Prerequisites
 - **uv** must be installed for Python dependency management (can be installed via `pip install uv`)
+- **Configuration file**: Copy `config.example.toml` to `config.toml` before running any commands:
+  ```bash
+  cp config.example.toml config.toml
+  ```
 
 ### Generate Mock Database
 The leggen CLI provides a command to generate a mock database for testing:
 
 ```bash
 # Generate sample database with default settings (3 accounts, 50 transactions each)
-uv run leggen generate_sample_db --database /path/to/test.db --force
+uv run leggen --config config.toml generate_sample_db --database /path/to/test.db --force
 
 # Custom configuration
-uv run leggen generate_sample_db --database ./test-data.db --accounts 5 --transactions 100 --force
+uv run leggen --config config.toml generate_sample_db --database ./test-data.db --accounts 5 --transactions 100 --force
 ```
 
 The command outputs instructions for setting the required environment variable to use the generated database.
@@ -24,7 +28,15 @@ The command outputs instructions for setting the required environment variable t
    ```bash
    export LEGGEN_DATABASE_PATH=/path/to/your/generated/database.db
    ```
-3. Start the API server:
+3. Ensure the API can find the configuration file (choose one):
+   ```bash
+   # Option 1: Copy config to the expected location
+   mkdir -p ~/.config/leggen && cp config.toml ~/.config/leggen/config.toml
+   
+   # Option 2: Set environment variable to current config file
+   export LEGGEN_CONFIG_FILE=./config.toml
+   ```
+4. Start the API server:
    ```bash
    uv run leggend
    ```
