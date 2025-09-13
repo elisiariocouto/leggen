@@ -23,9 +23,7 @@ class Config:
             return self._config
 
         if config_path is None:
-            config_path = os.environ.get(
-                "LEGGEN_CONFIG_FILE"
-            )
+            config_path = os.environ.get("LEGGEN_CONFIG_FILE")
             if not config_path:
                 config_path = str(path_manager.get_config_file_path())
 
@@ -54,9 +52,7 @@ class Config:
             config_data = self._config
 
         if config_path is None:
-            config_path = self._config_path or os.environ.get(
-                "LEGGEN_CONFIG_FILE"
-            )
+            config_path = self._config_path or os.environ.get("LEGGEN_CONFIG_FILE")
             if not config_path:
                 config_path = str(path_manager.get_config_file_path())
 

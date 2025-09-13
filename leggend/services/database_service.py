@@ -118,7 +118,7 @@ class DatabaseService:
     async def get_transactions_from_db(
         self,
         account_id: Optional[str] = None,
-        limit: Optional[int] = 100,
+        limit: Optional[int] = None,  # None means no limit, used for stats
         offset: Optional[int] = 0,
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
@@ -134,7 +134,7 @@ class DatabaseService:
         try:
             transactions = sqlite_db.get_transactions(
                 account_id=account_id,
-                limit=limit or 100,
+                limit=limit,  # Pass limit as-is, None means no limit
                 offset=offset or 0,
                 date_from=date_from,
                 date_to=date_to,
@@ -424,7 +424,7 @@ class DatabaseService:
     async def _migrate_null_transaction_ids(self):
         """Populate null internalTransactionId fields using transactionId from raw data"""
         import uuid
-        
+
         db_path = path_manager.get_database_path()
         if not db_path.exists():
             logger.warning("Database file not found, skipping migration")

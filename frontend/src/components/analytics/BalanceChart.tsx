@@ -8,10 +8,11 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import type { Balance } from "../../types/api";
+import type { Balance, Account } from "../../types/api";
 
 interface BalanceChartProps {
   data: Balance[];
+  accounts: Account[];
   className?: string;
 }
 
@@ -26,7 +27,34 @@ interface AggregatedDataPoint {
   [key: string]: string | number;
 }
 
-export default function BalanceChart({ data, className }: BalanceChartProps) {
+export default function BalanceChart({ data, accounts, className }: BalanceChartProps) {
+  // Create a lookup map for account info
+  const accountMap = accounts.reduce((map, account) => {
+    map[account.id] = account;
+    return map;
+  }, {} as Record<string, Account>);
+
+  // Helper function to get bank name from institution_id
+  const getBankName = (institutionId: string): string => {
+    const bankMapping: Record<string, string> = {
+      'REVOLUT_REVOLT21': 'Revolut',
+      'NUBANK_NUPBBR25': 'Nu Pagamentos',
+      'BANCOBPI_BBPIPTPL': 'Banco BPI',
+      // Add more mappings as needed
+    };
+    return bankMapping[institutionId] || institutionId.split('_')[0];
+  };
+
+  // Helper function to create display name for account
+  const getAccountDisplayName = (accountId: string): string => {
+    const account = accountMap[accountId];
+    if (account) {
+      const bankName = getBankName(account.institution_id);
+      const accountName = account.name || `Account ${accountId.split('-')[1]}`;
+      return `${bankName} - ${accountName}`;
+    }
+    return `Account ${accountId.split('-')[1]}`;
+  };
   // Process balance data for the chart
   const chartData = data
     .filter((balance) => balance.balance_type === "closingBooked")
@@ -116,7 +144,7 @@ export default function BalanceChart({ data, className }: BalanceChartProps) {
                 stroke={colors[index % colors.length]}
                 strokeWidth={2}
                 dot={{ r: 4 }}
-                name={`Account ${accountId.split('-')[1]}`}
+                name={getAccountDisplayName(accountId)}
               />
             ))}
           </LineChart>

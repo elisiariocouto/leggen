@@ -32,18 +32,12 @@ interface TooltipProps {
 }
 
 export default function MonthlyTrends({ className }: MonthlyTrendsProps) {
-  // Get transactions for the last 12 months
+  // Get transactions for the last 12 months using analytics endpoint
   const { data: transactions, isLoading } = useQuery({
     queryKey: ["transactions", "monthly-trends"],
     queryFn: async () => {
-      const response = await apiClient.getTransactions({
-        startDate: new Date(
-          Date.now() - 365 * 24 * 60 * 60 * 1000
-        ).toISOString().split("T")[0],
-        endDate: new Date().toISOString().split("T")[0],
-        perPage: 1000,
-      });
-      return response.data;
+      // Get last 365 days of transactions for monthly trends
+      return await apiClient.getTransactionsForAnalytics(365);
     },
   });
 
@@ -54,7 +48,7 @@ export default function MonthlyTrends({ className }: MonthlyTrendsProps) {
     const monthlyMap: { [key: string]: MonthlyData } = {};
     
     transactions.forEach((transaction) => {
-      const date = new Date(transaction.transaction_date);
+      const date = new Date(transaction.date);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       if (!monthlyMap[monthKey]) {
@@ -69,10 +63,10 @@ export default function MonthlyTrends({ className }: MonthlyTrendsProps) {
         };
       }
       
-      if (transaction.transaction_value > 0) {
-        monthlyMap[monthKey].income += transaction.transaction_value;
+      if (transaction.amount > 0) {
+        monthlyMap[monthKey].income += transaction.amount;
       } else {
-        monthlyMap[monthKey].expenses += Math.abs(transaction.transaction_value);
+        monthlyMap[monthKey].expenses += Math.abs(transaction.amount);
       }
       
       monthlyMap[monthKey].net = monthlyMap[monthKey].income - monthlyMap[monthKey].expenses;
