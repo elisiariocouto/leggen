@@ -36,7 +36,7 @@ export default function TransactionDistribution({
       'REVOLUT_REVOLT21': 'Revolut',
       'NUBANK_NUPBBR25': 'Nu Pagamentos',
       'BANCOBPI_BBPIPTPL': 'Banco BPI',
-      // Add more mappings as needed
+      // TODO: Add more bank mappings as needed
     };
     return bankMapping[institutionId] || institutionId.split('_')[0];
   };
