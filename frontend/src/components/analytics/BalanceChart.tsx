@@ -59,11 +59,11 @@ export default function BalanceChart({ data, accounts, className }: BalanceChart
   const chartData = data
     .filter((balance) => balance.balance_type === "closingBooked")
     .map((balance) => ({
-      date: new Date(balance.reference_date).toLocaleDateString(),
+      date: new Date(balance.reference_date).toLocaleDateString('en-GB'), // DD/MM/YYYY format
       balance: balance.balance_amount,
       account_id: balance.account_id,
     }))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    .sort((a, b) => new Date(a.date.split('/').reverse().join('/')).getTime() - new Date(b.date.split('/').reverse().join('/')).getTime());
 
   // Group by account and aggregate
   const accountBalances: { [key: string]: ChartDataPoint[] } = {};
@@ -86,7 +86,7 @@ export default function BalanceChart({ data, accounts, className }: BalanceChart
   });
 
   const finalData = Object.values(aggregatedData).sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    (a, b) => new Date(a.date.split('/').reverse().join('/')).getTime() - new Date(b.date.split('/').reverse().join('/')).getTime()
   );
 
   const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
@@ -117,8 +117,10 @@ export default function BalanceChart({ data, accounts, className }: BalanceChart
               dataKey="date"
               tick={{ fontSize: 12 }}
               tickFormatter={(value) => {
-                const date = new Date(value);
-                return date.toLocaleDateString(undefined, {
+                // Convert DD/MM/YYYY back to a proper date for formatting
+                const [day, month, year] = value.split('/');
+                const date = new Date(year, month - 1, day);
+                return date.toLocaleDateString('en-GB', {
                   month: "short",
                   day: "numeric",
                 });
