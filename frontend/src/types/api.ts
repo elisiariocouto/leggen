@@ -59,6 +59,17 @@ export interface RawTransactionData {
   [key: string]: unknown; // Allow additional fields
 }
 
+// Type for analytics transaction data
+export interface AnalyticsTransaction {
+  transaction_id: string;
+  date: string;
+  description: string;
+  amount: number;
+  currency: string;
+  status: string;
+  account_id: string;
+}
+
 export interface Transaction {
   transaction_id: string; // NEW: stable bank-provided transaction ID
   internal_transaction_id: string | null; // OLD: unstable GoCardless ID
