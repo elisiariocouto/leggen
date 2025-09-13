@@ -162,3 +162,5 @@ docker-compose.dev.yml
 nocodb/
 sql/
 leggen.db
+*.db
+config.toml
