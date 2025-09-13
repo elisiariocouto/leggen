@@ -53,10 +53,8 @@ function AnalyticsDashboard() {
   }
 
   const totalBalance = accounts?.reduce((sum, account) => {
-    const closingBalance = account.balances.find(
-      (balance) => balance.balance_type === "closingBooked"
-    );
-    return sum + (closingBalance?.amount || 0);
+    const primaryBalance = account.balances?.[0]?.amount || 0;
+    return sum + primaryBalance;
   }, 0) || 0;
 
   return (

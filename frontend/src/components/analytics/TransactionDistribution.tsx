@@ -50,15 +50,13 @@ export default function TransactionDistribution({
 
   // Create pie chart data from account balances
   const pieData: PieDataPoint[] = accounts.map((account, index) => {
-    const closingBalance = account.balances.find(
-      (balance) => balance.balance_type === "closingBooked"
-    );
+    const primaryBalance = account.balances?.[0]?.amount || 0;
     
     const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
     
     return {
       name: getAccountDisplayName(account),
-      value: closingBalance?.amount || 0,
+      value: primaryBalance,
       color: colors[index % colors.length],
     };
   });
