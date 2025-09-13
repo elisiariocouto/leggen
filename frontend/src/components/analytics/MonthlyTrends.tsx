@@ -12,6 +12,7 @@ import apiClient from "../../lib/api";
 
 interface MonthlyTrendsProps {
   className?: string;
+  days?: number;
 }
 
 interface MonthlyData {
@@ -31,13 +32,12 @@ interface TooltipProps {
   label?: string;
 }
 
-export default function MonthlyTrends({ className }: MonthlyTrendsProps) {
-  // Get transactions for the last 12 months using analytics endpoint
+export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsProps) {
+  // Get transactions for the specified period using analytics endpoint
   const { data: transactions, isLoading } = useQuery({
-    queryKey: ["transactions", "monthly-trends"],
+    queryKey: ["transactions", "monthly-trends", days],
     queryFn: async () => {
-      // Get last 365 days of transactions for monthly trends
-      return await apiClient.getTransactionsForAnalytics(365);
+      return await apiClient.getTransactionsForAnalytics(days);
     },
   });
 

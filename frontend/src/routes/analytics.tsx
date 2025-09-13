@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   CreditCard,
   TrendingUp,
@@ -13,12 +14,20 @@ import StatCard from "../components/analytics/StatCard";
 import BalanceChart from "../components/analytics/BalanceChart";
 import TransactionDistribution from "../components/analytics/TransactionDistribution";
 import MonthlyTrends from "../components/analytics/MonthlyTrends";
+import TimePeriodFilter from "../components/analytics/TimePeriodFilter";
+import type { TimePeriod } from "../lib/timePeriods";
+import { TIME_PERIODS } from "../lib/timePeriods";
 
 function AnalyticsDashboard() {
+  // Default to Last 365 days
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>(
+    TIME_PERIODS.find((p) => p.value === "365d") || TIME_PERIODS[3]
+  );
+
   // Fetch analytics data
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["transaction-stats"],
-    queryFn: () => apiClient.getTransactionStats(365), // Last year
+    queryKey: ["transaction-stats", selectedPeriod.days],
+    queryFn: () => apiClient.getTransactionStats(selectedPeriod.days),
   });
 
   const { data: accounts, isLoading: accountsLoading } = useQuery({
@@ -27,8 +36,8 @@ function AnalyticsDashboard() {
   });
 
   const { data: balances, isLoading: balancesLoading } = useQuery({
-    queryKey: ["historical-balances"],
-    queryFn: () => apiClient.getHistoricalBalances(365), // Get 1 year of history
+    queryKey: ["historical-balances", selectedPeriod.days],
+    queryFn: () => apiClient.getHistoricalBalances(selectedPeriod.days),
   });
 
   const isLoading = statsLoading || accountsLoading || balancesLoading;
@@ -65,6 +74,13 @@ function AnalyticsDashboard() {
           Overview of your financial data and spending patterns
         </p>
       </div>
+
+      {/* Time Period Filter */}
+      <TimePeriodFilter
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+        className="bg-white rounded-lg shadow p-4 border border-gray-200"
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -133,7 +149,7 @@ function AnalyticsDashboard() {
 
       {/* Monthly Trends */}
       <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <MonthlyTrends />
+        <MonthlyTrends days={selectedPeriod.days} />
       </div>
 
       {/* Summary Section */}
