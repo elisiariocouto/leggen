@@ -1,0 +1,30 @@
+[gocardless]
+key = "your-api-key"
+secret = "your-secret-key"
+url = "https://bankaccountdata.gocardless.com/api/v2"
+
+[database]
+sqlite = true
+
+# Optional: Background sync scheduling
+[scheduler.sync]
+enabled = true
+hour = 3      # 3 AM
+minute = 0
+# cron = "0 3 * * *"  # Alternative: use cron expression
+
+# Optional: Discord notifications
+[notifications.discord]
+webhook = "https://discord.com/api/webhooks/..."
+enabled = true
+
+# Optional: Telegram notifications
+[notifications.telegram]
+token = "your-bot-token"
+chat_id = 12345
+enabled = true
+
+# Optional: Transaction filters for notifications
+[filters]
+case-insensitive = ["salary", "utility"]
+case-sensitive = ["SpecificStore"]
