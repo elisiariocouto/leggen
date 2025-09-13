@@ -2,6 +2,7 @@ import axios from "axios";
 import type {
   Account,
   Transaction,
+  AnalyticsTransaction,
   Balance,
   ApiResponse,
   NotificationSettings,
@@ -168,11 +169,11 @@ export const apiClient = {
   },
 
   // Get all transactions for analytics (no pagination)
-  getTransactionsForAnalytics: async (days?: number): Promise<Transaction[]> => {
+  getTransactionsForAnalytics: async (days?: number): Promise<AnalyticsTransaction[]> => {
     const queryParams = new URLSearchParams();
     if (days) queryParams.append("days", days.toString());
     
-    const response = await api.get<ApiResponse<Transaction[]>>(
+    const response = await api.get<ApiResponse<AnalyticsTransaction[]>>(
       `/transactions/analytics?${queryParams.toString()}`
     );
     return response.data.data;
