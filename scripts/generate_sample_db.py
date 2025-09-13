@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """Sample database generator for Leggen testing and development."""
 
-import argparse
 import json
 import random
 import sqlite3
 import sys
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Any
+
+import click
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-import click
-from leggen.utils.paths import path_manager
+# Import after path setup - this is necessary for the script to work
+from leggen.utils.paths import path_manager  # noqa: E402
 
 
 class SampleDataGenerator:
@@ -464,14 +464,14 @@ class SampleDataGenerator:
 
         # Print summary
         click.echo("\n✅ Sample database created successfully!")
-        click.echo(f"📊 Summary:")
+        click.echo("📊 Summary:")
         click.echo(f"   - Accounts: {len(accounts)}")
         click.echo(f"   - Transactions: {len(transactions)}")
         click.echo(f"   - Balances: {len(balances)}")
         click.echo(f"   - Database: {self.db_path}")
 
         # Show account details
-        click.echo(f"\n📋 Sample accounts:")
+        click.echo("\n📋 Sample accounts:")
         for account in accounts:
             institution_name = next(
                 inst["name"]
@@ -533,12 +533,12 @@ def main(database: Path, accounts: int, transactions: int, force: bool):
     generator.generate_sample_database(accounts, transactions)
 
     # Show usage instructions
-    click.echo(f"\n🚀 Usage instructions:")
-    click.echo(f"To use this sample database with leggen commands:")
+    click.echo("\n🚀 Usage instructions:")
+    click.echo("To use this sample database with leggen commands:")
     click.echo(f"   export LEGGEN_DATABASE_PATH={db_path}")
-    click.echo(f"   leggen transactions")
-    click.echo(f"")
-    click.echo(f"To use this sample database with leggend API:")
+    click.echo("   leggen transactions")
+    click.echo("")
+    click.echo("To use this sample database with leggend API:")
     click.echo(f"   leggend --database {db_path}")
 
 

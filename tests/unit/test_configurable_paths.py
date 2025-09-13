@@ -13,7 +13,6 @@ from leggen.database.sqlite import persist_balances, get_balances
 class MockContext:
     """Mock context for testing."""
 
-    pass
 
 
 @pytest.mark.unit

@@ -224,7 +224,7 @@ async def get_historical_balances(
     try:
         # Get historical balances from database
         historical_balances = await database_service.get_historical_balances_from_db(
-            account_id=account_id, days=days
+            account_id=account_id, days=days or 365
         )
 
         return APIResponse(
