@@ -144,41 +144,6 @@ function AnalyticsDashboard() {
       <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
         <MonthlyTrends days={selectedPeriod.days} />
       </div>
-
-      {/* Summary Section */}
-      {stats && (
-        <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
-          <h3 className="text-lg font-medium text-blue-900 mb-4">
-            Period Summary ({stats.period_days} days)
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-            <div>
-              <p className="text-blue-700 font-medium">Booked Transactions</p>
-              <p className="text-blue-900">{stats.booked_transactions}</p>
-            </div>
-            <div>
-              <p className="text-blue-700 font-medium">Pending Transactions</p>
-              <p className="text-blue-900">{stats.pending_transactions}</p>
-            </div>
-            <div>
-              <p className="text-blue-700 font-medium">Transaction Ratio</p>
-              <p className="text-blue-900">
-                {stats.total_transactions > 0
-                  ? `${Math.round(
-                      (stats.booked_transactions / stats.total_transactions) * 100
-                    )}% booked`
-                  : "No transactions"}
-              </p>
-            </div>
-            <div>
-              <p className="text-blue-700 font-medium">Spend Rate</p>
-              <p className="text-blue-900">
-                €{((stats.total_expenses || 0) / stats.period_days).toFixed(2)}/day
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
