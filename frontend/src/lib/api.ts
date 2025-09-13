@@ -154,6 +154,17 @@ export const apiClient = {
     );
     return response.data.data;
   },
+
+  // Get all transactions for analytics (no pagination)
+  getTransactionsForAnalytics: async (days?: number): Promise<Transaction[]> => {
+    const queryParams = new URLSearchParams();
+    if (days) queryParams.append("days", days.toString());
+    
+    const response = await api.get<ApiResponse<Transaction[]>>(
+      `/transactions/analytics?${queryParams.toString()}`
+    );
+    return response.data.data;
+  },
 };
 
 export default apiClient;

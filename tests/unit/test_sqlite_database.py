@@ -23,11 +23,11 @@ def temp_db_path():
 def mock_home_db_path(temp_db_path):
     """Mock the database path to use temp file."""
     from leggen.utils.paths import path_manager
-    
+
     # Set the path manager to use the temporary database
     original_database_path = path_manager._database_path
     path_manager.set_database_path(temp_db_path)
-    
+
     try:
         yield temp_db_path
     finally:

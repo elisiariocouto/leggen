@@ -30,6 +30,24 @@ export default function TransactionDistribution({
   accounts,
   className,
 }: TransactionDistributionProps) {
+  // Helper function to get bank name from institution_id
+  const getBankName = (institutionId: string): string => {
+    const bankMapping: Record<string, string> = {
+      'REVOLUT_REVOLT21': 'Revolut',
+      'NUBANK_NUPBBR25': 'Nu Pagamentos',
+      'BANCOBPI_BBPIPTPL': 'Banco BPI',
+      // Add more mappings as needed
+    };
+    return bankMapping[institutionId] || institutionId.split('_')[0];
+  };
+
+  // Helper function to create display name for account
+  const getAccountDisplayName = (account: Account): string => {
+    const bankName = getBankName(account.institution_id);
+    const accountName = account.name || `Account ${account.id.split('-')[1]}`;
+    return `${bankName} - ${accountName}`;
+  };
+
   // Create pie chart data from account balances
   const pieData: PieDataPoint[] = accounts.map((account, index) => {
     const closingBalance = account.balances.find(
@@ -39,7 +57,7 @@ export default function TransactionDistribution({
     const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
     
     return {
-      name: account.name || `Account ${account.id.split('-')[1]}`,
+      name: getAccountDisplayName(account),
       value: closingBalance?.amount || 0,
       color: colors[index % colors.length],
     };

@@ -121,6 +121,219 @@ async def get_all_transactions(
         ) from e
 
 
+@router.get("/transactions/enhanced-stats", response_model=APIResponse)
+async def get_enhanced_transaction_stats(
+    days: int = Query(default=365, description="Number of days to include in stats"),
+    account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
+) -> APIResponse:
+    """Get enhanced transaction statistics with monthly breakdown and account details"""
+    try:
+        # Date range for stats
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+
+        # Format dates for database query
+        date_from = start_date.isoformat()
+        date_to = end_date.isoformat()
+
+        # Get all transactions from database for comprehensive stats
+        recent_transactions = await database_service.get_transactions_from_db(
+            account_id=account_id,
+            date_from=date_from,
+            date_to=date_to,
+            limit=None,  # Get all matching transactions
+        )
+
+        # Basic stats
+        total_transactions = len(recent_transactions)
+        total_income = sum(
+            txn["transactionValue"]
+            for txn in recent_transactions
+            if txn["transactionValue"] > 0
+        )
+        total_expenses = sum(
+            abs(txn["transactionValue"])
+            for txn in recent_transactions
+            if txn["transactionValue"] < 0
+        )
+        net_change = total_income - total_expenses
+
+        # Count by status
+        booked_count = len(
+            [txn for txn in recent_transactions if txn["transactionStatus"] == "booked"]
+        )
+        pending_count = len(
+            [
+                txn
+                for txn in recent_transactions
+                if txn["transactionStatus"] == "pending"
+            ]
+        )
+
+        # Count unique accounts
+        unique_accounts = len({txn["accountId"] for txn in recent_transactions})
+
+        # Monthly breakdown
+        monthly_stats = {}
+        for txn in recent_transactions:
+            try:
+                txn_date = datetime.fromisoformat(
+                    txn["transactionDate"].replace("Z", "+00:00")
+                )
+                month_key = txn_date.strftime("%Y-%m")
+
+                if month_key not in monthly_stats:
+                    monthly_stats[month_key] = {
+                        "month": txn_date.strftime("%Y %b"),
+                        "income": 0,
+                        "expenses": 0,
+                        "net": 0,
+                        "transaction_count": 0,
+                    }
+
+                monthly_stats[month_key]["transaction_count"] += 1
+                if txn["transactionValue"] > 0:
+                    monthly_stats[month_key]["income"] += txn["transactionValue"]
+                else:
+                    monthly_stats[month_key]["expenses"] += abs(txn["transactionValue"])
+
+                monthly_stats[month_key]["net"] = (
+                    monthly_stats[month_key]["income"]
+                    - monthly_stats[month_key]["expenses"]
+                )
+            except (ValueError, TypeError):
+                # Skip transactions with invalid dates
+                continue
+
+        # Account breakdown
+        account_stats = {}
+        for txn in recent_transactions:
+            acc_id = txn["accountId"]
+            if acc_id not in account_stats:
+                account_stats[acc_id] = {
+                    "account_id": acc_id,
+                    "transaction_count": 0,
+                    "income": 0,
+                    "expenses": 0,
+                    "net": 0,
+                }
+
+            account_stats[acc_id]["transaction_count"] += 1
+            if txn["transactionValue"] > 0:
+                account_stats[acc_id]["income"] += txn["transactionValue"]
+            else:
+                account_stats[acc_id]["expenses"] += abs(txn["transactionValue"])
+
+            account_stats[acc_id]["net"] = (
+                account_stats[acc_id]["income"] - account_stats[acc_id]["expenses"]
+            )
+
+        enhanced_stats = {
+            "period_days": days,
+            "date_range": {
+                "start": start_date.isoformat(),
+                "end": end_date.isoformat(),
+            },
+            "summary": {
+                "total_transactions": total_transactions,
+                "booked_transactions": booked_count,
+                "pending_transactions": pending_count,
+                "total_income": round(total_income, 2),
+                "total_expenses": round(total_expenses, 2),
+                "net_change": round(net_change, 2),
+                "average_transaction": round(
+                    sum(txn["transactionValue"] for txn in recent_transactions)
+                    / total_transactions,
+                    2,
+                )
+                if total_transactions > 0
+                else 0,
+                "accounts_included": unique_accounts,
+            },
+            "monthly_breakdown": [
+                {
+                    **stats,
+                    "income": round(stats["income"], 2),
+                    "expenses": round(stats["expenses"], 2),
+                    "net": round(stats["net"], 2),
+                }
+                for month, stats in sorted(monthly_stats.items())
+            ],
+            "account_breakdown": [
+                {
+                    **stats,
+                    "income": round(stats["income"], 2),
+                    "expenses": round(stats["expenses"], 2),
+                    "net": round(stats["net"], 2),
+                }
+                for stats in account_stats.values()
+            ],
+        }
+
+        return APIResponse(
+            success=True,
+            data=enhanced_stats,
+            message=f"Enhanced transaction statistics for last {days} days",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get enhanced transaction stats: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get enhanced transaction stats: {str(e)}",
+        ) from e
+
+
+@router.get("/transactions/analytics", response_model=APIResponse)
+async def get_transactions_for_analytics(
+    days: int = Query(default=365, description="Number of days to include"),
+    account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
+) -> APIResponse:
+    """Get all transactions for analytics (no pagination) for the last N days"""
+    try:
+        # Date range for analytics
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+
+        # Format dates for database query
+        date_from = start_date.isoformat()
+        date_to = end_date.isoformat()
+
+        # Get ALL transactions from database (no limit for analytics)
+        transactions = await database_service.get_transactions_from_db(
+            account_id=account_id,
+            date_from=date_from,
+            date_to=date_to,
+            limit=None,  # No limit - get all transactions
+        )
+
+        # Transform for frontend (summary format)
+        transaction_summaries = [
+            {
+                "transaction_id": txn["transactionId"],
+                "date": txn["transactionDate"],
+                "description": txn["description"],
+                "amount": txn["transactionValue"],
+                "currency": txn["transactionCurrency"],
+                "status": txn["transactionStatus"],
+                "account_id": txn["accountId"],
+            }
+            for txn in transactions
+        ]
+
+        return APIResponse(
+            success=True,
+            data=transaction_summaries,
+            message=f"Retrieved {len(transaction_summaries)} transactions for analytics",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get transactions for analytics: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get analytics transactions: {str(e)}"
+        ) from e
+
+
 @router.get("/transactions/stats", response_model=APIResponse)
 async def get_transaction_stats(
     days: int = Query(default=30, description="Number of days to include in stats"),
