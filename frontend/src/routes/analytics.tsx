@@ -68,13 +68,6 @@ function AnalyticsDashboard() {
 
   return (
     <div className="p-6 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-        <p className="mt-2 text-gray-600">
-          Overview of your financial data and spending patterns
-        </p>
-      </div>
-
       {/* Time Period Filter */}
       <TimePeriodFilter
         selectedPeriod={selectedPeriod}
