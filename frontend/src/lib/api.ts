@@ -54,6 +54,18 @@ export const apiClient = {
     return response.data.data;
   },
 
+  // Get historical balances for balance progression chart
+  getHistoricalBalances: async (days?: number, accountId?: string): Promise<Balance[]> => {
+    const queryParams = new URLSearchParams();
+    if (days) queryParams.append("days", days.toString());
+    if (accountId) queryParams.append("account_id", accountId);
+    
+    const response = await api.get<ApiResponse<Balance[]>>(
+      `/balances/history?${queryParams.toString()}`
+    );
+    return response.data.data;
+  },
+
   // Get balances for specific account
   getAccountBalances: async (accountId: string): Promise<Balance[]> => {
     const response = await api.get<ApiResponse<Balance[]>>(
