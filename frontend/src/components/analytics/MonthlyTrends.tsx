@@ -53,7 +53,7 @@ export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsPr
       
       if (!monthlyMap[monthKey]) {
         monthlyMap[monthKey] = {
-          month: date.toLocaleDateString(undefined, { 
+          month: date.toLocaleDateString('en-GB', { 
             year: 'numeric', 
             month: 'short' 
           }),
@@ -77,9 +77,19 @@ export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsPr
       ...Object.entries(monthlyMap)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([, data]) => data)
-        .slice(-12) // Last 12 months
     );
   }
+
+  // Calculate number of months to display based on days filter
+  const getMonthsToDisplay = (days: number): number => {
+    if (days <= 30) return 1;
+    if (days <= 180) return 6;
+    if (days <= 365) return 12;
+    return Math.ceil(days / 30);
+  };
+
+  const monthsToDisplay = getMonthsToDisplay(days);
+  const displayData = monthlyData.slice(-monthsToDisplay);
 
   if (isLoading) {
     return (
@@ -94,7 +104,7 @@ export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsPr
     );
   }
 
-  if (monthlyData.length === 0) {
+  if (displayData.length === 0) {
     return (
       <div className={className}>
         <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -123,14 +133,22 @@ export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsPr
     return null;
   };
 
+  // Generate dynamic title based on time period
+  const getTitle = (days: number): string => {
+    if (days <= 30) return "Monthly Spending Trends (Last 30 Days)";
+    if (days <= 180) return "Monthly Spending Trends (Last 6 Months)";
+    if (days <= 365) return "Monthly Spending Trends (Last 12 Months)";
+    return `Monthly Spending Trends (Last ${Math.ceil(days / 30)} Months)`;
+  };
+
   return (
     <div className={className}>
       <h3 className="text-lg font-medium text-gray-900 mb-4">
-        Monthly Spending Trends (Last 12 Months)
+        {getTitle(days)}
       </h3>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <BarChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="month" 

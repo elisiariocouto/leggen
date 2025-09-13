@@ -1,6 +1,6 @@
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -111,7 +111,7 @@ export default function BalanceChart({ data, accounts, className }: BalanceChart
       </h3>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={finalData}>
+          <AreaChart data={finalData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="date"
@@ -131,25 +131,25 @@ export default function BalanceChart({ data, accounts, className }: BalanceChart
               tickFormatter={(value) => `€${value.toLocaleString()}`}
             />
             <Tooltip
-              formatter={(value: number) => [
+              formatter={(value: number, name: string) => [
                 `€${value.toLocaleString()}`,
-                "Balance",
+                getAccountDisplayName(name),
               ]}
               labelFormatter={(label) => `Date: ${label}`}
             />
             <Legend />
             {Object.keys(accountBalances).map((accountId, index) => (
-              <Line
+              <Area
                 key={accountId}
                 type="monotone"
                 dataKey={accountId}
+                stackId="1"
+                fill={colors[index % colors.length]}
                 stroke={colors[index % colors.length]}
-                strokeWidth={2}
-                dot={{ r: 4 }}
                 name={getAccountDisplayName(accountId)}
               />
             ))}
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>
