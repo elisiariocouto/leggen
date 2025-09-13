@@ -27,8 +27,8 @@ function AnalyticsDashboard() {
   });
 
   const { data: balances, isLoading: balancesLoading } = useQuery({
-    queryKey: ["balances"],
-    queryFn: () => apiClient.getBalances(),
+    queryKey: ["historical-balances"],
+    queryFn: () => apiClient.getHistoricalBalances(365), // Get 1 year of history
   });
 
   const isLoading = statsLoading || accountsLoading || balancesLoading;

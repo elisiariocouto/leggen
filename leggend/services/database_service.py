@@ -195,6 +195,22 @@ class DatabaseService:
             logger.error(f"Failed to get balances from database: {e}")
             return []
 
+    async def get_historical_balances_from_db(
+        self, account_id: Optional[str] = None, days: int = 365
+    ) -> List[Dict[str, Any]]:
+        """Get historical balance progression from SQLite database"""
+        if not self.sqlite_enabled:
+            logger.warning("SQLite database disabled, cannot read historical balances")
+            return []
+
+        try:
+            balances = sqlite_db.get_historical_balances(account_id=account_id, days=days)
+            logger.debug(f"Retrieved {len(balances)} historical balance points from database")
+            return balances
+        except Exception as e:
+            logger.error(f"Failed to get historical balances from database: {e}")
+            return []
+
     async def get_account_summary_from_db(
         self, account_id: str
     ) -> Optional[Dict[str, Any]]:

@@ -215,6 +215,31 @@ async def get_all_balances() -> APIResponse:
         ) from e
 
 
+@router.get("/balances/history", response_model=APIResponse)
+async def get_historical_balances(
+    days: Optional[int] = Query(default=365, le=1095, ge=1, description="Number of days of history to retrieve"),
+    account_id: Optional[str] = Query(default=None, description="Filter by specific account ID")
+) -> APIResponse:
+    """Get historical balance progression calculated from transaction history"""
+    try:
+        # Get historical balances from database
+        historical_balances = await database_service.get_historical_balances_from_db(
+            account_id=account_id, days=days
+        )
+
+        return APIResponse(
+            success=True,
+            data=historical_balances,
+            message=f"Retrieved {len(historical_balances)} historical balance points over {days} days",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get historical balances: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get historical balances: {str(e)}"
+        ) from e
+
+
 @router.get("/accounts/{account_id}/transactions", response_model=APIResponse)
 async def get_account_transactions(
     account_id: str,
