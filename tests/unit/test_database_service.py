@@ -83,7 +83,9 @@ class TestDatabaseService:
         self, database_service, sample_transactions_db_format
     ):
         """Test successful retrieval of transactions from database."""
-        with patch("leggen.database.sqlite.get_transactions") as mock_get_transactions:
+        with patch.object(
+            database_service, "_get_transactions"
+        ) as mock_get_transactions:
             mock_get_transactions.return_value = sample_transactions_db_format
 
             result = await database_service.get_transactions_from_db(
@@ -107,7 +109,9 @@ class TestDatabaseService:
         self, database_service, sample_transactions_db_format
     ):
         """Test retrieving transactions with filters."""
-        with patch("leggen.database.sqlite.get_transactions") as mock_get_transactions:
+        with patch.object(
+            database_service, "_get_transactions"
+        ) as mock_get_transactions:
             mock_get_transactions.return_value = sample_transactions_db_format
 
             result = await database_service.get_transactions_from_db(
@@ -143,7 +147,9 @@ class TestDatabaseService:
 
     async def test_get_transactions_from_db_error(self, database_service):
         """Test handling error when getting transactions."""
-        with patch("leggen.database.sqlite.get_transactions") as mock_get_transactions:
+        with patch.object(
+            database_service, "_get_transactions"
+        ) as mock_get_transactions:
             mock_get_transactions.side_effect = Exception("Database error")
 
             result = await database_service.get_transactions_from_db()
@@ -152,7 +158,7 @@ class TestDatabaseService:
 
     async def test_get_transaction_count_from_db_success(self, database_service):
         """Test successful retrieval of transaction count."""
-        with patch("leggen.database.sqlite.get_transaction_count") as mock_get_count:
+        with patch.object(database_service, "_get_transaction_count") as mock_get_count:
             mock_get_count.return_value = 42
 
             result = await database_service.get_transaction_count_from_db(
@@ -164,7 +170,7 @@ class TestDatabaseService:
 
     async def test_get_transaction_count_from_db_with_filters(self, database_service):
         """Test getting transaction count with filters."""
-        with patch("leggen.database.sqlite.get_transaction_count") as mock_get_count:
+        with patch.object(database_service, "_get_transaction_count") as mock_get_count:
             mock_get_count.return_value = 15
 
             result = await database_service.get_transaction_count_from_db(
@@ -194,7 +200,7 @@ class TestDatabaseService:
 
     async def test_get_transaction_count_from_db_error(self, database_service):
         """Test handling error when getting count."""
-        with patch("leggen.database.sqlite.get_transaction_count") as mock_get_count:
+        with patch.object(database_service, "_get_transaction_count") as mock_get_count:
             mock_get_count.side_effect = Exception("Database error")
 
             result = await database_service.get_transaction_count_from_db()
@@ -205,7 +211,7 @@ class TestDatabaseService:
         self, database_service, sample_balances_db_format
     ):
         """Test successful retrieval of balances from database."""
-        with patch("leggen.database.sqlite.get_balances") as mock_get_balances:
+        with patch.object(database_service, "_get_balances") as mock_get_balances:
             mock_get_balances.return_value = sample_balances_db_format
 
             result = await database_service.get_balances_from_db(
@@ -227,7 +233,7 @@ class TestDatabaseService:
 
     async def test_get_balances_from_db_error(self, database_service):
         """Test handling error when getting balances."""
-        with patch("leggen.database.sqlite.get_balances") as mock_get_balances:
+        with patch.object(database_service, "_get_balances") as mock_get_balances:
             mock_get_balances.side_effect = Exception("Database error")
 
             result = await database_service.get_balances_from_db()
@@ -242,7 +248,7 @@ class TestDatabaseService:
             "iban": "LT313250081177977789",
         }
 
-        with patch("leggen.database.sqlite.get_account_summary") as mock_get_summary:
+        with patch.object(database_service, "_get_account_summary") as mock_get_summary:
             mock_get_summary.return_value = mock_summary
 
             result = await database_service.get_account_summary_from_db(
@@ -262,7 +268,7 @@ class TestDatabaseService:
 
     async def test_get_account_summary_from_db_error(self, database_service):
         """Test handling error when getting summary."""
-        with patch("leggen.database.sqlite.get_account_summary") as mock_get_summary:
+        with patch.object(database_service, "_get_account_summary") as mock_get_summary:
             mock_get_summary.side_effect = Exception("Database error")
 
             result = await database_service.get_account_summary_from_db(

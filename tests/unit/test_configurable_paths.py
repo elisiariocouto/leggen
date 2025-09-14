@@ -7,11 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from leggen.utils.paths import path_manager
-from leggen.database.sqlite import persist_balances, get_balances
-
-
-class MockContext:
-    """Mock context for testing."""
+from leggen.services.database_service import DatabaseService
 
 
 @pytest.mark.unit
@@ -109,24 +105,31 @@ class TestConfigurablePaths:
             # Set custom database path
             path_manager.set_database_path(test_db_path)
 
-            # Test database operations
-            ctx = MockContext()
-            balance = {
-                "account_id": "test-account",
-                "bank": "TEST_BANK",
-                "status": "active",
+            # Test database operations using DatabaseService
+            database_service = DatabaseService()
+            balance_data = {
+                "balances": [
+                    {
+                        "balanceAmount": {"amount": "1000.0", "currency": "EUR"},
+                        "balanceType": "available",
+                    }
+                ],
+                "institution_id": "TEST_BANK",
+                "account_status": "active",
                 "iban": "TEST_IBAN",
-                "amount": 1000.0,
-                "currency": "EUR",
-                "type": "available",
-                "timestamp": "2023-01-01T00:00:00",
             }
 
-            # Persist balance
-            persist_balances(ctx, balance)
+            # Use the internal balance persistence method since the test needs direct database access
+            import asyncio
+
+            asyncio.run(
+                database_service._persist_balance_sqlite("test-account", balance_data)
+            )
 
             # Retrieve balances
-            balances = get_balances()
+            balances = asyncio.run(
+                database_service.get_balances_from_db("test-account")
+            )
 
             assert len(balances) == 1
             assert balances[0]["account_id"] == "test-account"
