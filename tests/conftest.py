@@ -1,10 +1,11 @@
 """Pytest configuration and shared fixtures."""
 
-import pytest
-import tempfile
 import json
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from leggen.commands.server import create_app

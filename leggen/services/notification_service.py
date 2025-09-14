@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from loguru import logger
 
@@ -119,8 +119,9 @@ class NotificationService:
     ) -> None:
         """Send Discord notifications for transactions"""
         try:
-            from leggen.notifications.discord import send_transactions_message
             import click
+
+            from leggen.notifications.discord import send_transactions_message
 
             # Create a mock context with the webhook
             ctx = click.Context(click.Command("notifications"))
@@ -148,8 +149,9 @@ class NotificationService:
     ) -> None:
         """Send Telegram notifications for transactions"""
         try:
-            from leggen.notifications.telegram import send_transaction_message
             import click
+
+            from leggen.notifications.telegram import send_transaction_message
 
             # Create a mock context with the telegram config
             ctx = click.Context(click.Command("notifications"))
@@ -175,8 +177,9 @@ class NotificationService:
     async def _send_discord_test(self, message: str) -> None:
         """Send Discord test notification"""
         try:
-            from leggen.notifications.discord import send_expire_notification
             import click
+
+            from leggen.notifications.discord import send_expire_notification
 
             # Create a mock context with the webhook
             ctx = click.Context(click.Command("test"))
@@ -206,8 +209,9 @@ class NotificationService:
     async def _send_telegram_test(self, message: str) -> None:
         """Send Telegram test notification"""
         try:
-            from leggen.notifications.telegram import send_expire_notification
             import click
+
+            from leggen.notifications.telegram import send_expire_notification
 
             # Create a mock context with the telegram config
             ctx = click.Context(click.Command("test"))
@@ -237,8 +241,9 @@ class NotificationService:
     async def _send_discord_expiry(self, notification_data: Dict[str, Any]) -> None:
         """Send Discord expiry notification"""
         try:
-            from leggen.notifications.discord import send_expire_notification
             import click
+
+            from leggen.notifications.discord import send_expire_notification
 
             # Create a mock context with the webhook
             ctx = click.Context(click.Command("expiry"))
@@ -262,8 +267,9 @@ class NotificationService:
     async def _send_telegram_expiry(self, notification_data: Dict[str, Any]) -> None:
         """Send Telegram expiry notification"""
         try:
-            from leggen.notifications.telegram import send_expire_notification
             import click
+
+            from leggen.notifications.telegram import send_expire_notification
 
             # Create a mock context with the telegram config
             ctx = click.Context(click.Command("expiry"))

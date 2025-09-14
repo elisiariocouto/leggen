@@ -1,7 +1,7 @@
 import click
 
-from leggen.main import cli
 from leggen.api_client import LeggenAPIClient
+from leggen.main import cli
 from leggen.utils.text import datefmt, info, print_table
 
 

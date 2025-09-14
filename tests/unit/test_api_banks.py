@@ -1,9 +1,10 @@
 """Tests for banks API endpoints."""
 
+from unittest.mock import patch
+
+import httpx
 import pytest
 import respx
-import httpx
-from unittest.mock import patch
 
 
 @pytest.mark.api

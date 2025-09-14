@@ -1,11 +1,12 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from loguru import logger
 
 from leggen.api.models.common import APIResponse
-from leggen.api.models.sync import SyncRequest, SchedulerConfig
-from leggen.services.sync_service import SyncService
+from leggen.api.models.sync import SchedulerConfig, SyncRequest
 from leggen.background.scheduler import scheduler
+from leggen.services.sync_service import SyncService
 from leggen.utils.config import config
 
 router = APIRouter()

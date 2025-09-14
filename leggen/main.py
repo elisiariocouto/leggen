@@ -6,8 +6,8 @@ from pathlib import Path
 import click
 
 from leggen.utils.config import load_config
-from leggen.utils.text import error
 from leggen.utils.paths import path_manager
+from leggen.utils.text import error
 
 cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "commands"))
 

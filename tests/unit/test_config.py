@@ -1,7 +1,8 @@
 """Tests for configuration management."""
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from leggen.utils.config import Config
 

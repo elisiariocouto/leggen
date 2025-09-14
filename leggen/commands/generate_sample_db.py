@@ -1,7 +1,8 @@
 """Generate sample database command."""
 
-import click
 from pathlib import Path
+
+import click
 
 
 @click.command()
@@ -34,8 +35,8 @@ def generate_sample_db(
     """Generate a sample database with realistic financial data for testing."""
 
     # Import here to avoid circular imports
-    import sys
     import subprocess
+    import sys
     from pathlib import Path as PathlibPath
 
     # Get the script path

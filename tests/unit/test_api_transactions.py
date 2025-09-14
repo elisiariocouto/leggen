@@ -1,8 +1,9 @@
 """Tests for transactions API endpoints."""
 
-import pytest
-from unittest.mock import patch
 from datetime import datetime
+from unittest.mock import patch
+
+import pytest
 
 
 @pytest.mark.api

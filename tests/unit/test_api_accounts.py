@@ -1,7 +1,8 @@
 """Tests for accounts API endpoints."""
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 
 @pytest.mark.api

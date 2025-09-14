@@ -1,8 +1,9 @@
 """Tests for analytics fixes to ensure all transactions are used in statistics."""
 
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from leggen.commands.server import create_app

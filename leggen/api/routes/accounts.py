@@ -1,15 +1,16 @@
-from typing import Optional, List, Union
+from typing import List, Optional, Union
+
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from leggen.api.models.common import APIResponse
 from leggen.api.models.accounts import (
-    AccountDetails,
     AccountBalance,
+    AccountDetails,
+    AccountUpdate,
     Transaction,
     TransactionSummary,
-    AccountUpdate,
 )
+from leggen.api.models.common import APIResponse
 from leggen.services.database_service import DatabaseService
 
 router = APIRouter()

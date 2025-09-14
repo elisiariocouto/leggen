@@ -1,14 +1,14 @@
-from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
-import sqlite3
 import json
+import sqlite3
 from collections import defaultdict
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from leggen.services.transaction_processor import TransactionProcessor
 from leggen.utils.config import config
 from leggen.utils.paths import path_manager
-from leggen.services.transaction_processor import TransactionProcessor
 
 
 class DatabaseService:
@@ -721,8 +721,8 @@ class DatabaseService:
     ) -> List[Dict[str, Any]]:
         """Persist transactions to SQLite"""
         try:
-            import sqlite3
             import json
+            import sqlite3
 
             db_path = path_manager.get_database_path()
             conn = sqlite3.connect(str(db_path))

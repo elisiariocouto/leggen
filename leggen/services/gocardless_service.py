@@ -1,8 +1,8 @@
 import json
-import httpx
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
+import httpx
 from loguru import logger
 
 from leggen.utils.config import config

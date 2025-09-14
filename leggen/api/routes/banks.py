@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from leggen.api.models.common import APIResponse
 from leggen.api.models.banks import (
-    BankInstitution,
     BankConnectionRequest,
-    BankRequisition,
     BankConnectionStatus,
+    BankInstitution,
+    BankRequisition,
 )
+from leggen.api.models.common import APIResponse
 from leggen.services.gocardless_service import GoCardlessService
 from leggen.utils.gocardless import REQUISITION_STATUS
 

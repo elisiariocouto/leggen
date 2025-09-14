@@ -1,9 +1,10 @@
 """Tests for CLI API client."""
 
+from unittest.mock import patch
+
 import pytest
 import requests
 import requests_mock
-from unittest.mock import patch
 
 from leggen.api_client import LeggenAPIClient
 

@@ -1,4 +1,5 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -61,6 +62,4 @@ class Config(BaseModel):
     scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)
 
     class Config:
-        allow_population_by_field_name = (
-            True  # Allow both 'case_insensitive' and 'case-insensitive'
-        )
+        validate_by_name = True

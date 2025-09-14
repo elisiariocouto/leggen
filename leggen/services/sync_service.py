@@ -4,8 +4,8 @@ from typing import List
 from loguru import logger
 
 from leggen.api.models.sync import SyncResult, SyncStatus
-from leggen.services.gocardless_service import GoCardlessService
 from leggen.services.database_service import DatabaseService
+from leggen.services.gocardless_service import GoCardlessService
 from leggen.services.notification_service import NotificationService
 
 

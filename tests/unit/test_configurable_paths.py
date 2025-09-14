@@ -1,13 +1,14 @@
 """Integration tests for configurable paths."""
 
-import pytest
-import tempfile
 import os
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from leggen.utils.paths import path_manager
+import pytest
+
 from leggen.services.database_service import DatabaseService
+from leggen.utils.paths import path_manager
 
 
 @pytest.mark.unit

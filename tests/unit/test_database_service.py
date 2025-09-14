@@ -1,8 +1,9 @@
 """Tests for database service."""
 
-import pytest
-from unittest.mock import patch
 from datetime import datetime
+from unittest.mock import patch
+
+import pytest
 
 from leggen.services.database_service import DatabaseService
 

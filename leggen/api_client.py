@@ -1,7 +1,8 @@
 import os
-import requests
-from typing import Dict, Any, Optional, List, Union
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urljoin
+
+import requests
 
 from leggen.utils.text import error
 

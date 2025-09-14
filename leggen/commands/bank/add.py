@@ -1,9 +1,9 @@
 import click
 
-from leggen.main import cli
 from leggen.api_client import LeggenAPIClient
+from leggen.main import cli
 from leggen.utils.disk import save_file
-from leggen.utils.text import info, print_table, warning, success
+from leggen.utils.text import info, print_table, success, warning
 
 
 @cli.command()

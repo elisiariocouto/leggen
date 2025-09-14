@@ -1,14 +1,15 @@
-from typing import Dict, Any
+from typing import Any, Dict
+
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
 from leggen.api.models.common import APIResponse
 from leggen.api.models.notifications import (
+    DiscordConfig,
+    NotificationFilters,
     NotificationSettings,
     NotificationTest,
-    DiscordConfig,
     TelegramConfig,
-    NotificationFilters,
 )
 from leggen.services.notification_service import NotificationService
 from leggen.utils.config import config

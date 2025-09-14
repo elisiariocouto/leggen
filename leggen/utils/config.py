@@ -1,17 +1,17 @@
 import os
 import sys
 import tomllib
-import tomli_w
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 import click
+import tomli_w
 from loguru import logger
 from pydantic import ValidationError
 
-from leggen.utils.text import error
-from leggen.utils.paths import path_manager
 from leggen.models.config import Config as ConfigModel
+from leggen.utils.paths import path_manager
+from leggen.utils.text import error
 
 
 class Config:
