@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import AccountsOverview from "./AccountsOverview";
-import TransactionsList from "./TransactionsList";
+import TransactionsTable from "./TransactionsTable";
 import Notifications from "./Notifications";
 import ErrorBoundary from "./ErrorBoundary";
 import { cn } from "../lib/utils";
@@ -177,7 +177,7 @@ export default function Dashboard() {
         <main className="flex-1 overflow-y-auto p-6">
           <ErrorBoundary>
             {activeTab === "overview" && <AccountsOverview />}
-            {activeTab === "transactions" && <TransactionsList />}
+            {activeTab === "transactions" && <TransactionsTable />}
             {activeTab === "analytics" && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">

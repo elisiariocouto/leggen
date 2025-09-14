@@ -84,6 +84,8 @@ export const apiClient = {
     perPage?: number;
     search?: string;
     summaryOnly?: boolean;
+    minAmount?: number;
+    maxAmount?: number;
   }): Promise<ApiResponse<Transaction[]>> => {
     const queryParams = new URLSearchParams();
 
@@ -96,6 +98,12 @@ export const apiClient = {
     if (params?.search) queryParams.append("search", params.search);
     if (params?.summaryOnly !== undefined) {
       queryParams.append("summary_only", params.summaryOnly.toString());
+    }
+    if (params?.minAmount !== undefined) {
+      queryParams.append("min_amount", params.minAmount.toString());
+    }
+    if (params?.maxAmount !== undefined) {
+      queryParams.append("max_amount", params.maxAmount.toString());
     }
 
     const response = await api.get<ApiResponse<Transaction[]>>(

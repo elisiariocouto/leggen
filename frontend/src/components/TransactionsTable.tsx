@@ -27,9 +27,10 @@ import {
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
-import LoadingSpinner from "./LoadingSpinner";
+import TransactionSkeleton from "./TransactionSkeleton";
+import FiltersSkeleton from "./FiltersSkeleton";
 import RawTransactionModal from "./RawTransactionModal";
-import type { Account, Transaction, ApiResponse } from "../types/api";
+import type { Account, Transaction, ApiResponse, Balance } from "../types/api";
 
 export default function TransactionsTable() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,6 +43,7 @@ export default function TransactionsTable() {
   const [showRawModal, setShowRawModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
+  const [showRunningBalance, setShowRunningBalance] = useState(true);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,6 +77,12 @@ export default function TransactionsTable() {
     queryFn: apiClient.getAccounts,
   });
 
+  const { data: balances } = useQuery<Balance[]>({
+    queryKey: ["balances"],
+    queryFn: apiClient.getBalances,
+    enabled: showRunningBalance,
+  });
+
   const {
     data: transactionsResponse,
     isLoading: transactionsLoading,
@@ -89,6 +97,8 @@ export default function TransactionsTable() {
       currentPage,
       perPage,
       debouncedSearchTerm,
+      minAmount,
+      maxAmount,
     ],
     queryFn: () =>
       apiClient.getTransactions({
@@ -99,6 +109,8 @@ export default function TransactionsTable() {
         perPage: perPage,
         search: debouncedSearchTerm || undefined,
         summaryOnly: false,
+        minAmount: minAmount ? parseFloat(minAmount) : undefined,
+        maxAmount: maxAmount ? parseFloat(maxAmount) : undefined,
       }),
   });
 
@@ -136,6 +148,20 @@ export default function TransactionsTable() {
     setCurrentPage(1); // Reset to first page when changing date filters
   };
 
+  const setThisWeekFilter = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)); // Monday as start
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    setStartDate(startOfWeek.toISOString().split("T")[0]);
+    setEndDate(endOfWeek.toISOString().split("T")[0]);
+    setCurrentPage(1);
+  };
+
   const setThisMonthFilter = () => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -144,6 +170,16 @@ export default function TransactionsTable() {
     setStartDate(startOfMonth.toISOString().split("T")[0]);
     setEndDate(endOfMonth.toISOString().split("T")[0]);
     setCurrentPage(1); // Reset to first page when changing date filters
+  };
+
+  const setThisYearFilter = () => {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const endOfYear = new Date(now.getFullYear(), 11, 31);
+
+    setStartDate(startOfYear.toISOString().split("T")[0]);
+    setEndDate(endOfYear.toISOString().split("T")[0]);
+    setCurrentPage(1);
   };
 
   // Reset pagination when account filter changes
@@ -173,6 +209,51 @@ export default function TransactionsTable() {
     endDate ||
     minAmount ||
     maxAmount;
+
+  // Calculate running balances
+  const calculateRunningBalances = (transactions: Transaction[]) => {
+    if (!balances || !showRunningBalance) return {};
+
+    const runningBalances: { [key: string]: number } = {};
+    const accountBalanceMap = new Map<string, number>();
+
+    // Create a map of account current balances
+    balances.forEach(balance => {
+      if (balance.balance_type === 'expected') {
+        accountBalanceMap.set(balance.account_id, balance.balance_amount);
+      }
+    });
+
+    // Group transactions by account
+    const transactionsByAccount = new Map<string, Transaction[]>();
+    transactions.forEach(txn => {
+      if (!transactionsByAccount.has(txn.account_id)) {
+        transactionsByAccount.set(txn.account_id, []);
+      }
+      transactionsByAccount.get(txn.account_id)!.push(txn);
+    });
+
+    // Calculate running balance for each account
+    transactionsByAccount.forEach((accountTransactions, accountId) => {
+      const currentBalance = accountBalanceMap.get(accountId) || 0;
+      let runningBalance = currentBalance;
+
+      // Sort transactions by date (newest first) to work backwards
+      const sortedTransactions = [...accountTransactions].sort((a, b) =>
+        new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
+      );
+
+      // Calculate running balance by working backwards from current balance
+      sortedTransactions.forEach((txn) => {
+        runningBalances[`${txn.account_id}-${txn.transaction_id}`] = runningBalance;
+        runningBalance -= txn.transaction_value;
+      });
+    });
+
+    return runningBalances;
+  };
+
+  const runningBalances = calculateRunningBalances(transactions);
 
   // Define columns
   const columns: ColumnDef<Transaction>[] = [
@@ -249,6 +330,25 @@ export default function TransactionsTable() {
       },
       sortingFn: "basic",
     },
+    ...(showRunningBalance ? [{
+      id: "running_balance",
+      header: "Running Balance",
+      cell: ({ row }: { row: { original: Transaction } }) => {
+        const transaction = row.original;
+        const balanceKey = `${transaction.account_id}-${transaction.transaction_id}`;
+        const balance = runningBalances[balanceKey];
+
+        if (balance === undefined) return null;
+
+        return (
+          <div className="text-right">
+            <p className="text-sm font-medium text-gray-900">
+              {formatCurrency(balance, transaction.transaction_currency)}
+            </p>
+          </div>
+        );
+      },
+    }] : []),
     {
       accessorKey: "transaction_date",
       header: "Date",
@@ -324,8 +424,12 @@ export default function TransactionsTable() {
 
   if (transactionsLoading) {
     return (
-      <div className="bg-white rounded-lg shadow">
-        <LoadingSpinner message="Loading transactions..." />
+      <div className="space-y-6">
+        <FiltersSkeleton />
+        <TransactionSkeleton rows={10} view="table" />
+        <div className="md:hidden">
+          <TransactionSkeleton rows={10} view="mobile" />
+        </div>
       </div>
     );
   }
@@ -373,6 +477,16 @@ export default function TransactionsTable() {
                 </button>
               )}
               <button
+                onClick={() => setShowRunningBalance(!showRunningBalance)}
+                className={`inline-flex items-center px-3 py-2 text-sm rounded-md transition-colors ${
+                  showRunningBalance
+                    ? "bg-green-100 text-green-700 hover:bg-green-200"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Balance
+              </button>
+              <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="inline-flex items-center px-3 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
               >
@@ -386,29 +500,45 @@ export default function TransactionsTable() {
         {showFilters && (
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             {/* Quick Date Filters */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Quick Filters
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Quick Date Filters
               </label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setQuickDateFilter(7)}
-                  className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
-                >
-                  Last 7 days
-                </button>
-                <button
-                  onClick={() => setQuickDateFilter(30)}
-                  className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
-                >
-                  Last 30 days
-                </button>
-                <button
-                  onClick={setThisMonthFilter}
-                  className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
-                >
-                  This month
-                </button>
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setQuickDateFilter(7)}
+                    className="px-4 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
+                  >
+                    Last 7 days
+                  </button>
+                  <button
+                    onClick={setThisWeekFilter}
+                    className="px-4 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
+                  >
+                    This week
+                  </button>
+                  <button
+                    onClick={() => setQuickDateFilter(30)}
+                    className="px-4 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
+                  >
+                    Last 30 days
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={setThisMonthFilter}
+                    className="px-4 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
+                  >
+                    This month
+                  </button>
+                  <button
+                    onClick={setThisYearFilter}
+                    className="px-4 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
+                  >
+                    This year
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -724,6 +854,14 @@ export default function TransactionsTable() {
                             transaction.transaction_currency,
                           )}
                         </p>
+                        {showRunningBalance && (
+                          <p className="text-xs text-gray-500 mb-1">
+                            Balance: {formatCurrency(
+                              runningBalances[`${transaction.account_id}-${transaction.transaction_id}`] || 0,
+                              transaction.transaction_currency,
+                            )}
+                          </p>
+                        )}
                         <button
                           onClick={() => handleViewRaw(transaction)}
                           className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
@@ -781,7 +919,7 @@ export default function TransactionsTable() {
                 </button>
               </div>
             </div>
-            
+
             {/* Mobile pagination info */}
             <div className="text-center w-full sm:hidden">
               <p className="text-sm text-gray-700">
