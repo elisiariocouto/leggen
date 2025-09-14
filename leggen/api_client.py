@@ -6,15 +6,15 @@ from urllib.parse import urljoin
 from leggen.utils.text import error
 
 
-class LeggendAPIClient:
-    """Client for communicating with the leggend FastAPI service"""
+class LeggenAPIClient:
+    """Client for communicating with the leggen FastAPI service"""
 
     base_url: str
 
     def __init__(self, base_url: Optional[str] = None):
         self.base_url = (
             base_url
-            or os.environ.get("LEGGEND_API_URL", "http://localhost:8000")
+            or os.environ.get("LEGGEN_API_URL", "http://localhost:8000")
             or "http://localhost:8000"
         )
         self.session = requests.Session()
@@ -31,7 +31,7 @@ class LeggendAPIClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.ConnectionError:
-            error("Could not connect to leggend service. Is it running?")
+            error("Could not connect to leggen server. Is it running?")
             error(f"Trying to connect to: {self.base_url}")
             raise
         except requests.exceptions.HTTPError as e:
@@ -48,7 +48,7 @@ class LeggendAPIClient:
             raise
 
     def health_check(self) -> bool:
-        """Check if the leggend service is healthy"""
+        """Check if the leggen server is healthy"""
         try:
             response = self._make_request("GET", "/health")
             return response.get("status") == "healthy"

@@ -2,15 +2,15 @@ from typing import Optional, List, Union
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from leggend.api.models.common import APIResponse
-from leggend.api.models.accounts import (
+from leggen.api.models.common import APIResponse
+from leggen.api.models.accounts import (
     AccountDetails,
     AccountBalance,
     Transaction,
     TransactionSummary,
     AccountUpdate,
 )
-from leggend.services.database_service import DatabaseService
+from leggen.services.database_service import DatabaseService
 
 router = APIRouter()
 database_service = DatabaseService()
@@ -217,8 +217,12 @@ async def get_all_balances() -> APIResponse:
 
 @router.get("/balances/history", response_model=APIResponse)
 async def get_historical_balances(
-    days: Optional[int] = Query(default=365, le=1095, ge=1, description="Number of days of history to retrieve"),
-    account_id: Optional[str] = Query(default=None, description="Filter by specific account ID")
+    days: Optional[int] = Query(
+        default=365, le=1095, ge=1, description="Number of days of history to retrieve"
+    ),
+    account_id: Optional[str] = Query(
+        default=None, description="Filter by specific account ID"
+    ),
 ) -> APIResponse:
     """Get historical balance progression calculated from transaction history"""
     try:

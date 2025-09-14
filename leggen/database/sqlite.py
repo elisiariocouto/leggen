@@ -527,11 +527,11 @@ def get_historical_balances(account_id=None, days=365):
     db_path = path_manager.get_database_path()
     if not db_path.exists():
         return []
-    
+
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    
+
     try:
         # Get current balance for each account/type to use as the final balance
         current_balances_query = """
@@ -544,107 +544,115 @@ def get_historical_balances(account_id=None, days=365):
             )
         """
         params = []
-        
+
         if account_id:
             current_balances_query += " AND b1.account_id = ?"
             params.append(account_id)
-            
+
         cursor.execute(current_balances_query, params)
         current_balances = {
-            (row['account_id'], row['type']): {
-                'amount': row['amount'],
-                'currency': row['currency']
+            (row["account_id"], row["type"]): {
+                "amount": row["amount"],
+                "currency": row["currency"],
             }
             for row in cursor.fetchall()
         }
-        
+
         # Get transactions for the specified period, ordered by date descending
         from datetime import datetime, timedelta
+
         cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
-        
+
         transactions_query = """
             SELECT accountId, transactionDate, transactionValue
             FROM transactions
             WHERE transactionDate >= ?
         """
-        
+
         if account_id:
             transactions_query += " AND accountId = ?"
             params = [cutoff_date, account_id]
         else:
             params = [cutoff_date]
-            
+
         transactions_query += " ORDER BY transactionDate DESC"
-        
+
         cursor.execute(transactions_query, params)
         transactions = cursor.fetchall()
-        
+
         # Calculate historical balances by working backwards from current balance
         historical_balances = []
         account_running_balances: dict[str, dict[str, float]] = {}
-        
+
         # Initialize running balances with current balances
         for (acc_id, balance_type), balance_info in current_balances.items():
             if acc_id not in account_running_balances:
                 account_running_balances[acc_id] = {}
-            account_running_balances[acc_id][balance_type] = balance_info['amount']
-        
+            account_running_balances[acc_id][balance_type] = balance_info["amount"]
+
         # Group transactions by date
         from collections import defaultdict
+
         transactions_by_date = defaultdict(list)
-        
+
         for txn in transactions:
-            date_str = txn['transactionDate'][:10]  # Extract just the date part
+            date_str = txn["transactionDate"][:10]  # Extract just the date part
             transactions_by_date[date_str].append(txn)
-        
+
         # Generate historical balance points
         # Start from today and work backwards
         current_date = datetime.now().date()
-        
+
         for day_offset in range(0, days, 7):  # Sample every 7 days for performance
             target_date = current_date - timedelta(days=day_offset)
             target_date_str = target_date.isoformat()
-            
+
             # For each account, create balance entries
             for acc_id in account_running_balances:
-                for balance_type in ['closingBooked']:  # Focus on closingBooked for the chart
+                for balance_type in [
+                    "closingBooked"
+                ]:  # Focus on closingBooked for the chart
                     if balance_type in account_running_balances[acc_id]:
                         balance_amount = account_running_balances[acc_id][balance_type]
-                        currency = current_balances.get((acc_id, balance_type), {}).get('currency', 'EUR')
-                        
-                        historical_balances.append({
-                            'id': f"{acc_id}_{balance_type}_{target_date_str}",
-                            'account_id': acc_id,
-                            'balance_amount': balance_amount,
-                            'balance_type': balance_type,
-                            'currency': currency,
-                            'reference_date': target_date_str,
-                            'created_at': None,
-                            'updated_at': None
-                        })
-            
+                        currency = current_balances.get((acc_id, balance_type), {}).get(
+                            "currency", "EUR"
+                        )
+
+                        historical_balances.append(
+                            {
+                                "id": f"{acc_id}_{balance_type}_{target_date_str}",
+                                "account_id": acc_id,
+                                "balance_amount": balance_amount,
+                                "balance_type": balance_type,
+                                "currency": currency,
+                                "reference_date": target_date_str,
+                                "created_at": None,
+                                "updated_at": None,
+                            }
+                        )
+
             # Subtract transactions that occurred on this date and later dates
             # to simulate going back in time
             for date_str in list(transactions_by_date.keys()):
                 if date_str >= target_date_str:
                     for txn in transactions_by_date[date_str]:
-                        acc_id = txn['accountId']
-                        amount = txn['transactionValue']
-                        
+                        acc_id = txn["accountId"]
+                        amount = txn["transactionValue"]
+
                         if acc_id in account_running_balances:
                             for balance_type in account_running_balances[acc_id]:
                                 account_running_balances[acc_id][balance_type] -= amount
-                    
+
                     # Remove processed transactions to avoid double-processing
                     del transactions_by_date[date_str]
-        
+
         conn.close()
-        
+
         # Sort by date for proper chronological order
-        historical_balances.sort(key=lambda x: x['reference_date'])
-        
+        historical_balances.sort(key=lambda x: x["reference_date"])
+
         return historical_balances
-        
+
     except Exception as e:
         conn.close()
         raise e

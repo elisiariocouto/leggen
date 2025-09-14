@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import patch
 from datetime import datetime
 
-from leggend.services.database_service import DatabaseService
+from leggen.services.database_service import DatabaseService
 
 
 @pytest.fixture

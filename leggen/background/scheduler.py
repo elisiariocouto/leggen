@@ -2,9 +2,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from loguru import logger
 
-from leggend.config import config
-from leggend.services.sync_service import SyncService
-from leggend.services.notification_service import NotificationService
+from leggen.utils.config import config
+from leggen.services.sync_service import SyncService
+from leggen.services.notification_service import NotificationService
 
 
 class BackgroundScheduler:

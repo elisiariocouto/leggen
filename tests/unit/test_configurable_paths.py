@@ -14,7 +14,6 @@ class MockContext:
     """Mock context for testing."""
 
 
-
 @pytest.mark.unit
 class TestConfigurablePaths:
     """Test configurable path management."""

@@ -372,7 +372,7 @@ class SampleDataGenerator:
         for account in accounts:
             cursor.execute(
                 """
-                INSERT OR REPLACE INTO accounts 
+                INSERT OR REPLACE INTO accounts
                 (id, institution_id, status, iban, name, currency, created, last_accessed, last_updated)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -393,9 +393,9 @@ class SampleDataGenerator:
         for transaction in transactions:
             cursor.execute(
                 """
-                INSERT OR REPLACE INTO transactions 
-                (accountId, transactionId, internalTransactionId, institutionId, iban, 
-                 transactionDate, description, transactionValue, transactionCurrency, 
+                INSERT OR REPLACE INTO transactions
+                (accountId, transactionId, internalTransactionId, institutionId, iban,
+                 transactionDate, description, transactionValue, transactionCurrency,
                  transactionStatus, rawTransaction)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -418,7 +418,7 @@ class SampleDataGenerator:
         for balance in balances:
             cursor.execute(
                 """
-                INSERT INTO balances 
+                INSERT INTO balances
                 (account_id, bank, status, iban, amount, currency, type, timestamp)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -538,8 +538,8 @@ def main(database: Path, accounts: int, transactions: int, force: bool):
     click.echo(f"   export LEGGEN_DATABASE_PATH={db_path}")
     click.echo("   leggen transactions")
     click.echo("")
-    click.echo("To use this sample database with leggend API:")
-    click.echo(f"   leggend --database {db_path}")
+    click.echo("To use this sample database with leggen server:")
+    click.echo(f"   leggen server --database {db_path}")
 
 
 if __name__ == "__main__":

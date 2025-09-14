@@ -2,11 +2,11 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from loguru import logger
 
-from leggend.api.models.common import APIResponse
-from leggend.api.models.sync import SyncRequest, SchedulerConfig
-from leggend.services.sync_service import SyncService
-from leggend.background.scheduler import scheduler
-from leggend.config import config
+from leggen.api.models.common import APIResponse
+from leggen.api.models.sync import SyncRequest, SchedulerConfig
+from leggen.services.sync_service import SyncService
+from leggen.background.scheduler import scheduler
+from leggen.utils.config import config
 
 router = APIRouter()
 sync_service = SyncService()

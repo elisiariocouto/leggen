@@ -93,7 +93,7 @@ The frontend supports configurable API URLs through environment variables:
 
 - Uses relative URLs (`/api/v1`) that nginx proxies to the backend
 - Configure nginx proxy target via `API_BACKEND_URL` environment variable
-- Default: `http://leggend:8000`
+- Default: `http://leggen-server:8000`
 
 **Docker Compose:**
 

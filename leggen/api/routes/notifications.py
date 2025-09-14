@@ -2,16 +2,16 @@ from typing import Dict, Any
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
-from leggend.api.models.common import APIResponse
-from leggend.api.models.notifications import (
+from leggen.api.models.common import APIResponse
+from leggen.api.models.notifications import (
     NotificationSettings,
     NotificationTest,
     DiscordConfig,
     TelegramConfig,
     NotificationFilters,
 )
-from leggend.services.notification_service import NotificationService
-from leggend.config import config
+from leggen.services.notification_service import NotificationService
+from leggen.utils.config import config
 
 router = APIRouter()
 notification_service = NotificationService()

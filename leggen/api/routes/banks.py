@@ -1,15 +1,15 @@
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from leggend.api.models.common import APIResponse
-from leggend.api.models.banks import (
+from leggen.api.models.common import APIResponse
+from leggen.api.models.banks import (
     BankInstitution,
     BankConnectionRequest,
     BankRequisition,
     BankConnectionStatus,
 )
-from leggend.services.gocardless_service import GoCardlessService
-from leggend.utils.gocardless import REQUISITION_STATUS
+from leggen.services.gocardless_service import GoCardlessService
+from leggen.utils.gocardless import REQUISITION_STATUS
 
 router = APIRouter()
 gocardless_service = GoCardlessService()
