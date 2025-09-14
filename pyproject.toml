@@ -69,7 +69,7 @@ build-backend = "hatchling.build"
 
 [tool.ruff]
 lint.ignore = ["E501", "B008", "B006"]
-lint.extend-select = ["B", "C4", "PIE", "T20", "SIM", "TCH"]
+lint.extend-select = ["B", "C4", "I", "PIE", "T20", "SIM", "TCH"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
