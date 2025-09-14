@@ -20,8 +20,8 @@ enabled = true
 
 # Optional: Telegram notifications
 [notifications.telegram]
-token = "your-bot-token"
-chat_id = 12345
+api-key = "your-bot-token"
+chat-id = 12345
 enabled = true
 
 # Optional: Transaction filters for notifications
