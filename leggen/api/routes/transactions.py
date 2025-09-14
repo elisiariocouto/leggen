@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from leggend.api.models.common import APIResponse, PaginatedResponse
-from leggend.api.models.accounts import Transaction, TransactionSummary
-from leggend.services.database_service import DatabaseService
+from leggen.api.models.common import APIResponse, PaginatedResponse
+from leggen.api.models.accounts import Transaction, TransactionSummary
+from leggen.services.database_service import DatabaseService
 
 router = APIRouter()
 database_service = DatabaseService()
@@ -252,5 +252,3 @@ async def get_transactions_for_analytics(
         raise HTTPException(
             status_code=500, detail=f"Failed to get analytics transactions: {str(e)}"
         ) from e
-
-

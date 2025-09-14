@@ -4,7 +4,7 @@ import sqlite3
 
 from loguru import logger
 
-from leggend.config import config
+from leggen.utils.config import config
 import leggen.database.sqlite as sqlite_db
 from leggen.utils.paths import path_manager
 
@@ -204,8 +204,12 @@ class DatabaseService:
             return []
 
         try:
-            balances = sqlite_db.get_historical_balances(account_id=account_id, days=days)
-            logger.debug(f"Retrieved {len(balances)} historical balance points from database")
+            balances = sqlite_db.get_historical_balances(
+                account_id=account_id, days=days
+            )
+            logger.debug(
+                f"Retrieved {len(balances)} historical balance points from database"
+            )
             return balances
         except Exception as e:
             logger.error(f"Failed to get historical balances from database: {e}")

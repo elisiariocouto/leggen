@@ -2,14 +2,14 @@
 
 An Open Banking CLI and API service for managing bank connections and transactions.
 
-This tool provides **FastAPI backend service** (`leggend`), a **React Web Interface** and a **command-line interface** (`leggen`) to connect to banks using the GoCardless Open Banking API.
+This tool provides a **unified command-line interface** (`leggen`) with both CLI commands and an integrated **FastAPI backend service**, plus a **React Web Interface** to connect to banks using the GoCardless Open Banking API.
 
 Having your bank data accessible through both CLI and REST API gives you the power to backup, analyze, create reports, and integrate with other applications.
 
 ## 🛠️ Technologies
 
   ### 🔌 API & Backend
-  - [FastAPI](https://fastapi.tiangolo.com/): High-performance async API backend (`leggend` service)
+  - [FastAPI](https://fastapi.tiangolo.com/): High-performance async API backend (integrated into `leggen server`)
   - [GoCardless Open Banking API](https://developer.gocardless.com/bank-account-data/overview): for connecting to banks
   - [APScheduler](https://apscheduler.readthedocs.io/): Background job scheduling with configurable cron
 
@@ -107,7 +107,7 @@ For development or local installation:
 uv sync  # or pip install -e .
 
 # Start the API service
-uv run leggend --reload  # Development mode with auto-reload
+uv run leggen server --reload  # Development mode with auto-reload
 
 # Use the CLI (in another terminal)
 uv run leggen --help
@@ -152,19 +152,19 @@ case-sensitive = ["SpecificStore"]
 
 ## 📖 Usage
 
-### API Service (`leggend`)
+### API Service (`leggen server`)
 
 Start the FastAPI backend service:
 
 ```bash
 # Production mode
-leggend
+leggen server
 
 # Development mode with auto-reload
-leggend --reload
+leggen server --reload
 
 # Custom host and port
-leggend --host 127.0.0.1 --port 8080
+leggen server --host 127.0.0.1 --port 8080
 ```
 
 **API Documentation**: Visit `http://localhost:8000/docs` for interactive API documentation.
@@ -207,7 +207,7 @@ leggen sync --force --wait
 leggen --api-url http://localhost:8080 status
 
 # Set via environment variable
-export LEGGEND_API_URL=http://localhost:8080
+export LEGGEN_API_URL=http://localhost:8080
 leggen status
 ```
 
@@ -223,7 +223,7 @@ docker compose -f compose.dev.yml ps
 
 # Check logs
 docker compose -f compose.dev.yml logs frontend
-docker compose -f compose.dev.yml logs leggend
+docker compose -f compose.dev.yml logs leggen-server
 
 # Stop development services
 docker compose -f compose.dev.yml down
@@ -239,7 +239,7 @@ docker compose ps
 
 # Check logs
 docker compose logs frontend
-docker compose logs leggend
+docker compose logs leggen-server
 
 # Access the web interface at http://localhost:3000
 # API documentation at http://localhost:8000/docs
@@ -290,7 +290,7 @@ cd leggen
 uv sync
 
 # Start API service with auto-reload
-uv run leggend --reload
+uv run leggen server --reload
 
 # Use CLI commands
 uv run leggen status
@@ -333,13 +333,10 @@ The test suite includes:
 leggen/              # CLI application
 ├── commands/        # CLI command implementations
 ├── utils/           # Shared utilities
-└── api_client.py    # API client for leggend service
-
-leggend/             # FastAPI backend service
-├── api/             # API routes and models
+├── api/             # FastAPI API routes and models
 ├── services/        # Business logic
 ├── background/      # Background job scheduler
-└── main.py          # FastAPI application
+└── api_client.py    # API client for server communication
 
 tests/               # Test suite
 ├── conftest.py      # Shared test fixtures

@@ -7,8 +7,8 @@ from pathlib import Path
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
-from leggend.main import create_app
-from leggend.config import Config
+from leggen.commands.server import create_app
+from leggen.utils.config import Config
 
 
 @pytest.fixture

@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from datetime import datetime
 
-from leggend.background.scheduler import BackgroundScheduler
+from leggen.background.scheduler import BackgroundScheduler
 
 
 @pytest.mark.unit
@@ -20,8 +20,8 @@ class TestBackgroundScheduler:
     def scheduler(self):
         """Create scheduler instance for testing."""
         with (
-            patch("leggend.background.scheduler.SyncService"),
-            patch("leggend.background.scheduler.config") as mock_config,
+            patch("leggen.background.scheduler.SyncService"),
+            patch("leggen.background.scheduler.config") as mock_config,
         ):
             mock_config.scheduler_config = {
                 "sync": {"enabled": True, "hour": 3, "minute": 0}
@@ -37,7 +37,7 @@ class TestBackgroundScheduler:
 
     def test_scheduler_start_default_config(self, scheduler, mock_config):
         """Test starting scheduler with default configuration."""
-        with patch("leggend.config.config") as mock_config_obj:
+        with patch("leggen.utils.config.config") as mock_config_obj:
             mock_config_obj.scheduler_config = mock_config
 
             # Mock the job that gets added
@@ -58,7 +58,7 @@ class TestBackgroundScheduler:
 
         with (
             patch.object(scheduler, "scheduler") as mock_scheduler,
-            patch("leggend.background.scheduler.config") as mock_config_obj,
+            patch("leggen.background.scheduler.config") as mock_config_obj,
         ):
             mock_config_obj.scheduler_config = disabled_config
             mock_scheduler.running = False
@@ -79,7 +79,7 @@ class TestBackgroundScheduler:
             }
         }
 
-        with patch("leggend.config.config") as mock_config_obj:
+        with patch("leggen.utils.config.config") as mock_config_obj:
             mock_config_obj.scheduler_config = cron_config
 
             scheduler.start()
@@ -97,7 +97,7 @@ class TestBackgroundScheduler:
 
         with (
             patch.object(scheduler, "scheduler") as mock_scheduler,
-            patch("leggend.background.scheduler.config") as mock_config_obj,
+            patch("leggen.background.scheduler.config") as mock_config_obj,
         ):
             mock_config_obj.scheduler_config = invalid_cron_config
             mock_scheduler.running = False
@@ -187,7 +187,7 @@ class TestBackgroundScheduler:
 
     def test_scheduler_job_max_instances(self, scheduler, mock_config):
         """Test that sync jobs have max_instances=1."""
-        with patch("leggend.config.config") as mock_config_obj:
+        with patch("leggen.utils.config.config") as mock_config_obj:
             mock_config_obj.scheduler_config = mock_config
             scheduler.start()
 

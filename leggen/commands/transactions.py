@@ -1,7 +1,7 @@
 import click
 
 from leggen.main import cli
-from leggen.api_client import LeggendAPIClient
+from leggen.api_client import LeggenAPIClient
 from leggen.utils.text import datefmt, info, print_table
 
 
@@ -20,12 +20,12 @@ def transactions(ctx: click.Context, account: str, limit: int, full: bool):
 
     If the --account option is used, it will only list transactions for that account.
     """
-    api_client = LeggendAPIClient(ctx.obj.get("api_url"))
+    api_client = LeggenAPIClient(ctx.obj.get("api_url"))
 
-    # Check if leggend service is available
+    # Check if leggen server is available
     if not api_client.health_check():
         click.echo(
-            "Error: Cannot connect to leggend service. Please ensure it's running."
+            "Error: Cannot connect to leggen server. Please ensure it's running."
         )
         return
 

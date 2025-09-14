@@ -105,9 +105,9 @@ class Group(click.Group):
     "--api-url",
     type=str,
     default="http://localhost:8000",
-    envvar="LEGGEND_API_URL",
+    envvar="LEGGEN_API_URL",
     show_envvar=True,
-    help="URL of the leggend API service",
+    help="URL of the leggen API service",
 )
 @click.group(
     cls=Group,

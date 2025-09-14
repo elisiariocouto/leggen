@@ -25,7 +25,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY default.conf.template /etc/nginx/templates/default.conf.template
 
 # Set default API backend URL (can be overridden at runtime)
-ENV API_BACKEND_URL=http://leggend:8000
+ENV API_BACKEND_URL=http://leggen-server:8000
 
 # Expose port 80
 EXPOSE 80

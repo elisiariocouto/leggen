@@ -6,11 +6,11 @@ services:
     ports:
       - "127.0.0.1:3000:80"
     depends_on:
-      leggend:
+      leggen-server:
         condition: service_healthy
 
   # FastAPI backend service
-  leggend:
+  leggen-server:
     image: ghcr.io/elisiariocouto/leggen:latest
     restart: "unless-stopped"
     ports:

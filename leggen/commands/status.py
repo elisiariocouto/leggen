@@ -1,7 +1,7 @@
 import click
 
 from leggen.main import cli
-from leggen.api_client import LeggendAPIClient
+from leggen.api_client import LeggenAPIClient
 from leggen.utils.text import datefmt, echo, info, print_table
 
 
@@ -11,12 +11,12 @@ def status(ctx: click.Context):
     """
     List all connected banks and their status
     """
-    api_client = LeggendAPIClient(ctx.obj.get("api_url"))
+    api_client = LeggenAPIClient(ctx.obj.get("api_url"))
 
-    # Check if leggend service is available
+    # Check if leggen server is available
     if not api_client.health_check():
         click.echo(
-            "Error: Cannot connect to leggend service. Please ensure it's running."
+            "Error: Cannot connect to leggen server. Please ensure it's running."
         )
         return
 

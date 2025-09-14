@@ -8,13 +8,13 @@ services:
     ports:
       - "127.0.0.1:3000:80"
     environment:
-      - API_BACKEND_URL=${API_BACKEND_URL:-http://leggend:8000}
+      - API_BACKEND_URL=${API_BACKEND_URL:-http://leggen-server:8000}
     depends_on:
-      leggend:
+      leggen-server:
         condition: service_healthy
 
   # FastAPI backend service
-  leggend:
+  leggen-server:
     build:
       context: .
       dockerfile: Dockerfile

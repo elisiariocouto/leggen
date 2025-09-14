@@ -38,9 +38,9 @@ The command outputs instructions for setting the required environment variable t
    ```
 4. Start the API server:
    ```bash
-   uv run leggend
+   uv run leggen server
    ```
-   - For development mode with auto-reload: `uv run leggend --reload`
+   - For development mode with auto-reload: `uv run leggen server --reload`
    - API will be available at `http://localhost:8000` with docs at `http://localhost:8000/docs`
 
 ### Start the Frontend
@@ -60,7 +60,7 @@ The command outputs instructions for setting the required environment variable t
 ### Backend (Python)
 - **Lint**: `uv run ruff check .`
 - **Format**: `uv run ruff format .`
-- **Type check**: `uv run mypy leggen leggend --check-untyped-defs`
+- **Type check**: `uv run mypy leggen --check-untyped-defs`
 - **All checks**: `uv run pre-commit run --all-files`
 - **Run all tests**: `uv run pytest`
 - **Run single test**: `uv run pytest tests/unit/test_api_accounts.py::TestAccountsAPI::test_get_all_accounts_success -v`

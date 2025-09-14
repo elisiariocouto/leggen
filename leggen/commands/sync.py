@@ -1,7 +1,7 @@
 import click
 
 from leggen.main import cli
-from leggen.api_client import LeggendAPIClient
+from leggen.api_client import LeggenAPIClient
 from leggen.utils.text import error, info, success
 
 
@@ -13,11 +13,11 @@ def sync(ctx: click.Context, wait: bool, force: bool):
     """
     Sync all transactions with database
     """
-    api_client = LeggendAPIClient(ctx.obj.get("api_url"))
+    api_client = LeggenAPIClient(ctx.obj.get("api_url"))
 
-    # Check if leggend service is available
+    # Check if leggen server is available
     if not api_client.health_check():
-        error("Cannot connect to leggend service. Please ensure it's running.")
+        error("Cannot connect to leggen server. Please ensure it's running.")
         return
 
     try:

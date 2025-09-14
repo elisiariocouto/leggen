@@ -41,7 +41,6 @@ Repository = "https://github.com/elisiariocouto/leggen"
 
 [project.scripts]
 leggen = "leggen.main:cli"
-leggend = "leggend.main:main"
 
 [dependency-groups]
 dev = [
@@ -58,10 +57,10 @@ dev = [
 ]
 
 [tool.hatch.build.targets.sdist]
-include = ["leggen", "leggend"]
+include = ["leggen"]
 
 [tool.hatch.build.targets.wheel]
-include = ["leggen", "leggend"]
+include = ["leggen"]
 
 [build-system]
 requires = ["hatchling"]

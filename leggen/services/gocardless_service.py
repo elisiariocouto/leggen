@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 
 from loguru import logger
 
-from leggend.config import config
+from leggen.utils.config import config
 from leggen.utils.paths import path_manager
 
 

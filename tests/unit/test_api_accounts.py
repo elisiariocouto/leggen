@@ -43,13 +43,13 @@ class TestAccountsAPI:
         ]
 
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.accounts.database_service.get_accounts_from_db",
+                "leggen.api.routes.accounts.database_service.get_accounts_from_db",
                 return_value=mock_accounts,
             ),
             patch(
-                "leggend.api.routes.accounts.database_service.get_balances_from_db",
+                "leggen.api.routes.accounts.database_service.get_balances_from_db",
                 return_value=mock_balances,
             ),
         ):
@@ -98,13 +98,13 @@ class TestAccountsAPI:
         ]
 
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.accounts.database_service.get_account_details_from_db",
+                "leggen.api.routes.accounts.database_service.get_account_details_from_db",
                 return_value=mock_account,
             ),
             patch(
-                "leggend.api.routes.accounts.database_service.get_balances_from_db",
+                "leggen.api.routes.accounts.database_service.get_balances_from_db",
                 return_value=mock_balances,
             ),
         ):
@@ -148,9 +148,9 @@ class TestAccountsAPI:
         ]
 
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.accounts.database_service.get_balances_from_db",
+                "leggen.api.routes.accounts.database_service.get_balances_from_db",
                 return_value=mock_balances,
             ),
         ):
@@ -191,13 +191,13 @@ class TestAccountsAPI:
         ]
 
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.accounts.database_service.get_transactions_from_db",
+                "leggen.api.routes.accounts.database_service.get_transactions_from_db",
                 return_value=mock_transactions,
             ),
             patch(
-                "leggend.api.routes.accounts.database_service.get_transaction_count_from_db",
+                "leggen.api.routes.accounts.database_service.get_transaction_count_from_db",
                 return_value=1,
             ),
         ):
@@ -243,13 +243,13 @@ class TestAccountsAPI:
         ]
 
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.accounts.database_service.get_transactions_from_db",
+                "leggen.api.routes.accounts.database_service.get_transactions_from_db",
                 return_value=mock_transactions,
             ),
             patch(
-                "leggend.api.routes.accounts.database_service.get_transaction_count_from_db",
+                "leggen.api.routes.accounts.database_service.get_transaction_count_from_db",
                 return_value=1,
             ),
         ):
@@ -273,9 +273,9 @@ class TestAccountsAPI:
     ):
         """Test handling of non-existent account."""
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.accounts.database_service.get_account_details_from_db",
+                "leggen.api.routes.accounts.database_service.get_account_details_from_db",
                 return_value=None,
             ),
         ):

@@ -15,8 +15,8 @@ repos:
     hooks:
       - id: mypy
         name: Static type check with mypy
-        entry: uv run mypy leggen leggend --check-untyped-defs
-        files: "^leggen(d)?/.*"
+        entry: uv run mypy leggen --check-untyped-defs
+        files: "^leggen/.*"
         language: "system"
         types: ["python"]
         always_run: true

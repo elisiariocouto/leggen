@@ -27,7 +27,7 @@ class TestBanksAPI:
             return_value=httpx.Response(200, json=sample_bank_data)
         )
 
-        with patch("leggend.config.config", mock_config):
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/banks/institutions?country=PT")
 
         assert response.status_code == 200
@@ -52,7 +52,7 @@ class TestBanksAPI:
             return_value=httpx.Response(200, json=[])
         )
 
-        with patch("leggend.config.config", mock_config):
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/banks/institutions?country=XX")
 
         # Should still work but return empty or filtered results
@@ -86,7 +86,7 @@ class TestBanksAPI:
             "redirect_url": "http://localhost:8000/",
         }
 
-        with patch("leggend.config.config", mock_config):
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.post("/api/v1/banks/connect", json=request_data)
 
         assert response.status_code == 200
@@ -122,7 +122,7 @@ class TestBanksAPI:
             return_value=httpx.Response(200, json=requisitions_data)
         )
 
-        with patch("leggend.config.config", mock_config):
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/banks/status")
 
         assert response.status_code == 200
@@ -155,7 +155,7 @@ class TestBanksAPI:
             return_value=httpx.Response(401, json={"detail": "Invalid credentials"})
         )
 
-        with patch("leggend.config.config", mock_config):
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/banks/institutions")
 
         assert response.status_code == 500

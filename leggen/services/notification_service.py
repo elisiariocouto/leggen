@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 
 from loguru import logger
 
-from leggend.config import config
+from leggen.utils.config import config
 
 
 class NotificationService:

@@ -4,7 +4,6 @@ import click
 from pathlib import Path
 
 
-
 @click.command()
 @click.option(
     "--database",

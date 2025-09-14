@@ -5,16 +5,16 @@ import requests
 import requests_mock
 from unittest.mock import patch
 
-from leggen.api_client import LeggendAPIClient
+from leggen.api_client import LeggenAPIClient
 
 
 @pytest.mark.cli
-class TestLeggendAPIClient:
+class TestLeggenAPIClient:
     """Test the CLI API client."""
 
     def test_health_check_success(self):
         """Test successful health check."""
-        client = LeggendAPIClient("http://localhost:8000")
+        client = LeggenAPIClient("http://localhost:8000")
 
         with requests_mock.Mocker() as m:
             m.get("http://localhost:8000/health", json={"status": "healthy"})
@@ -24,7 +24,7 @@ class TestLeggendAPIClient:
 
     def test_health_check_failure(self):
         """Test health check failure."""
-        client = LeggendAPIClient("http://localhost:8000")
+        client = LeggenAPIClient("http://localhost:8000")
 
         with requests_mock.Mocker() as m:
             m.get("http://localhost:8000/health", status_code=500)
@@ -34,7 +34,7 @@ class TestLeggendAPIClient:
 
     def test_get_institutions_success(self, sample_bank_data):
         """Test getting institutions via API client."""
-        client = LeggendAPIClient("http://localhost:8000")
+        client = LeggenAPIClient("http://localhost:8000")
 
         api_response = {
             "success": True,
@@ -51,7 +51,7 @@ class TestLeggendAPIClient:
 
     def test_get_accounts_success(self, sample_account_data):
         """Test getting accounts via API client."""
-        client = LeggendAPIClient("http://localhost:8000")
+        client = LeggenAPIClient("http://localhost:8000")
 
         api_response = {
             "success": True,
@@ -68,7 +68,7 @@ class TestLeggendAPIClient:
 
     def test_trigger_sync_success(self):
         """Test triggering sync via API client."""
-        client = LeggendAPIClient("http://localhost:8000")
+        client = LeggenAPIClient("http://localhost:8000")
 
         api_response = {
             "success": True,
@@ -84,14 +84,14 @@ class TestLeggendAPIClient:
 
     def test_connection_error_handling(self):
         """Test handling of connection errors."""
-        client = LeggendAPIClient("http://localhost:9999")  # Non-existent service
+        client = LeggenAPIClient("http://localhost:9999")  # Non-existent service
 
         with pytest.raises((requests.ConnectionError, requests.RequestException)):
             client.get_accounts()
 
     def test_http_error_handling(self):
         """Test handling of HTTP errors."""
-        client = LeggendAPIClient("http://localhost:8000")
+        client = LeggenAPIClient("http://localhost:8000")
 
         with requests_mock.Mocker() as m:
             m.get(
@@ -106,19 +106,19 @@ class TestLeggendAPIClient:
     def test_custom_api_url(self):
         """Test using custom API URL."""
         custom_url = "http://custom-host:9000"
-        client = LeggendAPIClient(custom_url)
+        client = LeggenAPIClient(custom_url)
 
         assert client.base_url == custom_url
 
     def test_environment_variable_url(self):
         """Test using environment variable for API URL."""
-        with patch.dict("os.environ", {"LEGGEND_API_URL": "http://env-host:7000"}):
-            client = LeggendAPIClient()
+        with patch.dict("os.environ", {"LEGGEN_API_URL": "http://env-host:7000"}):
+            client = LeggenAPIClient()
             assert client.base_url == "http://env-host:7000"
 
     def test_sync_with_options(self):
         """Test sync with various options."""
-        client = LeggendAPIClient("http://localhost:8000")
+        client = LeggenAPIClient("http://localhost:8000")
 
         api_response = {
             "success": True,
@@ -135,7 +135,7 @@ class TestLeggendAPIClient:
 
     def test_get_scheduler_config(self):
         """Test getting scheduler configuration."""
-        client = LeggendAPIClient("http://localhost:8000")
+        client = LeggenAPIClient("http://localhost:8000")
 
         api_response = {
             "success": True,

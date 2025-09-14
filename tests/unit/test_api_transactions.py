@@ -43,13 +43,13 @@ class TestTransactionsAPI:
         ]
 
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transactions_from_db",
+                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
                 return_value=mock_transactions,
             ),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transaction_count_from_db",
+                "leggen.api.routes.transactions.database_service.get_transaction_count_from_db",
                 return_value=2,
             ),
         ):
@@ -90,13 +90,13 @@ class TestTransactionsAPI:
         ]
 
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transactions_from_db",
+                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
                 return_value=mock_transactions,
             ),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transaction_count_from_db",
+                "leggen.api.routes.transactions.database_service.get_transaction_count_from_db",
                 return_value=1,
             ),
         ):
@@ -135,13 +135,13 @@ class TestTransactionsAPI:
         ]
 
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transactions_from_db",
+                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
                 return_value=mock_transactions,
             ) as mock_get_transactions,
             patch(
-                "leggend.api.routes.transactions.database_service.get_transaction_count_from_db",
+                "leggen.api.routes.transactions.database_service.get_transaction_count_from_db",
                 return_value=1,
             ),
         ):
@@ -178,13 +178,13 @@ class TestTransactionsAPI:
     ):
         """Test getting transactions when database returns empty result."""
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transactions_from_db",
+                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
                 return_value=[],
             ),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transaction_count_from_db",
+                "leggen.api.routes.transactions.database_service.get_transaction_count_from_db",
                 return_value=0,
             ),
         ):
@@ -203,9 +203,9 @@ class TestTransactionsAPI:
     ):
         """Test handling database error when getting transactions."""
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transactions_from_db",
+                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
                 side_effect=Exception("Database connection failed"),
             ),
         ):
@@ -243,9 +243,9 @@ class TestTransactionsAPI:
         ]
 
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transactions_from_db",
+                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
                 return_value=mock_transactions,
             ),
         ):
@@ -284,9 +284,9 @@ class TestTransactionsAPI:
         ]
 
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transactions_from_db",
+                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
                 return_value=mock_transactions,
             ) as mock_get_transactions,
         ):
@@ -306,9 +306,9 @@ class TestTransactionsAPI:
     ):
         """Test getting stats when no transactions match criteria."""
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transactions_from_db",
+                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
                 return_value=[],
             ),
         ):
@@ -331,9 +331,9 @@ class TestTransactionsAPI:
     ):
         """Test handling database error when getting stats."""
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transactions_from_db",
+                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
                 side_effect=Exception("Database connection failed"),
             ),
         ):
@@ -357,9 +357,9 @@ class TestTransactionsAPI:
         ]
 
         with (
-            patch("leggend.config.config", mock_config),
+            patch("leggen.utils.config.config", mock_config),
             patch(
-                "leggend.api.routes.transactions.database_service.get_transactions_from_db",
+                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
                 return_value=mock_transactions,
             ) as mock_get_transactions,
         ):

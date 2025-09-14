@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import patch
 
-from leggend.config import Config
+from leggen.utils.config import Config
 
 
 @pytest.mark.unit
