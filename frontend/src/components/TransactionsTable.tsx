@@ -13,14 +13,10 @@ import type {
   ColumnFiltersState,
 } from "@tanstack/react-table";
 import {
-  Filter,
-  Search,
   TrendingUp,
   TrendingDown,
-  Calendar,
   RefreshCw,
   AlertCircle,
-  X,
   Eye,
   ChevronUp,
   ChevronDown,
@@ -30,16 +26,20 @@ import { formatCurrency, formatDate } from "../lib/utils";
 import TransactionSkeleton from "./TransactionSkeleton";
 import FiltersSkeleton from "./FiltersSkeleton";
 import RawTransactionModal from "./RawTransactionModal";
+import { FilterBar, type FilterState } from "./filters";
 import type { Account, Transaction, ApiResponse, Balance } from "../types/api";
 
 export default function TransactionsTable() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAccount, setSelectedAccount] = useState<string>("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [minAmount, setMinAmount] = useState("");
-  const [maxAmount, setMaxAmount] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
+  // Filter state consolidated into a single object
+  const [filterState, setFilterState] = useState<FilterState>({
+    searchTerm: "",
+    selectedAccount: "",
+    startDate: "",
+    endDate: "",
+    minAmount: "",
+    maxAmount: "",
+  });
+
   const [showRawModal, setShowRawModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
@@ -50,27 +50,46 @@ export default function TransactionsTable() {
   const [perPage, setPerPage] = useState(50);
 
   // Debounced search state
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(filterState.searchTerm);
 
   // Table state (remove pagination from table)
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
+  // Helper function to update filter state
+  const handleFilterChange = (key: keyof FilterState, value: string) => {
+    setFilterState((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Helper function to clear all filters
+  const handleClearFilters = () => {
+    setFilterState({
+      searchTerm: "",
+      selectedAccount: "",
+      startDate: "",
+      endDate: "",
+      minAmount: "",
+      maxAmount: "",
+    });
+    setColumnFilters([]);
+    setCurrentPage(1);
+  };
+
   // Debounce search term to prevent excessive API calls
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
+      setDebouncedSearchTerm(filterState.searchTerm);
     }, 300); // 300ms delay
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [filterState.searchTerm]);
 
   // Reset pagination when search term changes
   useEffect(() => {
-    if (debouncedSearchTerm !== searchTerm) {
+    if (debouncedSearchTerm !== filterState.searchTerm) {
       setCurrentPage(1);
     }
-  }, [debouncedSearchTerm, searchTerm]);
+  }, [debouncedSearchTerm, filterState.searchTerm]);
 
   const { data: accounts } = useQuery<Account[]>({
     queryKey: ["accounts"],
@@ -91,26 +110,26 @@ export default function TransactionsTable() {
   } = useQuery<ApiResponse<Transaction[]>>({
     queryKey: [
       "transactions",
-      selectedAccount,
-      startDate,
-      endDate,
+      filterState.selectedAccount,
+      filterState.startDate,
+      filterState.endDate,
       currentPage,
       perPage,
       debouncedSearchTerm,
-      minAmount,
-      maxAmount,
+      filterState.minAmount,
+      filterState.maxAmount,
     ],
     queryFn: () =>
       apiClient.getTransactions({
-        accountId: selectedAccount || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        accountId: filterState.selectedAccount || undefined,
+        startDate: filterState.startDate || undefined,
+        endDate: filterState.endDate || undefined,
         page: currentPage,
         perPage: perPage,
         search: debouncedSearchTerm || undefined,
         summaryOnly: false,
-        minAmount: minAmount ? parseFloat(minAmount) : undefined,
-        maxAmount: maxAmount ? parseFloat(maxAmount) : undefined,
+        minAmount: filterState.minAmount ? parseFloat(filterState.minAmount) : undefined,
+        maxAmount: filterState.maxAmount ? parseFloat(filterState.maxAmount) : undefined,
       }),
   });
 
@@ -118,7 +137,7 @@ export default function TransactionsTable() {
   const pagination = transactionsResponse?.pagination;
 
   // Check if search is currently debouncing
-  const isSearchLoading = searchTerm !== debouncedSearchTerm;
+  const isSearchLoading = filterState.searchTerm !== debouncedSearchTerm;
 
   // Reset pagination when total becomes 0 (no results)
   useEffect(() => {
@@ -127,70 +146,10 @@ export default function TransactionsTable() {
     }
   }, [pagination, currentPage]);
 
-  const clearFilters = () => {
-    setSearchTerm("");
-    setSelectedAccount("");
-    setStartDate("");
-    setEndDate("");
-    setMinAmount("");
-    setMaxAmount("");
-    setColumnFilters([]);
-    setCurrentPage(1); // Reset to first page when clearing filters
-  };
-
-  const setQuickDateFilter = (days: number) => {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(endDate.getDate() - days);
-
-    setStartDate(startDate.toISOString().split("T")[0]);
-    setEndDate(endDate.toISOString().split("T")[0]);
-    setCurrentPage(1); // Reset to first page when changing date filters
-  };
-
-  const setThisWeekFilter = () => {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)); // Monday as start
-
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-    setStartDate(startOfWeek.toISOString().split("T")[0]);
-    setEndDate(endOfWeek.toISOString().split("T")[0]);
-    setCurrentPage(1);
-  };
-
-  const setThisMonthFilter = () => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-    setStartDate(startOfMonth.toISOString().split("T")[0]);
-    setEndDate(endOfMonth.toISOString().split("T")[0]);
-    setCurrentPage(1); // Reset to first page when changing date filters
-  };
-
-  const setThisYearFilter = () => {
-    const now = new Date();
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const endOfYear = new Date(now.getFullYear(), 11, 31);
-
-    setStartDate(startOfYear.toISOString().split("T")[0]);
-    setEndDate(endOfYear.toISOString().split("T")[0]);
-    setCurrentPage(1);
-  };
-
-  // Reset pagination when account filter changes
+  // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedAccount]);
-
-  // Reset pagination when date filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [startDate, endDate]);
+  }, [filterState.selectedAccount, filterState.startDate, filterState.endDate, filterState.minAmount, filterState.maxAmount]);
 
   const handleViewRaw = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -203,12 +162,12 @@ export default function TransactionsTable() {
   };
 
   const hasActiveFilters =
-    searchTerm ||
-    selectedAccount ||
-    startDate ||
-    endDate ||
-    minAmount ||
-    maxAmount;
+    filterState.searchTerm ||
+    filterState.selectedAccount ||
+    filterState.startDate ||
+    filterState.endDate ||
+    filterState.minAmount ||
+    filterState.maxAmount;
 
   // Calculate running balances
   const calculateRunningBalances = (transactions: Transaction[]) => {
@@ -400,9 +359,9 @@ export default function TransactionsTable() {
     state: {
       sorting,
       columnFilters,
-      globalFilter: searchTerm,
+      globalFilter: filterState.searchTerm,
     },
-    onGlobalFilterChange: setSearchTerm,
+    onGlobalFilterChange: (value: string) => handleFilterChange("searchTerm", value),
     globalFilterFn: (row, _columnId, filterValue) => {
       // Custom global filter that searches multiple fields
       const transaction = row.original;
@@ -461,195 +420,19 @@ export default function TransactionsTable() {
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">Transactions</h3>
-            <div className="flex items-center space-x-2">
-              {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="inline-flex items-center px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Clear filters
-                </button>
-              )}
-              <button
-                onClick={() => setShowRunningBalance(!showRunningBalance)}
-                className={`inline-flex items-center px-3 py-2 text-sm rounded-md transition-colors ${
-                  showRunningBalance
-                    ? "bg-green-100 text-green-700 hover:bg-green-200"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Balance
-              </button>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="inline-flex items-center px-3 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* New FilterBar */}
+      <FilterBar
+        filterState={filterState}
+        onFilterChange={handleFilterChange}
+        onClearFilters={handleClearFilters}
+        accounts={accounts}
+        isSearchLoading={isSearchLoading}
+        showRunningBalance={showRunningBalance}
+        onToggleRunningBalance={() => setShowRunningBalance(!showRunningBalance)}
+      />
 
-        {showFilters && (
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            {/* Quick Date Filters */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Quick Date Filters
-              </label>
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setQuickDateFilter(7)}
-                    className="px-4 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
-                  >
-                    Last 7 days
-                  </button>
-                  <button
-                    onClick={setThisWeekFilter}
-                    className="px-4 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
-                  >
-                    This week
-                  </button>
-                  <button
-                    onClick={() => setQuickDateFilter(30)}
-                    className="px-4 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
-                  >
-                    Last 30 days
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={setThisMonthFilter}
-                    className="px-4 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
-                  >
-                    This month
-                  </button>
-                  <button
-                    onClick={setThisYearFilter}
-                    className="px-4 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
-                  >
-                    This year
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="sm:col-span-2 lg:col-span-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Search
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Description, name, reference..."
-                    className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {isSearchLoading && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-500 rounded-full"></div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Account Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Account
-                </label>
-                <select
-                  value={selectedAccount}
-                  onChange={(e) => setSelectedAccount(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All accounts</option>
-                  {accounts?.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name || "Unnamed Account"} ({account.institution_id})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Start Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* End Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Amount Range Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Min Amount
-                </label>
-                <input
-                  type="number"
-                  value={minAmount}
-                  onChange={(e) => setMinAmount(e.target.value)}
-                  placeholder="0.00"
-                  step="0.01"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Max Amount
-                </label>
-                <input
-                  type="number"
-                  value={maxAmount}
-                  onChange={(e) => setMaxAmount(e.target.value)}
-                  placeholder="1000.00"
-                  step="0.01"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Results Summary */}
+      {/* Results Summary */}
+      <div className="bg-white rounded-lg shadow border">
         <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
           <p className="text-sm text-gray-600">
             Showing {transactions.length} transaction
@@ -667,9 +450,9 @@ export default function TransactionsTable() {
               "loading..."
             )}
             )
-            {selectedAccount && accounts && (
+            {filterState.selectedAccount && accounts && (
               <span className="ml-1">
-                for {accounts.find((acc) => acc.id === selectedAccount)?.name}
+                for {accounts.find((acc) => acc.id === filterState.selectedAccount)?.name}
               </span>
             )}
           </p>
