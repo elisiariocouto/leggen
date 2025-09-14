@@ -253,3 +253,38 @@ async def get_transactions_for_analytics(
         raise HTTPException(
             status_code=500, detail=f"Failed to get analytics transactions: {str(e)}"
         ) from e
+
+
+@router.get("/transactions/monthly-stats", response_model=APIResponse)
+async def get_monthly_transaction_stats(
+    days: int = Query(default=365, description="Number of days to include"),
+    account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
+) -> APIResponse:
+    """Get monthly transaction statistics aggregated by the database"""
+    try:
+        # Date range for monthly stats
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+
+        # Format dates for database query
+        date_from = start_date.isoformat()
+        date_to = end_date.isoformat()
+
+        # Get monthly aggregated stats from database
+        monthly_stats = await database_service.get_monthly_transaction_stats_from_db(
+            account_id=account_id,
+            date_from=date_from,
+            date_to=date_to,
+        )
+
+        return APIResponse(
+            success=True,
+            data=monthly_stats,
+            message=f"Retrieved monthly stats for last {days} days",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get monthly transaction stats: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get monthly stats: {str(e)}"
+        ) from e

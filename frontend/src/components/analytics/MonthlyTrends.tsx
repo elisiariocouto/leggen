@@ -15,12 +15,6 @@ interface MonthlyTrendsProps {
   days?: number;
 }
 
-interface MonthlyData {
-  month: string;
-  income: number;
-  expenses: number;
-  net: number;
-}
 
 interface TooltipProps {
   active?: boolean;
@@ -33,52 +27,13 @@ interface TooltipProps {
 }
 
 export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsProps) {
-  // Get transactions for the specified period using analytics endpoint
-  const { data: transactions, isLoading } = useQuery({
-    queryKey: ["transactions", "monthly-trends", days],
+  // Get pre-calculated monthly stats from the new endpoint
+  const { data: monthlyData, isLoading } = useQuery({
+    queryKey: ["monthly-stats", days],
     queryFn: async () => {
-      return await apiClient.getTransactionsForAnalytics(days);
+      return await apiClient.getMonthlyTransactionStats(days);
     },
   });
-
-  // Process transactions into monthly data
-  const monthlyData: MonthlyData[] = [];
-  
-  if (transactions) {
-    const monthlyMap: { [key: string]: MonthlyData } = {};
-    
-    transactions.forEach((transaction) => {
-      const date = new Date(transaction.date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      
-      if (!monthlyMap[monthKey]) {
-        monthlyMap[monthKey] = {
-          month: date.toLocaleDateString('en-GB', { 
-            year: 'numeric', 
-            month: 'short' 
-          }),
-          income: 0,
-          expenses: 0,
-          net: 0,
-        };
-      }
-      
-      if (transaction.amount > 0) {
-        monthlyMap[monthKey].income += transaction.amount;
-      } else {
-        monthlyMap[monthKey].expenses += Math.abs(transaction.amount);
-      }
-      
-      monthlyMap[monthKey].net = monthlyMap[monthKey].income - monthlyMap[monthKey].expenses;
-    });
-    
-    // Convert to array and sort by date
-    monthlyData.push(
-      ...Object.entries(monthlyMap)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([, data]) => data)
-    );
-  }
 
   // Calculate number of months to display based on days filter
   const getMonthsToDisplay = (days: number): number => {
@@ -89,7 +44,7 @@ export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsPr
   };
 
   const monthsToDisplay = getMonthsToDisplay(days);
-  const displayData = monthlyData.slice(-monthsToDisplay);
+  const displayData = monthlyData ? monthlyData.slice(-monthsToDisplay) : [];
 
   if (isLoading) {
     return (
@@ -150,14 +105,14 @@ export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsPr
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="month" 
+            <XAxis
+              dataKey="month"
               tick={{ fontSize: 12 }}
               angle={-45}
               textAnchor="end"
               height={60}
             />
-            <YAxis 
+            <YAxis
               tick={{ fontSize: 12 }}
               tickFormatter={(value) => `€${value.toLocaleString()}`}
             />

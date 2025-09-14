@@ -1,6 +1,5 @@
 import json
 import sqlite3
-from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -1159,8 +1158,21 @@ class DatabaseService:
         cursor = conn.cursor()
 
         try:
-            # Get current balance for each account/type to use as the final balance
-            current_balances_query = """
+            cutoff_date = (datetime.now() - timedelta(days=days)).date().isoformat()
+            today_date = datetime.now().date().isoformat()
+
+            # Single SQL query to generate historical balances using window functions
+            query = """
+            WITH RECURSIVE date_series AS (
+                -- Generate weekly dates from cutoff_date to today
+                SELECT date(?) as ref_date
+                UNION ALL
+                SELECT date(ref_date, '+7 days')
+                FROM date_series
+                WHERE ref_date < date(?)
+            ),
+            current_balances AS (
+                -- Get current balance for each account/type
                 SELECT account_id, type, amount, currency
                 FROM balances b1
                 WHERE b1.timestamp = (
@@ -1168,116 +1180,150 @@ class DatabaseService:
                     FROM balances b2
                     WHERE b2.account_id = b1.account_id AND b2.type = b1.type
                 )
+                {account_filter}
+                AND b1.type = 'closingBooked'  -- Focus on closingBooked for charts
+            ),
+            historical_points AS (
+                -- Calculate balance at each weekly point by subtracting future transactions
+                SELECT
+                    cb.account_id,
+                    cb.type as balance_type,
+                    cb.currency,
+                    ds.ref_date,
+                    cb.amount - COALESCE(
+                        (SELECT SUM(t.transactionValue)
+                         FROM transactions t
+                         WHERE t.accountId = cb.account_id
+                         AND date(t.transactionDate) > ds.ref_date), 0
+                    ) as balance_amount
+                FROM current_balances cb
+                CROSS JOIN date_series ds
+            )
+            SELECT
+                account_id || '_' || balance_type || '_' || ref_date as id,
+                account_id,
+                balance_amount,
+                balance_type,
+                currency,
+                ref_date as reference_date
+            FROM historical_points
+            ORDER BY account_id, ref_date
             """
+
+            # Build parameters and account filter
+            params = [cutoff_date, today_date]
+            if account_id:
+                account_filter = "AND b1.account_id = ?"
+                params.append(account_id)
+            else:
+                account_filter = ""
+
+            # Format the query with conditional filter
+            formatted_query = query.format(account_filter=account_filter)
+
+            cursor.execute(formatted_query, params)
+            rows = cursor.fetchall()
+
+            conn.close()
+            return [dict(row) for row in rows]
+
+        except Exception as e:
+            conn.close()
+            raise e
+
+    async def get_monthly_transaction_stats_from_db(
+        self,
+        account_id: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get monthly transaction statistics aggregated by the database"""
+        if not self.sqlite_enabled:
+            logger.warning("SQLite database disabled, cannot read monthly stats")
+            return []
+
+        try:
+            monthly_stats = self._get_monthly_transaction_stats(
+                account_id=account_id,
+                date_from=date_from,
+                date_to=date_to,
+            )
+            logger.debug(
+                f"Retrieved {len(monthly_stats)} monthly stat points from database"
+            )
+            return monthly_stats
+        except Exception as e:
+            logger.error(f"Failed to get monthly transaction stats from database: {e}")
+            return []
+
+    def _get_monthly_transaction_stats(
+        self,
+        account_id: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get monthly transaction statistics from SQLite database"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return []
+
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        try:
+            # SQL query to aggregate transactions by month
+            query = """
+            SELECT
+                strftime('%Y-%m', transactionDate) as month,
+                COALESCE(SUM(CASE WHEN transactionValue > 0 THEN transactionValue ELSE 0 END), 0) as income,
+                COALESCE(SUM(CASE WHEN transactionValue < 0 THEN ABS(transactionValue) ELSE 0 END), 0) as expenses,
+                COALESCE(SUM(transactionValue), 0) as net
+            FROM transactions
+            WHERE 1=1
+            """
+
             params = []
 
             if account_id:
-                current_balances_query += " AND b1.account_id = ?"
+                query += " AND accountId = ?"
                 params.append(account_id)
 
-            cursor.execute(current_balances_query, params)
-            current_balances = {
-                (row["account_id"], row["type"]): {
-                    "amount": row["amount"],
-                    "currency": row["currency"],
-                }
-                for row in cursor.fetchall()
-            }
+            if date_from:
+                query += " AND transactionDate >= ?"
+                params.append(date_from)
 
-            # Get transactions for the specified period, ordered by date descending
-            cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+            if date_to:
+                query += " AND transactionDate <= ?"
+                params.append(date_to)
 
-            transactions_query = """
-                SELECT accountId, transactionDate, transactionValue
-                FROM transactions
-                WHERE transactionDate >= ?
+            query += """
+            GROUP BY strftime('%Y-%m', transactionDate)
+            ORDER BY month ASC
             """
 
-            if account_id:
-                transactions_query += " AND accountId = ?"
-                params = [cutoff_date, account_id]
-            else:
-                params = [cutoff_date]
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
 
-            transactions_query += " ORDER BY transactionDate DESC"
+            # Convert to desired format with proper month display
+            monthly_stats = []
+            for row in rows:
+                # Convert YYYY-MM to display format like "Mar 2024"
+                year, month_num = row["month"].split("-")
+                month_date = datetime.strptime(f"{year}-{month_num}-01", "%Y-%m-%d")
+                display_month = month_date.strftime("%b %Y")
 
-            cursor.execute(transactions_query, params)
-            transactions = cursor.fetchall()
-
-            # Calculate historical balances by working backwards from current balance
-            historical_balances = []
-            account_running_balances: dict[str, dict[str, float]] = {}
-
-            # Initialize running balances with current balances
-            for (acc_id, balance_type), balance_info in current_balances.items():
-                if acc_id not in account_running_balances:
-                    account_running_balances[acc_id] = {}
-                account_running_balances[acc_id][balance_type] = balance_info["amount"]
-
-            # Group transactions by date
-            transactions_by_date = defaultdict(list)
-
-            for txn in transactions:
-                date_str = txn["transactionDate"][:10]  # Extract just the date part
-                transactions_by_date[date_str].append(txn)
-
-            # Generate historical balance points
-            # Start from today and work backwards
-            current_date = datetime.now().date()
-
-            for day_offset in range(0, days, 7):  # Sample every 7 days for performance
-                target_date = current_date - timedelta(days=day_offset)
-                target_date_str = target_date.isoformat()
-
-                # For each account, create balance entries
-                for acc_id in account_running_balances:
-                    for balance_type in [
-                        "closingBooked"
-                    ]:  # Focus on closingBooked for the chart
-                        if balance_type in account_running_balances[acc_id]:
-                            balance_amount = account_running_balances[acc_id][
-                                balance_type
-                            ]
-                            currency = current_balances.get(
-                                (acc_id, balance_type), {}
-                            ).get("currency", "EUR")
-
-                            historical_balances.append(
-                                {
-                                    "id": f"{acc_id}_{balance_type}_{target_date_str}",
-                                    "account_id": acc_id,
-                                    "balance_amount": balance_amount,
-                                    "balance_type": balance_type,
-                                    "currency": currency,
-                                    "reference_date": target_date_str,
-                                    "created_at": None,
-                                    "updated_at": None,
-                                }
-                            )
-
-                # Subtract transactions that occurred on this date and later dates
-                # to simulate going back in time
-                for date_str in list(transactions_by_date.keys()):
-                    if date_str >= target_date_str:
-                        for txn in transactions_by_date[date_str]:
-                            acc_id = txn["accountId"]
-                            amount = txn["transactionValue"]
-
-                            if acc_id in account_running_balances:
-                                for balance_type in account_running_balances[acc_id]:
-                                    account_running_balances[acc_id][balance_type] -= (
-                                        amount
-                                    )
-
-                        # Remove processed transactions to avoid double-processing
-                        del transactions_by_date[date_str]
+                monthly_stats.append(
+                    {
+                        "month": display_month,
+                        "income": round(row["income"], 2),
+                        "expenses": round(row["expenses"], 2),
+                        "net": round(row["net"], 2),
+                    }
+                )
 
             conn.close()
-
-            # Sort by date for proper chronological order
-            historical_balances.sort(key=lambda x: x["reference_date"])
-
-            return historical_balances
+            return monthly_stats
 
         except Exception as e:
             conn.close()
