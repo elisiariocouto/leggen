@@ -37,10 +37,14 @@ class TestConfig:
         # Reset singleton state for testing
         config._config = None
         config._config_path = None
+        config._config_model = None
 
         result = config.load_config(str(config_file))
 
-        assert result == config_data
+        # Result should contain validated config data
+        assert result["gocardless"]["key"] == "test-key"
+        assert result["gocardless"]["secret"] == "test-secret"
+        assert result["database"]["sqlite"] is True
         assert config.gocardless_config["key"] == "test-key"
         assert config.database_config["sqlite"] is True
 
@@ -54,11 +58,19 @@ class TestConfig:
 
     def test_save_config_success(self, temp_config_dir):
         """Test successful configuration saving."""
-        config_data = {"gocardless": {"key": "new-key", "secret": "new-secret"}}
+        config_data = {
+            "gocardless": {
+                "key": "new-key",
+                "secret": "new-secret",
+                "url": "https://bankaccountdata.gocardless.com/api/v2",
+            },
+            "database": {"sqlite": True},
+        }
 
         config_file = temp_config_dir / "new_config.toml"
         config = Config()
         config._config = None
+        config._config_model = None
 
         config.save_config(config_data, str(config_file))
 
@@ -70,12 +82,18 @@ class TestConfig:
         with open(config_file, "rb") as f:
             saved_data = tomllib.load(f)
 
-        assert saved_data == config_data
+        assert saved_data["gocardless"]["key"] == "new-key"
+        assert saved_data["gocardless"]["secret"] == "new-secret"
+        assert saved_data["database"]["sqlite"] is True
 
     def test_update_config_success(self, temp_config_dir):
         """Test updating configuration values."""
         initial_config = {
-            "gocardless": {"key": "old-key"},
+            "gocardless": {
+                "key": "old-key",
+                "secret": "old-secret",
+                "url": "https://bankaccountdata.gocardless.com/api/v2",
+            },
             "database": {"sqlite": True},
         }
 
@@ -87,6 +105,7 @@ class TestConfig:
 
         config = Config()
         config._config = None
+        config._config_model = None
         config.load_config(str(config_file))
 
         config.update_config("gocardless", "key", "new-key")
@@ -102,7 +121,14 @@ class TestConfig:
 
     def test_update_section_success(self, temp_config_dir):
         """Test updating entire configuration section."""
-        initial_config = {"database": {"sqlite": True}}
+        initial_config = {
+            "gocardless": {
+                "key": "test-key",
+                "secret": "test-secret",
+                "url": "https://bankaccountdata.gocardless.com/api/v2",
+            },
+            "database": {"sqlite": True},
+        }
 
         config_file = temp_config_dir / "config.toml"
         with open(config_file, "wb") as f:
@@ -112,12 +138,13 @@ class TestConfig:
 
         config = Config()
         config._config = None
+        config._config_model = None
         config.load_config(str(config_file))
 
-        new_db_config = {"sqlite": False, "path": "./custom.db"}
+        new_db_config = {"sqlite": False}
         config.update_section("database", new_db_config)
 
-        assert config.database_config == new_db_config
+        assert config.database_config["sqlite"] is False
 
     def test_scheduler_config_defaults(self):
         """Test scheduler configuration with defaults."""

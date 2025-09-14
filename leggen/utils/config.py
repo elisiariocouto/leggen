@@ -7,14 +7,17 @@ from typing import Dict, Any, Optional
 
 import click
 from loguru import logger
+from pydantic import ValidationError
 
 from leggen.utils.text import error
 from leggen.utils.paths import path_manager
+from leggen.models.config import Config as ConfigModel
 
 
 class Config:
     _instance = None
     _config = None
+    _config_model = None
     _config_path = None
 
     def __new__(cls):
@@ -35,8 +38,18 @@ class Config:
 
         try:
             with open(config_path, "rb") as f:
-                self._config = tomllib.load(f)
+                raw_config = tomllib.load(f)
                 logger.info(f"Configuration loaded from {config_path}")
+
+            # Validate configuration using Pydantic
+            try:
+                self._config_model = ConfigModel(**raw_config)
+                self._config = self._config_model.dict(by_alias=True, exclude_none=True)
+                logger.info("Configuration validation successful")
+            except ValidationError as e:
+                logger.error(f"Configuration validation failed: {e}")
+                raise ValueError(f"Invalid configuration: {e}") from e
+
         except FileNotFoundError:
             logger.error(f"Configuration file not found: {config_path}")
             raise
@@ -65,15 +78,24 @@ class Config:
         if config_data is None:
             raise ValueError("No config data to save")
 
+        # Validate the configuration before saving
+        try:
+            validated_model = ConfigModel(**config_data)
+            validated_config = validated_model.dict(by_alias=True, exclude_none=True)
+        except ValidationError as e:
+            logger.error(f"Configuration validation failed before save: {e}")
+            raise ValueError(f"Invalid configuration: {e}") from e
+
         # Ensure directory exists
         Path(config_path).parent.mkdir(parents=True, exist_ok=True)
 
         try:
             with open(config_path, "wb") as f:
-                tomli_w.dump(config_data, f)
+                tomli_w.dump(validated_config, f)
 
             # Update in-memory config
-            self._config = config_data
+            self._config = validated_config
+            self._config_model = validated_model
             self._config_path = config_path
             logger.info(f"Configuration saved to {config_path}")
         except Exception as e:
@@ -146,8 +168,16 @@ class Config:
 def load_config(ctx: click.Context, _, filename):
     try:
         with click.open_file(str(filename), "rb") as f:
-            # TODO: Implement configuration file validation (use pydantic?)
-            ctx.obj = tomllib.load(f)
+            raw_config = tomllib.load(f)
+
+        # Validate configuration using Pydantic
+        try:
+            validated_model = ConfigModel(**raw_config)
+            ctx.obj = validated_model.dict(by_alias=True, exclude_none=True)
+        except ValidationError as e:
+            error(f"Configuration validation failed: {e}")
+            sys.exit(1)
+
     except FileNotFoundError:
         error(
             "Configuration file not found. Provide a valid configuration file path with leggen --config <path> or LEGGEN_CONFIG=<path> environment variable."
