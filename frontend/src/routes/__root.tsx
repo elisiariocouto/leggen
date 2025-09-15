@@ -2,9 +2,25 @@ import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
+import { PWAInstallPrompt, PWAUpdatePrompt } from "../components/PWAPrompts";
+import { usePWA } from "../hooks/usePWA";
 
 function RootLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { updateAvailable, updateSW } = usePWA();
+
+  const handlePWAInstall = () => {
+    console.log("PWA installed successfully");
+  };
+
+  const handlePWAUpdate = async () => {
+    try {
+      await updateSW();
+      console.log("PWA updated successfully");
+    } catch (error) {
+      console.error("Error updating PWA:", error);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -24,6 +40,13 @@ function RootLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* PWA Prompts */}
+      <PWAInstallPrompt onInstall={handlePWAInstall} />
+      <PWAUpdatePrompt 
+        updateAvailable={updateAvailable} 
+        onUpdate={handlePWAUpdate} 
+      />
     </div>
   );
 }
