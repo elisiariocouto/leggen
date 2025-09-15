@@ -106,7 +106,8 @@ class SampleDataGenerator:
                 currency TEXT,
                 created DATETIME,
                 last_accessed DATETIME,
-                last_updated DATETIME
+                last_updated DATETIME,
+                display_name TEXT
             )
         """)
 
@@ -373,8 +374,8 @@ class SampleDataGenerator:
             cursor.execute(
                 """
                 INSERT OR REPLACE INTO accounts
-                (id, institution_id, status, iban, name, currency, created, last_accessed, last_updated)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, institution_id, status, iban, name, currency, created, last_accessed, last_updated, display_name)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     account["id"],
@@ -386,6 +387,7 @@ class SampleDataGenerator:
                     account["created"],
                     account["last_accessed"],
                     account["last_updated"],
+                    None,  # display_name is initially None for sample data
                 ),
             )
 

@@ -41,8 +41,8 @@ export const apiClient = {
   updateAccount: async (
     id: string,
     updates: AccountUpdate,
-  ): Promise<{ id: string; name?: string }> => {
-    const response = await api.put<ApiResponse<{ id: string; name?: string }>>(
+  ): Promise<{ id: string; display_name?: string }> => {
+    const response = await api.put<ApiResponse<{ id: string; display_name?: string }>>(
       `/accounts/${id}`,
       updates,
     );

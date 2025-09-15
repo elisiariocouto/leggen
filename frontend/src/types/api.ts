@@ -11,6 +11,7 @@ export interface Account {
   status: string;
   iban?: string;
   name?: string;
+  display_name?: string;
   currency?: string;
   created: string;
   last_accessed?: string;
@@ -18,7 +19,7 @@ export interface Account {
 }
 
 export interface AccountUpdate {
-  name?: string;
+  display_name?: string;
 }
 
 export interface RawTransactionData {
