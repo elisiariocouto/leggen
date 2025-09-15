@@ -1,4 +1,76 @@
 
+## 2025.9.11 (2025/09/15)
+
+### Bug Fixes
+
+- **config:** Add Pydantic validation and fix telegram config field mappings. ([2c6e0995](https://github.com/elisiariocouto/leggen/commit/2c6e0995968c9c9917992fd15ec10a89933c0c21))
+- **config:** Fix example config file. ([d09cf6d0](https://github.com/elisiariocouto/leggen/commit/d09cf6d04ccb6233981f273cd88e0b8ffe074d71))
+- **docs:** Remove test files and update gitignore ([692bee57](https://github.com/elisiariocouto/leggen/commit/692bee574ee8de16496a3c733bad53be3b256990))
+- **frontend:** Align balance calculation between sidebar and Analytics page ([35b6d98e](https://github.com/elisiariocouto/leggen/commit/35b6d98e6a37b1e9caf8a232ffe66380e7203cad))
+- **frontend:** Add ignore rules for eslint on shadcn components. ([74a700ff](https://github.com/elisiariocouto/leggen/commit/74a700ff87b2504c3d394cddd9935c56c3c7a00d))
+-  Resolve all CI failures - linting, typing, and test issues ([c8f0a103](https://github.com/elisiariocouto/leggen/commit/c8f0a103c6ccdb722bbab1ac6973827b41fddc19))
+
+
+### Features
+
+- **analytics:** Fix transaction limits and improve chart legends ([e136fc4b](https://github.com/elisiariocouto/leggen/commit/e136fc4b75243b35a77bc0bf0260808006987d7a))
+- **docs:** Add comprehensive copilot agent setup instructions ([c6ac4455](https://github.com/elisiariocouto/leggen/commit/c6ac4455f848dd429100dd3fc6d43de8c4e5aa6b))
+- **docs:** Add configuration file setup to agent instructions ([482f16c7](https://github.com/elisiariocouto/leggen/commit/482f16c77eef1f477ba49475fe30f809de9a05d7))
+- **frontend:** Enhance transactions page with advanced filtering and UI improvements. ([969776fb](https://github.com/elisiariocouto/leggen/commit/969776fb53261acca2f77b0c761584e201fde118))
+- **frontend:** Replace heavy filter UI with modern shadcn/ui inline filter bar. ([eb27f191](https://github.com/elisiariocouto/leggen/commit/eb27f19196d92a6ae5220b81709fded499a12f4f))
+- **frontend:** Complete shadcn/ui migration with dark mode support and analytics updates. ([66db34c7](https://github.com/elisiariocouto/leggen/commit/66db34c712300ff4b5dbe7e06246f16d6f6a8469))
+
+
+### Miscellaneous Tasks
+
+-  Sort imports, fix deprecated pydantic option. ([2467cb2f](https://github.com/elisiariocouto/leggen/commit/2467cb2f5af07a7262b3221bf61b58ad4017659a))
+-  Check import order using ruff. ([da98b7b2](https://github.com/elisiariocouto/leggen/commit/da98b7b2b77c5b37792dedff11f8256da3b086f7))
+
+
+### Refactor
+
+- **analytics:** Simplify analytics endpoints and eliminate client-side processing. ([077e2bb1](https://github.com/elisiariocouto/leggen/commit/077e2bb1adbdb73ffde17635bd918cd40fe7fb5a))
+-  Unify leggen and leggend packages into single leggen package ([318ca517](https://github.com/elisiariocouto/leggen/commit/318ca517f7ea599b37a8deb47ad80218fbae008f))
+-  Consolidate database layer and eliminate wrapper complexity. ([5ae3a51d](https://github.com/elisiariocouto/leggen/commit/5ae3a51d8138b9aa28dbceabf575ab2577402e70))
+
+
+
+## 2025.9.11 (2025/09/15)
+
+### Bug Fixes
+
+- **config:** Add Pydantic validation and fix telegram config field mappings. ([2c6e0995](https://github.com/elisiariocouto/leggen/commit/2c6e0995968c9c9917992fd15ec10a89933c0c21))
+- **config:** Fix example config file. ([d09cf6d0](https://github.com/elisiariocouto/leggen/commit/d09cf6d04ccb6233981f273cd88e0b8ffe074d71))
+- **docs:** Remove test files and update gitignore ([692bee57](https://github.com/elisiariocouto/leggen/commit/692bee574ee8de16496a3c733bad53be3b256990))
+- **frontend:** Align balance calculation between sidebar and Analytics page ([35b6d98e](https://github.com/elisiariocouto/leggen/commit/35b6d98e6a37b1e9caf8a232ffe66380e7203cad))
+- **frontend:** Add ignore rules for eslint on shadcn components. ([74a700ff](https://github.com/elisiariocouto/leggen/commit/74a700ff87b2504c3d394cddd9935c56c3c7a00d))
+-  Resolve all CI failures - linting, typing, and test issues ([c8f0a103](https://github.com/elisiariocouto/leggen/commit/c8f0a103c6ccdb722bbab1ac6973827b41fddc19))
+
+
+### Features
+
+- **analytics:** Fix transaction limits and improve chart legends ([e136fc4b](https://github.com/elisiariocouto/leggen/commit/e136fc4b75243b35a77bc0bf0260808006987d7a))
+- **docs:** Add comprehensive copilot agent setup instructions ([c6ac4455](https://github.com/elisiariocouto/leggen/commit/c6ac4455f848dd429100dd3fc6d43de8c4e5aa6b))
+- **docs:** Add configuration file setup to agent instructions ([482f16c7](https://github.com/elisiariocouto/leggen/commit/482f16c77eef1f477ba49475fe30f809de9a05d7))
+- **frontend:** Enhance transactions page with advanced filtering and UI improvements. ([969776fb](https://github.com/elisiariocouto/leggen/commit/969776fb53261acca2f77b0c761584e201fde118))
+- **frontend:** Replace heavy filter UI with modern shadcn/ui inline filter bar. ([eb27f191](https://github.com/elisiariocouto/leggen/commit/eb27f19196d92a6ae5220b81709fded499a12f4f))
+- **frontend:** Complete shadcn/ui migration with dark mode support and analytics updates. ([66db34c7](https://github.com/elisiariocouto/leggen/commit/66db34c712300ff4b5dbe7e06246f16d6f6a8469))
+
+
+### Miscellaneous Tasks
+
+-  Sort imports, fix deprecated pydantic option. ([2467cb2f](https://github.com/elisiariocouto/leggen/commit/2467cb2f5af07a7262b3221bf61b58ad4017659a))
+-  Check import order using ruff. ([da98b7b2](https://github.com/elisiariocouto/leggen/commit/da98b7b2b77c5b37792dedff11f8256da3b086f7))
+
+
+### Refactor
+
+- **analytics:** Simplify analytics endpoints and eliminate client-side processing. ([077e2bb1](https://github.com/elisiariocouto/leggen/commit/077e2bb1adbdb73ffde17635bd918cd40fe7fb5a))
+-  Unify leggen and leggend packages into single leggen package ([318ca517](https://github.com/elisiariocouto/leggen/commit/318ca517f7ea599b37a8deb47ad80218fbae008f))
+-  Consolidate database layer and eliminate wrapper complexity. ([5ae3a51d](https://github.com/elisiariocouto/leggen/commit/5ae3a51d8138b9aa28dbceabf575ab2577402e70))
+
+
+
 ## 2025.9.10 (2025/09/13)
 
 ### Miscellaneous Tasks
