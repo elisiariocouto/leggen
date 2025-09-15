@@ -192,9 +192,9 @@ export default function TransactionsTable() {
     const runningBalances: { [key: string]: number } = {};
     const accountBalanceMap = new Map<string, number>();
 
-    // Create a map of account current balances
+    // Create a map of account current balances - use interimAvailable as the most current
     balances.forEach((balance) => {
-      if (balance.balance_type === "expected") {
+      if (balance.balance_type === "interimAvailable") {
         accountBalanceMap.set(balance.account_id, balance.balance_amount);
       }
     });
@@ -211,20 +211,25 @@ export default function TransactionsTable() {
     // Calculate running balance for each account
     transactionsByAccount.forEach((accountTransactions, accountId) => {
       const currentBalance = accountBalanceMap.get(accountId) || 0;
-      let runningBalance = currentBalance;
 
-      // Sort transactions by date (newest first) to work backwards
+      // Sort transactions by date (oldest first) for forward calculation
       const sortedTransactions = [...accountTransactions].sort(
         (a, b) =>
-          new Date(b.transaction_date).getTime() -
-          new Date(a.transaction_date).getTime(),
+          new Date(a.transaction_date).getTime() -
+          new Date(b.transaction_date).getTime(),
       );
 
-      // Calculate running balance by working backwards from current balance
+      // Calculate the starting balance by working backwards from current balance
+      let startingBalance = currentBalance;
+      for (let i = sortedTransactions.length - 1; i >= 0; i--) {
+        startingBalance -= sortedTransactions[i].transaction_value;
+      }
+
+      // Now calculate running balances going forward chronologically
+      let runningBalance = startingBalance;
       sortedTransactions.forEach((txn) => {
-        runningBalances[`${txn.account_id}-${txn.transaction_id}`] =
-          runningBalance;
-        runningBalance -= txn.transaction_value;
+        runningBalance += txn.transaction_value;
+        runningBalances[`${txn.account_id}-${txn.transaction_id}`] = runningBalance;
       });
     });
 
