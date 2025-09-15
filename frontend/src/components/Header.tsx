@@ -49,15 +49,15 @@ export default function Header({ setSidebarOpen }: HeaderProps) {
           <div className="flex items-center space-x-1">
             {healthLoading ? (
               <>
-                <Activity className="h-4 w-4 text-yellow-500 animate-pulse" />
+                <Activity className="h-4 w-4 text-muted-foreground animate-pulse" />
                 <span className="text-sm text-muted-foreground">
                   Checking...
                 </span>
               </>
             ) : healthError || healthStatus?.status !== "healthy" ? (
               <>
-                <WifiOff className="h-4 w-4 text-red-500" />
-                <span className="text-sm text-red-500">Disconnected</span>
+                <WifiOff className="h-4 w-4 text-destructive" />
+                <span className="text-sm text-destructive">Disconnected</span>
               </>
             ) : (
               <>

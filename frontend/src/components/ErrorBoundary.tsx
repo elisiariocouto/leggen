@@ -1,6 +1,9 @@
 import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Card, CardContent } from "./ui/card";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Button } from "./ui/button";
 
 interface Props {
   children: ReactNode;
@@ -39,46 +42,49 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-center text-center">
-            <div>
-              <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Something went wrong
-              </h3>
-              <p className="text-gray-600 mb-4">
-                An error occurred while rendering this component. Please try
-                refreshing or check the console for more details.
-              </p>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center text-center">
+              <div>
+                <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  Something went wrong
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  An error occurred while rendering this component. Please try
+                  refreshing or check the console for more details.
+                </p>
 
-              {this.state.error && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4 text-left">
-                  <p className="text-sm font-mono text-red-800">
-                    <strong>Error:</strong> {this.state.error.message}
-                  </p>
-                  {this.state.error.stack && (
-                    <details className="mt-2">
-                      <summary className="text-sm text-red-600 cursor-pointer">
-                        Stack trace
-                      </summary>
-                      <pre className="text-xs text-red-700 mt-1 whitespace-pre-wrap">
-                        {this.state.error.stack}
-                      </pre>
-                    </details>
-                  )}
-                </div>
-              )}
+                {this.state.error && (
+                  <Alert variant="destructive" className="mb-4 text-left">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error Details</AlertTitle>
+                    <AlertDescription className="space-y-2">
+                      <p className="text-sm font-mono">
+                        <strong>Error:</strong> {this.state.error.message}
+                      </p>
+                      {this.state.error.stack && (
+                        <details className="mt-2">
+                          <summary className="text-sm cursor-pointer">
+                            Stack trace
+                          </summary>
+                          <pre className="text-xs mt-1 whitespace-pre-wrap">
+                            {this.state.error.stack}
+                          </pre>
+                        </details>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-              <button
-                onClick={this.handleReset}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
-              </button>
+                <Button onClick={this.handleReset}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Try Again
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       );
     }
 
