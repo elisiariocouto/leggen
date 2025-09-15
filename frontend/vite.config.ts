@@ -10,7 +10,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon-180x180.png", "maskable-icon-512x512.png"],
+      includeAssets: ["favicon.ico", "apple-touch-icon-180x180.png", "maskable-icon-512x512.png", "robots.txt"],
       manifest: {
         name: "Leggen",
         short_name: "Leggen",
@@ -22,6 +22,22 @@ export default defineConfig({
         scope: "/",
         start_url: "/",
         categories: ["finance", "productivity"],
+        shortcuts: [
+          {
+            name: "Transactions",
+            short_name: "Transactions",
+            description: "View and manage transactions",
+            url: "/transactions",
+            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+          },
+          {
+            name: "Analytics",
+            short_name: "Analytics",
+            description: "View financial analytics",
+            url: "/analytics",
+            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+          }
+        ],
         icons: [
           {
             src: "pwa-64x64.png",
