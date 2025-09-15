@@ -81,8 +81,8 @@ export default function AccountsOverview() {
   const queryClient = useQueryClient();
 
   const updateAccountMutation = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) =>
-      apiClient.updateAccount(id, { name }),
+    mutationFn: ({ id, display_name }: { id: string; display_name: string }) =>
+      apiClient.updateAccount(id, { display_name }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       setEditingAccountId(null);
@@ -95,14 +95,15 @@ export default function AccountsOverview() {
 
   const handleEditStart = (account: Account) => {
     setEditingAccountId(account.id);
-    setEditingName(account.name || "");
+    // Use display_name if available, otherwise fall back to name
+    setEditingName(account.display_name || account.name || "");
   };
 
   const handleEditSave = () => {
     if (editingAccountId && editingName.trim()) {
       updateAccountMutation.mutate({
         id: editingAccountId,
-        name: editingName.trim(),
+        display_name: editingName.trim(),
       });
     }
   };
@@ -267,7 +268,7 @@ export default function AccountsOverview() {
                                     setEditingName(e.target.value)
                                   }
                                   className="flex-1 px-3 py-1 text-base sm:text-lg font-medium border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                                  placeholder="Account name"
+                                  placeholder="Custom account name"
                                   name="search"
                                   autoComplete="off"
                                   onKeyDown={(e) => {
@@ -303,7 +304,7 @@ export default function AccountsOverview() {
                             <div>
                               <div className="flex items-center space-x-2 min-w-0">
                                 <h4 className="text-base sm:text-lg font-medium text-foreground truncate">
-                                  {account.name || "Unnamed Account"}
+                                  {account.display_name || account.name || "Unnamed Account"}
                                 </h4>
                                 <button
                                   onClick={() => handleEditStart(account)}

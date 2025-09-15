@@ -53,6 +53,7 @@ async def get_all_accounts() -> APIResponse:
                         status=db_account["status"],
                         iban=db_account.get("iban"),
                         name=db_account.get("name"),
+                        display_name=db_account.get("display_name"),
                         currency=db_account.get("currency"),
                         created=db_account["created"],
                         last_accessed=db_account.get("last_accessed"),
@@ -112,6 +113,7 @@ async def get_account_details(account_id: str) -> APIResponse:
             status=db_account["status"],
             iban=db_account.get("iban"),
             name=db_account.get("name"),
+            display_name=db_account.get("display_name"),
             currency=db_account.get("currency"),
             created=db_account["created"],
             last_accessed=db_account.get("last_accessed"),
@@ -324,7 +326,7 @@ async def get_account_transactions(
 async def update_account_details(
     account_id: str, update_data: AccountUpdate
 ) -> APIResponse:
-    """Update account details (currently only name)"""
+    """Update account details (currently only display_name)"""
     try:
         # Get current account details
         current_account = await database_service.get_account_details_from_db(account_id)
@@ -336,16 +338,16 @@ async def update_account_details(
 
         # Prepare updated account data
         updated_account_data = current_account.copy()
-        if update_data.name is not None:
-            updated_account_data["name"] = update_data.name
+        if update_data.display_name is not None:
+            updated_account_data["display_name"] = update_data.display_name
 
         # Persist updated account details
         await database_service.persist_account_details(updated_account_data)
 
         return APIResponse(
             success=True,
-            data={"id": account_id, "name": update_data.name},
-            message=f"Account {account_id} name updated successfully",
+            data={"id": account_id, "display_name": update_data.display_name},
+            message=f"Account {account_id} display name updated successfully",
         )
 
     except HTTPException:

@@ -24,6 +24,8 @@ class TestAccountsAPI:
                 "institution_id": "REVOLUT_REVOLT21",
                 "status": "READY",
                 "iban": "LT313250081177977789",
+                "name": "Personal Account",
+                "display_name": None,
                 "created": "2024-02-13T23:56:00Z",
                 "last_accessed": "2025-09-01T09:30:00Z",
             }
@@ -80,6 +82,8 @@ class TestAccountsAPI:
             "institution_id": "REVOLUT_REVOLT21",
             "status": "READY",
             "iban": "LT313250081177977789",
+            "name": "Personal Account",
+            "display_name": None,
             "created": "2024-02-13T23:56:00Z",
             "last_accessed": "2025-09-01T09:30:00Z",
         }
@@ -281,5 +285,60 @@ class TestAccountsAPI:
             ),
         ):
             response = api_client.get("/api/v1/accounts/nonexistent")
+
+        assert response.status_code == 404
+
+    def test_update_account_display_name_success(
+        self, api_client, mock_config, mock_auth_token, mock_db_path
+    ):
+        """Test successful update of account display name."""
+        mock_account = {
+            "id": "test-account-123",
+            "institution_id": "REVOLUT_REVOLT21",
+            "status": "READY",
+            "iban": "LT313250081177977789",
+            "name": "Personal Account",
+            "display_name": None,
+            "created": "2024-02-13T23:56:00Z",
+            "last_accessed": "2025-09-01T09:30:00Z",
+        }
+
+        with (
+            patch("leggen.utils.config.config", mock_config),
+            patch(
+                "leggen.api.routes.accounts.database_service.get_account_details_from_db",
+                return_value=mock_account,
+            ),
+            patch(
+                "leggen.api.routes.accounts.database_service.persist_account_details",
+                return_value=None,
+            ),
+        ):
+            response = api_client.put(
+                "/api/v1/accounts/test-account-123",
+                json={"display_name": "My Custom Account Name"},
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["data"]["id"] == "test-account-123"
+        assert data["data"]["display_name"] == "My Custom Account Name"
+
+    def test_update_account_not_found(
+        self, api_client, mock_config, mock_auth_token, mock_db_path
+    ):
+        """Test updating non-existent account."""
+        with (
+            patch("leggen.utils.config.config", mock_config),
+            patch(
+                "leggen.api.routes.accounts.database_service.get_account_details_from_db",
+                return_value=None,
+            ),
+        ):
+            response = api_client.put(
+                "/api/v1/accounts/nonexistent",
+                json={"display_name": "New Name"},
+            )
 
         assert response.status_code == 404

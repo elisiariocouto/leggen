@@ -215,6 +215,7 @@ class DatabaseService:
         await self._migrate_balance_timestamps_if_needed()
         await self._migrate_null_transaction_ids_if_needed()
         await self._migrate_to_composite_key_if_needed()
+        await self._migrate_add_display_name_if_needed()
 
     async def _migrate_balance_timestamps_if_needed(self):
         """Check and migrate balance timestamps if needed"""
@@ -632,6 +633,79 @@ class DatabaseService:
             logger.error(f"Composite key migration failed: {e}")
             raise
 
+    async def _migrate_add_display_name_if_needed(self):
+        """Check and add display_name column to accounts table if needed"""
+        try:
+            if await self._check_display_name_migration_needed():
+                logger.info("Display name column migration needed, starting...")
+                await self._migrate_add_display_name()
+                logger.info("Display name column migration completed")
+            else:
+                logger.info("Display name column already exists")
+        except Exception as e:
+            logger.error(f"Display name column migration failed: {e}")
+            raise
+
+    async def _check_display_name_migration_needed(self) -> bool:
+        """Check if display_name column needs to be added to accounts table"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return False
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            # Check if accounts table exists
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='accounts'"
+            )
+            if not cursor.fetchone():
+                conn.close()
+                return False
+
+            # Check if display_name column exists
+            cursor.execute("PRAGMA table_info(accounts)")
+            columns = cursor.fetchall()
+
+            # Check if display_name column exists
+            has_display_name = any(col[1] == "display_name" for col in columns)
+
+            conn.close()
+            return not has_display_name
+
+        except Exception as e:
+            logger.error(f"Failed to check display_name migration status: {e}")
+            return False
+
+    async def _migrate_add_display_name(self):
+        """Add display_name column to accounts table"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            logger.warning("Database file not found, skipping migration")
+            return
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            logger.info("Adding display_name column to accounts table...")
+
+            # Add the display_name column
+            cursor.execute("""
+                ALTER TABLE accounts 
+                ADD COLUMN display_name TEXT
+            """)
+
+            conn.commit()
+            conn.close()
+
+            logger.info("Display name column migration completed successfully")
+
+        except Exception as e:
+            logger.error(f"Display name column migration failed: {e}")
+            raise
+
     def _unix_to_datetime_string(self, unix_timestamp: float) -> str:
         """Convert Unix timestamp to datetime string"""
         dt = datetime.fromtimestamp(unix_timestamp)
@@ -1045,7 +1119,8 @@ class DatabaseService:
             currency TEXT,
             created DATETIME,
             last_accessed DATETIME,
-            last_updated DATETIME
+            last_updated DATETIME,
+            display_name TEXT
         )"""
         )
 
@@ -1060,6 +1135,16 @@ class DatabaseService:
         )
 
         try:
+            # First, check if account exists and preserve display_name
+            cursor.execute(
+                "SELECT display_name FROM accounts WHERE id = ?", (account_data["id"],)
+            )
+            existing_row = cursor.fetchone()
+            existing_display_name = existing_row[0] if existing_row else None
+
+            # Use existing display_name if not provided in account_data
+            display_name = account_data.get("display_name", existing_display_name)
+
             # Insert or replace account data
             cursor.execute(
                 """INSERT OR REPLACE INTO accounts (
@@ -1071,8 +1156,9 @@ class DatabaseService:
                 currency,
                 created,
                 last_accessed,
-                last_updated
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                last_updated,
+                display_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     account_data["id"],
                     account_data["institution_id"],
@@ -1083,6 +1169,7 @@ class DatabaseService:
                     account_data["created"],
                     account_data.get("last_accessed"),
                     account_data.get("last_updated", account_data["created"]),
+                    display_name,
                 ),
             )
             conn.commit()

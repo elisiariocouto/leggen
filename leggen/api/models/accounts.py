@@ -24,6 +24,7 @@ class AccountDetails(BaseModel):
     status: str
     iban: Optional[str] = None
     name: Optional[str] = None
+    display_name: Optional[str] = None
     currency: Optional[str] = None
     created: datetime
     last_accessed: Optional[datetime] = None
@@ -36,7 +37,7 @@ class AccountDetails(BaseModel):
 class AccountUpdate(BaseModel):
     """Account update model"""
 
-    name: Optional[str] = None
+    display_name: Optional[str] = None
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat() if v else None}
