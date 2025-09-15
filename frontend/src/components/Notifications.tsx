@@ -24,6 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Badge } from "./ui/badge";
 import {
   Select,
   SelectContent,
@@ -233,12 +234,8 @@ export default function Notifications() {
                           {service.name}
                         </h4>
                         <div className="flex items-center space-x-2 mt-1">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              service.enabled
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
+                          <Badge
+                            variant={service.enabled ? "default" : "destructive"}
                           >
                             {service.enabled ? (
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -246,18 +243,14 @@ export default function Notifications() {
                               <AlertCircle className="h-3 w-3 mr-1" />
                             )}
                             {service.enabled ? "Enabled" : "Disabled"}
-                          </span>
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              service.configured
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
+                          </Badge>
+                          <Badge
+                            variant={service.configured ? "secondary" : "outline"}
                           >
                             {service.configured
                               ? "Configured"
                               : "Not Configured"}
-                          </span>
+                          </Badge>
                         </div>
                       </div>
                     </div>

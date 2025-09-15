@@ -37,23 +37,23 @@ const getStatusIndicator = (status: string) => {
       };
     case "pending":
       return {
-        color: "bg-yellow-500",
+        color: "bg-amber-500",
         tooltip: "Pending",
       };
     case "error":
     case "failed":
       return {
-        color: "bg-red-500",
+        color: "bg-destructive",
         tooltip: "Error",
       };
     case "inactive":
       return {
-        color: "bg-gray-500",
+        color: "bg-muted-foreground",
         tooltip: "Inactive",
       };
     default:
       return {
-        color: "bg-blue-500",
+        color: "bg-primary",
         tooltip: status,
       };
   }
@@ -201,8 +201,8 @@ export default function AccountsOverview() {
                   {uniqueBanks}
                 </p>
               </div>
-              <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-full">
-                <Building2 className="h-6 w-6 text-purple-600" />
+              <div className="p-3 bg-muted rounded-full">
+                <Building2 className="h-6 w-6 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
