@@ -1,0 +1,4 @@
+{
+  "preset": "minimal-2023",
+  "images": ["public/favicon.svg"]
+}

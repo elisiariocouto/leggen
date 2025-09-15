@@ -2,9 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Leggen</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Personal finance management application" />
+    <meta name="application-name" content="Leggen" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Leggen" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <meta name="msapplication-TileColor" content="#3B82F6" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    
+    <!-- Dynamic theme-color - will be updated by JavaScript -->
+    <meta name="theme-color" content="#ffffff" id="theme-color-meta" />
+    <meta name="msapplication-navbutton-color" content="#ffffff" id="ms-theme-color-meta" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" id="apple-status-bar-meta" />
+    
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <link rel="mask-icon" href="/favicon.svg" color="#3B82F6" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
   </head>
   <body>
     <div id="root"></div>
