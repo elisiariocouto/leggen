@@ -2,7 +2,11 @@ import { useState } from "react";
 import { MoreHorizontal, Euro } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export interface AdvancedFiltersPopoverProps {
   minAmount: string;
@@ -94,7 +98,8 @@ export function AdvancedFiltersPopover({
             {/* Future: Add transaction status filter */}
             <div className="pt-2 border-t">
               <div className="text-xs text-muted-foreground">
-                More filters coming soon: transaction status, categories, and more.
+                More filters coming soon: transaction status, categories, and
+                more.
               </div>
             </div>
 

@@ -5,7 +5,7 @@ interface TransactionSkeletonProps {
 
 export default function TransactionSkeleton({
   rows = 5,
-  view = "table"
+  view = "table",
 }: TransactionSkeletonProps) {
   const skeletonRows = Array.from({ length: rows }, (_, index) => index);
 

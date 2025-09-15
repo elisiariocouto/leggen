@@ -6,7 +6,11 @@ import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export interface DateRangePickerProps {
   startDate: string;
@@ -39,7 +43,9 @@ const datePresets: DatePreset[] = [
       const now = new Date();
       const dayOfWeek = now.getDay();
       const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)); // Monday as start
+      startOfWeek.setDate(
+        now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1),
+      ); // Monday as start
 
       const endOfWeek = new Date(startOfWeek);
       endOfWeek.setDate(startOfWeek.getDate() + 6);
@@ -111,12 +117,12 @@ export function DateRangePicker({
     if (range?.from && range?.to) {
       onDateRangeChange(
         range.from.toISOString().split("T")[0],
-        range.to.toISOString().split("T")[0]
+        range.to.toISOString().split("T")[0],
       );
     } else if (range?.from && !range?.to) {
       onDateRangeChange(
         range.from.toISOString().split("T")[0],
-        range.from.toISOString().split("T")[0]
+        range.from.toISOString().split("T")[0],
       );
     }
   };
@@ -161,7 +167,7 @@ export function DateRangePicker({
             variant="outline"
             className={cn(
               "justify-between text-left font-normal",
-              !dateRange && "text-muted-foreground"
+              !dateRange && "text-muted-foreground",
             )}
           >
             <div className="flex items-center">

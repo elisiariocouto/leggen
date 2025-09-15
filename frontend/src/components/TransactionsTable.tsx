@@ -27,6 +27,10 @@ import TransactionSkeleton from "./TransactionSkeleton";
 import FiltersSkeleton from "./FiltersSkeleton";
 import RawTransactionModal from "./RawTransactionModal";
 import { FilterBar, type FilterState } from "./filters";
+import { DataTablePagination } from "./ui/data-table-pagination";
+import { Card, CardContent } from "./ui/card";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Button } from "./ui/button";
 import type { Account, Transaction, ApiResponse, Balance } from "../types/api";
 
 export default function TransactionsTable() {
@@ -50,7 +54,9 @@ export default function TransactionsTable() {
   const [perPage, setPerPage] = useState(50);
 
   // Debounced search state
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(filterState.searchTerm);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(
+    filterState.searchTerm,
+  );
 
   // Table state (remove pagination from table)
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -128,8 +134,12 @@ export default function TransactionsTable() {
         perPage: perPage,
         search: debouncedSearchTerm || undefined,
         summaryOnly: false,
-        minAmount: filterState.minAmount ? parseFloat(filterState.minAmount) : undefined,
-        maxAmount: filterState.maxAmount ? parseFloat(filterState.maxAmount) : undefined,
+        minAmount: filterState.minAmount
+          ? parseFloat(filterState.minAmount)
+          : undefined,
+        maxAmount: filterState.maxAmount
+          ? parseFloat(filterState.maxAmount)
+          : undefined,
       }),
   });
 
@@ -149,7 +159,13 @@ export default function TransactionsTable() {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterState.selectedAccount, filterState.startDate, filterState.endDate, filterState.minAmount, filterState.maxAmount]);
+  }, [
+    filterState.selectedAccount,
+    filterState.startDate,
+    filterState.endDate,
+    filterState.minAmount,
+    filterState.maxAmount,
+  ]);
 
   const handleViewRaw = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -177,15 +193,15 @@ export default function TransactionsTable() {
     const accountBalanceMap = new Map<string, number>();
 
     // Create a map of account current balances
-    balances.forEach(balance => {
-      if (balance.balance_type === 'expected') {
+    balances.forEach((balance) => {
+      if (balance.balance_type === "expected") {
         accountBalanceMap.set(balance.account_id, balance.balance_amount);
       }
     });
 
     // Group transactions by account
     const transactionsByAccount = new Map<string, Transaction[]>();
-    transactions.forEach(txn => {
+    transactions.forEach((txn) => {
       if (!transactionsByAccount.has(txn.account_id)) {
         transactionsByAccount.set(txn.account_id, []);
       }
@@ -198,13 +214,16 @@ export default function TransactionsTable() {
       let runningBalance = currentBalance;
 
       // Sort transactions by date (newest first) to work backwards
-      const sortedTransactions = [...accountTransactions].sort((a, b) =>
-        new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
+      const sortedTransactions = [...accountTransactions].sort(
+        (a, b) =>
+          new Date(b.transaction_date).getTime() -
+          new Date(a.transaction_date).getTime(),
       );
 
       // Calculate running balance by working backwards from current balance
       sortedTransactions.forEach((txn) => {
-        runningBalances[`${txn.account_id}-${txn.transaction_id}`] = runningBalance;
+        runningBalances[`${txn.account_id}-${txn.transaction_id}`] =
+          runningBalance;
         runningBalance -= txn.transaction_value;
       });
     });
@@ -240,10 +259,10 @@ export default function TransactionsTable() {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-gray-900 truncate">
+              <h4 className="text-sm font-medium text-foreground truncate">
                 {transaction.description}
               </h4>
-              <div className="text-xs text-gray-500 space-y-1">
+              <div className="text-xs text-muted-foreground space-y-1">
                 {account && (
                   <p className="truncate">
                     {account.name || "Unnamed Account"} •{" "}
@@ -289,38 +308,42 @@ export default function TransactionsTable() {
       },
       sortingFn: "basic",
     },
-    ...(showRunningBalance ? [{
-      id: "running_balance",
-      header: "Running Balance",
-      cell: ({ row }: { row: { original: Transaction } }) => {
-        const transaction = row.original;
-        const balanceKey = `${transaction.account_id}-${transaction.transaction_id}`;
-        const balance = runningBalances[balanceKey];
+    ...(showRunningBalance
+      ? [
+          {
+            id: "running_balance",
+            header: "Running Balance",
+            cell: ({ row }: { row: { original: Transaction } }) => {
+              const transaction = row.original;
+              const balanceKey = `${transaction.account_id}-${transaction.transaction_id}`;
+              const balance = runningBalances[balanceKey];
 
-        if (balance === undefined) return null;
+              if (balance === undefined) return null;
 
-        return (
-          <div className="text-right">
-            <p className="text-sm font-medium text-gray-900">
-              {formatCurrency(balance, transaction.transaction_currency)}
-            </p>
-          </div>
-        );
-      },
-    }] : []),
+              return (
+                <div className="text-right">
+                  <p className="text-sm font-medium text-foreground">
+                    {formatCurrency(balance, transaction.transaction_currency)}
+                  </p>
+                </div>
+              );
+            },
+          },
+        ]
+      : []),
     {
       accessorKey: "transaction_date",
       header: "Date",
       cell: ({ row }) => {
         const transaction = row.original;
         return (
-          <div className="text-sm text-gray-900">
+          <div className="text-sm text-foreground">
             {transaction.transaction_date
               ? formatDate(transaction.transaction_date)
               : "No date"}
             {transaction.booking_date &&
               transaction.booking_date !== transaction.transaction_date && (
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   Booked: {formatDate(transaction.booking_date)}
                 </p>
               )}
@@ -337,7 +360,7 @@ export default function TransactionsTable() {
         return (
           <button
             onClick={() => handleViewRaw(transaction)}
-            className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            className="inline-flex items-center px-2 py-1 text-xs bg-muted text-muted-foreground rounded hover:bg-accent transition-colors"
             title="View raw transaction data"
           >
             <Eye className="h-3 w-3 mr-1" />
@@ -361,7 +384,8 @@ export default function TransactionsTable() {
       columnFilters,
       globalFilter: filterState.searchTerm,
     },
-    onGlobalFilterChange: (value: string) => handleFilterChange("searchTerm", value),
+    onGlobalFilterChange: (value: string) =>
+      handleFilterChange("searchTerm", value),
     globalFilterFn: (row, _columnId, filterValue) => {
       // Custom global filter that searches multiple fields
       const transaction = row.original;
@@ -395,26 +419,21 @@ export default function TransactionsTable() {
 
   if (transactionsError) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-center text-center">
-          <div>
-            <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Failed to load transactions
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Unable to fetch transactions from the Leggen API.
-            </p>
-            <button
-              onClick={() => refetchTransactions()}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Failed to load transactions</AlertTitle>
+        <AlertDescription className="space-y-3">
+          <p>Unable to fetch transactions from the Leggen API.</p>
+          <Button
+            onClick={() => refetchTransactions()}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -428,13 +447,15 @@ export default function TransactionsTable() {
         accounts={accounts}
         isSearchLoading={isSearchLoading}
         showRunningBalance={showRunningBalance}
-        onToggleRunningBalance={() => setShowRunningBalance(!showRunningBalance)}
+        onToggleRunningBalance={() =>
+          setShowRunningBalance(!showRunningBalance)
+        }
       />
 
       {/* Results Summary */}
-      <div className="bg-white rounded-lg shadow border">
-        <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
-          <p className="text-sm text-gray-600">
+      <Card>
+        <CardContent className="px-6 py-3 bg-muted/30 border-b border-border">
+          <p className="text-sm text-muted-foreground">
             Showing {transactions.length} transaction
             {transactions.length !== 1 ? "s" : ""} (
             {pagination ? (
@@ -452,26 +473,30 @@ export default function TransactionsTable() {
             )
             {filterState.selectedAccount && accounts && (
               <span className="ml-1">
-                for {accounts.find((acc) => acc.id === filterState.selectedAccount)?.name}
+                for{" "}
+                {
+                  accounts.find((acc) => acc.id === filterState.selectedAccount)
+                    ?.name
+                }
               </span>
             )}
           </p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Responsive Table/Cards */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <Card className="overflow-hidden">
         {/* Desktop Table View (hidden on mobile) */}
         <div className="hidden md:block">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted/50">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                        className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted"
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         <div className="flex items-center space-x-1">
@@ -488,15 +513,15 @@ export default function TransactionsTable() {
                               <ChevronUp
                                 className={`h-3 w-3 ${
                                   header.column.getIsSorted() === "asc"
-                                    ? "text-blue-600"
-                                    : "text-gray-400"
+                                    ? "text-primary"
+                                    : "text-muted-foreground"
                                 }`}
                               />
                               <ChevronDown
                                 className={`h-3 w-3 -mt-1 ${
                                   header.column.getIsSorted() === "desc"
-                                    ? "text-blue-600"
-                                    : "text-gray-400"
+                                    ? "text-primary"
+                                    : "text-muted-foreground"
                                 }`}
                               />
                             </div>
@@ -507,20 +532,20 @@ export default function TransactionsTable() {
                   </tr>
                 ))}
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-border">
                 {table.getRowModel().rows.length === 0 ? (
                   <tr>
                     <td
                       colSpan={columns.length}
                       className="px-6 py-12 text-center"
                     >
-                      <div className="text-gray-400 mb-4">
+                      <div className="text-muted-foreground mb-4">
                         <TrendingUp className="h-12 w-12 mx-auto" />
                       </div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      <h3 className="text-lg font-medium text-foreground mb-2">
                         No transactions found
                       </h3>
-                      <p className="text-gray-600">
+                      <p className="text-muted-foreground">
                         {hasActiveFilters
                           ? "Try adjusting your filters to see more results."
                           : "No transactions are available for the selected criteria."}
@@ -529,9 +554,12 @@ export default function TransactionsTable() {
                   </tr>
                 ) : (
                   table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-gray-50">
+                    <tr key={row.id} className="hover:bg-muted/50">
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
+                        <td
+                          key={cell.id}
+                          className="px-6 py-4 whitespace-nowrap"
+                        >
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext(),
@@ -550,20 +578,20 @@ export default function TransactionsTable() {
         <div className="md:hidden">
           {table.getRowModel().rows.length === 0 ? (
             <div className="px-6 py-12 text-center">
-              <div className="text-gray-400 mb-4">
+              <div className="text-muted-foreground mb-4">
                 <TrendingUp className="h-12 w-12 mx-auto" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 No transactions found
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 {hasActiveFilters
                   ? "Try adjusting your filters to see more results."
                   : "No transactions are available for the selected criteria."}
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-border">
               {table.getRowModel().rows.map((row) => {
                 const transaction = row.original;
                 const account = accounts?.find(
@@ -574,7 +602,7 @@ export default function TransactionsTable() {
                 return (
                   <div
                     key={row.id}
-                    className="p-4 hover:bg-gray-50 transition-colors"
+                    className="p-4 hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -591,33 +619,39 @@ export default function TransactionsTable() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-gray-900 break-words">
+                            <h4 className="text-sm font-medium text-foreground break-words">
                               {transaction.description}
                             </h4>
-                            <div className="text-xs text-gray-500 space-y-1 mt-1">
+                            <div className="text-xs text-muted-foreground space-y-1 mt-1">
                               {account && (
                                 <p className="break-words">
                                   {account.name || "Unnamed Account"} •{" "}
                                   {account.institution_id}
                                 </p>
                               )}
-                              {(transaction.creditor_name || transaction.debtor_name) && (
+                              {(transaction.creditor_name ||
+                                transaction.debtor_name) && (
                                 <p className="break-words">
                                   {isPositive ? "From: " : "To: "}
-                                  {transaction.creditor_name || transaction.debtor_name}
+                                  {transaction.creditor_name ||
+                                    transaction.debtor_name}
                                 </p>
                               )}
                               {transaction.reference && (
-                                <p className="break-words">Ref: {transaction.reference}</p>
+                                <p className="break-words">
+                                  Ref: {transaction.reference}
+                                </p>
                               )}
-                              <p className="text-gray-400">
+                              <p className="text-muted-foreground">
                                 {transaction.transaction_date
                                   ? formatDate(transaction.transaction_date)
                                   : "No date"}
                                 {transaction.booking_date &&
-                                  transaction.booking_date !== transaction.transaction_date && (
+                                  transaction.booking_date !==
+                                    transaction.transaction_date && (
                                     <span className="ml-2">
-                                      (Booked: {formatDate(transaction.booking_date)})
+                                      (Booked:{" "}
+                                      {formatDate(transaction.booking_date)})
                                     </span>
                                   )}
                               </p>
@@ -638,16 +672,19 @@ export default function TransactionsTable() {
                           )}
                         </p>
                         {showRunningBalance && (
-                          <p className="text-xs text-gray-500 mb-1">
-                            Balance: {formatCurrency(
-                              runningBalances[`${transaction.account_id}-${transaction.transaction_id}`] || 0,
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Balance:{" "}
+                            {formatCurrency(
+                              runningBalances[
+                                `${transaction.account_id}-${transaction.transaction_id}`
+                              ] || 0,
                               transaction.transaction_currency,
                             )}
                           </p>
                         )}
                         <button
                           onClick={() => handleViewRaw(transaction)}
-                          className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                          className="inline-flex items-center px-2 py-1 text-xs bg-muted text-muted-foreground rounded hover:bg-accent transition-colors"
                           title="View raw transaction data"
                         >
                           <Eye className="h-3 w-3 mr-1" />
@@ -664,141 +701,18 @@ export default function TransactionsTable() {
 
         {/* Pagination */}
         {pagination && (
-          <div className="bg-white px-4 py-3 flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 space-y-3 sm:space-y-0">
-            {/* Mobile pagination controls */}
-            <div className="flex justify-between w-full sm:hidden">
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setCurrentPage(1)}
-                  disabled={pagination.page === 1}
-                  className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  First
-                </button>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(1, prev - 1))
-                  }
-                  disabled={!pagination.has_prev}
-                  className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setCurrentPage((prev) => prev + 1)}
-                  disabled={!pagination.has_next}
-                  className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-                <button
-                  onClick={() => setCurrentPage(pagination.total_pages)}
-                  disabled={pagination.page === pagination.total_pages}
-                  className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Last
-                </button>
-              </div>
-            </div>
-
-            {/* Mobile pagination info */}
-            <div className="text-center w-full sm:hidden">
-              <p className="text-sm text-gray-700">
-                Page <span className="font-medium">{pagination.page}</span> of{" "}
-                <span className="font-medium">{pagination.total_pages}</span>
-                <br />
-                <span className="text-xs text-gray-500">
-                  Showing {(pagination.page - 1) * pagination.per_page + 1}-
-                  {Math.min(pagination.page * pagination.per_page, pagination.total)} of {pagination.total}
-                </span>
-              </p>
-            </div>
-
-            {/* Desktop pagination */}
-            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <div className="flex items-center space-x-2">
-                <p className="text-sm text-gray-700">
-                  Showing{" "}
-                  <span className="font-medium">
-                    {(pagination.page - 1) * pagination.per_page + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-medium">
-                    {Math.min(
-                      pagination.page * pagination.per_page,
-                      pagination.total,
-                    )}
-                  </span>{" "}
-                  of <span className="font-medium">{pagination.total}</span>{" "}
-                  results
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <label className="text-sm text-gray-700">
-                    Rows per page:
-                  </label>
-                  <select
-                    value={perPage}
-                    onChange={(e) => {
-                      setPerPage(Number(e.target.value));
-                      setCurrentPage(1); // Reset to first page when changing page size
-                    }}
-                    className="border border-gray-300 rounded px-2 py-1 text-sm"
-                  >
-                    {[10, 25, 50, 100].map((pageSize) => (
-                      <option key={pageSize} value={pageSize}>
-                        {pageSize}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setCurrentPage(1)}
-                    disabled={pagination.page === 1}
-                    className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    First
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    disabled={!pagination.has_prev}
-                    className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <span className="text-sm text-gray-700">
-                    Page <span className="font-medium">{pagination.page}</span>{" "}
-                    of{" "}
-                    <span className="font-medium">
-                      {pagination.total_pages}
-                    </span>
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage((prev) => prev + 1)}
-                    disabled={!pagination.has_next}
-                    className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(pagination.total_pages)}
-                    disabled={pagination.page === pagination.total_pages}
-                    className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Last
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <DataTablePagination
+            currentPage={pagination.page}
+            totalPages={pagination.total_pages}
+            pageSize={pagination.per_page}
+            total={pagination.total}
+            hasNext={pagination.has_next}
+            hasPrev={pagination.has_prev}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPerPage}
+          />
         )}
-      </div>
+      </Card>
 
       {/* Raw Transaction Modal */}
       <RawTransactionModal

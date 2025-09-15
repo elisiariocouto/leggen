@@ -43,22 +43,22 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   return (
     <div
       className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full",
       )}
     >
-      <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+      <div className="flex items-center justify-between h-16 px-6 border-b border-border">
         <Link
           to="/"
           onClick={() => setSidebarOpen(false)}
           className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
         >
-          <CreditCard className="h-8 w-8 text-blue-600" />
-          <h1 className="text-xl font-bold text-gray-900">Leggen</h1>
+          <CreditCard className="h-8 w-8 text-primary" />
+          <h1 className="text-xl font-bold text-card-foreground">Leggen</h1>
         </Link>
         <button
           onClick={() => setSidebarOpen(false)}
-          className="lg:hidden p-1 rounded-md text-gray-400 hover:text-gray-500"
+          className="lg:hidden p-1 rounded-md text-muted-foreground hover:text-foreground"
         >
           <X className="h-6 w-6" />
         </button>
@@ -71,11 +71,12 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
               key={item.to}
               to={item.to}
               onClick={() => setSidebarOpen(false)}
-              className={`flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={cn(
+                "flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors",
                 location.pathname === item.to
-                  ? "bg-blue-100 text-blue-700"
-                  : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
-              }`}
+                  ? "bg-primary text-primary-foreground"
+                  : "text-card-foreground hover:text-card-foreground hover:bg-accent",
+              )}
             >
               <item.icon className="mr-3 h-5 w-5" />
               {item.name}
@@ -85,18 +86,18 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
       </nav>
 
       {/* Account Summary in Sidebar */}
-      <div className="px-6 py-4 border-t border-gray-200 mt-auto">
-        <div className="bg-gray-50 rounded-lg p-4">
+      <div className="px-6 py-4 border-t border-border mt-auto">
+        <div className="bg-muted rounded-lg p-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-muted-foreground">
               Total Balance
             </span>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </div>
-          <p className="text-2xl font-bold text-gray-900 mt-1">
+          <p className="text-2xl font-bold text-foreground mt-1">
             {formatCurrency(totalBalance)}
           </p>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             {accounts?.length || 0} accounts
           </p>
         </div>

@@ -15,7 +15,6 @@ interface MonthlyTrendsProps {
   days?: number;
 }
 
-
 interface TooltipProps {
   active?: boolean;
   payload?: Array<{
@@ -26,7 +25,10 @@ interface TooltipProps {
   label?: string;
 }
 
-export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsProps) {
+export default function MonthlyTrends({
+  className,
+  days = 365,
+}: MonthlyTrendsProps) {
   // Get pre-calculated monthly stats from the new endpoint
   const { data: monthlyData, isLoading } = useQuery({
     queryKey: ["monthly-stats", days],
@@ -49,11 +51,11 @@ export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsPr
   if (isLoading) {
     return (
       <div className={className}>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <h3 className="text-lg font-medium text-foreground mb-4">
           Monthly Spending Trends
         </h3>
         <div className="h-80 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       </div>
     );
@@ -62,10 +64,10 @@ export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsPr
   if (displayData.length === 0) {
     return (
       <div className={className}>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <h3 className="text-lg font-medium text-foreground mb-4">
           Monthly Spending Trends
         </h3>
-        <div className="h-80 flex items-center justify-center text-gray-500">
+        <div className="h-80 flex items-center justify-center text-muted-foreground">
           No transaction data available
         </div>
       </div>
@@ -75,8 +77,8 @@ export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsPr
   const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border rounded shadow-lg">
-          <p className="font-medium">{label}</p>
+        <div className="bg-card p-3 border rounded shadow-lg">
+          <p className="font-medium text-foreground">{label}</p>
           {payload.map((entry, index) => (
             <p key={index} style={{ color: entry.color }}>
               {entry.name}: €{Math.abs(entry.value).toLocaleString()}
@@ -98,12 +100,15 @@ export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsPr
 
   return (
     <div className={className}>
-      <h3 className="text-lg font-medium text-gray-900 mb-4">
+      <h3 className="text-lg font-medium text-foreground mb-4">
         {getTitle(days)}
       </h3>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <BarChart
+            data={displayData}
+            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="month"
@@ -122,7 +127,7 @@ export default function MonthlyTrends({ className, days = 365 }: MonthlyTrendsPr
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-4 flex justify-center space-x-6 text-sm">
+      <div className="mt-4 flex justify-center space-x-6 text-sm text-foreground">
         <div className="flex items-center">
           <div className="w-3 h-3 bg-green-500 rounded mr-2" />
           <span>Income</span>

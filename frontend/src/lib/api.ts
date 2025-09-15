@@ -56,13 +56,16 @@ export const apiClient = {
   },
 
   // Get historical balances for balance progression chart
-  getHistoricalBalances: async (days?: number, accountId?: string): Promise<Balance[]> => {
+  getHistoricalBalances: async (
+    days?: number,
+    accountId?: string,
+  ): Promise<Balance[]> => {
     const queryParams = new URLSearchParams();
     if (days) queryParams.append("days", days.toString());
     if (accountId) queryParams.append("account_id", accountId);
 
     const response = await api.get<ApiResponse<Balance[]>>(
-      `/balances/history?${queryParams.toString()}`
+      `/balances/history?${queryParams.toString()}`,
     );
     return response.data.data;
   },
@@ -171,40 +174,48 @@ export const apiClient = {
     if (days) queryParams.append("days", days.toString());
 
     const response = await api.get<ApiResponse<TransactionStats>>(
-      `/transactions/stats?${queryParams.toString()}`
+      `/transactions/stats?${queryParams.toString()}`,
     );
     return response.data.data;
   },
 
   // Get all transactions for analytics (no pagination)
-  getTransactionsForAnalytics: async (days?: number): Promise<AnalyticsTransaction[]> => {
+  getTransactionsForAnalytics: async (
+    days?: number,
+  ): Promise<AnalyticsTransaction[]> => {
     const queryParams = new URLSearchParams();
     if (days) queryParams.append("days", days.toString());
 
     const response = await api.get<ApiResponse<AnalyticsTransaction[]>>(
-      `/transactions/analytics?${queryParams.toString()}`
+      `/transactions/analytics?${queryParams.toString()}`,
     );
     return response.data.data;
   },
 
   // Get monthly transaction statistics (pre-calculated)
-  getMonthlyTransactionStats: async (days?: number): Promise<Array<{
-    month: string;
-    income: number;
-    expenses: number;
-    net: number;
-  }>> => {
-    const queryParams = new URLSearchParams();
-    if (days) queryParams.append("days", days.toString());
-
-    const response = await api.get<ApiResponse<Array<{
+  getMonthlyTransactionStats: async (
+    days?: number,
+  ): Promise<
+    Array<{
       month: string;
       income: number;
       expenses: number;
       net: number;
-    }>>>(
-      `/transactions/monthly-stats?${queryParams.toString()}`
-    );
+    }>
+  > => {
+    const queryParams = new URLSearchParams();
+    if (days) queryParams.append("days", days.toString());
+
+    const response = await api.get<
+      ApiResponse<
+        Array<{
+          month: string;
+          income: number;
+          expenses: number;
+          net: number;
+        }>
+      >
+    >(`/transactions/monthly-stats?${queryParams.toString()}`);
     return response.data.data;
   },
 };

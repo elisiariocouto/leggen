@@ -1,4 +1,5 @@
 import { Calendar } from "lucide-react";
+import { Button } from "../ui/button";
 import type { TimePeriod } from "../../lib/timePeriods";
 import { TIME_PERIODS } from "../../lib/timePeriods";
 
@@ -15,23 +16,22 @@ export default function TimePeriodFilter({
 }: TimePeriodFilterProps) {
   return (
     <div className={`flex items-center gap-4 ${className}`}>
-      <div className="flex items-center gap-2 text-gray-700">
+      <div className="flex items-center gap-2 text-foreground">
         <Calendar size={20} />
         <span className="font-medium">Time Period:</span>
       </div>
       <div className="flex gap-2">
         {TIME_PERIODS.map((period) => (
-          <button
+          <Button
             key={period.value}
             onClick={() => onPeriodChange(period)}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              selectedPeriod.value === period.value
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
+            variant={
+              selectedPeriod.value === period.value ? "default" : "outline"
+            }
+            size="sm"
           >
             {period.label}
-          </button>
+          </Button>
         ))}
       </div>
     </div>

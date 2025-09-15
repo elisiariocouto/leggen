@@ -13,6 +13,24 @@ import {
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import LoadingSpinner from "./LoadingSpinner";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import type { NotificationSettings, NotificationService } from "../types/api";
 
 export default function Notifications() {
@@ -63,38 +81,35 @@ export default function Notifications() {
 
   if (settingsLoading || servicesLoading) {
     return (
-      <div className="bg-white rounded-lg shadow">
+      <Card>
         <LoadingSpinner message="Loading notifications..." />
-      </div>
+      </Card>
     );
   }
 
   if (settingsError || servicesError) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-center text-center">
-          <div>
-            <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Failed to load notifications
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Unable to connect to the Leggen API. Please check your
-              configuration and ensure the API server is running.
-            </p>
-            <button
-              onClick={() => {
-                refetchSettings();
-                refetchServices();
-              }}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Failed to load notifications</AlertTitle>
+        <AlertDescription className="space-y-3">
+          <p>
+            Unable to connect to the Leggen API. Please check your configuration
+            and ensure the API server is running.
+          </p>
+          <Button
+            onClick={() => {
+              refetchSettings();
+              refetchServices();
+            }}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -120,201 +135,202 @@ export default function Notifications() {
   return (
     <div className="space-y-6">
       {/* Test Notification Section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <TestTube className="h-5 w-5 text-blue-600" />
-          <h3 className="text-lg font-medium text-gray-900">
-            Test Notifications
-          </h3>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <TestTube className="h-5 w-5 text-primary" />
+            <span>Test Notifications</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="service" className="text-foreground">
+                Service
+              </Label>
+              <Select value={testService} onValueChange={setTestService}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a service..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {services?.map((service) => (
+                    <SelectItem key={service.name} value={service.name}>
+                      {service.name}{" "}
+                      {service.enabled ? "(Enabled)" : "(Disabled)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Service
-            </label>
-            <select
-              value={testService}
-              onChange={(e) => setTestService(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div>
+              <Label htmlFor="message" className="text-foreground">
+                Message
+              </Label>
+              <Input
+                id="message"
+                type="text"
+                value={testMessage}
+                onChange={(e) => setTestMessage(e.target.value)}
+                placeholder="Test message..."
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <Button
+              onClick={handleTestNotification}
+              disabled={!testService || testMutation.isPending}
             >
-              <option value="">Select a service...</option>
-              {services?.map((service) => (
-                <option key={service.name} value={service.name}>
-                  {service.name} {service.enabled ? "(Enabled)" : "(Disabled)"}
-                </option>
-              ))}
-            </select>
+              <Send className="h-4 w-4 mr-2" />
+              {testMutation.isPending ? "Sending..." : "Send Test Notification"}
+            </Button>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Message
-            </label>
-            <input
-              type="text"
-              value={testMessage}
-              onChange={(e) => setTestMessage(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Test message..."
-            />
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <button
-            onClick={handleTestNotification}
-            disabled={!testService || testMutation.isPending}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Send className="h-4 w-4 mr-2" />
-            {testMutation.isPending ? "Sending..." : "Send Test Notification"}
-          </button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Notification Services */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <Bell className="h-5 w-5 text-blue-600" />
-            <h3 className="text-lg font-medium text-gray-900">
-              Notification Services
-            </h3>
-          </div>
-          <p className="text-sm text-gray-600 mt-1">
-            Manage your notification services
-          </p>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Bell className="h-5 w-5 text-primary" />
+            <span>Notification Services</span>
+          </CardTitle>
+          <CardDescription>Manage your notification services</CardDescription>
+        </CardHeader>
 
         {!services || services.length === 0 ? (
-          <div className="p-6 text-center">
-            <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <CardContent className="text-center">
+            <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">
               No notification services configured
             </h3>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Configure notification services in your backend to receive alerts.
             </p>
-          </div>
+          </CardContent>
         ) : (
-          <div className="divide-y divide-gray-200">
-            {services.map((service) => (
-              <div
-                key={service.name}
-                className="p-6 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-gray-100 rounded-full">
-                      {service.name.toLowerCase().includes("discord") ? (
-                        <MessageSquare className="h-6 w-6 text-gray-600" />
-                      ) : service.name.toLowerCase().includes("telegram") ? (
-                        <Send className="h-6 w-6 text-gray-600" />
-                      ) : (
-                        <Bell className="h-6 w-6 text-gray-600" />
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-medium text-gray-900 capitalize">
-                        {service.name}
-                      </h4>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            service.enabled
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {service.enabled ? (
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                          ) : (
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                          )}
-                          {service.enabled ? "Enabled" : "Disabled"}
-                        </span>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            service.configured
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {service.configured ? "Configured" : "Not Configured"}
-                        </span>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border">
+              {services.map((service) => (
+                <div
+                  key={service.name}
+                  className="p-6 hover:bg-accent transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-3 bg-muted rounded-full">
+                        {service.name.toLowerCase().includes("discord") ? (
+                          <MessageSquare className="h-6 w-6 text-muted-foreground" />
+                        ) : service.name.toLowerCase().includes("telegram") ? (
+                          <Send className="h-6 w-6 text-muted-foreground" />
+                        ) : (
+                          <Bell className="h-6 w-6 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-medium text-foreground capitalize">
+                          {service.name}
+                        </h4>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              service.enabled
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {service.enabled ? (
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                            ) : (
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                            )}
+                            {service.enabled ? "Enabled" : "Disabled"}
+                          </span>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              service.configured
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {service.configured
+                              ? "Configured"
+                              : "Not Configured"}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center space-x-2">
-                    <button
+                    <Button
                       onClick={() => handleDeleteService(service.name)}
                       disabled={deleteServiceMutation.isPending}
-                      className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-                      title={`Delete ${service.name} service`}
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </CardContent>
         )}
-      </div>
+      </Card>
 
       {/* Notification Settings */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Settings className="h-5 w-5 text-blue-600" />
-          <h3 className="text-lg font-medium text-gray-900">
-            Notification Settings
-          </h3>
-        </div>
-
-        {settings && (
-          <div className="space-y-4">
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-2">
-                Filters
-              </h4>
-              <div className="bg-gray-50 rounded-md p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Case Insensitive Filters
-                    </label>
-                    <p className="text-sm text-gray-900">
-                      {settings.filters.case_insensitive.length > 0
-                        ? settings.filters.case_insensitive.join(", ")
-                        : "None"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Case Sensitive Filters
-                    </label>
-                    <p className="text-sm text-gray-900">
-                      {settings.filters.case_sensitive &&
-                      settings.filters.case_sensitive.length > 0
-                        ? settings.filters.case_sensitive.join(", ")
-                        : "None"}
-                    </p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Settings className="h-5 w-5 text-primary" />
+            <span>Notification Settings</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {settings && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-foreground mb-2">
+                  Filters
+                </h4>
+                <div className="bg-muted rounded-md p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-medium text-muted-foreground mb-1 block">
+                        Case Insensitive Filters
+                      </Label>
+                      <p className="text-sm text-foreground">
+                        {settings.filters.case_insensitive.length > 0
+                          ? settings.filters.case_insensitive.join(", ")
+                          : "None"}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-muted-foreground mb-1 block">
+                        Case Sensitive Filters
+                      </Label>
+                      <p className="text-sm text-foreground">
+                        {settings.filters.case_sensitive &&
+                        settings.filters.case_sensitive.length > 0
+                          ? settings.filters.case_sensitive.join(", ")
+                          : "None"}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="text-sm text-gray-600">
-              <p>
-                Configure notification settings through your backend API to
-                customize filters and service configurations.
-              </p>
+              <div className="text-sm text-muted-foreground">
+                <p>
+                  Configure notification settings through your backend API to
+                  customize filters and service configurations.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -33,7 +33,9 @@ export function ActiveFilterChips({
 
   // Account chip
   if (filterState.selectedAccount) {
-    const account = accounts.find((acc) => acc.id === filterState.selectedAccount);
+    const account = accounts.find(
+      (acc) => acc.id === filterState.selectedAccount,
+    );
     const accountName = account
       ? `${account.name || "Unnamed Account"} (${account.institution_id})`
       : "Unknown Account";
@@ -69,8 +71,12 @@ export function ActiveFilterChips({
   // Amount range chips
   if (filterState.minAmount || filterState.maxAmount) {
     let amountLabel = "Amount: ";
-    const minAmount = filterState.minAmount ? parseFloat(filterState.minAmount) : null;
-    const maxAmount = filterState.maxAmount ? parseFloat(filterState.maxAmount) : null;
+    const minAmount = filterState.minAmount
+      ? parseFloat(filterState.minAmount)
+      : null;
+    const maxAmount = filterState.maxAmount
+      ? parseFloat(filterState.maxAmount)
+      : null;
 
     if (minAmount && maxAmount) {
       amountLabel += `€${minAmount} - €${maxAmount}`;

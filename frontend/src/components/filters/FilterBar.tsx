@@ -38,7 +38,6 @@ export function FilterBar({
   onToggleRunningBalance,
   className,
 }: FilterBarProps) {
-
   const hasActiveFilters =
     filterState.searchTerm ||
     filterState.selectedAccount ||
@@ -53,11 +52,13 @@ export function FilterBar({
   };
 
   return (
-    <div className={cn("bg-white rounded-lg shadow border", className)}>
+    <div className={cn("bg-card rounded-lg shadow border", className)}>
       {/* Main Filter Bar */}
       <div className="px-6 py-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Transactions</h3>
+          <h3 className="text-lg font-semibold text-card-foreground">
+            Transactions
+          </h3>
           <Button
             onClick={onToggleRunningBalance}
             variant={showRunningBalance ? "default" : "outline"}
@@ -71,16 +72,16 @@ export function FilterBar({
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {/* Search Input */}
           <div className="relative flex-1 min-w-[240px]">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search transactions..."
               value={filterState.searchTerm}
               onChange={(e) => onFilterChange("searchTerm", e.target.value)}
-              className="pl-9 pr-8"
+              className="pl-9 pr-8 bg-background"
             />
             {isSearchLoading && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-500 rounded-full"></div>
+                <div className="animate-spin h-4 w-4 border-2 border-border border-t-primary rounded-full"></div>
               </div>
             )}
           </div>
@@ -117,7 +118,7 @@ export function FilterBar({
               onClick={onClearFilters}
               variant="outline"
               size="sm"
-              className="text-gray-600"
+              className="text-muted-foreground"
             >
               <X className="h-4 w-4 mr-1" />
               Clear All

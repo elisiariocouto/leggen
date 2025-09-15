@@ -11,7 +11,11 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { Account } from "../../types/api";
 
 export interface AccountComboboxProps {
@@ -29,7 +33,9 @@ export function AccountCombobox({
 }: AccountComboboxProps) {
   const [open, setOpen] = useState(false);
 
-  const selectedAccountData = accounts.find((account) => account.id === selectedAccount);
+  const selectedAccountData = accounts.find(
+    (account) => account.id === selectedAccount,
+  );
 
   const formatAccountName = (account: Account) => {
     const displayName = account.name || "Unnamed Account";
@@ -72,7 +78,7 @@ export function AccountCombobox({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedAccount === "" ? "opacity-100" : "opacity-0"
+                      selectedAccount === "" ? "opacity-100" : "opacity-0",
                     )}
                   />
                   <Building2 className="mr-2 h-4 w-4 text-gray-400" />
@@ -94,7 +100,7 @@ export function AccountCombobox({
                         "mr-2 h-4 w-4",
                         selectedAccount === account.id
                           ? "opacity-100"
-                          : "opacity-0"
+                          : "opacity-0",
                       )}
                     />
                     <div className="flex flex-col">
