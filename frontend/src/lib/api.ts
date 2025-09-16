@@ -42,10 +42,9 @@ export const apiClient = {
     id: string,
     updates: AccountUpdate,
   ): Promise<{ id: string; display_name?: string }> => {
-    const response = await api.put<ApiResponse<{ id: string; display_name?: string }>>(
-      `/accounts/${id}`,
-      updates,
-    );
+    const response = await api.put<
+      ApiResponse<{ id: string; display_name?: string }>
+    >(`/accounts/${id}`, updates);
     return response.data.data;
   },
 
