@@ -22,7 +22,7 @@ import {
 } from "./ui/card";
 import { Button } from "./ui/button";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import LoadingSpinner from "./LoadingSpinner";
+import AccountsSkeleton from "./AccountsSkeleton";
 import type { Account, Balance } from "../types/api";
 
 // Helper function to get status indicator color and styles
@@ -114,11 +114,7 @@ export default function AccountsOverview() {
   };
 
   if (accountsLoading) {
-    return (
-      <Card>
-        <LoadingSpinner message="Loading accounts..." />
-      </Card>
-    );
+    return <AccountsSkeleton />;
   }
 
   if (accountsError) {
@@ -304,7 +300,9 @@ export default function AccountsOverview() {
                             <div>
                               <div className="flex items-center space-x-2 min-w-0">
                                 <h4 className="text-base sm:text-lg font-medium text-foreground truncate">
-                                  {account.display_name || account.name || "Unnamed Account"}
+                                  {account.display_name ||
+                                    account.name ||
+                                    "Unnamed Account"}
                                 </h4>
                                 <button
                                   onClick={() => handleEditStart(account)}

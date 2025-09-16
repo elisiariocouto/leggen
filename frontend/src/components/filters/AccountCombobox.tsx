@@ -38,7 +38,8 @@ export function AccountCombobox({
   );
 
   const formatAccountName = (account: Account) => {
-    const displayName = account.display_name || account.name || "Unnamed Account";
+    const displayName =
+      account.display_name || account.name || "Unnamed Account";
     return `${displayName} (${account.institution_id})`;
   };
 
@@ -105,7 +106,9 @@ export function AccountCombobox({
                     />
                     <div className="flex flex-col">
                       <span className="font-medium">
-                        {account.display_name || account.name || "Unnamed Account"}
+                        {account.display_name ||
+                          account.name ||
+                          "Unnamed Account"}
                       </span>
                       <span className="text-xs text-gray-500">
                         {account.institution_id}

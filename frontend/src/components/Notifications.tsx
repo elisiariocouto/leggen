@@ -12,7 +12,7 @@ import {
   TestTube,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
-import LoadingSpinner from "./LoadingSpinner";
+import NotificationsSkeleton from "./NotificationsSkeleton";
 import {
   Card,
   CardContent,
@@ -81,11 +81,7 @@ export default function Notifications() {
   });
 
   if (settingsLoading || servicesLoading) {
-    return (
-      <Card>
-        <LoadingSpinner message="Loading notifications..." />
-      </Card>
-    );
+    return <NotificationsSkeleton />;
   }
 
   if (settingsError || servicesError) {
@@ -235,7 +231,9 @@ export default function Notifications() {
                         </h4>
                         <div className="flex items-center space-x-2 mt-1">
                           <Badge
-                            variant={service.enabled ? "default" : "destructive"}
+                            variant={
+                              service.enabled ? "default" : "destructive"
+                            }
                           >
                             {service.enabled ? (
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -245,7 +243,9 @@ export default function Notifications() {
                             {service.enabled ? "Enabled" : "Disabled"}
                           </Badge>
                           <Badge
-                            variant={service.configured ? "secondary" : "outline"}
+                            variant={
+                              service.configured ? "secondary" : "outline"
+                            }
                           >
                             {service.configured
                               ? "Configured"
