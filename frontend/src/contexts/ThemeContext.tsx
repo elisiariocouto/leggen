@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 // Theme colors for different modes
 const THEME_COLORS = {
-  light: "#ffffff",
+  light: "#0b74de", // Primary brand color
   dark: "#0f0f23", // Dark background color that matches typical dark themes
 } as const;
 
@@ -49,7 +49,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
       // Update theme-color meta tags for PWA status bar
       const themeColor = THEME_COLORS[resolvedTheme];
-      
+
       // Update theme-color meta tag
       const themeColorMeta = document.getElementById("theme-color-meta") as HTMLMetaElement;
       if (themeColorMeta) {

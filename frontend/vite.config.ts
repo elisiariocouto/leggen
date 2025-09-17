@@ -15,7 +15,7 @@ export default defineConfig({
         name: "Leggen",
         short_name: "Leggen",
         description: "Personal finance management application",
-        theme_color: "#ffffff",
+        theme_color: "#0b74de",
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",
