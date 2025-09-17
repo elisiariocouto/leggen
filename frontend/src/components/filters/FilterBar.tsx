@@ -23,8 +23,6 @@ export interface FilterBarProps {
   onClearFilters: () => void;
   accounts?: Account[];
   isSearchLoading?: boolean;
-  showRunningBalance: boolean;
-  onToggleRunningBalance: () => void;
   className?: string;
 }
 
@@ -34,8 +32,6 @@ export function FilterBar({
   onClearFilters,
   accounts,
   isSearchLoading = false,
-  showRunningBalance,
-  onToggleRunningBalance,
   className,
 }: FilterBarProps) {
   const hasActiveFilters =
@@ -59,13 +55,6 @@ export function FilterBar({
           <h3 className="text-lg font-semibold text-card-foreground">
             Transactions
           </h3>
-          <Button
-            onClick={onToggleRunningBalance}
-            variant={showRunningBalance ? "default" : "outline"}
-            size="sm"
-          >
-            Balance
-          </Button>
         </div>
 
         {/* Primary Filters Row */}

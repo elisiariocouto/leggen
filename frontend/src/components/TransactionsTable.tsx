@@ -31,7 +31,7 @@ import { DataTablePagination } from "./ui/data-table-pagination";
 import { Card, CardContent } from "./ui/card";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Button } from "./ui/button";
-import type { Account, Transaction, ApiResponse, Balance } from "../types/api";
+import type { Account, Transaction, ApiResponse } from "../types/api";
 
 export default function TransactionsTable() {
   // Filter state consolidated into a single object
@@ -47,7 +47,6 @@ export default function TransactionsTable() {
   const [showRawModal, setShowRawModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
-  const [showRunningBalance, setShowRunningBalance] = useState(true);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,11 +101,6 @@ export default function TransactionsTable() {
     queryFn: apiClient.getAccounts,
   });
 
-  const { data: balances } = useQuery<Balance[]>({
-    queryKey: ["balances"],
-    queryFn: apiClient.getBalances,
-    enabled: showRunningBalance,
-  });
 
   const {
     data: transactionsResponse,
@@ -185,53 +179,6 @@ export default function TransactionsTable() {
     filterState.minAmount ||
     filterState.maxAmount;
 
-  // Calculate running balances
-  const calculateRunningBalances = (transactions: Transaction[]) => {
-    if (!balances || !showRunningBalance) return {};
-
-    const runningBalances: { [key: string]: number } = {};
-    const accountBalanceMap = new Map<string, number>();
-
-    // Create a map of account current balances
-    balances.forEach((balance) => {
-      if (balance.balance_type === "expected") {
-        accountBalanceMap.set(balance.account_id, balance.balance_amount);
-      }
-    });
-
-    // Group transactions by account
-    const transactionsByAccount = new Map<string, Transaction[]>();
-    transactions.forEach((txn) => {
-      if (!transactionsByAccount.has(txn.account_id)) {
-        transactionsByAccount.set(txn.account_id, []);
-      }
-      transactionsByAccount.get(txn.account_id)!.push(txn);
-    });
-
-    // Calculate running balance for each account
-    transactionsByAccount.forEach((accountTransactions, accountId) => {
-      const currentBalance = accountBalanceMap.get(accountId) || 0;
-      let runningBalance = currentBalance;
-
-      // Sort transactions by date (newest first) to work backwards
-      const sortedTransactions = [...accountTransactions].sort(
-        (a, b) =>
-          new Date(b.transaction_date).getTime() -
-          new Date(a.transaction_date).getTime(),
-      );
-
-      // Calculate running balance by working backwards from current balance
-      sortedTransactions.forEach((txn) => {
-        runningBalances[`${txn.account_id}-${txn.transaction_id}`] =
-          runningBalance;
-        runningBalance -= txn.transaction_value;
-      });
-    });
-
-    return runningBalances;
-  };
-
-  const runningBalances = calculateRunningBalances(transactions);
 
   // Define columns
   const columns: ColumnDef<Transaction>[] = [
@@ -308,29 +255,6 @@ export default function TransactionsTable() {
       },
       sortingFn: "basic",
     },
-    ...(showRunningBalance
-      ? [
-          {
-            id: "running_balance",
-            header: "Running Balance",
-            cell: ({ row }: { row: { original: Transaction } }) => {
-              const transaction = row.original;
-              const balanceKey = `${transaction.account_id}-${transaction.transaction_id}`;
-              const balance = runningBalances[balanceKey];
-
-              if (balance === undefined) return null;
-
-              return (
-                <div className="text-right">
-                  <p className="text-sm font-medium text-foreground">
-                    {formatCurrency(balance, transaction.transaction_currency)}
-                  </p>
-                </div>
-              );
-            },
-          },
-        ]
-      : []),
     {
       accessorKey: "transaction_date",
       header: "Date",
@@ -446,10 +370,6 @@ export default function TransactionsTable() {
         onClearFilters={handleClearFilters}
         accounts={accounts}
         isSearchLoading={isSearchLoading}
-        showRunningBalance={showRunningBalance}
-        onToggleRunningBalance={() =>
-          setShowRunningBalance(!showRunningBalance)
-        }
       />
 
       {/* Results Summary */}
@@ -669,17 +589,6 @@ export default function TransactionsTable() {
                             transaction.transaction_currency,
                           )}
                         </p>
-                        {showRunningBalance && (
-                          <p className="text-xs text-muted-foreground mb-1">
-                            Balance:{" "}
-                            {formatCurrency(
-                              runningBalances[
-                                `${transaction.account_id}-${transaction.transaction_id}`
-                              ] || 0,
-                              transaction.transaction_currency,
-                            )}
-                          </p>
-                        )}
                         <button
                           onClick={() => handleViewRaw(transaction)}
                           className="inline-flex items-center px-2 py-1 text-xs bg-muted text-muted-foreground rounded hover:bg-accent transition-colors"
