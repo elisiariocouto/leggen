@@ -124,7 +124,7 @@ function AnalyticsDashboard() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         <Card>
           <CardContent className="p-6">
             <BalanceChart data={balances || []} accounts={accounts || []} />

@@ -1,13 +1,14 @@
+"use client"
+
+import { TrendingUp } from "lucide-react"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
+
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart"
 import type { Balance, Account } from "../../types/api";
 
 interface BalanceChartProps {
@@ -27,15 +28,6 @@ interface AggregatedDataPoint {
   [key: string]: string | number;
 }
 
-interface TooltipProps {
-  active?: boolean;
-  payload?: Array<{
-    name: string;
-    value: number;
-    color: string;
-  }>;
-  label?: string;
-}
 
 export default function BalanceChart({
   data,
@@ -112,30 +104,23 @@ export default function BalanceChart({
       new Date(b.date.split("/").reverse().join("/")).getTime(),
   );
 
-  const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
+  // Create chart config for shadcn charts
+  const accountIds = Object.keys(accountBalances);
+  const chartConfig: ChartConfig = accountIds.reduce((config, accountId, index) => {
+    const colors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
+    config[accountId] = {
+      label: getAccountDisplayName(accountId),
+      color: colors[index % colors.length],
+    };
+    return config;
+  }, {} as ChartConfig);
 
-  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-card p-3 border rounded shadow-lg">
-          <p className="font-medium text-foreground">Date: {label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} style={{ color: entry.color }}>
-              {getAccountDisplayName(entry.name)}: €
-              {entry.value.toLocaleString()}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
 
   if (finalData.length === 0) {
     return (
       <div className={className}>
         <h3 className="text-lg font-medium text-foreground mb-4">
-          Balance Progress
+          Balance Progress Over Time
         </h3>
         <div className="h-80 flex items-center justify-center text-muted-foreground">
           No balance data available
@@ -144,18 +129,51 @@ export default function BalanceChart({
     );
   }
 
+  // Calculate total balance for trending calculation
+  const totalBalance = finalData[finalData.length - 1]
+    ? Object.keys(accountBalances).reduce((total, accountId) => {
+        const balance = finalData[finalData.length - 1][accountId] as number || 0;
+        return total + balance;
+      }, 0)
+    : 0;
+
+  const previousTotalBalance = finalData[finalData.length - 2]
+    ? Object.keys(accountBalances).reduce((total, accountId) => {
+        const balance = finalData[finalData.length - 2][accountId] as number || 0;
+        return total + balance;
+      }, 0)
+    : totalBalance;
+
+  const percentChange = previousTotalBalance !== 0
+    ? ((totalBalance - previousTotalBalance) / previousTotalBalance * 100)
+    : 0;
+
   return (
     <div className={className}>
-      <h3 className="text-lg font-medium text-foreground mb-4">
-        Balance Progress Over Time
-      </h3>
+      <div className="mb-4">
+        <h3 className="text-lg font-medium text-foreground mb-1">
+          Balance Progress Over Time
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Account balances showing progression across all connected accounts
+        </p>
+      </div>
       <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={finalData}>
-            <CartesianGrid strokeDasharray="3 3" />
+        <ChartContainer config={chartConfig}>
+          <AreaChart
+            accessibilityLayer
+            data={finalData}
+            margin={{
+              left: -20,
+              right: 12,
+            }}
+          >
+            <CartesianGrid vertical={false} />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 12 }}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
               tickFormatter={(value) => {
                 // Convert DD/MM/YYYY back to a proper date for formatting
                 const [day, month, year] = value.split("/");
@@ -167,24 +185,26 @@ export default function BalanceChart({
               }}
             />
             <YAxis
-              tick={{ fontSize: 12 }}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickCount={3}
               tickFormatter={(value) => `€${value.toLocaleString()}`}
             />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            {Object.keys(accountBalances).map((accountId, index) => (
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            {Object.keys(accountBalances).map((accountId) => (
               <Area
                 key={accountId}
-                type="monotone"
                 dataKey={accountId}
-                stackId="1"
-                fill={colors[index % colors.length]}
-                stroke={colors[index % colors.length]}
-                name={getAccountDisplayName(accountId)}
+                type="natural"
+                fill={`var(--color-${accountId})`}
+                fillOpacity={0.4}
+                stroke={`var(--color-${accountId})`}
+                stackId="a"
               />
             ))}
           </AreaChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       </div>
     </div>
   );
