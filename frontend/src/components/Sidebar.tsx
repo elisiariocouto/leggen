@@ -1,6 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
-  CreditCard,
   Home,
   List,
   BarChart3,
@@ -8,6 +7,7 @@ import {
   TrendingUp,
   X,
 } from "lucide-react";
+import { Logo } from "./ui/logo";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../lib/api";
 import { formatCurrency } from "../lib/utils";
@@ -53,7 +53,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
           onClick={() => setSidebarOpen(false)}
           className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
         >
-          <CreditCard className="h-8 w-8 text-primary" />
+          <Logo size={32} />
           <h1 className="text-xl font-bold text-card-foreground">Leggen</h1>
         </Link>
         <button
