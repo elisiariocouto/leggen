@@ -438,7 +438,7 @@ export default function TransactionsTable() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full">
       {/* New FilterBar */}
       <FilterBar
         filterState={filterState}
@@ -485,93 +485,91 @@ export default function TransactionsTable() {
       </Card>
 
       {/* Responsive Table/Cards */}
-      <Card className="overflow-hidden">
+      <Card>
         {/* Desktop Table View (hidden on mobile) */}
         <div className="hidden md:block">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
-              <thead className="bg-muted/50">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted"
-                        onClick={header.column.getToggleSortingHandler()}
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted/50">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted"
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+                        </span>
+                        {header.column.getCanSort() && (
+                          <div className="flex flex-col">
+                            <ChevronUp
+                              className={`h-3 w-3 ${
+                                header.column.getIsSorted() === "asc"
+                                  ? "text-primary"
+                                  : "text-muted-foreground"
+                              }`}
+                            />
+                            <ChevronDown
+                              className={`h-3 w-3 -mt-1 ${
+                                header.column.getIsSorted() === "desc"
+                                  ? "text-primary"
+                                  : "text-muted-foreground"
+                              }`}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody className="bg-card divide-y divide-border">
+              {table.getRowModel().rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={columns.length}
+                    className="px-6 py-12 text-center"
+                  >
+                    <div className="text-muted-foreground mb-4">
+                      <TrendingUp className="h-12 w-12 mx-auto" />
+                    </div>
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      No transactions found
+                    </h3>
+                    <p className="text-muted-foreground">
+                      {hasActiveFilters
+                        ? "Try adjusting your filters to see more results."
+                        : "No transactions are available for the selected criteria."}
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <tr key={row.id} className="hover:bg-muted/50">
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="px-6 py-4 whitespace-nowrap"
                       >
-                        <div className="flex items-center space-x-1">
-                          <span>
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext(),
-                                )}
-                          </span>
-                          {header.column.getCanSort() && (
-                            <div className="flex flex-col">
-                              <ChevronUp
-                                className={`h-3 w-3 ${
-                                  header.column.getIsSorted() === "asc"
-                                    ? "text-primary"
-                                    : "text-muted-foreground"
-                                }`}
-                              />
-                              <ChevronDown
-                                className={`h-3 w-3 -mt-1 ${
-                                  header.column.getIsSorted() === "desc"
-                                    ? "text-primary"
-                                    : "text-muted-foreground"
-                                }`}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </th>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </td>
                     ))}
                   </tr>
-                ))}
-              </thead>
-              <tbody className="bg-card divide-y divide-border">
-                {table.getRowModel().rows.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={columns.length}
-                      className="px-6 py-12 text-center"
-                    >
-                      <div className="text-muted-foreground mb-4">
-                        <TrendingUp className="h-12 w-12 mx-auto" />
-                      </div>
-                      <h3 className="text-lg font-medium text-foreground mb-2">
-                        No transactions found
-                      </h3>
-                      <p className="text-muted-foreground">
-                        {hasActiveFilters
-                          ? "Try adjusting your filters to see more results."
-                          : "No transactions are available for the selected criteria."}
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-muted/50">
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          className="px-6 py-4 whitespace-nowrap"
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
         {/* Mobile Card View (visible only on mobile) */}

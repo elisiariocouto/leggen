@@ -23,7 +23,7 @@ function RootLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       {/* Mobile overlay */}
@@ -34,18 +34,18 @@ function RootLayout() {
         />
       )}
 
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1">
         <Header setSidebarOpen={setSidebarOpen} />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 p-6">
           <Outlet />
         </main>
       </div>
 
       {/* PWA Prompts */}
       <PWAInstallPrompt onInstall={handlePWAInstall} />
-      <PWAUpdatePrompt 
-        updateAvailable={updateAvailable} 
-        onUpdate={handlePWAUpdate} 
+      <PWAUpdatePrompt
+        updateAvailable={updateAvailable}
+        onUpdate={handlePWAUpdate}
       />
     </div>
   );
