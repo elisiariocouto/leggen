@@ -164,3 +164,4 @@ sql/
 leggen.db
 *.db
 config.toml
+.claude/
