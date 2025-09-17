@@ -80,20 +80,21 @@ function AnalyticsDashboard() {
           value={stats?.total_transactions || 0}
           subtitle={`Last ${stats?.period_days || 0} days`}
           icon={Activity}
+          iconColor="blue"
         />
         <StatCard
           title="Total Income"
           value={`€${(stats?.total_income || 0).toLocaleString()}`}
           subtitle="Inflows this period"
           icon={TrendingUp}
-          className="border-green-200"
+          iconColor="green"
         />
         <StatCard
           title="Total Expenses"
           value={`€${(stats?.total_expenses || 0).toLocaleString()}`}
           subtitle="Outflows this period"
           icon={TrendingDown}
-          className="border-red-200"
+          iconColor="red"
         />
       </div>
 
@@ -104,23 +105,21 @@ function AnalyticsDashboard() {
           value={`€${(stats?.net_change || 0).toLocaleString()}`}
           subtitle="Income minus expenses"
           icon={CreditCard}
-          className={
-            (stats?.net_change || 0) >= 0
-              ? "border-green-200"
-              : "border-red-200"
-          }
+          iconColor={(stats?.net_change || 0) >= 0 ? "green" : "red"}
         />
         <StatCard
           title="Average Transaction"
           value={`€${Math.abs(stats?.average_transaction || 0).toLocaleString()}`}
           subtitle="Per transaction"
           icon={Activity}
+          iconColor="purple"
         />
         <StatCard
           title="Active Accounts"
           value={stats?.accounts_included || 0}
           subtitle="With recent activity"
           icon={Users}
+          iconColor="orange"
         />
       </div>
 
