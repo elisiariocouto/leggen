@@ -1,4 +1,64 @@
 
+## 2025.9.13 (2025/09/17)
+
+### Bug Fixes
+
+- **frontend:** Resolve linting issue in skeleton component ([fb310a59](https://github.com/elisiariocouto/leggen/commit/fb310a5953cf51d1cac181529311e76a0f4ea9ee))
+- **frontend:** Add index signature to PieDataPoint interface. ([81d7d163](https://github.com/elisiariocouto/leggen/commit/81d7d16301dafc62a95f63036819565ffb90ddb5))
+- **frontend:** Resolve dual scroll and excessive whitespace issues on transactions page. ([8ab76081](https://github.com/elisiariocouto/leggen/commit/8ab760815c9ae072b8c2cb2460e31144b193e0b3))
+- **frontend:** Remove broken running balance feature in transactions table. ([155a48d7](https://github.com/elisiariocouto/leggen/commit/155a48d7dc86b3f453ba6f8c37edf63c0b76c755))
+
+
+### Features
+
+- **frontend:** Complete shadcn migration of skeleton and styling components ([c83386b1](https://github.com/elisiariocouto/leggen/commit/c83386b1d5b165910abe8b391ca483e5b48cd35f))
+- **frontend:** Add comprehensive PWA capabilities with dynamic theme support ([86891441](https://github.com/elisiariocouto/leggen/commit/86891441d65e13757f343cabc39ccdb3ca6adc75))
+- **frontend:** Add PWA install prompts, update notifications, and app shortcuts ([3049a8cd](https://github.com/elisiariocouto/leggen/commit/3049a8cd2fa80c14f970884fb14df2ab88c418dd))
+- **frontend:** Update brand identity with new logo and color scheme. ([2825dba2](https://github.com/elisiariocouto/leggen/commit/2825dba2e944b3fe31aaa33127b770e7474ce021))
+- **frontend:** Update analytics cards to match home page design consistency. ([d9a39c30](https://github.com/elisiariocouto/leggen/commit/d9a39c30ab1248a9fdacff068d401c3daff3f6a5))
+
+
+### Miscellaneous Tasks
+
+-  Enable browsermcp and shadcn MCP servers. ([5a626b53](https://github.com/elisiariocouto/leggen/commit/5a626b53947f7e2d1544faf3ee06f8a0f1fb5d7a))
+
+
+### Refactor
+
+- **frontend:** Replace LoadingSpinner with shadcn skeleton components. ([84e609a7](https://github.com/elisiariocouto/leggen/commit/84e609a774ddc0caf9f84eaf1e8cdce021c82785))
+
+
+
+## 2025.9.13 (2025/09/17)
+
+### Bug Fixes
+
+- **frontend:** Resolve linting issue in skeleton component ([fb310a59](https://github.com/elisiariocouto/leggen/commit/fb310a5953cf51d1cac181529311e76a0f4ea9ee))
+- **frontend:** Add index signature to PieDataPoint interface. ([81d7d163](https://github.com/elisiariocouto/leggen/commit/81d7d16301dafc62a95f63036819565ffb90ddb5))
+- **frontend:** Resolve dual scroll and excessive whitespace issues on transactions page. ([8ab76081](https://github.com/elisiariocouto/leggen/commit/8ab760815c9ae072b8c2cb2460e31144b193e0b3))
+- **frontend:** Remove broken running balance feature in transactions table. ([155a48d7](https://github.com/elisiariocouto/leggen/commit/155a48d7dc86b3f453ba6f8c37edf63c0b76c755))
+
+
+### Features
+
+- **frontend:** Complete shadcn migration of skeleton and styling components ([c83386b1](https://github.com/elisiariocouto/leggen/commit/c83386b1d5b165910abe8b391ca483e5b48cd35f))
+- **frontend:** Add comprehensive PWA capabilities with dynamic theme support ([86891441](https://github.com/elisiariocouto/leggen/commit/86891441d65e13757f343cabc39ccdb3ca6adc75))
+- **frontend:** Add PWA install prompts, update notifications, and app shortcuts ([3049a8cd](https://github.com/elisiariocouto/leggen/commit/3049a8cd2fa80c14f970884fb14df2ab88c418dd))
+- **frontend:** Update brand identity with new logo and color scheme. ([2825dba2](https://github.com/elisiariocouto/leggen/commit/2825dba2e944b3fe31aaa33127b770e7474ce021))
+- **frontend:** Update analytics cards to match home page design consistency. ([d9a39c30](https://github.com/elisiariocouto/leggen/commit/d9a39c30ab1248a9fdacff068d401c3daff3f6a5))
+
+
+### Miscellaneous Tasks
+
+-  Enable browsermcp and shadcn MCP servers. ([5a626b53](https://github.com/elisiariocouto/leggen/commit/5a626b53947f7e2d1544faf3ee06f8a0f1fb5d7a))
+
+
+### Refactor
+
+- **frontend:** Replace LoadingSpinner with shadcn skeleton components. ([84e609a7](https://github.com/elisiariocouto/leggen/commit/84e609a774ddc0caf9f84eaf1e8cdce021c82785))
+
+
+
 ## 2025.9.12 (2025/09/15)
 
 
