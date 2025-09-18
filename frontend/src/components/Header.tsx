@@ -33,7 +33,7 @@ export default function Header({ setSidebarOpen }: HeaderProps) {
   });
 
   return (
-    <header className="lg:static sticky top-0 z-50 bg-card shadow-sm border-b border-border">
+    <header className="lg:static sticky top-0 z-50 bg-card shadow-sm border-b border-border pt-safe-top">
       <div className="flex items-center justify-between h-16 px-6">
         <div className="flex items-center">
           <button
