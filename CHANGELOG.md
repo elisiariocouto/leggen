@@ -1,4 +1,20 @@
 
+## 2025.9.16 (2025/09/18)
+
+### Bug Fixes
+
+- **frontend:** Add iOS safe area support for PWA sticky header ([6589c2dd](https://github.com/elisiariocouto/leggen/commit/6589c2dd666f8605cf6d1bf9ad7277734d4cd302))
+
+
+
+## 2025.9.16 (2025/09/18)
+
+### Bug Fixes
+
+- **frontend:** Add iOS safe area support for PWA sticky header ([6589c2dd](https://github.com/elisiariocouto/leggen/commit/6589c2dd666f8605cf6d1bf9ad7277734d4cd302))
+
+
+
 ## 2025.9.15 (2025/09/18)
 
 ### Features
