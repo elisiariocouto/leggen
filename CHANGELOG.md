@@ -1,4 +1,30 @@
 
+## 2025.9.14 (2025/09/18)
+
+### Bug Fixes
+
+- **config:** Remove aliases for configuration keys that were disabling telegram notifications in some cases. ([61442a59](https://github.com/elisiariocouto/leggen/commit/61442a598fa7f38c568e3df7e1d924ed85df7491))
+
+
+### Miscellaneous Tasks
+
+- **ci:** Prevent double GitHub Actions runs on new releases. ([30d7c2ed](https://github.com/elisiariocouto/leggen/commit/30d7c2ed4e9aff144837a1f0ed67a8ded0b5d72a))
+
+
+
+## 2025.9.14 (2025/09/18)
+
+### Bug Fixes
+
+- **config:** Remove aliases for configuration keys that were disabling telegram notifications in some cases. ([61442a59](https://github.com/elisiariocouto/leggen/commit/61442a598fa7f38c568e3df7e1d924ed85df7491))
+
+
+### Miscellaneous Tasks
+
+- **ci:** Prevent double GitHub Actions runs on new releases. ([30d7c2ed](https://github.com/elisiariocouto/leggen/commit/30d7c2ed4e9aff144837a1f0ed67a8ded0b5d72a))
+
+
+
 ## 2025.9.13 (2025/09/17)
 
 ### Bug Fixes
