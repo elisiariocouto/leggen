@@ -33,11 +33,11 @@ export function PWAInstallPrompt({ onInstall }: PWAPromptProps) {
     try {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      
+
       if (outcome === "accepted") {
         onInstall?.();
       }
-      
+
       setDeferredPrompt(null);
       setShowPrompt(false);
     } catch (error) {
