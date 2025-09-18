@@ -1,4 +1,30 @@
 
+## 2025.9.15 (2025/09/18)
+
+### Features
+
+- **frontend:** Add settings page with account management functionality. ([056c33b9](https://github.com/elisiariocouto/leggen/commit/056c33b9c5cfbc2842cc2dd4ca8c4e3959a2be80))
+
+
+### Refactor
+
+- **frontend:** Simplify filter bar UI and remove advanced filters popover. ([be4f7f8c](https://github.com/elisiariocouto/leggen/commit/be4f7f8cecfe2564abdf0ce1be08497e5a6d7b68))
+
+
+
+## 2025.9.15 (2025/09/18)
+
+### Features
+
+- **frontend:** Add settings page with account management functionality. ([056c33b9](https://github.com/elisiariocouto/leggen/commit/056c33b9c5cfbc2842cc2dd4ca8c4e3959a2be80))
+
+
+### Refactor
+
+- **frontend:** Simplify filter bar UI and remove advanced filters popover. ([be4f7f8c](https://github.com/elisiariocouto/leggen/commit/be4f7f8cecfe2564abdf0ce1be08497e5a6d7b68))
+
+
+
 ## 2025.9.14 (2025/09/18)
 
 ### Bug Fixes
