@@ -693,7 +693,7 @@ class DatabaseService:
 
             # Add the display_name column
             cursor.execute("""
-                ALTER TABLE accounts 
+                ALTER TABLE accounts
                 ADD COLUMN display_name TEXT
             """)
 
@@ -857,6 +857,14 @@ class DatabaseService:
 
             for transaction in transactions:
                 try:
+                    # Check if transaction already exists before insertion
+                    cursor.execute(
+                        """SELECT COUNT(*) FROM transactions
+                           WHERE accountId = ? AND transactionId = ?""",
+                        (transaction["accountId"], transaction["transactionId"]),
+                    )
+                    exists = cursor.fetchone()[0] > 0
+
                     cursor.execute(
                         insert_sql,
                         (
@@ -873,7 +881,11 @@ class DatabaseService:
                             json.dumps(transaction["rawTransaction"]),
                         ),
                     )
-                    new_transactions.append(transaction)
+
+                    # Only add to new_transactions if it didn't exist before
+                    if not exists:
+                        new_transactions.append(transaction)
+
                 except sqlite3.IntegrityError as e:
                     logger.warning(
                         f"Failed to insert transaction {transaction.get('transactionId')}: {e}"

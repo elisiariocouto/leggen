@@ -324,6 +324,8 @@ class TestDatabaseService:
         with patch("sqlite3.connect") as mock_connect:
             mock_conn = mock_connect.return_value
             mock_cursor = mock_conn.cursor.return_value
+            # Mock fetchone to return (0,) indicating transaction doesn't exist yet
+            mock_cursor.fetchone.return_value = (0,)
 
             result = await database_service._persist_transactions_sqlite(
                 "test-account-123", sample_transactions_db_format
@@ -333,6 +335,29 @@ class TestDatabaseService:
             assert len(result) >= 0  # Could be empty if all are duplicates
 
             # Verify database operations
+            mock_connect.assert_called()
+            mock_cursor.execute.assert_called()
+            mock_conn.commit.assert_called_once()
+            mock_conn.close.assert_called_once()
+
+    async def test_persist_transactions_sqlite_duplicate_detection(
+        self, database_service, sample_transactions_db_format
+    ):
+        """Test that existing transactions are not returned as new."""
+        with patch("sqlite3.connect") as mock_connect:
+            mock_conn = mock_connect.return_value
+            mock_cursor = mock_conn.cursor.return_value
+            # Mock fetchone to return (1,) indicating transaction already exists
+            mock_cursor.fetchone.return_value = (1,)
+
+            result = await database_service._persist_transactions_sqlite(
+                "test-account-123", sample_transactions_db_format
+            )
+
+            # Should return empty list since all transactions already exist
+            assert len(result) == 0
+
+            # Verify database operations still happened (INSERT OR REPLACE executed)
             mock_connect.assert_called()
             mock_cursor.execute.assert_called()
             mock_conn.commit.assert_called_once()
