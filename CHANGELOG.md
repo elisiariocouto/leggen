@@ -1,4 +1,30 @@
 
+## 2025.9.17 (2025/09/18)
+
+### Bug Fixes
+
+- **api:** Prevent duplicate notifications for existing transactions during sync. ([25747d7d](https://github.com/elisiariocouto/leggen/commit/25747d7d372e291090764a6814f9d8d0b76aea3b))
+
+
+### Miscellaneous Tasks
+
+-  Format files. ([848eccb3](https://github.com/elisiariocouto/leggen/commit/848eccb35b910c8121d15611547dca8da0b12756))
+
+
+
+## 2025.9.17 (2025/09/18)
+
+### Bug Fixes
+
+- **api:** Prevent duplicate notifications for existing transactions during sync. ([25747d7d](https://github.com/elisiariocouto/leggen/commit/25747d7d372e291090764a6814f9d8d0b76aea3b))
+
+
+### Miscellaneous Tasks
+
+-  Format files. ([848eccb3](https://github.com/elisiariocouto/leggen/commit/848eccb35b910c8121d15611547dca8da0b12756))
+
+
+
 ## 2025.9.16 (2025/09/18)
 
 ### Bug Fixes
