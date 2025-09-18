@@ -28,7 +28,7 @@ import FiltersSkeleton from "./FiltersSkeleton";
 import RawTransactionModal from "./RawTransactionModal";
 import { FilterBar, type FilterState } from "./filters";
 import { DataTablePagination } from "./ui/data-table-pagination";
-import { Card, CardContent } from "./ui/card";
+import { Card } from "./ui/card";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Button } from "./ui/button";
 import type { Account, Transaction, ApiResponse } from "../types/api";
@@ -371,38 +371,6 @@ export default function TransactionsTable() {
         accounts={accounts}
         isSearchLoading={isSearchLoading}
       />
-
-      {/* Results Summary */}
-      <Card>
-        <CardContent className="px-6 py-3 bg-muted/30 border-b border-border">
-          <p className="text-sm text-muted-foreground">
-            Showing {transactions.length} transaction
-            {transactions.length !== 1 ? "s" : ""} (
-            {pagination ? (
-              <>
-                {(pagination.page - 1) * pagination.per_page + 1}-
-                {Math.min(
-                  pagination.page * pagination.per_page,
-                  pagination.total,
-                )}{" "}
-                of {pagination.total}
-              </>
-            ) : (
-              "loading..."
-            )}
-            )
-            {filterState.selectedAccount && accounts && (
-              <span className="ml-1">
-                for{" "}
-                {
-                  accounts.find((acc) => acc.id === filterState.selectedAccount)
-                    ?.name
-                }
-              </span>
-            )}
-          </p>
-        </CardContent>
-      </Card>
 
       {/* Responsive Table/Cards */}
       <Card>

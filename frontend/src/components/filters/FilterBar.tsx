@@ -1,5 +1,4 @@
-import { Search, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DateRangePicker } from "./DateRangePicker";
@@ -100,19 +99,6 @@ export function FilterBar({
             onMinAmountChange={(value) => onFilterChange("minAmount", value)}
             onMaxAmountChange={(value) => onFilterChange("maxAmount", value)}
           />
-
-          {/* Clear Filters Button */}
-          {hasActiveFilters && (
-            <Button
-              onClick={onClearFilters}
-              variant="outline"
-              size="sm"
-              className="text-muted-foreground"
-            >
-              <X className="h-4 w-4 mr-1" />
-              Clear All
-            </Button>
-          )}
         </div>
 
         {/* Active Filter Chips */}
@@ -120,6 +106,7 @@ export function FilterBar({
           <ActiveFilterChips
             filterState={filterState}
             onFilterChange={onFilterChange}
+            onClearFilters={onClearFilters}
             accounts={accounts}
           />
         )}

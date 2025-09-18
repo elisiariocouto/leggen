@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import AccountsOverview from "../components/AccountsOverview";
+import TransactionsTable from "../components/TransactionsTable";
 
 export const Route = createFileRoute("/")({
-  component: AccountsOverview,
+  component: TransactionsTable,
+  validateSearch: (search) => ({
+    accountId: search.accountId as string | undefined,
+    startDate: search.startDate as string | undefined,
+    endDate: search.endDate as string | undefined,
+  }),
 });

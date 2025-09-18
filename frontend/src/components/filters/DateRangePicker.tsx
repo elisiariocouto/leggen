@@ -6,6 +6,7 @@ import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
   Popover,
   PopoverContent,
@@ -26,33 +27,35 @@ interface DatePreset {
 
 const datePresets: DatePreset[] = [
   {
-    label: "Last 7 days",
+    label: "Today",
     getValue: () => {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(endDate.getDate() - 7);
+      const today = new Date();
       return {
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
+        startDate: today.toISOString().split("T")[0],
+        endDate: today.toISOString().split("T")[0],
       };
     },
   },
   {
-    label: "This week",
+    label: "Yesterday",
     getValue: () => {
-      const now = new Date();
-      const dayOfWeek = now.getDay();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(
-        now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1),
-      ); // Monday as start
-
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
       return {
-        startDate: startOfWeek.toISOString().split("T")[0],
-        endDate: endOfWeek.toISOString().split("T")[0],
+        startDate: yesterday.toISOString().split("T")[0],
+        endDate: yesterday.toISOString().split("T")[0],
+      };
+    },
+  },
+  {
+    label: "Last 7 days",
+    getValue: () => {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - 6);
+      return {
+        startDate: startDate.toISOString().split("T")[0],
+        endDate: endDate.toISOString().split("T")[0],
       };
     },
   },
@@ -61,7 +64,7 @@ const datePresets: DatePreset[] = [
     getValue: () => {
       const endDate = new Date();
       const startDate = new Date();
-      startDate.setDate(endDate.getDate() - 30);
+      startDate.setDate(endDate.getDate() - 29);
       return {
         startDate: startDate.toISOString().split("T")[0],
         endDate: endDate.toISOString().split("T")[0],
@@ -78,19 +81,6 @@ const datePresets: DatePreset[] = [
       return {
         startDate: startOfMonth.toISOString().split("T")[0],
         endDate: endOfMonth.toISOString().split("T")[0],
-      };
-    },
-  },
-  {
-    label: "This year",
-    getValue: () => {
-      const now = new Date();
-      const startOfYear = new Date(now.getFullYear(), 0, 1);
-      const endOfYear = new Date(now.getFullYear(), 11, 31);
-
-      return {
-        startDate: startOfYear.toISOString().split("T")[0],
-        endDate: endOfYear.toISOString().split("T")[0],
       };
     },
   },
@@ -178,34 +168,30 @@ export function DateRangePicker({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <div className="flex">
-            {/* Presets */}
-            <div className="border-r p-3 space-y-1">
-              <div className="text-sm font-medium text-gray-700 mb-2">
-                Quick select
-              </div>
+          <Card className="w-auto py-4">
+            <CardContent className="px-4">
+              <Calendar
+                mode="range"
+                defaultMonth={dateRange?.from}
+                selected={dateRange}
+                onSelect={handleDateRangeSelect}
+                className="bg-transparent p-0"
+              />
+            </CardContent>
+            <CardFooter className="grid grid-cols-2 gap-1 border-t px-4 !pt-4">
               {datePresets.map((preset) => (
                 <Button
                   key={preset.label}
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="w-full justify-start text-sm"
+                  className="text-xs px-2 h-7"
                   onClick={() => handlePresetClick(preset)}
                 >
                   {preset.label}
                 </Button>
               ))}
-            </div>
-            {/* Calendar */}
-            <Calendar
-              initialFocus
-              mode="range"
-              defaultMonth={dateRange?.from}
-              selected={dateRange}
-              onSelect={handleDateRangeSelect}
-              numberOfMonths={2}
-            />
-          </div>
+            </CardFooter>
+          </Card>
         </PopoverContent>
       </Popover>
     </div>

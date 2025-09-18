@@ -8,12 +8,14 @@ import type { Account } from "../../types/api";
 export interface ActiveFilterChipsProps {
   filterState: FilterState;
   onFilterChange: (key: keyof FilterState, value: string) => void;
+  onClearFilters: () => void;
   accounts?: Account[];
 }
 
 export function ActiveFilterChips({
   filterState,
   onFilterChange,
+  onClearFilters,
   accounts = [],
 }: ActiveFilterChipsProps) {
   const chips: Array<{
@@ -135,6 +137,15 @@ export function ActiveFilterChips({
           </Button>
         </Badge>
       ))}
+      <Button
+        onClick={onClearFilters}
+        variant="outline"
+        size="sm"
+        className="text-muted-foreground ml-2"
+      >
+        <X className="h-4 w-4 mr-1" />
+        Clear All
+      </Button>
     </div>
   );
 }

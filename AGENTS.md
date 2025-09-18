@@ -85,6 +85,29 @@ The command outputs instructions for setting the required environment variable t
 - **Data fetching**: @tanstack/react-query with proper error handling
 - **Components**: Functional components with hooks, proper TypeScript typing
 
+## Frontend Structure
+
+### Layout Architecture
+- **Root Layout**: `frontend/src/routes/__root.tsx` - Contains main app structure with Sidebar and Header
+- **Header/Navbar**: `frontend/src/components/Header.tsx` - Top navigation bar (sticky on mobile only)
+- **Sidebar**: `frontend/src/components/Sidebar.tsx` - Left navigation sidebar
+- **Routes**: `frontend/src/routes/` - TanStack Router file-based routing
+
+### Key Components Location
+- **UI Components**: `frontend/src/components/ui/` - Reusable UI primitives
+- **Feature Components**: `frontend/src/components/` - Main app components
+- **Pages**: `frontend/src/routes/` - Route components (index.tsx, transactions.tsx, etc.)
+- **Hooks**: `frontend/src/hooks/` - Custom React hooks
+- **API**: `frontend/src/lib/api.ts` - API client configuration
+- **Context**: `frontend/src/contexts/` - React contexts (ThemeContext, etc.)
+
+### Routing Structure
+- `/` - Overview/Dashboard (TransactionsTable component)
+- `/transactions` - Transactions page
+- `/analytics` - Analytics page
+- `/notifications` - Notifications page
+- `/settings` - Settings page
+
 ### General
 - **Formatting**: ruff for Python, ESLint for TypeScript
 - **Commits**: Use conventional commits with optional scopes, run pre-commit hooks before pushing
