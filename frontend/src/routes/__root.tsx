@@ -34,9 +34,9 @@ function RootLayout() {
         />
       )}
 
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 min-w-0">
         <Header setSidebarOpen={setSidebarOpen} />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 min-w-0">
           <Outlet />
         </main>
       </div>

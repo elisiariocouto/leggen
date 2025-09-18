@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import { DateRangePicker } from "./DateRangePicker";
 import { AccountCombobox } from "./AccountCombobox";
 import { ActiveFilterChips } from "./ActiveFilterChips";
-import { AdvancedFiltersPopover } from "./AdvancedFiltersPopover";
 import type { Account } from "../../types/api";
 
 export interface FilterState {
@@ -12,8 +11,6 @@ export interface FilterState {
   selectedAccount: string;
   startDate: string;
   endDate: string;
-  minAmount: string;
-  maxAmount: string;
 }
 
 export interface FilterBarProps {
@@ -37,9 +34,7 @@ export function FilterBar({
     filterState.searchTerm ||
     filterState.selectedAccount ||
     filterState.startDate ||
-    filterState.endDate ||
-    filterState.minAmount ||
-    filterState.maxAmount;
+    filterState.endDate;
 
   const handleDateRangeChange = (startDate: string, endDate: string) => {
     onFilterChange("startDate", startDate);
@@ -57,48 +52,85 @@ export function FilterBar({
         </div>
 
         {/* Primary Filters Row */}
-        <div className="flex flex-wrap items-center gap-3 mb-4">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-[240px]">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search transactions..."
-              value={filterState.searchTerm}
-              onChange={(e) => onFilterChange("searchTerm", e.target.value)}
-              className="pl-9 pr-8 bg-background"
-            />
-            {isSearchLoading && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin h-4 w-4 border-2 border-border border-t-primary rounded-full"></div>
+        <div className="space-y-4 mb-4">
+          {/* Desktop Layout */}
+          <div className="hidden lg:flex items-center justify-between gap-6">
+            {/* Left Side: Main Filters */}
+            <div className="flex items-center gap-3 flex-1">
+              {/* Search Input */}
+              <div className="relative w-[200px]">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search transactions..."
+                  value={filterState.searchTerm}
+                  onChange={(e) => onFilterChange("searchTerm", e.target.value)}
+                  className="pl-9 pr-8 bg-background"
+                />
+                {isSearchLoading && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin h-4 w-4 border-2 border-border border-t-primary rounded-full"></div>
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* Account Selection */}
+              <AccountCombobox
+                accounts={accounts}
+                selectedAccount={filterState.selectedAccount}
+                onAccountChange={(accountId) =>
+                  onFilterChange("selectedAccount", accountId)
+                }
+                className="w-[180px]"
+              />
+
+              {/* Date Range Picker */}
+              <DateRangePicker
+                startDate={filterState.startDate}
+                endDate={filterState.endDate}
+                onDateRangeChange={handleDateRangeChange}
+                className="w-[220px]"
+              />
+            </div>
+
           </div>
 
-          {/* Account Selection */}
-          <AccountCombobox
-            accounts={accounts}
-            selectedAccount={filterState.selectedAccount}
-            onAccountChange={(accountId) =>
-              onFilterChange("selectedAccount", accountId)
-            }
-            className="w-[200px]"
-          />
+          {/* Mobile Layout */}
+          <div className="lg:hidden space-y-3">
+            {/* First Row: Search Input (Full Width) */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                value={filterState.searchTerm}
+                onChange={(e) => onFilterChange("searchTerm", e.target.value)}
+                className="pl-9 pr-8 bg-background w-full"
+              />
+              {isSearchLoading && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin h-4 w-4 border-2 border-border border-t-primary rounded-full"></div>
+                </div>
+              )}
+            </div>
 
-          {/* Date Range Picker */}
-          <DateRangePicker
-            startDate={filterState.startDate}
-            endDate={filterState.endDate}
-            onDateRangeChange={handleDateRangeChange}
-            className="w-[240px]"
-          />
+            {/* Second Row: Account Selection (Full Width) */}
+            <AccountCombobox
+              accounts={accounts}
+              selectedAccount={filterState.selectedAccount}
+              onAccountChange={(accountId) =>
+                onFilterChange("selectedAccount", accountId)
+              }
+              className="w-full"
+            />
 
-          {/* Advanced Filters Button */}
-          <AdvancedFiltersPopover
-            minAmount={filterState.minAmount}
-            maxAmount={filterState.maxAmount}
-            onMinAmountChange={(value) => onFilterChange("minAmount", value)}
-            onMaxAmountChange={(value) => onFilterChange("maxAmount", value)}
-          />
+            {/* Third Row: Date Range */}
+            <DateRangePicker
+              startDate={filterState.startDate}
+              endDate={filterState.endDate}
+              onDateRangeChange={handleDateRangeChange}
+              className="w-full"
+            />
+
+          </div>
         </div>
 
         {/* Active Filter Chips */}

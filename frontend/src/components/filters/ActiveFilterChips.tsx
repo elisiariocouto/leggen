@@ -70,30 +70,6 @@ export function ActiveFilterChips({
     });
   }
 
-  // Amount range chips
-  if (filterState.minAmount || filterState.maxAmount) {
-    let amountLabel = "Amount: ";
-    const minAmount = filterState.minAmount
-      ? parseFloat(filterState.minAmount)
-      : null;
-    const maxAmount = filterState.maxAmount
-      ? parseFloat(filterState.maxAmount)
-      : null;
-
-    if (minAmount && maxAmount) {
-      amountLabel += `€${minAmount} - €${maxAmount}`;
-    } else if (minAmount) {
-      amountLabel += `≥ €${minAmount}`;
-    } else if (maxAmount) {
-      amountLabel += `≤ €${maxAmount}`;
-    }
-
-    chips.push({
-      key: "minAmount", // We'll clear both min and max when removing this chip
-      label: amountLabel,
-      value: `${filterState.minAmount}-${filterState.maxAmount}`,
-    });
-  }
 
   const handleRemoveChip = (key: keyof FilterState) => {
     switch (key) {
@@ -101,11 +77,6 @@ export function ActiveFilterChips({
         // Clear both start and end date
         onFilterChange("startDate", "");
         onFilterChange("endDate", "");
-        break;
-      case "minAmount":
-        // Clear both min and max amount
-        onFilterChange("minAmount", "");
-        onFilterChange("maxAmount", "");
         break;
       default:
         onFilterChange(key, "");

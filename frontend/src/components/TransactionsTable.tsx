@@ -40,8 +40,6 @@ export default function TransactionsTable() {
     selectedAccount: "",
     startDate: "",
     endDate: "",
-    minAmount: "",
-    maxAmount: "",
   });
 
   const [showRawModal, setShowRawModal] = useState(false);
@@ -73,8 +71,6 @@ export default function TransactionsTable() {
       selectedAccount: "",
       startDate: "",
       endDate: "",
-      minAmount: "",
-      maxAmount: "",
     });
     setColumnFilters([]);
     setCurrentPage(1);
@@ -116,8 +112,6 @@ export default function TransactionsTable() {
       currentPage,
       perPage,
       debouncedSearchTerm,
-      filterState.minAmount,
-      filterState.maxAmount,
     ],
     queryFn: () =>
       apiClient.getTransactions({
@@ -128,12 +122,6 @@ export default function TransactionsTable() {
         perPage: perPage,
         search: debouncedSearchTerm || undefined,
         summaryOnly: false,
-        minAmount: filterState.minAmount
-          ? parseFloat(filterState.minAmount)
-          : undefined,
-        maxAmount: filterState.maxAmount
-          ? parseFloat(filterState.maxAmount)
-          : undefined,
       }),
   });
 
@@ -157,8 +145,6 @@ export default function TransactionsTable() {
     filterState.selectedAccount,
     filterState.startDate,
     filterState.endDate,
-    filterState.minAmount,
-    filterState.maxAmount,
   ]);
 
   const handleViewRaw = (transaction: Transaction) => {
@@ -175,9 +161,7 @@ export default function TransactionsTable() {
     filterState.searchTerm ||
     filterState.selectedAccount ||
     filterState.startDate ||
-    filterState.endDate ||
-    filterState.minAmount ||
-    filterState.maxAmount;
+    filterState.endDate;
 
 
   // Define columns

@@ -51,7 +51,7 @@ export function AccountCombobox({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="justify-between"
+            className="w-full justify-between"
           >
             <div className="flex items-center">
               <Building2 className="mr-2 h-4 w-4" />
