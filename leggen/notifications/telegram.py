@@ -29,8 +29,8 @@ def escape_markdown(text: str) -> str:
 
 
 def send_expire_notification(ctx: click.Context, notification: dict):
-    token = ctx.obj["notifications"]["telegram"]["api-key"]
-    chat_id = ctx.obj["notifications"]["telegram"]["chat-id"]
+    token = ctx.obj["notifications"]["telegram"]["token"]
+    chat_id = ctx.obj["notifications"]["telegram"]["chat_id"]
     bot_url = f"https://api.telegram.org/bot{token}/sendMessage"
     info("Sending expiration notification to Telegram")
     message = "*💲 [Leggen](https://github.com/elisiariocouto/leggen)*\n"
@@ -54,8 +54,8 @@ def send_expire_notification(ctx: click.Context, notification: dict):
 
 
 def send_transaction_message(ctx: click.Context, transactions: list):
-    token = ctx.obj["notifications"]["telegram"]["api-key"]
-    chat_id = ctx.obj["notifications"]["telegram"]["chat-id"]
+    token = ctx.obj["notifications"]["telegram"]["token"]
+    chat_id = ctx.obj["notifications"]["telegram"]["chat_id"]
     bot_url = f"https://api.telegram.org/bot{token}/sendMessage"
     info(f"Got {len(transactions)} new transactions, sending message to Telegram")
     message = "*💲 [Leggen](https://github.com/elisiariocouto/leggen)*\n"

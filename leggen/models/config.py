@@ -22,8 +22,8 @@ class DiscordNotificationConfig(BaseModel):
 
 
 class TelegramNotificationConfig(BaseModel):
-    token: str = Field(..., alias="api-key", description="Telegram bot token")
-    chat_id: int = Field(..., alias="chat-id", description="Telegram chat ID")
+    token: str = Field(..., description="Telegram bot token")
+    chat_id: int = Field(..., description="Telegram chat ID")
     enabled: bool = Field(default=True, description="Enable Telegram notifications")
 
 
@@ -33,12 +33,8 @@ class NotificationConfig(BaseModel):
 
 
 class FilterConfig(BaseModel):
-    case_insensitive: Optional[List[str]] = Field(
-        default_factory=list, alias="case-insensitive"
-    )
-    case_sensitive: Optional[List[str]] = Field(
-        default_factory=list, alias="case-sensitive"
-    )
+    case_insensitive: Optional[List[str]] = Field(default_factory=list)
+    case_sensitive: Optional[List[str]] = Field(default_factory=list)
 
 
 class SyncScheduleConfig(BaseModel):
@@ -60,6 +56,3 @@ class Config(BaseModel):
     notifications: Optional[NotificationConfig] = None
     filters: Optional[FilterConfig] = None
     scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)
-
-    class Config:
-        validate_by_name = True

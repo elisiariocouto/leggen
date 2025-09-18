@@ -29,7 +29,7 @@ def send_notification(ctx: click.Context, transactions: list):
         warning("No filters are enabled, skipping notifications")
         return
 
-    filters_case_insensitive = ctx.obj.get("filters", {}).get("case-insensitive", {})
+    filters_case_insensitive = ctx.obj.get("filters", {}).get("case_insensitive", {})
 
     # Add transaction to the list of transactions to be sent as a notification
     notification_transactions = []

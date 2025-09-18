@@ -9,7 +9,7 @@ sqlite = true
 # Optional: Background sync scheduling
 [scheduler.sync]
 enabled = true
-hour = 3      # 3 AM
+hour = 3       # 3 AM
 minute = 0
 # cron = "0 3 * * *"  # Alternative: use cron expression
 
@@ -20,11 +20,11 @@ enabled = true
 
 # Optional: Telegram notifications
 [notifications.telegram]
-api-key = "your-bot-token"
-chat-id = 12345
+token = "your-bot-token"
+chat_id = 12345
 enabled = true
 
 # Optional: Transaction filters for notifications
 [filters]
-case-insensitive = ["salary", "utility"]
-case-sensitive = ["SpecificStore"]
+case_insensitive = ["salary", "utility"]
+case_sensitive = ["SpecificStore"]

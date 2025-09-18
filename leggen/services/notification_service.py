@@ -63,8 +63,8 @@ class NotificationService:
     ) -> List[Dict[str, Any]]:
         """Filter transactions based on notification criteria"""
         matching = []
-        filters_case_insensitive = self.filters_config.get("case-insensitive", [])
-        filters_case_sensitive = self.filters_config.get("case-sensitive", [])
+        filters_case_insensitive = self.filters_config.get("case_insensitive", [])
+        filters_case_sensitive = self.filters_config.get("case_sensitive", [])
 
         for transaction in transactions:
             description = transaction.get("description", "")
@@ -159,8 +159,8 @@ class NotificationService:
             ctx.obj = {
                 "notifications": {
                     "telegram": {
-                        "api-key": telegram_config.get("token"),
-                        "chat-id": telegram_config.get("chat_id"),
+                        "token": telegram_config.get("token"),
+                        "chat_id": telegram_config.get("chat_id"),
                     }
                 }
             }
@@ -219,8 +219,8 @@ class NotificationService:
             ctx.obj = {
                 "notifications": {
                     "telegram": {
-                        "api-key": telegram_config.get("token"),
-                        "chat-id": telegram_config.get("chat_id"),
+                        "token": telegram_config.get("token"),
+                        "chat_id": telegram_config.get("chat_id"),
                     }
                 }
             }
@@ -277,8 +277,8 @@ class NotificationService:
             ctx.obj = {
                 "notifications": {
                     "telegram": {
-                        "api-key": telegram_config.get("token"),
-                        "chat-id": telegram_config.get("chat_id"),
+                        "token": telegram_config.get("token"),
+                        "chat_id": telegram_config.get("chat_id"),
                     }
                 }
             }

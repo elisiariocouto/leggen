@@ -146,8 +146,8 @@ enabled = true
 
 # Optional: Transaction filters for notifications
 [filters]
-case-insensitive = ["salary", "utility"]
-case-sensitive = ["SpecificStore"]
+case_insensitive = ["salary", "utility"]
+case_sensitive = ["SpecificStore"]
 ```
 
 ## 📖 Usage

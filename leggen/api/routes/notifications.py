@@ -37,15 +37,15 @@ async def get_notification_settings() -> APIResponse:
             if discord_config.get("webhook")
             else None,
             telegram=TelegramConfig(
-                token="***" if telegram_config.get("api-key") else "",
-                chat_id=telegram_config.get("chat-id", 0),
+                token="***" if telegram_config.get("token") else "",
+                chat_id=telegram_config.get("chat_id", 0),
                 enabled=telegram_config.get("enabled", True),
             )
-            if telegram_config.get("api-key")
+            if telegram_config.get("token")
             else None,
             filters=NotificationFilters(
-                case_insensitive=filters_config.get("case-insensitive", []),
-                case_sensitive=filters_config.get("case-sensitive"),
+                case_insensitive=filters_config.get("case_insensitive", []),
+                case_sensitive=filters_config.get("case_sensitive"),
             ),
         )
 
@@ -77,17 +77,17 @@ async def update_notification_settings(settings: NotificationSettings) -> APIRes
 
         if settings.telegram:
             notifications_config["telegram"] = {
-                "api-key": settings.telegram.token,
-                "chat-id": settings.telegram.chat_id,
+                "token": settings.telegram.token,
+                "chat_id": settings.telegram.chat_id,
                 "enabled": settings.telegram.enabled,
             }
 
         # Update filters config
         filters_config: Dict[str, Any] = {}
         if settings.filters.case_insensitive:
-            filters_config["case-insensitive"] = settings.filters.case_insensitive
+            filters_config["case_insensitive"] = settings.filters.case_insensitive
         if settings.filters.case_sensitive:
-            filters_config["case-sensitive"] = settings.filters.case_sensitive
+            filters_config["case_sensitive"] = settings.filters.case_sensitive
 
         # Save to config
         if notifications_config:
@@ -153,12 +153,12 @@ async def get_notification_services() -> APIResponse:
             "telegram": {
                 "name": "Telegram",
                 "enabled": bool(
-                    notifications_config.get("telegram", {}).get("api-key")
-                    and notifications_config.get("telegram", {}).get("chat-id")
+                    notifications_config.get("telegram", {}).get("token")
+                    and notifications_config.get("telegram", {}).get("chat_id")
                 ),
                 "configured": bool(
-                    notifications_config.get("telegram", {}).get("api-key")
-                    and notifications_config.get("telegram", {}).get("chat-id")
+                    notifications_config.get("telegram", {}).get("token")
+                    and notifications_config.get("telegram", {}).get("chat_id")
                 ),
                 "active": notifications_config.get("telegram", {}).get("enabled", True),
             },
