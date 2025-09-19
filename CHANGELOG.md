@@ -1,4 +1,30 @@
 
+## 2025.9.18 (2025/09/19)
+
+### Documentation
+
+-  Add instructions for shadcn/ui. ([83bb3fce](https://github.com/elisiariocouto/leggen/commit/83bb3fcef20d21a210bc53ce77aa533d37771668))
+
+
+### Features
+
+- **frontend:** Transform layout to use shadcn dashboard-01 with iOS PWA safe area support. ([fbb9e332](https://github.com/elisiariocouto/leggen/commit/fbb9e33279028a6a7ccf46c3696a012ec16a9ca7))
+
+
+
+## 2025.9.18 (2025/09/19)
+
+### Documentation
+
+-  Add instructions for shadcn/ui. ([83bb3fce](https://github.com/elisiariocouto/leggen/commit/83bb3fcef20d21a210bc53ce77aa533d37771668))
+
+
+### Features
+
+- **frontend:** Transform layout to use shadcn dashboard-01 with iOS PWA safe area support. ([fbb9e332](https://github.com/elisiariocouto/leggen/commit/fbb9e33279028a6a7ccf46c3696a012ec16a9ca7))
+
+
+
 ## 2025.9.17 (2025/09/18)
 
 ### Bug Fixes
