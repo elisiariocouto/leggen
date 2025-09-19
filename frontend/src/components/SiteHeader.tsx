@@ -1,8 +1,10 @@
 import { useLocation } from "@tanstack/react-router";
-import { Menu, Activity, Wifi, WifiOff } from "lucide-react";
+import { Activity, Wifi, WifiOff } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../lib/api";
 import { ThemeToggle } from "./ui/theme-toggle";
+import { Separator } from "./ui/separator";
+import { SidebarTrigger } from "./ui/sidebar";
 
 const navigation = [
   { name: "Overview", to: "/" },
@@ -12,11 +14,7 @@ const navigation = [
   { name: "Settings", to: "/settings" },
 ];
 
-interface HeaderProps {
-  setSidebarOpen: (open: boolean) => void;
-}
-
-export default function Header({ setSidebarOpen }: HeaderProps) {
+export function SiteHeader() {
   const location = useLocation();
   const currentPage =
     navigation.find((item) => item.to === location.pathname)?.name ||
@@ -33,20 +31,18 @@ export default function Header({ setSidebarOpen }: HeaderProps) {
   });
 
   return (
-    <header className="lg:static sticky top-0 z-50 bg-card shadow-sm border-b border-border pt-safe-top">
-      <div className="flex items-center justify-between h-16 px-6">
-        <div className="flex items-center">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-1 rounded-md text-muted-foreground hover:text-foreground"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <h2 className="text-lg font-semibold text-card-foreground lg:ml-0 ml-4">
-            {currentPage}
-          </h2>
-        </div>
-        <div className="flex items-center space-x-3">
+    <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear pt-safe-top">
+      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+        <SidebarTrigger className="-ml-1" />
+        <Separator
+          orientation="vertical"
+          className="mx-2 data-[orientation=vertical]:h-4"
+        />
+        <h1 className="text-lg font-semibold text-card-foreground">
+          {currentPage}
+        </h1>
+
+        <div className="ml-auto flex items-center space-x-3">
           <div className="flex items-center space-x-1">
             {healthLoading ? (
               <>
