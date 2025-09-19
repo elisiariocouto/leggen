@@ -1,8 +1,18 @@
 # Contributing
 
-Install Poetry and run `poetry install` to install dependencies. Then run `poetry shell` to activate the virtual environment.
+This project uses **uv** for Python dependency management and **shadcn/ui** for frontend components.
+
+## Setup
+Install uv and run `uv sync` to install dependencies.
 
 Run `pre-commit install` to install the pre-commit hooks.
+
+## Frontend Development
+The frontend uses shadcn/ui components for consistent design. When adding new UI components:
+- Check if a shadcn/ui component exists for your use case
+- Follow the existing component patterns in `frontend/src/components/ui/`
+- Use Tailwind CSS classes for styling
+- Ensure components are accessible and follow the design system
 
 ## Commit messages
 

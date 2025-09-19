@@ -81,6 +81,7 @@ The command outputs instructions for setting the required environment variable t
 - **Naming**: PascalCase for components, camelCase for variables/functions
 - **Types**: Use `import type` for type-only imports, define interfaces/types
 - **Styling**: Tailwind CSS with `clsx` utility for conditional classes
+- **UI Components**: shadcn/ui components for consistent design system
 - **Icons**: lucide-react with consistent naming
 - **Data fetching**: @tanstack/react-query with proper error handling
 - **Components**: Functional components with hooks, proper TypeScript typing
@@ -94,7 +95,7 @@ The command outputs instructions for setting the required environment variable t
 - **Routes**: `frontend/src/routes/` - TanStack Router file-based routing
 
 ### Key Components Location
-- **UI Components**: `frontend/src/components/ui/` - Reusable UI primitives
+- **UI Components**: `frontend/src/components/ui/` - shadcn/ui components and reusable UI primitives
 - **Feature Components**: `frontend/src/components/` - Main app components
 - **Pages**: `frontend/src/routes/` - Route components (index.tsx, transactions.tsx, etc.)
 - **Hooks**: `frontend/src/hooks/` - Custom React hooks
@@ -120,6 +121,16 @@ The command outputs instructions for setting the required environment variable t
     - `refactor(cli): Improve error handling for missing config.`
   - Avoid including specific numbers, counts, or data-dependent information that may become outdated
 - **Security**: Never log sensitive data, use environment variables for secrets
+
+## AI Development Support
+
+### shadcn/ui Integration
+This project uses shadcn/ui for consistent UI components. The MCP server is configured for AI agents to:
+- Search and browse available shadcn/ui components
+- View component implementation details and examples
+- Generate proper installation commands for new components
+
+Use the shadcn MCP tools when working with UI components to ensure consistency with the existing design system.
 
 ## Contributing Guidelines
 

@@ -20,6 +20,7 @@ Having your bank data accessible through both CLI and REST API gives you the pow
   - [React](https://reactjs.org/): Modern web interface with TypeScript
   - [Vite](https://vitejs.dev/): Fast build tool and development server
   - [Tailwind CSS](https://tailwindcss.com/): Utility-first CSS framework
+  - [shadcn/ui](https://ui.shadcn.com/): Modern component system built on Radix UI
   - [TanStack Query](https://tanstack.com/query): Powerful data synchronization for React
 
 ## ✨ Features
