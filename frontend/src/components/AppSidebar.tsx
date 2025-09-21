@@ -27,6 +27,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  useSidebar,
 } from "./ui/sidebar";
 
 const navigation = [
@@ -39,6 +40,7 @@ const navigation = [
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const [accountsExpanded, setAccountsExpanded] = useState(false);
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const { data: accounts } = useQuery<Account[]>({
     queryKey: ["accounts"],
@@ -51,6 +53,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       return sum + primaryBalance;
     }, 0) || 0;
 
+  // Handler to close mobile sidebar when navigation item is clicked
+  const handleNavigationClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
     <Sidebar collapsible="icon" className="pt-safe-top pl-safe-left" {...props}>
       <SidebarHeader>
@@ -60,7 +69,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <Link to="/" className="flex items-center space-x-2">
+              <Link to="/" className="flex items-center space-x-2" onClick={handleNavigationClick}>
                 <Logo size={24} />
                 <span className="text-base font-semibold">Leggen</span>
               </Link>
@@ -80,7 +89,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     tooltip={item.name}
                     isActive={location.pathname === item.to}
                   >
-                    <Link to={item.to}>
+                    <Link to={item.to} onClick={handleNavigationClick}>
                       <item.icon className="h-5 w-5" />
                       <span>{item.name}</span>
                     </Link>
