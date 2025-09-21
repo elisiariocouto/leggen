@@ -1,4 +1,32 @@
 
+## 2025.9.19 (2025/09/21)
+
+### Bug Fixes
+
+- **frontend:** Close mobile sidebar on navigation item click ([dd24a0e0](https://github.com/elisiariocouto/leggen/commit/dd24a0e0d34c3b2ff37bc75b50162768b4d15cc5))
+- **frontend:** Resolve mobile horizontal scroll in Time Period filters ([4ce56fdc](https://github.com/elisiariocouto/leggen/commit/4ce56fdc042b0dbf3442a1ab201392700add90d6))
+
+
+### Features
+
+- **frontend:** Add version display in header near connection status ([340e1a32](https://github.com/elisiariocouto/leggen/commit/340e1a3235916566a4e403e9ec7b82ea799fbffd))
+
+
+
+## 2025.9.19 (2025/09/21)
+
+### Bug Fixes
+
+- **frontend:** Close mobile sidebar on navigation item click ([dd24a0e0](https://github.com/elisiariocouto/leggen/commit/dd24a0e0d34c3b2ff37bc75b50162768b4d15cc5))
+- **frontend:** Resolve mobile horizontal scroll in Time Period filters ([4ce56fdc](https://github.com/elisiariocouto/leggen/commit/4ce56fdc042b0dbf3442a1ab201392700add90d6))
+
+
+### Features
+
+- **frontend:** Add version display in header near connection status ([340e1a32](https://github.com/elisiariocouto/leggen/commit/340e1a3235916566a4e403e9ec7b82ea799fbffd))
+
+
+
 ## 2025.9.18 (2025/09/19)
 
 ### Documentation
