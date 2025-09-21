@@ -220,3 +220,24 @@ export interface TransactionStats {
   average_transaction: number;
   accounts_included: number;
 }
+
+// Sync operations types
+export interface SyncOperation {
+  id: number;
+  started_at: string;
+  completed_at?: string;
+  success?: boolean;
+  accounts_processed: number;
+  transactions_added: number;
+  transactions_updated: number;
+  balances_updated: number;
+  duration_seconds?: number;
+  errors: string[];
+  logs: string[];
+  trigger_type: 'manual' | 'scheduled' | 'api';
+}
+
+export interface SyncOperationsResponse {
+  operations: SyncOperation[];
+  count: number;
+}

@@ -12,6 +12,7 @@ import type {
   HealthData,
   AccountUpdate,
   TransactionStats,
+  SyncOperationsResponse,
 } from "../types/api";
 
 // Use VITE_API_URL for development, relative URLs for production
@@ -217,6 +218,17 @@ export const apiClient = {
         }>
       >
     >(`/transactions/monthly-stats?${queryParams.toString()}`);
+    return response.data.data;
+  },
+
+  // Get sync operations history
+  getSyncOperations: async (
+    limit: number = 50,
+    offset: number = 0,
+  ): Promise<SyncOperationsResponse> => {
+    const response = await api.get<ApiResponse<SyncOperationsResponse>>(
+      `/sync/operations?limit=${limit}&offset=${offset}`,
+    );
     return response.data.data;
   },
 };
