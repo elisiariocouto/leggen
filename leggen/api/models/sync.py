@@ -4,6 +4,26 @@ from typing import Optional
 from pydantic import BaseModel
 
 
+class SyncOperation(BaseModel):
+    """Sync operation record for tracking sync history"""
+
+    id: Optional[int] = None
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    success: Optional[bool] = None
+    accounts_processed: int = 0
+    transactions_added: int = 0
+    transactions_updated: int = 0
+    balances_updated: int = 0
+    duration_seconds: Optional[float] = None
+    errors: list[str] = []
+    logs: list[str] = []
+    trigger_type: str = "manual"  # manual, scheduled, api
+
+    class Config:
+        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
+
+
 class SyncRequest(BaseModel):
     """Request to trigger a sync"""
 
