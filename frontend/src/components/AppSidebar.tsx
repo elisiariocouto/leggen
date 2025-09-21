@@ -3,7 +3,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   List,
   BarChart3,
-  Bell,
+  Activity,
   Settings,
   Building2,
   TrendingUp,
@@ -33,7 +33,7 @@ import {
 const navigation = [
   { name: "Overview", icon: List, to: "/" },
   { name: "Analytics", icon: BarChart3, to: "/analytics" },
-  { name: "Notifications", icon: Bell, to: "/notifications" },
+  { name: "System Status", icon: Activity, to: "/notifications" },
   { name: "Settings", icon: Settings, to: "/settings" },
 ];
 

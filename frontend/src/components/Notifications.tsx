@@ -10,6 +10,10 @@ import {
   CheckCircle,
   Settings,
   TestTube,
+  Activity,
+  Clock,
+  TrendingUp,
+  User,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import NotificationsSkeleton from "./NotificationsSkeleton";
@@ -32,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import type { NotificationSettings, NotificationService } from "../types/api";
+import type { NotificationSettings, NotificationService, SyncOperationsResponse } from "../types/api";
 
 export default function Notifications() {
   const [testService, setTestService] = useState("");
@@ -61,6 +65,16 @@ export default function Notifications() {
     queryFn: apiClient.getNotificationServices,
   });
 
+  const {
+    data: syncOperations,
+    isLoading: syncOperationsLoading,
+    error: syncOperationsError,
+    refetch: refetchSyncOperations,
+  } = useQuery<SyncOperationsResponse>({
+    queryKey: ["syncOperations"],
+    queryFn: () => apiClient.getSyncOperations(10, 0), // Get latest 10 operations
+  });
+
   const testMutation = useMutation({
     mutationFn: apiClient.testNotification,
     onSuccess: () => {
@@ -80,15 +94,15 @@ export default function Notifications() {
     },
   });
 
-  if (settingsLoading || servicesLoading) {
+  if (settingsLoading || servicesLoading || syncOperationsLoading) {
     return <NotificationsSkeleton />;
   }
 
-  if (settingsError || servicesError) {
+  if (settingsError || servicesError || syncOperationsError) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Failed to load notifications</AlertTitle>
+        <AlertTitle>Failed to load system data</AlertTitle>
         <AlertDescription className="space-y-3">
           <p>
             Unable to connect to the Leggen API. Please check your configuration
@@ -98,6 +112,7 @@ export default function Notifications() {
             onClick={() => {
               refetchSettings();
               refetchServices();
+              refetchSyncOperations();
             }}
             variant="outline"
             size="sm"
@@ -131,6 +146,100 @@ export default function Notifications() {
 
   return (
     <div className="space-y-6">
+      {/* Sync Operations Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Activity className="h-5 w-5 text-primary" />
+            <span>Sync Operations</span>
+          </CardTitle>
+          <CardDescription>Recent synchronization activities</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!syncOperations || syncOperations.operations.length === 0 ? (
+            <div className="text-center py-6">
+              <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                No sync operations yet
+              </h3>
+              <p className="text-muted-foreground">
+                Sync operations will appear here once you start syncing your accounts.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {syncOperations.operations.slice(0, 5).map((operation) => {
+                const startedAt = new Date(operation.started_at);
+                const isRunning = !operation.completed_at;
+                const duration = operation.duration_seconds 
+                  ? `${Math.round(operation.duration_seconds)}s`
+                  : '';
+
+                return (
+                  <div
+                    key={operation.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className={`p-2 rounded-full ${
+                        isRunning 
+                          ? 'bg-blue-100 text-blue-600' 
+                          : operation.success 
+                            ? 'bg-green-100 text-green-600' 
+                            : 'bg-red-100 text-red-600'
+                      }`}>
+                        {isRunning ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : operation.success ? (
+                          <CheckCircle className="h-4 w-4" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <h4 className="text-sm font-medium text-foreground">
+                            {isRunning ? 'Sync Running' : operation.success ? 'Sync Completed' : 'Sync Failed'}
+                          </h4>
+                          <Badge variant="outline" className="text-xs">
+                            {operation.trigger_type}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-4 mt-1 text-xs text-muted-foreground">
+                          <span className="flex items-center space-x-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{startedAt.toLocaleDateString()} {startedAt.toLocaleTimeString()}</span>
+                          </span>
+                          {duration && (
+                            <span>Duration: {duration}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right text-sm text-muted-foreground">
+                      <div className="flex items-center space-x-2">
+                        <User className="h-3 w-3" />
+                        <span>{operation.accounts_processed} accounts</span>
+                      </div>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <TrendingUp className="h-3 w-3" />
+                        <span>{operation.transactions_added} new transactions</span>
+                      </div>
+                      {operation.errors.length > 0 && (
+                        <div className="flex items-center space-x-2 mt-1 text-red-600">
+                          <AlertCircle className="h-3 w-3" />
+                          <span>{operation.errors.length} errors</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Test Notification Section */}
       <Card>
         <CardHeader>
