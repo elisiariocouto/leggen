@@ -201,6 +201,12 @@ export interface HealthData {
   error?: string;
 }
 
+// Version information from root endpoint
+export interface VersionData {
+  message: string;
+  version: string;
+}
+
 // Analytics data types
 export interface TransactionStats {
   period_days: number;

@@ -10,6 +10,7 @@ import type {
   NotificationService,
   NotificationServicesResponse,
   HealthData,
+  VersionData,
   AccountUpdate,
   TransactionStats,
 } from "../types/api";
@@ -165,6 +166,15 @@ export const apiClient = {
   getHealth: async (): Promise<HealthData> => {
     const response = await api.get<ApiResponse<HealthData>>("/health");
     return response.data.data;
+  },
+
+  // Get version information
+  getVersion: async (): Promise<VersionData> => {
+    // Use the root endpoint (/) which provides version information
+    const response = await api.get<VersionData>("/", {
+      baseURL: import.meta.env.VITE_API_URL?.replace('/api/v1', '') || '',
+    });
+    return response.data;
   },
 
   // Analytics endpoints
