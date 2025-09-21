@@ -56,6 +56,7 @@ async def trigger_sync(
                 sync_service.sync_specific_accounts,
                 sync_request.account_ids,
                 sync_request.force if sync_request else False,
+                "api",  # trigger_type
             )
             message = (
                 f"Started sync for {len(sync_request.account_ids)} specific accounts"
@@ -65,6 +66,7 @@ async def trigger_sync(
             background_tasks.add_task(
                 sync_service.sync_all_accounts,
                 sync_request.force if sync_request else False,
+                "api",  # trigger_type
             )
             message = "Started sync for all accounts"
 
@@ -90,11 +92,11 @@ async def sync_now(sync_request: Optional[SyncRequest] = None) -> APIResponse:
     try:
         if sync_request and sync_request.account_ids:
             result = await sync_service.sync_specific_accounts(
-                sync_request.account_ids, sync_request.force
+                sync_request.account_ids, sync_request.force, "api"
             )
         else:
             result = await sync_service.sync_all_accounts(
-                sync_request.force if sync_request else False
+                sync_request.force if sync_request else False, "api"
             )
 
         return APIResponse(
@@ -210,4 +212,25 @@ async def stop_scheduler() -> APIResponse:
         logger.error(f"Failed to stop scheduler: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to stop scheduler: {str(e)}"
+        ) from e
+
+
+@router.get("/sync/operations", response_model=APIResponse)
+async def get_sync_operations(
+    limit: int = 50, offset: int = 0
+) -> APIResponse:
+    """Get sync operations history"""
+    try:
+        operations = await sync_service.database.get_sync_operations(limit=limit, offset=offset)
+        
+        return APIResponse(
+            success=True,
+            data={"operations": operations, "count": len(operations)},
+            message="Sync operations retrieved successfully",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get sync operations: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get sync operations: {str(e)}"
         ) from e

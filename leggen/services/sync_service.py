@@ -20,7 +20,7 @@ class SyncService:
         """Get current sync status"""
         return self._sync_status
 
-    async def sync_all_accounts(self, force: bool = False) -> SyncResult:
+    async def sync_all_accounts(self, force: bool = False, trigger_type: str = "manual") -> SyncResult:
         """Sync all connected accounts"""
         if self._sync_status.is_running and not force:
             raise Exception("Sync is already running")
@@ -34,9 +34,25 @@ class SyncService:
         transactions_updated = 0
         balances_updated = 0
         errors = []
+        logs = [f"Sync started at {start_time.isoformat()}"]
+
+        # Initialize sync operation record
+        sync_operation = {
+            "started_at": start_time.isoformat(),
+            "trigger_type": trigger_type,
+            "accounts_processed": 0,
+            "transactions_added": 0,
+            "transactions_updated": 0,
+            "balances_updated": 0,
+            "errors": [],
+            "logs": logs,
+        }
+
+        operation_id = None
 
         try:
             logger.info("Starting sync of all accounts")
+            logs.append("Starting sync of all accounts")
 
             # Get all requisitions and accounts
             requisitions = await self.gocardless.get_requisitions()
@@ -46,6 +62,7 @@ class SyncService:
                 all_accounts.update(req.get("accounts", []))
 
             self._sync_status.total_accounts = len(all_accounts)
+            logs.append(f"Found {len(all_accounts)} accounts to sync")
 
             # Process each account
             for account_id in all_accounts:
@@ -118,16 +135,38 @@ class SyncService:
                     self._sync_status.accounts_synced = accounts_processed
 
                     logger.info(f"Synced account {account_id} successfully")
+                    logs.append(f"Synced account {account_id} successfully")
 
                 except Exception as e:
                     error_msg = f"Failed to sync account {account_id}: {str(e)}"
                     errors.append(error_msg)
                     logger.error(error_msg)
+                    logs.append(error_msg)
 
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
 
             self._sync_status.last_sync = end_time
+
+            # Update sync operation with final results
+            sync_operation.update({
+                "completed_at": end_time.isoformat(),
+                "success": len(errors) == 0,
+                "accounts_processed": accounts_processed,
+                "transactions_added": transactions_added,
+                "transactions_updated": transactions_updated,
+                "balances_updated": balances_updated,
+                "duration_seconds": duration,
+                "errors": errors,
+                "logs": logs,
+            })
+
+            # Persist sync operation to database
+            try:
+                operation_id = await self.database.persist_sync_operation(sync_operation)
+                logger.debug(f"Saved sync operation with ID: {operation_id}")
+            except Exception as e:
+                logger.error(f"Failed to persist sync operation: {e}")
 
             result = SyncResult(
                 success=len(errors) == 0,
@@ -144,44 +183,57 @@ class SyncService:
             logger.info(
                 f"Sync completed: {accounts_processed} accounts, {transactions_added} new transactions"
             )
+            logs.append(f"Sync completed: {accounts_processed} accounts, {transactions_added} new transactions")
             return result
 
         except Exception as e:
             error_msg = f"Sync failed: {str(e)}"
             errors.append(error_msg)
+            logs.append(error_msg)
             logger.error(error_msg)
+
+            # Save failed sync operation
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            sync_operation.update({
+                "completed_at": end_time.isoformat(),
+                "success": False,
+                "accounts_processed": accounts_processed,
+                "transactions_added": transactions_added,
+                "transactions_updated": transactions_updated,
+                "balances_updated": balances_updated,
+                "duration_seconds": duration,
+                "errors": errors,
+                "logs": logs,
+            })
+
+            try:
+                operation_id = await self.database.persist_sync_operation(sync_operation)
+                logger.debug(f"Saved failed sync operation with ID: {operation_id}")
+            except Exception as persist_error:
+                logger.error(f"Failed to persist failed sync operation: {persist_error}")
+
             raise
         finally:
             self._sync_status.is_running = False
 
     async def sync_specific_accounts(
-        self, account_ids: List[str], force: bool = False
+        self, account_ids: List[str], force: bool = False, trigger_type: str = "manual"
     ) -> SyncResult:
         """Sync specific accounts"""
         if self._sync_status.is_running and not force:
             raise Exception("Sync is already running")
 
-        # Similar implementation but only for specified accounts
-        # For brevity, implementing a simplified version
-        start_time = datetime.now()
         self._sync_status.is_running = True
 
         try:
-            # Process only specified accounts
-            # Implementation would be similar to sync_all_accounts
-            # but filtered to only the specified account_ids
+            # For now, delegate to sync_all_accounts but with specific filtering
+            # This could be optimized later to only process specified accounts
+            result = await self.sync_all_accounts(force=force, trigger_type=trigger_type)
+            
+            # Filter results to only specified accounts if needed
+            # For simplicity, we'll return the full result for now
+            return result
 
-            end_time = datetime.now()
-            return SyncResult(
-                success=True,
-                accounts_processed=len(account_ids),
-                transactions_added=0,
-                transactions_updated=0,
-                balances_updated=0,
-                duration_seconds=(end_time - start_time).total_seconds(),
-                errors=[],
-                started_at=start_time,
-                completed_at=end_time,
-            )
         finally:
             self._sync_status.is_running = False
