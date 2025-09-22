@@ -10,7 +10,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon-180x180.png", "maskable-icon-512x512.png", "robots.txt"],
+      includeAssets: [
+        "favicon.ico",
+        "apple-touch-icon-180x180.png",
+        "maskable-icon-512x512.png",
+        "robots.txt",
+      ],
       manifest: {
         name: "Leggen",
         short_name: "Leggen",
@@ -28,38 +33,38 @@ export default defineConfig({
             short_name: "Transactions",
             description: "View and manage transactions",
             url: "/transactions",
-            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }],
           },
           {
             name: "Analytics",
             short_name: "Analytics",
             description: "View financial analytics",
             url: "/analytics",
-            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
-          }
+            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }],
+          },
         ],
         icons: [
           {
             src: "pwa-64x64.png",
             sizes: "64x64",
-            type: "image/png"
+            type: "image/png",
           },
           {
             src: "pwa-192x192.png",
             sizes: "192x192",
-            type: "image/png"
+            type: "image/png",
           },
           {
             src: "pwa-512x512.png",
             sizes: "512x512",
-            type: "image/png"
+            type: "image/png",
           },
           {
             src: "maskable-icon-512x512.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "maskable"
-          }
+            purpose: "maskable",
+          },
         ],
       },
       workbox: {

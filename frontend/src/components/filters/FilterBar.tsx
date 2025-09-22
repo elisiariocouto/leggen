@@ -91,7 +91,6 @@ export function FilterBar({
                 className="w-[220px]"
               />
             </div>
-
           </div>
 
           {/* Mobile Layout */}
@@ -129,7 +128,6 @@ export function FilterBar({
               onDateRangeChange={handleDateRangeChange}
               className="w-full"
             />
-
           </div>
         </div>
 

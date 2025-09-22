@@ -70,7 +70,6 @@ export function ActiveFilterChips({
     });
   }
 
-
   const handleRemoveChip = (key: keyof FilterState) => {
     switch (key) {
       case "startDate":

@@ -97,7 +97,6 @@ export default function TransactionsTable() {
     queryFn: apiClient.getAccounts,
   });
 
-
   const {
     data: transactionsResponse,
     isLoading: transactionsLoading,
@@ -141,11 +140,7 @@ export default function TransactionsTable() {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [
-    filterState.selectedAccount,
-    filterState.startDate,
-    filterState.endDate,
-  ]);
+  }, [filterState.selectedAccount, filterState.startDate, filterState.endDate]);
 
   const handleViewRaw = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -162,7 +157,6 @@ export default function TransactionsTable() {
     filterState.selectedAccount ||
     filterState.startDate ||
     filterState.endDate;
-
 
   // Define columns
   const columns: ColumnDef<Transaction>[] = [
@@ -427,10 +421,7 @@ export default function TransactionsTable() {
                 table.getRowModel().rows.map((row) => (
                   <tr key={row.id} className="hover:bg-muted/50">
                     {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="px-6 py-4 whitespace-nowrap"
-                      >
+                      <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),

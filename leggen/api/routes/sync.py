@@ -216,13 +216,13 @@ async def stop_scheduler() -> APIResponse:
 
 
 @router.get("/sync/operations", response_model=APIResponse)
-async def get_sync_operations(
-    limit: int = 50, offset: int = 0
-) -> APIResponse:
+async def get_sync_operations(limit: int = 50, offset: int = 0) -> APIResponse:
     """Get sync operations history"""
     try:
-        operations = await sync_service.database.get_sync_operations(limit=limit, offset=offset)
-        
+        operations = await sync_service.database.get_sync_operations(
+            limit=limit, offset=offset
+        )
+
         return APIResponse(
             success=True,
             data={"operations": operations, "count": len(operations)},

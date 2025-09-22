@@ -43,7 +43,12 @@ import {
 } from "./ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import AccountsSkeleton from "./AccountsSkeleton";
-import type { Account, Balance, NotificationSettings, NotificationService } from "../types/api";
+import type {
+  Account,
+  Balance,
+  NotificationSettings,
+  NotificationService,
+} from "../types/api";
 
 // Helper function to get status indicator color and styles
 const getStatusIndicator = (status: string) => {
@@ -83,7 +88,9 @@ export default function Settings() {
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [testService, setTestService] = useState("");
-  const [testMessage, setTestMessage] = useState("Test notification from Leggen");
+  const [testMessage, setTestMessage] = useState(
+    "Test notification from Leggen",
+  );
 
   const queryClient = useQueryClient();
 
@@ -239,7 +246,10 @@ export default function Settings() {
             <User className="h-4 w-4" />
             <span>Accounts</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center space-x-2">
+          <TabsTrigger
+            value="notifications"
+            className="flex items-center space-x-2"
+          >
             <Bell className="h-4 w-4" />
             <span>Notifications</span>
           </TabsTrigger>
@@ -251,7 +261,8 @@ export default function Settings() {
             <CardHeader>
               <CardTitle>Account Management</CardTitle>
               <CardDescription>
-                Manage your connected bank accounts and customize their display names
+                Manage your connected bank accounts and customize their display
+                names
               </CardDescription>
             </CardHeader>
 
@@ -319,7 +330,8 @@ export default function Settings() {
                                       autoComplete="off"
                                       onKeyDown={(e) => {
                                         if (e.key === "Enter") handleEditSave();
-                                        if (e.key === "Escape") handleEditCancel();
+                                        if (e.key === "Escape")
+                                          handleEditCancel();
                                       }}
                                       autoFocus
                                     />
@@ -428,7 +440,8 @@ export default function Settings() {
             <CardHeader>
               <CardTitle>Add New Bank Account</CardTitle>
               <CardDescription>
-                Connect additional bank accounts to track all your finances in one place
+                Connect additional bank accounts to track all your finances in
+                one place
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -436,7 +449,8 @@ export default function Settings() {
                 <div className="p-4 bg-muted rounded-lg">
                   <Plus className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    Bank connection functionality is coming soon. Stay tuned for updates!
+                    Bank connection functionality is coming soon. Stay tuned for
+                    updates!
                   </p>
                 </div>
                 <Button disabled variant="outline">
@@ -498,7 +512,9 @@ export default function Settings() {
                   disabled={!testService || testMutation.isPending}
                 >
                   <Send className="h-4 w-4 mr-2" />
-                  {testMutation.isPending ? "Sending..." : "Send Test Notification"}
+                  {testMutation.isPending
+                    ? "Sending..."
+                    : "Send Test Notification"}
                 </Button>
               </div>
             </CardContent>
@@ -511,7 +527,9 @@ export default function Settings() {
                 <Bell className="h-5 w-5 text-primary" />
                 <span>Notification Services</span>
               </CardTitle>
-              <CardDescription>Manage your notification services</CardDescription>
+              <CardDescription>
+                Manage your notification services
+              </CardDescription>
             </CardHeader>
 
             {!services || services.length === 0 ? (
@@ -521,7 +539,8 @@ export default function Settings() {
                   No notification services configured
                 </h3>
                 <p className="text-muted-foreground">
-                  Configure notification services in your backend to receive alerts.
+                  Configure notification services in your backend to receive
+                  alerts.
                 </p>
               </CardContent>
             ) : (
@@ -537,7 +556,9 @@ export default function Settings() {
                           <div className="p-3 bg-muted rounded-full">
                             {service.name.toLowerCase().includes("discord") ? (
                               <MessageSquare className="h-6 w-6 text-muted-foreground" />
-                            ) : service.name.toLowerCase().includes("telegram") ? (
+                            ) : service.name
+                                .toLowerCase()
+                                .includes("telegram") ? (
                               <Send className="h-6 w-6 text-muted-foreground" />
                             ) : (
                               <Bell className="h-6 w-6 text-muted-foreground" />
@@ -612,8 +633,11 @@ export default function Settings() {
                             Case Insensitive Filters
                           </Label>
                           <p className="text-sm text-foreground">
-                            {notificationSettings.filters.case_insensitive.length > 0
-                              ? notificationSettings.filters.case_insensitive.join(", ")
+                            {notificationSettings.filters.case_insensitive
+                              .length > 0
+                              ? notificationSettings.filters.case_insensitive.join(
+                                  ", ",
+                                )
                               : "None"}
                           </p>
                         </div>
@@ -623,8 +647,11 @@ export default function Settings() {
                           </Label>
                           <p className="text-sm text-foreground">
                             {notificationSettings.filters.case_sensitive &&
-                            notificationSettings.filters.case_sensitive.length > 0
-                              ? notificationSettings.filters.case_sensitive.join(", ")
+                            notificationSettings.filters.case_sensitive.length >
+                              0
+                              ? notificationSettings.filters.case_sensitive.join(
+                                  ", ",
+                                )
                               : "None"}
                           </p>
                         </div>
@@ -634,8 +661,8 @@ export default function Settings() {
 
                   <div className="text-sm text-muted-foreground">
                     <p>
-                      Configure notification settings through your backend API to
-                      customize filters and service configurations.
+                      Configure notification settings through your backend API
+                      to customize filters and service configurations.
                     </p>
                   </div>
                 </div>
