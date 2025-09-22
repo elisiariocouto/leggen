@@ -15,10 +15,8 @@ import {
   MessageSquare,
   Send,
   Trash2,
-  TestTube,
-  Settings as SettingsIcon,
   User,
-  CheckCircle,
+  Filter,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
@@ -31,18 +29,12 @@ import {
 } from "./ui/card";
 import { Button } from "./ui/button";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Badge } from "./ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import AccountsSkeleton from "./AccountsSkeleton";
+import NotificationFiltersDrawer from "./NotificationFiltersDrawer";
+import DiscordConfigDrawer from "./DiscordConfigDrawer";
+import TelegramConfigDrawer from "./TelegramConfigDrawer";
 import type {
   Account,
   Balance,
@@ -87,10 +79,6 @@ const getStatusIndicator = (status: string) => {
 export default function Settings() {
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [testService, setTestService] = useState("");
-  const [testMessage, setTestMessage] = useState(
-    "Test notification from Leggen",
-  );
 
   const queryClient = useQueryClient();
 
@@ -146,16 +134,6 @@ export default function Settings() {
   });
 
   // Notification mutations
-  const testMutation = useMutation({
-    mutationFn: apiClient.testNotification,
-    onSuccess: () => {
-      console.log("Test notification sent successfully");
-    },
-    onError: (error) => {
-      console.error("Failed to send test notification:", error);
-    },
-  });
-
   const deleteServiceMutation = useMutation({
     mutationFn: apiClient.deleteNotificationService,
     onSuccess: () => {
@@ -185,15 +163,6 @@ export default function Settings() {
   };
 
   // Notification handlers
-  const handleTestNotification = () => {
-    if (!testService) return;
-
-    testMutation.mutate({
-      service: testService.toLowerCase(),
-      message: testMessage,
-    });
-  };
-
   const handleDeleteService = (serviceName: string) => {
     if (
       confirm(
@@ -463,63 +432,6 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
-          {/* Test Notification Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TestTube className="h-5 w-5 text-primary" />
-                <span>Test Notifications</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="service" className="text-foreground">
-                    Service
-                  </Label>
-                  <Select value={testService} onValueChange={setTestService}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a service..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {services?.map((service) => (
-                        <SelectItem key={service.name} value={service.name}>
-                          {service.name}{" "}
-                          {service.enabled ? "(Enabled)" : "(Disabled)"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="message" className="text-foreground">
-                    Message
-                  </Label>
-                  <Input
-                    id="message"
-                    type="text"
-                    value={testMessage}
-                    onChange={(e) => setTestMessage(e.target.value)}
-                    placeholder="Test message..."
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <Button
-                  onClick={handleTestNotification}
-                  disabled={!testService || testMutation.isPending}
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  {testMutation.isPending
-                    ? "Sending..."
-                    : "Send Test Notification"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Notification Services */}
           <Card>
             <CardHeader>
@@ -564,45 +476,48 @@ export default function Settings() {
                               <Bell className="h-6 w-6 text-muted-foreground" />
                             )}
                           </div>
-                          <div>
-                            <h4 className="text-lg font-medium text-foreground capitalize">
-                              {service.name}
-                            </h4>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Badge
-                                variant={
-                                  service.enabled ? "default" : "destructive"
-                                }
-                              >
-                                {service.enabled ? (
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                ) : (
-                                  <AlertCircle className="h-3 w-3 mr-1" />
-                                )}
-                                {service.enabled ? "Enabled" : "Disabled"}
-                              </Badge>
-                              <Badge
-                                variant={
-                                  service.configured ? "secondary" : "outline"
-                                }
-                              >
-                                {service.configured
-                                  ? "Configured"
-                                  : "Not Configured"}
-                              </Badge>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3">
+                              <h4 className="text-lg font-medium text-foreground capitalize">
+                                {service.name}
+                              </h4>
+                              <div className="flex items-center space-x-2">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  service.enabled && service.configured
+                                    ? 'bg-green-500'
+                                    : service.enabled
+                                      ? 'bg-amber-500'
+                                      : 'bg-muted-foreground'
+                                }`} />
+                                <span className="text-sm text-muted-foreground">
+                                  {service.enabled && service.configured
+                                    ? 'Active'
+                                    : service.enabled
+                                      ? 'Needs Configuration'
+                                      : 'Disabled'}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        <Button
-                          onClick={() => handleDeleteService(service.name)}
-                          disabled={deleteServiceMutation.isPending}
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center space-x-2">
+                          {service.name.toLowerCase().includes("discord") ? (
+                            <DiscordConfigDrawer settings={notificationSettings} />
+                          ) : service.name.toLowerCase().includes("telegram") ? (
+                            <TelegramConfigDrawer settings={notificationSettings} />
+                          ) : null}
+
+                          <Button
+                            onClick={() => handleDeleteService(service.name)}
+                            disabled={deleteServiceMutation.isPending}
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -611,60 +526,78 @@ export default function Settings() {
             )}
           </Card>
 
-          {/* Notification Settings */}
+          {/* Notification Filters */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <SettingsIcon className="h-5 w-5 text-primary" />
-                <span>Notification Settings</span>
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center space-x-2">
+                  <Filter className="h-5 w-5 text-primary" />
+                  <span>Notification Filters</span>
+                </CardTitle>
+                <NotificationFiltersDrawer settings={notificationSettings} />
+              </div>
             </CardHeader>
             <CardContent>
-              {notificationSettings && (
+              {notificationSettings?.filters ? (
                 <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-foreground mb-2">
-                      Filters
-                    </h4>
-                    <div className="bg-muted rounded-md p-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-xs font-medium text-muted-foreground mb-1 block">
-                            Case Insensitive Filters
-                          </Label>
-                          <p className="text-sm text-foreground">
-                            {notificationSettings.filters.case_insensitive
-                              .length > 0
-                              ? notificationSettings.filters.case_insensitive.join(
-                                  ", ",
-                                )
-                              : "None"}
-                          </p>
+                  <div className="bg-muted rounded-md p-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground mb-2 block">
+                          Case Insensitive Filters
+                        </Label>
+                        <div className="min-h-[2rem] flex flex-wrap gap-1">
+                          {notificationSettings.filters.case_insensitive.length > 0 ? (
+                            notificationSettings.filters.case_insensitive.map((filter, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs"
+                              >
+                                {filter}
+                              </span>
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground">None</p>
+                          )}
                         </div>
-                        <div>
-                          <Label className="text-xs font-medium text-muted-foreground mb-1 block">
-                            Case Sensitive Filters
-                          </Label>
-                          <p className="text-sm text-foreground">
-                            {notificationSettings.filters.case_sensitive &&
-                            notificationSettings.filters.case_sensitive.length >
-                              0
-                              ? notificationSettings.filters.case_sensitive.join(
-                                  ", ",
-                                )
-                              : "None"}
-                          </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground mb-2 block">
+                          Case Sensitive Filters
+                        </Label>
+                        <div className="min-h-[2rem] flex flex-wrap gap-1">
+                          {notificationSettings.filters.case_sensitive &&
+                          notificationSettings.filters.case_sensitive.length > 0 ? (
+                            notificationSettings.filters.case_sensitive.map((filter, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs"
+                              >
+                                {filter}
+                              </span>
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground">None</p>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
-
-                  <div className="text-sm text-muted-foreground">
-                    <p>
-                      Configure notification settings through your backend API
-                      to customize filters and service configurations.
-                    </p>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Filters determine which transaction descriptions will trigger notifications.
+                    Add terms to exclude transactions containing those words.
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    No notification filters configured
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Set up filters to control which transactions trigger notifications.
+                  </p>
+                  <NotificationFiltersDrawer settings={notificationSettings} />
                 </div>
               )}
             </CardContent>
