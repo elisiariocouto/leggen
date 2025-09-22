@@ -166,6 +166,19 @@ export interface TelegramConfig {
   enabled: boolean;
 }
 
+export interface PushConfig {
+  enabled: boolean;
+}
+
+export interface PushSubscription {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+  user_agent?: string;
+}
+
 export interface NotificationFilters {
   case_insensitive: string[];
   case_sensitive?: string[];
@@ -174,6 +187,7 @@ export interface NotificationFilters {
 export interface NotificationSettings {
   discord?: DiscordConfig;
   telegram?: TelegramConfig;
+  push?: PushConfig;
   filters: NotificationFilters;
 }
 

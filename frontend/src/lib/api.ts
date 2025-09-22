@@ -12,6 +12,7 @@ import type {
   HealthData,
   AccountUpdate,
   TransactionStats,
+  PushSubscription,
 } from "../types/api";
 
 // Use VITE_API_URL for development, relative URLs for production
@@ -159,6 +160,22 @@ export const apiClient = {
   // Delete notification service
   deleteNotificationService: async (service: string): Promise<void> => {
     await api.delete(`/notifications/settings/${service}`);
+  },
+
+  // Push notification methods
+  subscribePushNotifications: async (subscription: PushSubscription): Promise<void> => {
+    await api.post("/notifications/push/subscribe", subscription);
+  },
+
+  unsubscribePushNotifications: async (subscription: PushSubscription): Promise<void> => {
+    await api.post("/notifications/push/unsubscribe", subscription);
+  },
+
+  getPushPublicKey: async (): Promise<string> => {
+    const response = await api.get<ApiResponse<{ public_key: string }>>(
+      "/notifications/push/public-key",
+    );
+    return response.data.data.public_key;
   },
 
   // Health check

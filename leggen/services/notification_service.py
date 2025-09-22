@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 
 from loguru import logger
 
+from leggen.services.push_service import PushService
 from leggen.utils.config import config
 
 
@@ -9,6 +10,7 @@ class NotificationService:
     def __init__(self):
         self.notifications_config = config.notifications_config
         self.filters_config = config.filters_config
+        self.push_service = PushService()
 
     async def send_transaction_notifications(
         self, transactions: List[Dict[str, Any]]
@@ -32,6 +34,9 @@ class NotificationService:
         if self._is_telegram_enabled():
             await self._send_telegram_notifications(matching_transactions)
 
+        if self.push_service.is_push_enabled():
+            await self._send_push_notifications(matching_transactions)
+
     async def send_test_notification(self, service: str, message: str) -> bool:
         """Send a test notification"""
         try:
@@ -41,6 +46,8 @@ class NotificationService:
             elif service == "telegram" and self._is_telegram_enabled():
                 await self._send_telegram_test(message)
                 return True
+            elif service == "push" and self.push_service.is_push_enabled():
+                return self.push_service.send_test_notification(message)
             else:
                 logger.error(
                     f"Notification service '{service}' not enabled or not found"
@@ -57,6 +64,14 @@ class NotificationService:
 
         if self._is_telegram_enabled():
             await self._send_telegram_expiry(notification_data)
+
+        if self.push_service.is_push_enabled():
+            self.push_service.send_expiry_notification(
+                notification_data.get("bank", "Unknown"),
+                notification_data.get("requisition_id", "unknown"),
+                notification_data.get("status", "unknown"),
+                notification_data.get("days_left", 0),
+            )
 
     def _filter_transactions(
         self, transactions: List[Dict[str, Any]]
@@ -172,6 +187,24 @@ class NotificationService:
             )
         except Exception as e:
             logger.error(f"Failed to send Telegram transaction notifications: {e}")
+            raise
+
+    async def _send_push_notifications(
+        self, transactions: List[Dict[str, Any]]
+    ) -> None:
+        """Send push notifications for transactions"""
+        try:
+            # Calculate totals for the notification
+            total_value = sum(float(t.get("value", 0)) for t in transactions)
+            currencies = {t.get("currency", "EUR") for t in transactions}
+            currency = list(currencies)[0] if len(currencies) == 1 else "mixed"
+
+            self.push_service.send_transaction_notification(
+                len(transactions), total_value, currency
+            )
+            logger.info(f"Sent push notification for {len(transactions)} transactions")
+        except Exception as e:
+            logger.error(f"Failed to send push transaction notifications: {e}")
             raise
 
     async def _send_discord_test(self, message: str) -> None:

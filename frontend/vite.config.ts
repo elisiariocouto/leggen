@@ -9,6 +9,9 @@ export default defineConfig({
     TanStackRouterVite(),
     react(),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon-180x180.png", "maskable-icon-512x512.png", "robots.txt"],
       manifest: {
@@ -17,10 +20,10 @@ export default defineConfig({
         description: "Personal finance management application",
         theme_color: "#0b74de",
         background_color: "#ffffff",
-        display: "standalone",
-        orientation: "portrait",
-        scope: "/",
-        start_url: "/",
+         display: "standalone",
+         orientation: "portrait",
+         scope: "/",
+         start_url: "/",
         categories: ["finance", "productivity"],
         shortcuts: [
           {
@@ -38,29 +41,32 @@ export default defineConfig({
             icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
           }
         ],
-        icons: [
-          {
-            src: "pwa-64x64.png",
-            sizes: "64x64",
-            type: "image/png"
-          },
-          {
-            src: "pwa-192x192.png",
-            sizes: "192x192",
-            type: "image/png"
-          },
-          {
-            src: "pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png"
-          },
-          {
-            src: "maskable-icon-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable"
-          }
-        ],
+         icons: [
+           {
+             src: "pwa-64x64.png",
+             sizes: "64x64",
+             type: "image/png",
+             purpose: "any"
+           },
+           {
+             src: "pwa-192x192.png",
+             sizes: "192x192",
+             type: "image/png",
+             purpose: "any"
+           },
+           {
+             src: "pwa-512x512.png",
+             sizes: "512x512",
+             type: "image/png",
+             purpose: "any"
+           },
+           {
+             src: "maskable-icon-512x512.png",
+             sizes: "512x512",
+             type: "image/png",
+             purpose: "maskable"
+           }
+         ],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],

@@ -9,13 +9,17 @@ from leggen.api.models.notifications import (
     NotificationFilters,
     NotificationSettings,
     NotificationTest,
+    PushConfig,
+    PushSubscription,
     TelegramConfig,
 )
 from leggen.services.notification_service import NotificationService
+from leggen.services.push_service import PushService
 from leggen.utils.config import config
 
 router = APIRouter()
 notification_service = NotificationService()
+push_service = PushService()
 
 
 @router.get("/notifications/settings", response_model=APIResponse)
@@ -28,6 +32,7 @@ async def get_notification_settings() -> APIResponse:
         # Build response safely without exposing secrets
         discord_config = notifications_config.get("discord", {})
         telegram_config = notifications_config.get("telegram", {})
+        push_config = notifications_config.get("push", {})
 
         settings = NotificationSettings(
             discord=DiscordConfig(
@@ -42,6 +47,11 @@ async def get_notification_settings() -> APIResponse:
                 enabled=telegram_config.get("enabled", True),
             )
             if telegram_config.get("token")
+            else None,
+            push=PushConfig(
+                enabled=push_config.get("enabled", True),
+            )
+            if push_config
             else None,
             filters=NotificationFilters(
                 case_insensitive=filters_config.get("case_insensitive", []),
@@ -80,6 +90,11 @@ async def update_notification_settings(settings: NotificationSettings) -> APIRes
                 "token": settings.telegram.token,
                 "chat_id": settings.telegram.chat_id,
                 "enabled": settings.telegram.enabled,
+            }
+
+        if settings.push:
+            notifications_config["push"] = {
+                "enabled": settings.push.enabled,
             }
 
         # Update filters config
@@ -162,6 +177,15 @@ async def get_notification_services() -> APIResponse:
                 ),
                 "active": notifications_config.get("telegram", {}).get("enabled", True),
             },
+            "push": {
+                "name": "Push Notifications",
+                "enabled": bool(
+                    push_service.is_push_enabled()
+                    and len(push_service.subscriptions) > 0
+                ),
+                "configured": push_service.is_push_enabled(),
+                "active": notifications_config.get("push", {}).get("enabled", True),
+            },
         }
 
         return APIResponse(
@@ -181,9 +205,10 @@ async def get_notification_services() -> APIResponse:
 async def delete_notification_service(service: str) -> APIResponse:
     """Delete/disable a notification service"""
     try:
-        if service not in ["discord", "telegram"]:
+        if service not in ["discord", "telegram", "push"]:
             raise HTTPException(
-                status_code=400, detail="Service must be 'discord' or 'telegram'"
+                status_code=400,
+                detail="Service must be 'discord', 'telegram', or 'push'",
             )
 
         notifications_config = config.notifications_config.copy()
@@ -201,4 +226,69 @@ async def delete_notification_service(service: str) -> APIResponse:
         logger.error(f"Failed to delete notification service {service}: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to delete notification service: {str(e)}"
+        ) from e
+
+
+@router.post("/notifications/push/subscribe", response_model=APIResponse)
+async def subscribe_push_notifications(subscription: PushSubscription) -> APIResponse:
+    """Subscribe to push notifications"""
+    try:
+        push_service.add_subscription(subscription.dict())
+
+        return APIResponse(
+            success=True,
+            data={"subscribed": True},
+            message="Successfully subscribed to push notifications",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to subscribe to push notifications: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to subscribe to push notifications: {str(e)}",
+        ) from e
+
+
+@router.post("/notifications/push/unsubscribe", response_model=APIResponse)
+async def unsubscribe_push_notifications(subscription: PushSubscription) -> APIResponse:
+    """Unsubscribe from push notifications"""
+    try:
+        push_service.remove_subscription(subscription.endpoint)
+
+        return APIResponse(
+            success=True,
+            data={"unsubscribed": True},
+            message="Successfully unsubscribed from push notifications",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to unsubscribe from push notifications: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to unsubscribe from push notifications: {str(e)}",
+        ) from e
+
+
+@router.get("/notifications/push/public-key", response_model=APIResponse)
+async def get_push_public_key() -> APIResponse:
+    """Get VAPID public key for push notification subscription"""
+    try:
+        public_key = push_service.get_vapid_public_key()
+
+        if not public_key:
+            return APIResponse(
+                success=False,
+                message="Push notifications not configured",
+            )
+
+        return APIResponse(
+            success=True,
+            data={"public_key": public_key},
+            message="VAPID public key retrieved successfully",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get VAPID public key: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get VAPID public key: {str(e)}"
         ) from e
