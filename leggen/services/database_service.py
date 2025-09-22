@@ -1553,6 +1553,9 @@ class DatabaseService:
             )
 
             operation_id = cursor.lastrowid
+            if operation_id is None:
+                raise ValueError("Failed to get operation ID after insert")
+
             conn.commit()
             conn.close()
 
@@ -1563,7 +1566,9 @@ class DatabaseService:
             logger.error(f"Failed to persist sync operation: {e}")
             raise
 
-    async def get_sync_operations(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+    async def get_sync_operations(
+        self, limit: int = 50, offset: int = 0
+    ) -> List[Dict[str, Any]]:
         """Get sync operations from database"""
         if not self.sqlite_enabled:
             logger.warning("SQLite database disabled, cannot get sync operations")

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as SystemRouteImport } from './routes/system'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -18,6 +19,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SystemRoute = SystemRouteImport.update({
+  id: '/system',
+  path: '/system',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
+  '/system': typeof SystemRoute
   '/transactions': typeof TransactionsRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
+  '/system': typeof SystemRoute
   '/transactions': typeof TransactionsRoute
 }
 export interface FileRoutesById {
@@ -61,6 +69,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
+  '/system': typeof SystemRoute
   '/transactions': typeof TransactionsRoute
 }
 export interface FileRouteTypes {
@@ -70,15 +79,23 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/notifications'
     | '/settings'
+    | '/system'
     | '/transactions'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analytics' | '/notifications' | '/settings' | '/transactions'
+  to:
+    | '/'
+    | '/analytics'
+    | '/notifications'
+    | '/settings'
+    | '/system'
+    | '/transactions'
   id:
     | '__root__'
     | '/'
     | '/analytics'
     | '/notifications'
     | '/settings'
+    | '/system'
     | '/transactions'
   fileRoutesById: FileRoutesById
 }
@@ -87,6 +104,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   NotificationsRoute: typeof NotificationsRoute
   SettingsRoute: typeof SettingsRoute
+  SystemRoute: typeof SystemRoute
   TransactionsRoute: typeof TransactionsRoute
 }
 
@@ -97,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/transactions'
       fullPath: '/transactions'
       preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/system': {
+      id: '/system'
+      path: '/system'
+      fullPath: '/system'
+      preLoaderRoute: typeof SystemRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -135,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   NotificationsRoute: NotificationsRoute,
   SettingsRoute: SettingsRoute,
+  SystemRoute: SystemRoute,
   TransactionsRoute: TransactionsRoute,
 }
 export const routeTree = rootRouteImport

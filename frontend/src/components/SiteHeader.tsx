@@ -10,7 +10,7 @@ const navigation = [
   { name: "Overview", to: "/" },
   { name: "Transactions", to: "/transactions" },
   { name: "Analytics", to: "/analytics" },
-  { name: "Notifications", to: "/notifications" },
+  { name: "System", to: "/system" },
   { name: "Settings", to: "/settings" },
 ];
 
