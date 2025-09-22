@@ -144,7 +144,8 @@ export default function AccountSettings() {
         <CardHeader>
           <CardTitle>Account Management</CardTitle>
           <CardDescription>
-            Manage your connected bank accounts and customize their display names
+            Manage your connected bank accounts and customize their display
+            names
           </CardDescription>
         </CardHeader>
 
@@ -324,7 +325,8 @@ export default function AccountSettings() {
         <CardHeader>
           <CardTitle>Add New Bank Account</CardTitle>
           <CardDescription>
-            Connect additional bank accounts to track all your finances in one place
+            Connect additional bank accounts to track all your finances in one
+            place
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6">
@@ -332,7 +334,8 @@ export default function AccountSettings() {
             <div className="p-4 bg-muted rounded-lg">
               <Plus className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
-                Bank connection functionality is coming soon. Stay tuned for updates!
+                Bank connection functionality is coming soon. Stay tuned for
+                updates!
               </p>
             </div>
             <Button disabled variant="outline">

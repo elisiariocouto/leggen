@@ -51,22 +51,29 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const themeColor = THEME_COLORS[resolvedTheme];
 
       // Update theme-color meta tag
-      const themeColorMeta = document.getElementById("theme-color-meta") as HTMLMetaElement;
+      const themeColorMeta = document.getElementById(
+        "theme-color-meta",
+      ) as HTMLMetaElement;
       if (themeColorMeta) {
         themeColorMeta.content = themeColor;
       }
 
       // Update Microsoft tile color
-      const msThemeColorMeta = document.getElementById("ms-theme-color-meta") as HTMLMetaElement;
+      const msThemeColorMeta = document.getElementById(
+        "ms-theme-color-meta",
+      ) as HTMLMetaElement;
       if (msThemeColorMeta) {
         msThemeColorMeta.content = themeColor;
       }
 
       // Update Apple status bar style for better iOS integration
-      const appleStatusBarMeta = document.getElementById("apple-status-bar-meta") as HTMLMetaElement;
+      const appleStatusBarMeta = document.getElementById(
+        "apple-status-bar-meta",
+      ) as HTMLMetaElement;
       if (appleStatusBarMeta) {
         // Use 'black-translucent' for dark theme, 'default' for light theme
-        appleStatusBarMeta.content = resolvedTheme === "dark" ? "black-translucent" : "default";
+        appleStatusBarMeta.content =
+          resolvedTheme === "dark" ? "black-translucent" : "default";
       }
     };
 

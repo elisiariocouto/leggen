@@ -39,7 +39,9 @@ export default function System() {
           <CardContent className="p-6">
             <div className="flex items-center justify-center">
               <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-muted-foreground">Loading system status...</span>
+              <span className="ml-2 text-muted-foreground">
+                Loading system status...
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -55,8 +57,8 @@ export default function System() {
           <AlertTitle>Failed to load system data</AlertTitle>
           <AlertDescription className="space-y-3">
             <p>
-              Unable to connect to the Leggen API. Please check your configuration
-              and ensure the API server is running.
+              Unable to connect to the Leggen API. Please check your
+              configuration and ensure the API server is running.
             </p>
             <Button
               onClick={() => refetchSyncOperations()}
@@ -81,7 +83,9 @@ export default function System() {
             <Activity className="h-5 w-5 text-primary" />
             <span>Recent Sync Operations</span>
           </CardTitle>
-          <CardDescription>Latest synchronization activities and their status</CardDescription>
+          <CardDescription>
+            Latest synchronization activities and their status
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {!syncOperations || syncOperations.operations.length === 0 ? (
@@ -91,7 +95,8 @@ export default function System() {
                 No sync operations yet
               </h3>
               <p className="text-muted-foreground">
-                Sync operations will appear here once you start syncing your accounts.
+                Sync operations will appear here once you start syncing your
+                accounts.
               </p>
             </div>
           ) : (
@@ -101,7 +106,7 @@ export default function System() {
                 const isRunning = !operation.completed_at;
                 const duration = operation.duration_seconds
                   ? `${Math.round(operation.duration_seconds)}s`
-                  : '';
+                  : "";
 
                 return (
                   <div
@@ -109,13 +114,15 @@ export default function System() {
                     className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
                   >
                     <div className="flex items-center space-x-4">
-                      <div className={`p-2 rounded-full ${
-                        isRunning
-                          ? 'bg-blue-100 text-blue-600'
-                          : operation.success
-                            ? 'bg-green-100 text-green-600'
-                            : 'bg-red-100 text-red-600'
-                      }`}>
+                      <div
+                        className={`p-2 rounded-full ${
+                          isRunning
+                            ? "bg-blue-100 text-blue-600"
+                            : operation.success
+                              ? "bg-green-100 text-green-600"
+                              : "bg-red-100 text-red-600"
+                        }`}
+                      >
                         {isRunning ? (
                           <RefreshCw className="h-4 w-4 animate-spin" />
                         ) : operation.success ? (
@@ -127,7 +134,11 @@ export default function System() {
                       <div>
                         <div className="flex items-center space-x-2">
                           <h4 className="text-sm font-medium text-foreground">
-                            {isRunning ? 'Sync Running' : operation.success ? 'Sync Completed' : 'Sync Failed'}
+                            {isRunning
+                              ? "Sync Running"
+                              : operation.success
+                                ? "Sync Completed"
+                                : "Sync Failed"}
                           </h4>
                           <Badge variant="outline" className="text-xs">
                             {operation.trigger_type}
@@ -136,11 +147,12 @@ export default function System() {
                         <div className="flex items-center space-x-4 mt-1 text-xs text-muted-foreground">
                           <span className="flex items-center space-x-1">
                             <Clock className="h-3 w-3" />
-                            <span>{startedAt.toLocaleDateString()} {startedAt.toLocaleTimeString()}</span>
+                            <span>
+                              {startedAt.toLocaleDateString()}{" "}
+                              {startedAt.toLocaleTimeString()}
+                            </span>
                           </span>
-                          {duration && (
-                            <span>Duration: {duration}</span>
-                          )}
+                          {duration && <span>Duration: {duration}</span>}
                         </div>
                       </div>
                     </div>
@@ -151,7 +163,9 @@ export default function System() {
                       </div>
                       <div className="flex items-center space-x-2 mt-1">
                         <TrendingUp className="h-3 w-3" />
-                        <span>{operation.transactions_added} new transactions</span>
+                        <span>
+                          {operation.transactions_added} new transactions
+                        </span>
                       </div>
                       {operation.errors.length > 0 && (
                         <div className="flex items-center space-x-2 mt-1 text-red-600">
@@ -175,25 +189,31 @@ export default function System() {
             <CheckCircle className="h-5 w-5 text-green-500" />
             <span>System Health</span>
           </CardTitle>
-          <CardDescription>Overall system status and performance</CardDescription>
+          <CardDescription>
+            Overall system status and performance
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
               <div className="text-2xl font-bold text-green-700">
-                {syncOperations?.operations.filter(op => op.success).length || 0}
+                {syncOperations?.operations.filter((op) => op.success).length ||
+                  0}
               </div>
               <div className="text-sm text-green-600">Successful Syncs</div>
             </div>
             <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
               <div className="text-2xl font-bold text-red-700">
-                {syncOperations?.operations.filter(op => !op.success && op.completed_at).length || 0}
+                {syncOperations?.operations.filter(
+                  (op) => !op.success && op.completed_at,
+                ).length || 0}
               </div>
               <div className="text-sm text-red-600">Failed Syncs</div>
             </div>
             <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="text-2xl font-bold text-blue-700">
-                {syncOperations?.operations.filter(op => !op.completed_at).length || 0}
+                {syncOperations?.operations.filter((op) => !op.completed_at)
+                  .length || 0}
               </div>
               <div className="text-sm text-blue-600">Running Operations</div>
             </div>

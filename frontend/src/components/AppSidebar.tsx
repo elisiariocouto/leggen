@@ -69,7 +69,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <Link to="/" className="flex items-center space-x-2" onClick={handleNavigationClick}>
+              <Link
+                to="/"
+                className="flex items-center space-x-2"
+                onClick={handleNavigationClick}
+              >
                 <Logo size={24} />
                 <span className="text-base font-semibold">Leggen</span>
               </Link>
@@ -138,7 +142,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <div className="border-t border-border/50 max-h-48 overflow-y-auto">
                 {accounts.map((account) => {
                   const primaryBalance = account.balances?.[0]?.amount || 0;
-                  const currency = account.balances?.[0]?.currency || account.currency || "EUR";
+                  const currency =
+                    account.balances?.[0]?.currency ||
+                    account.currency ||
+                    "EUR";
 
                   return (
                     <div
@@ -151,7 +158,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         </div>
                         <div className="space-y-1 min-w-0 flex-1">
                           <p className="text-xs font-medium text-foreground truncate">
-                            {account.display_name || account.name || "Unnamed Account"}
+                            {account.display_name ||
+                              account.name ||
+                              "Unnamed Account"}
                           </p>
                           <p className="text-xs font-semibold text-foreground">
                             {formatCurrency(primaryBalance, currency)}

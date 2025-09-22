@@ -20,7 +20,9 @@ class SyncService:
         """Get current sync status"""
         return self._sync_status
 
-    async def sync_all_accounts(self, force: bool = False, trigger_type: str = "manual") -> SyncResult:
+    async def sync_all_accounts(
+        self, force: bool = False, trigger_type: str = "manual"
+    ) -> SyncResult:
         """Sync all connected accounts"""
         if self._sync_status.is_running and not force:
             raise Exception("Sync is already running")
@@ -149,21 +151,25 @@ class SyncService:
             self._sync_status.last_sync = end_time
 
             # Update sync operation with final results
-            sync_operation.update({
-                "completed_at": end_time.isoformat(),
-                "success": len(errors) == 0,
-                "accounts_processed": accounts_processed,
-                "transactions_added": transactions_added,
-                "transactions_updated": transactions_updated,
-                "balances_updated": balances_updated,
-                "duration_seconds": duration,
-                "errors": errors,
-                "logs": logs,
-            })
+            sync_operation.update(
+                {
+                    "completed_at": end_time.isoformat(),
+                    "success": len(errors) == 0,
+                    "accounts_processed": accounts_processed,
+                    "transactions_added": transactions_added,
+                    "transactions_updated": transactions_updated,
+                    "balances_updated": balances_updated,
+                    "duration_seconds": duration,
+                    "errors": errors,
+                    "logs": logs,
+                }
+            )
 
             # Persist sync operation to database
             try:
-                operation_id = await self.database.persist_sync_operation(sync_operation)
+                operation_id = await self.database.persist_sync_operation(
+                    sync_operation
+                )
                 logger.debug(f"Saved sync operation with ID: {operation_id}")
             except Exception as e:
                 logger.error(f"Failed to persist sync operation: {e}")
@@ -183,7 +189,9 @@ class SyncService:
             logger.info(
                 f"Sync completed: {accounts_processed} accounts, {transactions_added} new transactions"
             )
-            logs.append(f"Sync completed: {accounts_processed} accounts, {transactions_added} new transactions")
+            logs.append(
+                f"Sync completed: {accounts_processed} accounts, {transactions_added} new transactions"
+            )
             return result
 
         except Exception as e:
@@ -195,23 +203,29 @@ class SyncService:
             # Save failed sync operation
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
-            sync_operation.update({
-                "completed_at": end_time.isoformat(),
-                "success": False,
-                "accounts_processed": accounts_processed,
-                "transactions_added": transactions_added,
-                "transactions_updated": transactions_updated,
-                "balances_updated": balances_updated,
-                "duration_seconds": duration,
-                "errors": errors,
-                "logs": logs,
-            })
+            sync_operation.update(
+                {
+                    "completed_at": end_time.isoformat(),
+                    "success": False,
+                    "accounts_processed": accounts_processed,
+                    "transactions_added": transactions_added,
+                    "transactions_updated": transactions_updated,
+                    "balances_updated": balances_updated,
+                    "duration_seconds": duration,
+                    "errors": errors,
+                    "logs": logs,
+                }
+            )
 
             try:
-                operation_id = await self.database.persist_sync_operation(sync_operation)
+                operation_id = await self.database.persist_sync_operation(
+                    sync_operation
+                )
                 logger.debug(f"Saved failed sync operation with ID: {operation_id}")
             except Exception as persist_error:
-                logger.error(f"Failed to persist failed sync operation: {persist_error}")
+                logger.error(
+                    f"Failed to persist failed sync operation: {persist_error}"
+                )
 
             raise
         finally:
@@ -229,8 +243,10 @@ class SyncService:
         try:
             # For now, delegate to sync_all_accounts but with specific filtering
             # This could be optimized later to only process specified accounts
-            result = await self.sync_all_accounts(force=force, trigger_type=trigger_type)
-            
+            result = await self.sync_all_accounts(
+                force=force, trigger_type=trigger_type
+            )
+
             # Filter results to only specified accounts if needed
             # For simplicity, we'll return the full result for now
             return result

@@ -15,7 +15,9 @@ export function Logo({ className = "", size = 32 }: LogoProps) {
       aria-labelledby="logo-title logo-desc"
     >
       <title id="logo-title">leggen — stylized italic L</title>
-      <desc id="logo-desc">Square gradient background with italic white L.</desc>
+      <desc id="logo-desc">
+        Square gradient background with italic white L.
+      </desc>
 
       <defs>
         <linearGradient id="logo-bg" x1="0" y1="0" x2="1" y2="1">

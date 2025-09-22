@@ -3,10 +3,7 @@ import { AppSidebar } from "../components/AppSidebar";
 import { SiteHeader } from "../components/SiteHeader";
 import { PWAInstallPrompt, PWAUpdatePrompt } from "../components/PWAPrompts";
 import { usePWA } from "../hooks/usePWA";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "../components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "../components/ui/sidebar";
 
 function RootLayout() {
   const { updateAvailable, updateSW } = usePWA();

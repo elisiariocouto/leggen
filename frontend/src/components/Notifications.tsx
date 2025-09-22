@@ -36,7 +36,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import type { NotificationSettings, NotificationService, SyncOperationsResponse } from "../types/api";
+import type {
+  NotificationSettings,
+  NotificationService,
+  SyncOperationsResponse,
+} from "../types/api";
 
 export default function Notifications() {
   const [testService, setTestService] = useState("");
@@ -163,7 +167,8 @@ export default function Notifications() {
                 No sync operations yet
               </h3>
               <p className="text-muted-foreground">
-                Sync operations will appear here once you start syncing your accounts.
+                Sync operations will appear here once you start syncing your
+                accounts.
               </p>
             </div>
           ) : (
@@ -171,9 +176,9 @@ export default function Notifications() {
               {syncOperations.operations.slice(0, 5).map((operation) => {
                 const startedAt = new Date(operation.started_at);
                 const isRunning = !operation.completed_at;
-                const duration = operation.duration_seconds 
+                const duration = operation.duration_seconds
                   ? `${Math.round(operation.duration_seconds)}s`
-                  : '';
+                  : "";
 
                 return (
                   <div
@@ -181,13 +186,15 @@ export default function Notifications() {
                     className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
                   >
                     <div className="flex items-center space-x-4">
-                      <div className={`p-2 rounded-full ${
-                        isRunning 
-                          ? 'bg-blue-100 text-blue-600' 
-                          : operation.success 
-                            ? 'bg-green-100 text-green-600' 
-                            : 'bg-red-100 text-red-600'
-                      }`}>
+                      <div
+                        className={`p-2 rounded-full ${
+                          isRunning
+                            ? "bg-blue-100 text-blue-600"
+                            : operation.success
+                              ? "bg-green-100 text-green-600"
+                              : "bg-red-100 text-red-600"
+                        }`}
+                      >
                         {isRunning ? (
                           <RefreshCw className="h-4 w-4 animate-spin" />
                         ) : operation.success ? (
@@ -199,7 +206,11 @@ export default function Notifications() {
                       <div>
                         <div className="flex items-center space-x-2">
                           <h4 className="text-sm font-medium text-foreground">
-                            {isRunning ? 'Sync Running' : operation.success ? 'Sync Completed' : 'Sync Failed'}
+                            {isRunning
+                              ? "Sync Running"
+                              : operation.success
+                                ? "Sync Completed"
+                                : "Sync Failed"}
                           </h4>
                           <Badge variant="outline" className="text-xs">
                             {operation.trigger_type}
@@ -208,11 +219,12 @@ export default function Notifications() {
                         <div className="flex items-center space-x-4 mt-1 text-xs text-muted-foreground">
                           <span className="flex items-center space-x-1">
                             <Clock className="h-3 w-3" />
-                            <span>{startedAt.toLocaleDateString()} {startedAt.toLocaleTimeString()}</span>
+                            <span>
+                              {startedAt.toLocaleDateString()}{" "}
+                              {startedAt.toLocaleTimeString()}
+                            </span>
                           </span>
-                          {duration && (
-                            <span>Duration: {duration}</span>
-                          )}
+                          {duration && <span>Duration: {duration}</span>}
                         </div>
                       </div>
                     </div>
@@ -223,7 +235,9 @@ export default function Notifications() {
                       </div>
                       <div className="flex items-center space-x-2 mt-1">
                         <TrendingUp className="h-3 w-3" />
-                        <span>{operation.transactions_added} new transactions</span>
+                        <span>
+                          {operation.transactions_added} new transactions
+                        </span>
                       </div>
                       {operation.errors.length > 0 && (
                         <div className="flex items-center space-x-2 mt-1 text-red-600">

@@ -227,7 +227,7 @@ export interface SyncOperation {
   duration_seconds?: number;
   errors: string[];
   logs: string[];
-  trigger_type: 'manual' | 'scheduled' | 'api';
+  trigger_type: "manual" | "scheduled" | "api";
 }
 
 export interface SyncOperationsResponse {

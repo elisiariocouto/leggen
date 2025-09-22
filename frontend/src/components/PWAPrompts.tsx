@@ -3,7 +3,7 @@ import { X, Download, RotateCcw } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
 interface PWAPromptProps {
@@ -11,7 +11,8 @@ interface PWAPromptProps {
 }
 
 export function PWAInstallPrompt({ onInstall }: PWAPromptProps) {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
@@ -96,7 +97,10 @@ interface PWAUpdatePromptProps {
   onUpdate: () => void;
 }
 
-export function PWAUpdatePrompt({ updateAvailable, onUpdate }: PWAUpdatePromptProps) {
+export function PWAUpdatePrompt({
+  updateAvailable,
+  onUpdate,
+}: PWAUpdatePromptProps) {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
