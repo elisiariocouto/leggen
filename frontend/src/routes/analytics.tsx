@@ -44,7 +44,7 @@ function AnalyticsDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="space-y-8">
         <div className="animate-pulse">
           <div className="h-8 bg-muted rounded w-48 mb-6"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -62,7 +62,7 @@ function AnalyticsDashboard() {
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="space-y-8">
       {/* Time Period Filter */}
       <Card>
         <CardContent className="p-4">
