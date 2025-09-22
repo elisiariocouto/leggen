@@ -197,6 +197,7 @@ export interface NotificationServicesResponse {
 export interface HealthData {
   status: string;
   config_loaded?: boolean;
+  version?: string;
   message?: string;
   error?: string;
 }

@@ -82,15 +82,6 @@ def create_app() -> FastAPI:
     app.include_router(sync.router, prefix="/api/v1", tags=["sync"])
     app.include_router(notifications.router, prefix="/api/v1", tags=["notifications"])
 
-    @app.get("/")
-    async def root():
-        # Get version dynamically
-        try:
-            version = metadata.version("leggen")
-        except metadata.PackageNotFoundError:
-            version = "unknown"
-        return {"message": "Leggen API is running", "version": version}
-
     @app.get("/api/v1/health")
     async def health():
         """Health check endpoint for API connectivity"""
@@ -99,11 +90,18 @@ def create_app() -> FastAPI:
 
             config_loaded = config._config is not None
 
+            # Get version dynamically
+            try:
+                version = metadata.version("leggen")
+            except metadata.PackageNotFoundError:
+                version = "dev"
+
             return APIResponse(
                 success=True,
                 data={
                     "status": "healthy",
                     "config_loaded": config_loaded,
+                    "version": version,
                     "message": "API is running and responsive",
                 },
                 message="Health check successful",

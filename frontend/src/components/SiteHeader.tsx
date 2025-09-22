@@ -30,16 +30,7 @@ export function SiteHeader() {
     refetchInterval: 30000,
   });
 
-  const {
-    data: versionData,
-    isLoading: versionLoading,
-    isError: versionError,
-  } = useQuery({
-    queryKey: ["version"],
-    queryFn: apiClient.getVersion,
-    refetchInterval: 5 * 60 * 1000, // Refetch version every 5 minutes
-    retry: 1, // Only retry once since version is less critical
-  });
+
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear pt-safe-top">
@@ -56,17 +47,17 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center space-x-3">
           {/* Version display */}
           <div className="flex items-center space-x-1">
-            {versionLoading ? (
+            {healthLoading ? (
               <span className="text-xs text-muted-foreground">v...</span>
-            ) : versionError || !versionData ? (
+            ) : healthError || !healthStatus ? (
               <span className="text-xs text-muted-foreground">v?</span>
             ) : (
               <span className="text-xs text-muted-foreground">
-                v{versionData.version}
+                v{healthStatus.version || "?"}
               </span>
             )}
           </div>
-          
+
           {/* Connection status */}
           <div className="flex items-center space-x-1">
             {healthLoading ? (
