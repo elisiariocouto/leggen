@@ -33,7 +33,7 @@ import {
 const navigation = [
   { name: "Overview", icon: List, to: "/" },
   { name: "Analytics", icon: BarChart3, to: "/analytics" },
-  { name: "System Status", icon: Activity, to: "/notifications" },
+  { name: "System", icon: Activity, to: "/system" },
   { name: "Settings", icon: Settings, to: "/settings" },
 ];
 
