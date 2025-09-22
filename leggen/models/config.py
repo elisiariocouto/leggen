@@ -27,9 +27,14 @@ class TelegramNotificationConfig(BaseModel):
     enabled: bool = Field(default=True, description="Enable Telegram notifications")
 
 
+class PushNotificationConfig(BaseModel):
+    enabled: bool = Field(default=True, description="Enable push notifications")
+
+
 class NotificationConfig(BaseModel):
     discord: Optional[DiscordNotificationConfig] = None
     telegram: Optional[TelegramNotificationConfig] = None
+    push: Optional[PushNotificationConfig] = None
 
 
 class FilterConfig(BaseModel):

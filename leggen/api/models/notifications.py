@@ -18,6 +18,20 @@ class TelegramConfig(BaseModel):
     enabled: bool = True
 
 
+class PushConfig(BaseModel):
+    """Push notification configuration"""
+
+    enabled: bool = True
+
+
+class PushSubscription(BaseModel):
+    """Push notification subscription data"""
+
+    endpoint: str
+    keys: dict  # p256dh and auth keys
+    user_agent: Optional[str] = None
+
+
 class NotificationFilters(BaseModel):
     """Notification filters configuration"""
 
@@ -30,13 +44,14 @@ class NotificationSettings(BaseModel):
 
     discord: Optional[DiscordConfig] = None
     telegram: Optional[TelegramConfig] = None
+    push: Optional[PushConfig] = None
     filters: NotificationFilters = NotificationFilters()
 
 
 class NotificationTest(BaseModel):
     """Test notification request"""
 
-    service: str  # "discord" or "telegram"
+    service: str  # "discord", "telegram", or "push"
     message: str = "Test notification from Leggen"
 
 

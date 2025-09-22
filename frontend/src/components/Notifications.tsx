@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
@@ -10,8 +10,12 @@ import {
   CheckCircle,
   Settings,
   TestTube,
+  Smartphone,
+  BellRing,
+  BellOff,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
+import { pushManager } from "../lib/pushNotifications";
 import NotificationsSkeleton from "./NotificationsSkeleton";
 import {
   Card,
@@ -39,7 +43,25 @@ export default function Notifications() {
   const [testMessage, setTestMessage] = useState(
     "Test notification from Leggen",
   );
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
+  const [pushLoading, setPushLoading] = useState(false);
   const queryClient = useQueryClient();
+
+  // Check push notification status on mount
+  useEffect(() => {
+    const checkPushStatus = async () => {
+      try {
+        setPushPermission(pushManager.getPermissionStatus());
+        const subscribed = await pushManager.isSubscribed();
+        setPushSubscribed(subscribed);
+      } catch (error) {
+        console.error('Failed to check push notification status:', error);
+      }
+    };
+
+    checkPushStatus();
+  }, []);
 
   const {
     data: settings,
@@ -129,6 +151,49 @@ export default function Notifications() {
     }
   };
 
+  const handlePushSubscribe = async () => {
+    setPushLoading(true);
+    try {
+      // Request notification permission if not granted
+      if (pushPermission !== 'granted') {
+        const permission = await pushManager.requestPermission();
+        setPushPermission(permission);
+
+        if (permission !== 'granted') {
+          alert('Notification permission is required for push notifications');
+          return;
+        }
+      }
+
+      await pushManager.subscribe();
+      setPushSubscribed(true);
+
+      // Refresh services list to show updated push status
+      queryClient.invalidateQueries({ queryKey: ["notificationServices"] });
+    } catch (error) {
+      console.error('Failed to subscribe to push notifications:', error);
+      alert('Failed to subscribe to push notifications. Please try again.');
+    } finally {
+      setPushLoading(false);
+    }
+  };
+
+  const handlePushUnsubscribe = async () => {
+    setPushLoading(true);
+    try {
+      await pushManager.unsubscribe();
+      setPushSubscribed(false);
+
+      // Refresh services list to show updated push status
+      queryClient.invalidateQueries({ queryKey: ["notificationServices"] });
+    } catch (error) {
+      console.error('Failed to unsubscribe from push notifications:', error);
+      alert('Failed to unsubscribe from push notifications. Please try again.');
+    } finally {
+      setPushLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Test Notification Section */}
@@ -186,6 +251,85 @@ export default function Notifications() {
         </CardContent>
       </Card>
 
+      {/* Push Notifications Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Smartphone className="h-5 w-5 text-primary" />
+            <span>Push Notifications</span>
+          </CardTitle>
+          <CardDescription>
+            Receive notifications directly on your device when the app is installed as a PWA
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                {pushSubscribed ? (
+                  <BellRing className="h-6 w-6 text-green-500" />
+                ) : (
+                  <BellOff className="h-6 w-6 text-muted-foreground" />
+                )}
+                <div>
+                  <h4 className="text-sm font-medium text-foreground">
+                    {pushSubscribed ? "Push Notifications Enabled" : "Push Notifications Disabled"}
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    {pushPermission === 'denied'
+                      ? 'Notification permission denied'
+                      : pushPermission === 'default'
+                      ? 'Click to enable notifications'
+                      : pushSubscribed
+                      ? 'You will receive push notifications'
+                      : 'Click to subscribe to push notifications'
+                    }
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                onClick={pushSubscribed ? handlePushUnsubscribe : handlePushSubscribe}
+                disabled={pushLoading || pushPermission === 'denied'}
+                variant={pushSubscribed ? "destructive" : "default"}
+              >
+                {pushLoading ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : pushSubscribed ? (
+                  <BellOff className="h-4 w-4 mr-2" />
+                ) : (
+                  <BellRing className="h-4 w-4 mr-2" />
+                )}
+                {pushLoading
+                  ? "Processing..."
+                  : pushSubscribed
+                  ? "Unsubscribe"
+                  : "Subscribe"
+                }
+              </Button>
+            </div>
+
+            {pushPermission === 'denied' && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Notification permission has been denied. Please enable notifications in your browser settings and refresh the page.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!pushSubscribed && pushPermission === 'granted' && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Push notifications are supported but you haven't subscribed yet. Click "Subscribe" to enable them.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Notification Services */}
       <Card>
         <CardHeader>
@@ -221,6 +365,8 @@ export default function Notifications() {
                           <MessageSquare className="h-6 w-6 text-muted-foreground" />
                         ) : service.name.toLowerCase().includes("telegram") ? (
                           <Send className="h-6 w-6 text-muted-foreground" />
+                        ) : service.name.toLowerCase().includes("push") ? (
+                          <Smartphone className="h-6 w-6 text-muted-foreground" />
                         ) : (
                           <Bell className="h-6 w-6 text-muted-foreground" />
                         )}
