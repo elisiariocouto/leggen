@@ -1,4 +1,34 @@
 
+## 2025.9.20 (2025/09/22)
+
+### Features
+
+- **api:** Add sync operations tracking and database storage ([61f95920](https://github.com/elisiariocouto/leggen/commit/61f9592095220f47b758e19a63d70096deb35a92))
+- **frontend:** Rename notifications page to System Status and add sync operations section ([3f2ff21e](https://github.com/elisiariocouto/leggen/commit/3f2ff21eac2c24e04d5957bbd15a6b8a5d0c021d))
+-  Consolidate version display to use health endpoint. ([76a30d23](https://github.com/elisiariocouto/leggen/commit/76a30d23af07466ecfd571e7b7bb6724412652c1))
+
+
+### Refactor
+
+- **frontend:** Reorganize pages with tabbed Settings and focused System page ([65404848](https://github.com/elisiariocouto/leggen/commit/65404848aa27cfcb11a371c194ca533b17cb08ff))
+
+
+
+## 2025.9.20 (2025/09/22)
+
+### Features
+
+- **api:** Add sync operations tracking and database storage ([61f95920](https://github.com/elisiariocouto/leggen/commit/61f9592095220f47b758e19a63d70096deb35a92))
+- **frontend:** Rename notifications page to System Status and add sync operations section ([3f2ff21e](https://github.com/elisiariocouto/leggen/commit/3f2ff21eac2c24e04d5957bbd15a6b8a5d0c021d))
+-  Consolidate version display to use health endpoint. ([76a30d23](https://github.com/elisiariocouto/leggen/commit/76a30d23af07466ecfd571e7b7bb6724412652c1))
+
+
+### Refactor
+
+- **frontend:** Reorganize pages with tabbed Settings and focused System page ([65404848](https://github.com/elisiariocouto/leggen/commit/65404848aa27cfcb11a371c194ca533b17cb08ff))
+
+
+
 ## 2025.9.19 (2025/09/21)
 
 ### Bug Fixes
