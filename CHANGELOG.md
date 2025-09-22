@@ -1,4 +1,30 @@
 
+## 2025.9.21 (2025/09/22)
+
+### Bug Fixes
+
+- **frontend:** Remove duplicate padding from Analytics page for consistent layout ([27f3f2db](https://github.com/elisiariocouto/leggen/commit/27f3f2dbba91777234769cca08de5dbe8b378f10))
+
+
+### Features
+
+- **frontend:** Implement notification settings with separate drawers and improved design. ([c332642e](https://github.com/elisiariocouto/leggen/commit/c332642e648cb0a29100b500c03e17ae322845f8))
+
+
+
+## 2025.9.21 (2025/09/22)
+
+### Bug Fixes
+
+- **frontend:** Remove duplicate padding from Analytics page for consistent layout ([27f3f2db](https://github.com/elisiariocouto/leggen/commit/27f3f2dbba91777234769cca08de5dbe8b378f10))
+
+
+### Features
+
+- **frontend:** Implement notification settings with separate drawers and improved design. ([c332642e](https://github.com/elisiariocouto/leggen/commit/c332642e648cb0a29100b500c03e17ae322845f8))
+
+
+
 ## 2025.9.20 (2025/09/22)
 
 ### Features
