@@ -16,6 +16,7 @@ import {
   Trash2,
   User,
   Filter,
+  Cloud,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
@@ -35,11 +36,13 @@ import NotificationFiltersDrawer from "./NotificationFiltersDrawer";
 import DiscordConfigDrawer from "./DiscordConfigDrawer";
 import TelegramConfigDrawer from "./TelegramConfigDrawer";
 import AddBankAccountDrawer from "./AddBankAccountDrawer";
+import S3BackupConfigDrawer from "./S3BackupConfigDrawer";
 import type {
   Account,
   Balance,
   NotificationSettings,
   NotificationService,
+  BackupSettings,
 } from "../types/api";
 
 // Helper function to get status indicator color and styles
@@ -125,6 +128,17 @@ export default function Settings() {
     queryFn: apiClient.getBankConnectionsStatus,
   });
 
+  // Backup queries
+  const {
+    data: backupSettings,
+    isLoading: backupLoading,
+    error: backupError,
+    refetch: refetchBackup,
+  } = useQuery<BackupSettings>({
+    queryKey: ["backupSettings"],
+    queryFn: apiClient.getBackupSettings,
+  });
+
   // Account mutations
   const updateAccountMutation = useMutation({
     mutationFn: ({ id, display_name }: { id: string; display_name: string }) =>
@@ -189,8 +203,8 @@ export default function Settings() {
     }
   };
 
-  const isLoading = accountsLoading || settingsLoading || servicesLoading;
-  const hasError = accountsError || settingsError || servicesError;
+  const isLoading = accountsLoading || settingsLoading || servicesLoading || backupLoading;
+  const hasError = accountsError || settingsError || servicesError || backupError;
 
   if (isLoading) {
     return <AccountsSkeleton />;
@@ -211,6 +225,7 @@ export default function Settings() {
               refetchAccounts();
               refetchSettings();
               refetchServices();
+              refetchBackup();
             }}
             variant="outline"
             size="sm"
@@ -226,7 +241,7 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="accounts" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="accounts" className="flex items-center space-x-2">
             <User className="h-4 w-4" />
             <span>Accounts</span>
@@ -237,6 +252,10 @@ export default function Settings() {
           >
             <Bell className="h-4 w-4" />
             <span>Notifications</span>
+          </TabsTrigger>
+          <TabsTrigger value="backup" className="flex items-center space-x-2">
+            <Cloud className="h-4 w-4" />
+            <span>Backup</span>
           </TabsTrigger>
         </TabsList>
 
@@ -723,6 +742,107 @@ export default function Settings() {
                     notifications.
                   </p>
                   <NotificationFiltersDrawer settings={notificationSettings} />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="backup" className="space-y-6">
+          {/* S3 Backup Configuration */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Cloud className="h-5 w-5 text-primary" />
+                <span>S3 Backup Configuration</span>
+              </CardTitle>
+              <CardDescription>
+                Configure automatic database backups to Amazon S3 or S3-compatible storage
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              {!backupSettings?.s3 ? (
+                <div className="text-center py-8">
+                  <Cloud className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    No S3 backup configured
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Set up S3 backup to automatically backup your database to the cloud.
+                  </p>
+                  <S3BackupConfigDrawer settings={backupSettings} />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-3 bg-muted rounded-full">
+                        <Cloud className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-3">
+                          <h4 className="text-lg font-medium text-foreground">
+                            S3 Backup
+                          </h4>
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                              backupSettings.s3.enabled
+                                ? 'bg-green-500'
+                                : 'bg-muted-foreground'
+                            }`} />
+                            <span className="text-sm text-muted-foreground">
+                              {backupSettings.s3.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          <p className="text-sm text-muted-foreground">
+                            <span className="font-medium">Bucket:</span> {backupSettings.s3.bucket_name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            <span className="font-medium">Region:</span> {backupSettings.s3.region}
+                          </p>
+                          {backupSettings.s3.endpoint_url && (
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium">Endpoint:</span> {backupSettings.s3.endpoint_url}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <S3BackupConfigDrawer settings={backupSettings} />
+                  </div>
+                  
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h5 className="font-medium mb-2">Backup Information</h5>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Database backups are stored in the "leggen_backups/" folder in your S3 bucket.
+                      Backups include the complete SQLite database file.
+                    </p>
+                    <div className="flex space-x-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          // TODO: Implement manual backup trigger
+                          console.log("Manual backup triggered");
+                        }}
+                      >
+                        Create Backup Now
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          // TODO: Implement backup list view
+                          console.log("View backups");
+                        }}
+                      >
+                        View Backups
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>

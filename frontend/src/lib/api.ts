@@ -17,6 +17,10 @@ import type {
   BankConnectionStatus,
   BankRequisition,
   Country,
+  BackupSettings,
+  BackupTest,
+  BackupInfo,
+  BackupOperation,
 } from "../types/api";
 
 // Use VITE_API_URL for development, relative URLs for production
@@ -273,6 +277,37 @@ export const apiClient = {
   getSupportedCountries: async (): Promise<Country[]> => {
     const response = await api.get<ApiResponse<Country[]>>("/banks/countries");
     return response.data.data;
+  },
+
+  // Backup endpoints
+  getBackupSettings: async (): Promise<BackupSettings> => {
+    const response = await api.get<ApiResponse<BackupSettings>>(
+      "/backup/settings",
+    );
+    return response.data.data;
+  },
+
+  updateBackupSettings: async (
+    settings: BackupSettings,
+  ): Promise<BackupSettings> => {
+    const response = await api.put<ApiResponse<BackupSettings>>(
+      "/backup/settings",
+      settings,
+    );
+    return response.data.data;
+  },
+
+  testBackupConnection: async (test: BackupTest): Promise<void> => {
+    await api.post("/backup/test", test);
+  },
+
+  listBackups: async (): Promise<BackupInfo[]> => {
+    const response = await api.get<ApiResponse<BackupInfo[]>>("/backup/list");
+    return response.data.data;
+  },
+
+  performBackupOperation: async (operation: BackupOperation): Promise<void> => {
+    await api.post("/backup/operation", operation);
   },
 };
 
