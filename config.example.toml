@@ -28,3 +28,13 @@ enabled = true
 [filters]
 case_insensitive = ["salary", "utility"]
 case_sensitive = ["SpecificStore"]
+
+# Optional: S3 backup configuration
+[backup.s3]
+access_key_id = "your-s3-access-key"
+secret_access_key = "your-s3-secret-key"
+bucket_name = "your-bucket-name"
+region = "us-east-1"
+# endpoint_url = "https://custom-s3-endpoint.com"  # Optional: for custom S3-compatible endpoints
+path_style = false  # Set to true for path-style addressing
+enabled = true
