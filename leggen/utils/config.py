@@ -162,6 +162,11 @@ class Config:
         }
         return self.config.get("scheduler", default_schedule)
 
+    @property
+    def backup_config(self) -> Dict[str, Any]:
+        """Get backup configuration"""
+        return self.config.get("backup", {})
+
 
 def load_config(ctx: click.Context, _, filename):
     try:
