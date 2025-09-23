@@ -150,6 +150,8 @@ async def test_backup_connection(test_request: BackupTest) -> APIResponse:
                 message="S3 connection test failed",
             )
             
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to test backup connection: {e}")
         raise HTTPException(
@@ -200,8 +202,14 @@ async def backup_operation(operation_request: BackupOperation) -> APIResponse:
                 status_code=400, detail="S3 backup is not configured"
             )
         
-        # Convert config to model
-        s3_config = S3BackupConfig(**backup_config)
+        # Convert config to model with validation
+        try:
+            s3_config = S3BackupConfig(**backup_config)
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid S3 configuration: {str(e)}"
+            ) from e
+            
         backup_service = BackupService(s3_config)
         
         if operation_request.operation == "backup":

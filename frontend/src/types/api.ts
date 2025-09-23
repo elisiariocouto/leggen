@@ -277,3 +277,34 @@ export interface Country {
   code: string;
   name: string;
 }
+
+// Backup types
+export interface S3Config {
+  access_key_id: string;
+  secret_access_key: string;
+  bucket_name: string;
+  region: string;
+  endpoint_url?: string;
+  path_style: boolean;
+  enabled: boolean;
+}
+
+export interface BackupSettings {
+  s3?: S3Config;
+}
+
+export interface BackupTest {
+  service: string;
+  config: S3Config;
+}
+
+export interface BackupInfo {
+  key: string;
+  last_modified: string;
+  size: number;
+}
+
+export interface BackupOperation {
+  operation: string;
+  backup_key?: string;
+}
