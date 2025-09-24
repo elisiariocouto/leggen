@@ -3,10 +3,14 @@ import { AppSidebar } from "../components/AppSidebar";
 import { SiteHeader } from "../components/SiteHeader";
 import { PWAInstallPrompt, PWAUpdatePrompt } from "../components/PWAPrompts";
 import { usePWA } from "../hooks/usePWA";
+import { useVersionCheck } from "../hooks/useVersionCheck";
 import { SidebarInset, SidebarProvider } from "../components/ui/sidebar";
 
 function RootLayout() {
-  const { updateAvailable, updateSW } = usePWA();
+  const { updateAvailable, updateSW, forceReload } = usePWA();
+  
+  // Check for version mismatches and force reload if needed
+  useVersionCheck(forceReload);
 
   const handlePWAInstall = () => {
     console.log("PWA installed successfully");
