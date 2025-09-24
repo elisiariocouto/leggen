@@ -18,7 +18,10 @@ class TestLeggenAPIClient:
         client = LeggenAPIClient("http://localhost:8000")
 
         with requests_mock.Mocker() as m:
-            m.get("http://localhost:8000/health", json={"status": "healthy"})
+            m.get(
+                "http://localhost:8000/api/v1/health",
+                json={"data": {"status": "healthy"}},
+            )
 
             result = client.health_check()
             assert result is True
@@ -112,13 +115,13 @@ class TestLeggenAPIClient:
         custom_url = "http://custom-host:9000"
         client = LeggenAPIClient(custom_url)
 
-        assert client.base_url == custom_url
+        assert client.base_url == f"{custom_url}/api/v1"
 
     def test_environment_variable_url(self):
         """Test using environment variable for API URL."""
         with patch.dict("os.environ", {"LEGGEN_API_URL": "http://env-host:7000"}):
             client = LeggenAPIClient()
-            assert client.base_url == "http://env-host:7000"
+            assert client.base_url == "http://env-host:7000/api/v1"
 
     def test_sync_with_options(self):
         """Test sync with various options."""
