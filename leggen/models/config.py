@@ -32,6 +32,20 @@ class NotificationConfig(BaseModel):
     telegram: Optional[TelegramNotificationConfig] = None
 
 
+class S3BackupConfig(BaseModel):
+    access_key_id: str = Field(..., description="AWS S3 access key ID")
+    secret_access_key: str = Field(..., description="AWS S3 secret access key")
+    bucket_name: str = Field(..., description="S3 bucket name")
+    region: str = Field(default="us-east-1", description="AWS S3 region")
+    endpoint_url: Optional[str] = Field(default=None, description="Custom S3 endpoint URL")
+    path_style: bool = Field(default=False, description="Use path-style addressing")
+    enabled: bool = Field(default=True, description="Enable S3 backups")
+
+
+class BackupConfig(BaseModel):
+    s3: Optional[S3BackupConfig] = None
+
+
 class FilterConfig(BaseModel):
     case_insensitive: Optional[List[str]] = Field(default_factory=list)
     case_sensitive: Optional[List[str]] = Field(default_factory=list)
@@ -56,3 +70,4 @@ class Config(BaseModel):
     notifications: Optional[NotificationConfig] = None
     filters: Optional[FilterConfig] = None
     scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)
+    backup: Optional[BackupConfig] = None
