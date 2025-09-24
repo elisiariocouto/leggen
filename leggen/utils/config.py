@@ -39,13 +39,11 @@ class Config:
         try:
             with open(config_path, "rb") as f:
                 raw_config = tomllib.load(f)
-                logger.info(f"Configuration loaded from {config_path}")
 
             # Validate configuration using Pydantic
             try:
                 self._config_model = ConfigModel(**raw_config)
                 self._config = self._config_model.dict(by_alias=True, exclude_none=True)
-                logger.info("Configuration validation successful")
             except ValidationError as e:
                 logger.error(f"Configuration validation failed: {e}")
                 raise ValueError(f"Invalid configuration: {e}") from e
