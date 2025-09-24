@@ -190,8 +190,7 @@ export default function TransactionsTable() {
               <div className="text-xs text-muted-foreground space-y-1">
                 {account && (
                   <p className="truncate">
-                    {account.name || "Unnamed Account"} •{" "}
-                    {account.institution_id}
+                    {account.display_name || "Unnamed Account"}
                   </p>
                 )}
                 {(transaction.creditor_name || transaction.debtor_name) && (
@@ -486,8 +485,7 @@ export default function TransactionsTable() {
                             <div className="text-xs text-muted-foreground space-y-1 mt-1">
                               {account && (
                                 <p className="break-words">
-                                  {account.name || "Unnamed Account"} •{" "}
-                                  {account.institution_id}
+                                  {account.display_name || "Unnamed Account"}
                                 </p>
                               )}
                               {(transaction.creditor_name ||

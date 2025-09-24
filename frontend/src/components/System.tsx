@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   RefreshCw,
   AlertCircle,
@@ -7,6 +8,7 @@ import {
   Clock,
   TrendingUp,
   User,
+  FileText,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import {
@@ -19,7 +21,73 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import type { SyncOperationsResponse } from "../types/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import { ScrollArea } from "./ui/scroll-area";
+import type { SyncOperationsResponse, SyncOperation } from "../types/api";
+
+// Component for viewing sync operation logs
+function LogsDialog({ operation }: { operation: SyncOperation }) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="shrink-0">
+          <FileText className="h-3 w-3 mr-1" />
+          <span className="hidden sm:inline">View Logs</span>
+          <span className="sm:hidden">Logs</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>Sync Operation Logs</DialogTitle>
+          <DialogDescription>
+            Operation #{operation.id} - Started at{" "}
+            {new Date(operation.started_at).toLocaleString()}
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="h-[60vh] w-full rounded border p-4">
+          <div className="space-y-2">
+            {operation.logs.length === 0 ? (
+              <p className="text-muted-foreground text-sm">No logs available</p>
+            ) : (
+              operation.logs.map((log, index) => (
+                <div
+                  key={index}
+                  className="text-sm font-mono bg-muted/50 p-2 rounded text-wrap break-all"
+                >
+                  {log}
+                </div>
+              ))
+            )}
+          </div>
+          {operation.errors.length > 0 && (
+            <>
+              <div className="mt-4 mb-2 text-sm font-semibold text-destructive">
+                Errors:
+              </div>
+              <div className="space-y-2">
+                {operation.errors.map((error, index) => (
+                  <div
+                    key={index}
+                    className="text-sm font-mono bg-destructive/10 border border-destructive/20 p-2 rounded text-wrap break-all text-destructive"
+                  >
+                    {error}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function System() {
   const {
@@ -111,68 +179,128 @@ export default function System() {
                 return (
                   <div
                     key={operation.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
+                    className="border rounded-lg hover:bg-accent transition-colors"
                   >
-                    <div className="flex items-center space-x-4">
-                      <div
-                        className={`p-2 rounded-full ${
-                          isRunning
-                            ? "bg-blue-100 text-blue-600"
-                            : operation.success
-                              ? "bg-green-100 text-green-600"
-                              : "bg-red-100 text-red-600"
-                        }`}
-                      >
-                        {isRunning ? (
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                        ) : operation.success ? (
-                          <CheckCircle className="h-4 w-4" />
-                        ) : (
-                          <AlertCircle className="h-4 w-4" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h4 className="text-sm font-medium text-foreground">
-                            {isRunning
-                              ? "Sync Running"
+                    {/* Desktop Layout */}
+                    <div className="hidden md:flex items-center justify-between p-4">
+                      <div className="flex items-center space-x-4">
+                        <div
+                          className={`p-2 rounded-full ${
+                            isRunning
+                              ? "bg-blue-100 text-blue-600"
                               : operation.success
-                                ? "Sync Completed"
-                                : "Sync Failed"}
-                          </h4>
-                          <Badge variant="outline" className="text-xs">
-                            {operation.trigger_type}
-                          </Badge>
+                                ? "bg-green-100 text-green-600"
+                                : "bg-red-100 text-red-600"
+                          }`}
+                        >
+                          {isRunning ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : operation.success ? (
+                            <CheckCircle className="h-4 w-4" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4" />
+                          )}
                         </div>
-                        <div className="flex items-center space-x-4 mt-1 text-xs text-muted-foreground">
-                          <span className="flex items-center space-x-1">
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              {startedAt.toLocaleDateString()}{" "}
-                              {startedAt.toLocaleTimeString()}
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h4 className="text-sm font-medium text-foreground">
+                              {isRunning
+                                ? "Sync Running"
+                                : operation.success
+                                  ? "Sync Completed"
+                                  : "Sync Failed"}
+                            </h4>
+                            <Badge variant="outline" className="text-xs">
+                              {operation.trigger_type}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center space-x-4 mt-1 text-xs text-muted-foreground">
+                            <span className="flex items-center space-x-1">
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                {startedAt.toLocaleDateString()}{" "}
+                                {startedAt.toLocaleTimeString()}
+                              </span>
                             </span>
-                          </span>
-                          {duration && <span>Duration: {duration}</span>}
+                            {duration && <span>Duration: {duration}</span>}
+                          </div>
                         </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right text-sm text-muted-foreground">
+                          <div className="flex items-center space-x-2">
+                            <User className="h-3 w-3" />
+                            <span>{operation.accounts_processed} accounts</span>
+                          </div>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>
+                              {operation.transactions_added} new transactions
+                            </span>
+                          </div>
+                        </div>
+                        <LogsDialog operation={operation} />
                       </div>
                     </div>
-                    <div className="text-right text-sm text-muted-foreground">
-                      <div className="flex items-center space-x-2">
-                        <User className="h-3 w-3" />
-                        <span>{operation.accounts_processed} accounts</span>
-                      </div>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <TrendingUp className="h-3 w-3" />
-                        <span>
-                          {operation.transactions_added} new transactions
-                        </span>
-                      </div>
-                      {operation.errors.length > 0 && (
-                        <div className="flex items-center space-x-2 mt-1 text-red-600">
-                          <AlertCircle className="h-3 w-3" />
-                          <span>{operation.errors.length} errors</span>
+
+                    {/* Mobile Layout */}
+                    <div className="md:hidden p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className={`p-2 rounded-full ${
+                              isRunning
+                                ? "bg-blue-100 text-blue-600"
+                                : operation.success
+                                  ? "bg-green-100 text-green-600"
+                                  : "bg-red-100 text-red-600"
+                            }`}
+                          >
+                            {isRunning ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : operation.success ? (
+                              <CheckCircle className="h-4 w-4" />
+                            ) : (
+                              <AlertCircle className="h-4 w-4" />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-foreground">
+                              {isRunning
+                                ? "Sync Running"
+                                : operation.success
+                                  ? "Sync Completed"
+                                  : "Sync Failed"}
+                            </h4>
+                            <Badge variant="outline" className="text-xs mt-1">
+                              {operation.trigger_type}
+                            </Badge>
+                          </div>
                         </div>
-                      )}
+                        <LogsDialog operation={operation} />
+                      </div>
+
+                      <div className="text-xs text-muted-foreground space-y-2">
+                        <div className="flex items-center space-x-1">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            {startedAt.toLocaleDateString()}{" "}
+                            {startedAt.toLocaleTimeString()}
+                          </span>
+                          {duration && <span className="ml-2">• {duration}</span>}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex items-center space-x-1">
+                            <User className="h-3 w-3" />
+                            <span>{operation.accounts_processed} accounts</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>{operation.transactions_added} new transactions</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
