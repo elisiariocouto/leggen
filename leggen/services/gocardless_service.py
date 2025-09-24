@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import httpx
 from loguru import logger
@@ -29,6 +29,27 @@ class GoCardlessService:
             "url", "https://bankaccountdata.gocardless.com/api/v2"
         )
         self._token = None
+
+    async def _make_authenticated_request(
+        self, method: str, url: str, **kwargs
+    ) -> Dict[str, Any]:
+        """Make authenticated request with automatic token refresh on 401"""
+        headers = await self._get_auth_headers()
+
+        async with httpx.AsyncClient() as client:
+            response = await client.request(method, url, headers=headers, **kwargs)
+            _log_rate_limits(response)
+
+            # If we get 401, clear token cache and retry once
+            if response.status_code == 401:
+                logger.warning("Got 401, clearing token cache and retrying")
+                self._token = None
+                headers = await self._get_auth_headers()
+                response = await client.request(method, url, headers=headers, **kwargs)
+                _log_rate_limits(response)
+
+            response.raise_for_status()
+            return response.json()
 
     async def _get_auth_headers(self) -> Dict[str, str]:
         """Get authentication headers for GoCardless API"""
@@ -102,74 +123,42 @@ class GoCardlessService:
         with open(auth_file, "w") as f:
             json.dump(auth_data, f)
 
-    async def get_institutions(self, country: str = "PT") -> List[Dict[str, Any]]:
+    async def get_institutions(self, country: str = "PT") -> Dict[str, Any]:
         """Get available bank institutions for a country"""
-        headers = await self._get_auth_headers()
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.base_url}/institutions/",
-                headers=headers,
-                params={"country": country},
-            )
-            _log_rate_limits(response)
-            response.raise_for_status()
-            return response.json()
+        return await self._make_authenticated_request(
+            "GET", f"{self.base_url}/institutions/", params={"country": country}
+        )
 
     async def create_requisition(
         self, institution_id: str, redirect_url: str
     ) -> Dict[str, Any]:
         """Create a bank connection requisition"""
-        headers = await self._get_auth_headers()
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.base_url}/requisitions/",
-                headers=headers,
-                json={"institution_id": institution_id, "redirect": redirect_url},
-            )
-            _log_rate_limits(response)
-            response.raise_for_status()
-            return response.json()
+        return await self._make_authenticated_request(
+            "POST",
+            f"{self.base_url}/requisitions/",
+            json={"institution_id": institution_id, "redirect": redirect_url},
+        )
 
     async def get_requisitions(self) -> Dict[str, Any]:
         """Get all requisitions"""
-        headers = await self._get_auth_headers()
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.base_url}/requisitions/", headers=headers
-            )
-            _log_rate_limits(response)
-            response.raise_for_status()
-            return response.json()
+        return await self._make_authenticated_request(
+            "GET", f"{self.base_url}/requisitions/"
+        )
 
     async def get_account_details(self, account_id: str) -> Dict[str, Any]:
         """Get account details"""
-        headers = await self._get_auth_headers()
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.base_url}/accounts/{account_id}/", headers=headers
-            )
-            _log_rate_limits(response)
-            response.raise_for_status()
-            return response.json()
+        return await self._make_authenticated_request(
+            "GET", f"{self.base_url}/accounts/{account_id}/"
+        )
 
     async def get_account_balances(self, account_id: str) -> Dict[str, Any]:
         """Get account balances"""
-        headers = await self._get_auth_headers()
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.base_url}/accounts/{account_id}/balances/", headers=headers
-            )
-            _log_rate_limits(response)
-            response.raise_for_status()
-            return response.json()
+        return await self._make_authenticated_request(
+            "GET", f"{self.base_url}/accounts/{account_id}/balances/"
+        )
 
     async def get_account_transactions(self, account_id: str) -> Dict[str, Any]:
         """Get account transactions"""
-        headers = await self._get_auth_headers()
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.base_url}/accounts/{account_id}/transactions/", headers=headers
-            )
-            _log_rate_limits(response)
-            response.raise_for_status()
-            return response.json()
+        return await self._make_authenticated_request(
+            "GET", f"{self.base_url}/accounts/{account_id}/transactions/"
+        )

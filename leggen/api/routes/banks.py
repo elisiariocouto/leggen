@@ -32,7 +32,7 @@ async def get_bank_institutions(
                 countries=inst["countries"],
                 logo=inst.get("logo"),
             )
-            for inst in institutions_data
+            for inst in institutions_data.get("results", [])
         ]
 
         return APIResponse(
