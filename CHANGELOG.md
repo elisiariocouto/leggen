@@ -1,4 +1,46 @@
 
+## 2025.9.22 (2025/09/24)
+
+### Bug Fixes
+
+- **api:** Add automatic token refresh on 401 errors in GoCardless service. ([36d698f7](https://github.com/elisiariocouto/leggen/commit/36d698f7ce05c7db0e4b07dd07979de2c70b053e))
+- **api:** Fix banks API test fixtures to match GoCardless response format. ([24792744](https://github.com/elisiariocouto/leggen/commit/24792744f9660063e1a3abb9ed8e925fea9a5e60))
+
+
+### Features
+
+- **api:** Add separate sync failure notifications. ([e4e3f885](https://github.com/elisiariocouto/leggen/commit/e4e3f885eab1d45b0e10465ca04eb3f74e9c5a4d))
+- **api:** Add bank logo support and fix banks endpoint type errors. ([b9ca74e7](https://github.com/elisiariocouto/leggen/commit/b9ca74e7e67c3877728b749a42f15f0c0d906561))
+- **frontend:** Improve System page and TransactionsTable UX. ([62cd55e4](https://github.com/elisiariocouto/leggen/commit/62cd55e48fff7c2f5db9dd8230a7bd500e8f6eed))
+
+
+### Miscellaneous Tasks
+
+-  Add pre-commit instructions to AGENTS.md. ([a8f70412](https://github.com/elisiariocouto/leggen/commit/a8f704129b2453e604cf2ab776791ba1e91e6fc7))
+
+
+
+## 2025.9.22 (2025/09/24)
+
+### Bug Fixes
+
+- **api:** Add automatic token refresh on 401 errors in GoCardless service. ([36d698f7](https://github.com/elisiariocouto/leggen/commit/36d698f7ce05c7db0e4b07dd07979de2c70b053e))
+- **api:** Fix banks API test fixtures to match GoCardless response format. ([24792744](https://github.com/elisiariocouto/leggen/commit/24792744f9660063e1a3abb9ed8e925fea9a5e60))
+
+
+### Features
+
+- **api:** Add separate sync failure notifications. ([e4e3f885](https://github.com/elisiariocouto/leggen/commit/e4e3f885eab1d45b0e10465ca04eb3f74e9c5a4d))
+- **api:** Add bank logo support and fix banks endpoint type errors. ([b9ca74e7](https://github.com/elisiariocouto/leggen/commit/b9ca74e7e67c3877728b749a42f15f0c0d906561))
+- **frontend:** Improve System page and TransactionsTable UX. ([62cd55e4](https://github.com/elisiariocouto/leggen/commit/62cd55e48fff7c2f5db9dd8230a7bd500e8f6eed))
+
+
+### Miscellaneous Tasks
+
+-  Add pre-commit instructions to AGENTS.md. ([a8f70412](https://github.com/elisiariocouto/leggen/commit/a8f704129b2453e604cf2ab776791ba1e91e6fc7))
+
+
+
 ## 2025.9.21 (2025/09/22)
 
 ### Bug Fixes
