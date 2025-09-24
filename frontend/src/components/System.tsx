@@ -210,7 +210,7 @@ export default function System() {
                                   : "Sync Failed"}
                             </h4>
                             <Badge variant="outline" className="text-xs">
-                              {operation.trigger_type}
+                              {operation.trigger_type.charAt(0).toUpperCase() + operation.trigger_type.slice(1)}
                             </Badge>
                           </div>
                           <div className="flex items-center space-x-4 mt-1 text-xs text-muted-foreground">
@@ -272,7 +272,7 @@ export default function System() {
                                   : "Sync Failed"}
                             </h4>
                             <Badge variant="outline" className="text-xs mt-1">
-                              {operation.trigger_type}
+                              {operation.trigger_type.charAt(0).toUpperCase() + operation.trigger_type.slice(1)}
                             </Badge>
                           </div>
                         </div>

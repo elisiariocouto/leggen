@@ -18,7 +18,7 @@ class SyncOperation(BaseModel):
     duration_seconds: Optional[float] = None
     errors: list[str] = []
     logs: list[str] = []
-    trigger_type: str = "manual"  # manual, scheduled, api
+    trigger_type: str = "manual"  # manual, scheduled, retry, api
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat() if v else None}

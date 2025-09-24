@@ -102,12 +102,14 @@ class BackgroundScheduler:
     async def _run_sync(self, retry_count: int = 0):
         """Run sync with enhanced error handling and retry logic"""
         try:
-            logger.info("Starting scheduled sync job")
-            await self.sync_service.sync_all_accounts()
-            logger.info("Scheduled sync job completed successfully")
+            trigger_type = "retry" if retry_count > 0 else "scheduled"
+            logger.info(f"Starting {trigger_type} sync job")
+            await self.sync_service.sync_all_accounts(trigger_type=trigger_type)
+            logger.info(f"{trigger_type.capitalize()} sync job completed successfully")
         except Exception as e:
+            trigger_type = "retry" if retry_count > 0 else "scheduled"
             logger.error(
-                f"Scheduled sync job failed (attempt {retry_count + 1}/{self.max_retries}): {e}"
+                f"{trigger_type.capitalize()} sync job failed (attempt {retry_count + 1}/{self.max_retries}): {e}"
             )
 
             # Send notification about the failure
