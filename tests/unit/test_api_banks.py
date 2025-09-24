@@ -50,7 +50,7 @@ class TestBanksAPI:
 
         # Mock empty institutions response for invalid country
         respx.get("https://bankaccountdata.gocardless.com/api/v2/institutions/").mock(
-            return_value=httpx.Response(200, json=[])
+            return_value=httpx.Response(200, json={"results": []})
         )
 
         with patch("leggen.utils.config.config", mock_config):

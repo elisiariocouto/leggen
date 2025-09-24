@@ -103,22 +103,24 @@ def mock_db_path(temp_db_path):
 @pytest.fixture
 def sample_bank_data():
     """Sample bank/institution data for testing."""
-    return [
-        {
-            "id": "REVOLUT_REVOLT21",
-            "name": "Revolut",
-            "bic": "REVOLT21",
-            "transaction_total_days": 90,
-            "countries": ["GB", "LT"],
-        },
-        {
-            "id": "BANCOBPI_BBPIPTPL",
-            "name": "Banco BPI",
-            "bic": "BBPIPTPL",
-            "transaction_total_days": 90,
-            "countries": ["PT"],
-        },
-    ]
+    return {
+        "results": [
+            {
+                "id": "REVOLUT_REVOLT21",
+                "name": "Revolut",
+                "bic": "REVOLT21",
+                "transaction_total_days": 90,
+                "countries": ["GB", "LT"],
+            },
+            {
+                "id": "BANCOBPI_BBPIPTPL",
+                "name": "Banco BPI",
+                "bic": "BBPIPTPL",
+                "transaction_total_days": 90,
+                "countries": ["PT"],
+            },
+        ]
+    }
 
 
 @pytest.fixture

@@ -37,9 +37,12 @@ class TestLeggenAPIClient:
         """Test getting institutions via API client."""
         client = LeggenAPIClient("http://localhost:8000")
 
+        # The API returns processed institutions, not raw GoCardless data
+        processed_institutions = sample_bank_data["results"]
+
         api_response = {
             "success": True,
-            "data": sample_bank_data,
+            "data": processed_institutions,
             "message": "Found 2 institutions for PT",
         }
 
