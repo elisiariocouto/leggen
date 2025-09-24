@@ -165,3 +165,4 @@ leggen.db
 *.db
 config.toml
 .claude/
+.playwright-mcp/

@@ -217,6 +217,7 @@ class DatabaseService:
         await self._migrate_to_composite_key_if_needed()
         await self._migrate_add_display_name_if_needed()
         await self._migrate_add_sync_operations_if_needed()
+        await self._migrate_add_logo_if_needed()
 
     async def _migrate_balance_timestamps_if_needed(self):
         """Check and migrate balance timestamps if needed"""
@@ -1133,7 +1134,8 @@ class DatabaseService:
             created DATETIME,
             last_accessed DATETIME,
             last_updated DATETIME,
-            display_name TEXT
+            display_name TEXT,
+            logo TEXT
         )"""
         )
 
@@ -1170,8 +1172,9 @@ class DatabaseService:
                 created,
                 last_accessed,
                 last_updated,
-                display_name
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                display_name,
+                logo
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     account_data["id"],
                     account_data["institution_id"],
@@ -1183,6 +1186,7 @@ class DatabaseService:
                     account_data.get("last_accessed"),
                     account_data.get("last_updated", account_data["created"]),
                     display_name,
+                    account_data.get("logo"),
                 ),
             )
             conn.commit()
@@ -1514,6 +1518,79 @@ class DatabaseService:
                 logger.info("Sync operations table already exists")
         except Exception as e:
             logger.error(f"Sync operations table migration failed: {e}")
+            raise
+
+    async def _migrate_add_logo_if_needed(self):
+        """Check and add logo column to accounts table if needed"""
+        try:
+            if await self._check_logo_migration_needed():
+                logger.info("Logo column migration needed, starting...")
+                await self._migrate_add_logo()
+                logger.info("Logo column migration completed")
+            else:
+                logger.info("Logo column already exists")
+        except Exception as e:
+            logger.error(f"Logo column migration failed: {e}")
+            raise
+
+    async def _check_logo_migration_needed(self) -> bool:
+        """Check if logo column needs to be added to accounts table"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return False
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            # Check if accounts table exists
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='accounts'"
+            )
+            if not cursor.fetchone():
+                conn.close()
+                return False
+
+            # Check if logo column exists
+            cursor.execute("PRAGMA table_info(accounts)")
+            columns = cursor.fetchall()
+
+            # Check if logo column exists
+            has_logo = any(col[1] == "logo" for col in columns)
+
+            conn.close()
+            return not has_logo
+
+        except Exception as e:
+            logger.error(f"Failed to check logo migration status: {e}")
+            return False
+
+    async def _migrate_add_logo(self):
+        """Add logo column to accounts table"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            logger.warning("Database file not found, skipping migration")
+            return
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            logger.info("Adding logo column to accounts table...")
+
+            # Add the logo column
+            cursor.execute("""
+                ALTER TABLE accounts
+                ADD COLUMN logo TEXT
+            """)
+
+            conn.commit()
+            conn.close()
+
+            logger.info("Logo column migration completed successfully")
+
+        except Exception as e:
+            logger.error(f"Logo column migration failed: {e}")
             raise
 
     async def persist_sync_operation(self, sync_operation: Dict[str, Any]) -> int:

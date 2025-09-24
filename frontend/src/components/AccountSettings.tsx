@@ -78,6 +78,7 @@ export default function AccountSettings() {
 
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
   const queryClient = useQueryClient();
 
@@ -194,8 +195,20 @@ export default function AccountSettings() {
                     {/* Mobile layout - stack vertically */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                       <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
-                        <div className="flex-shrink-0 p-2 sm:p-3 bg-muted rounded-full">
-                          <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+                        <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                          {account.logo && !failedImages.has(account.id) ? (
+                            <img
+                              src={account.logo}
+                              alt={`${account.institution_id} logo`}
+                              className="w-full h-full object-contain"
+                              onError={() => {
+                                console.warn(`Failed to load bank logo for ${account.institution_id}: ${account.logo}`);
+                                setFailedImages(prev => new Set([...prev, account.id]));
+                              }}
+                            />
+                          ) : (
+                            <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           {editingAccountId === account.id ? (

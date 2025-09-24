@@ -26,6 +26,7 @@ class AccountDetails(BaseModel):
     name: Optional[str] = None
     display_name: Optional[str] = None
     currency: Optional[str] = None
+    logo: Optional[str] = None
     created: datetime
     last_accessed: Optional[datetime] = None
     balances: List[AccountBalance] = []

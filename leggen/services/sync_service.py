@@ -15,6 +15,7 @@ class SyncService:
         self.database = DatabaseService()
         self.notifications = NotificationService()
         self._sync_status = SyncStatus(is_running=False)
+        self._institution_logos = {}  # Cache for institution logos
 
     async def get_sync_status(self) -> SyncStatus:
         """Get current sync status"""
@@ -77,7 +78,7 @@ class SyncService:
                     # Get balances to extract currency information
                     balances = await self.gocardless.get_account_balances(account_id)
 
-                    # Enrich account details with currency and persist
+                    # Enrich account details with currency and institution logo
                     if account_details and balances:
                         enriched_account_details = account_details.copy()
 
@@ -89,6 +90,26 @@ class SyncService:
                             currency = balance_amount.get("currency")
                             if currency:
                                 enriched_account_details["currency"] = currency
+
+                        # Get institution details to fetch logo
+                        institution_id = enriched_account_details.get("institution_id")
+                        if institution_id:
+                            try:
+                                institution_details = (
+                                    await self.gocardless.get_institution_details(
+                                        institution_id
+                                    )
+                                )
+                                enriched_account_details["logo"] = (
+                                    institution_details.get("logo", "")
+                                )
+                                logger.info(
+                                    f"Fetched logo for institution {institution_id}: {enriched_account_details.get('logo', 'No logo')}"
+                                )
+                            except Exception as e:
+                                logger.warning(
+                                    f"Failed to fetch institution details for {institution_id}: {e}"
+                                )
 
                         # Persist enriched account details to database
                         await self.database.persist_account_details(

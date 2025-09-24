@@ -13,6 +13,7 @@ export interface Account {
   name?: string;
   display_name?: string;
   currency?: string;
+  logo?: string;
   created: string;
   last_accessed?: string;
   balances: AccountBalance[];

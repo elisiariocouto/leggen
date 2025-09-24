@@ -11,14 +11,13 @@ from leggen.utils.paths import path_manager
 
 def _log_rate_limits(response):
     """Log GoCardless API rate limit headers"""
-    limit = response.headers.get("X-RateLimit-Limit")
-    remaining = response.headers.get("X-RateLimit-Remaining")
-    reset = response.headers.get("X-RateLimit-Reset")
-    account_success_reset = response.headers.get("X-RateLimit-Account-Success-Reset")
+    limit = response.headers.get("http_x_ratelimit_limit")
+    remaining = response.headers.get("http_x_ratelimit_remaining")
+    reset = response.headers.get("http_x_ratelimit_reset")
 
-    if limit or remaining or reset or account_success_reset:
+    if limit or remaining or reset:
         logger.info(
-            f"GoCardless rate limits - Limit: {limit}, Remaining: {remaining}, Reset: {reset}s, Account Success Reset: {account_success_reset}"
+            f"GoCardless rate limits - Limit: {limit}, Remaining: {remaining}, Reset: {reset}s"
         )
 
 
@@ -161,4 +160,10 @@ class GoCardlessService:
         """Get account transactions"""
         return await self._make_authenticated_request(
             "GET", f"{self.base_url}/accounts/{account_id}/transactions/"
+        )
+
+    async def get_institution_details(self, institution_id: str) -> Dict[str, Any]:
+        """Get institution details by ID"""
+        return await self._make_authenticated_request(
+            "GET", f"{self.base_url}/institutions/{institution_id}/"
         )

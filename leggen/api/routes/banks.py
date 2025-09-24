@@ -21,18 +21,19 @@ async def get_bank_institutions(
 ) -> APIResponse:
     """Get available bank institutions for a country"""
     try:
-        institutions_data = await gocardless_service.get_institutions(country)
+        institutions_response = await gocardless_service.get_institutions(country)
+        institutions_data = institutions_response.get("results", [])
 
         institutions = [
             BankInstitution(
                 id=inst["id"],
                 name=inst["name"],
                 bic=inst.get("bic"),
-                transaction_total_days=inst["transaction_total_days"],
+                transaction_total_days=int(inst["transaction_total_days"]),
                 countries=inst["countries"],
                 logo=inst.get("logo"),
             )
-            for inst in institutions_data.get("results", [])
+            for inst in institutions_data
         ]
 
         return APIResponse(
