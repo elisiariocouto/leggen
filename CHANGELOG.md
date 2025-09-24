@@ -1,4 +1,32 @@
 
+## 2025.9.23 (2025/09/24)
+
+### Bug Fixes
+
+- **cli:** Fix API URL handling for subpaths and improve client robustness. ([ae5d034d](https://github.com/elisiariocouto/leggen/commit/ae5d034d4b1da785e3dc240c1d60c2cae7de8010))
+-  Correct sync trigger types from manual to scheduled/retry. ([460c5af6](https://github.com/elisiariocouto/leggen/commit/460c5af6ea343ef5685b716413d01d7a30fa9acf))
+
+
+### Features
+
+- **frontend:** Add version-based cache invalidation for PWA updates ([d4edf69f](https://github.com/elisiariocouto/leggen/commit/d4edf69f2cea2515a00435ee974116948057148d))
+
+
+
+## 2025.9.23 (2025/09/24)
+
+### Bug Fixes
+
+- **cli:** Fix API URL handling for subpaths and improve client robustness. ([ae5d034d](https://github.com/elisiariocouto/leggen/commit/ae5d034d4b1da785e3dc240c1d60c2cae7de8010))
+-  Correct sync trigger types from manual to scheduled/retry. ([460c5af6](https://github.com/elisiariocouto/leggen/commit/460c5af6ea343ef5685b716413d01d7a30fa9acf))
+
+
+### Features
+
+- **frontend:** Add version-based cache invalidation for PWA updates ([d4edf69f](https://github.com/elisiariocouto/leggen/commit/d4edf69f2cea2515a00435ee974116948057148d))
+
+
+
 ## 2025.9.22 (2025/09/24)
 
 ### Bug Fixes
