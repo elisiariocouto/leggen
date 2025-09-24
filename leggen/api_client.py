@@ -1,6 +1,6 @@
 import os
 from typing import Any, Dict, List, Optional, Union
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 
@@ -13,11 +13,22 @@ class LeggenAPIClient:
     base_url: str
 
     def __init__(self, base_url: Optional[str] = None):
-        self.base_url = (
+        raw_url = (
             base_url
             or os.environ.get("LEGGEN_API_URL", "http://localhost:8000")
             or "http://localhost:8000"
         )
+        # Ensure base_url includes /api/v1 path if not already present
+        parsed = urlparse(raw_url)
+        if not parsed.path or parsed.path == "/":
+            # No path or just root, add /api/v1
+            self.base_url = f"{raw_url.rstrip('/')}/api/v1"
+        elif not parsed.path.startswith("/api/v1"):
+            # Has a path but not /api/v1, add it
+            self.base_url = f"{raw_url.rstrip('/')}/api/v1"
+        else:
+            # Already has /api/v1 path
+            self.base_url = raw_url.rstrip("/")
         self.session = requests.Session()
         self.session.headers.update(
             {"Content-Type": "application/json", "Accept": "application/json"}
@@ -25,7 +36,14 @@ class LeggenAPIClient:
 
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """Make HTTP request to the API"""
-        url = urljoin(self.base_url, endpoint)
+        # Construct URL by joining base_url with endpoint
+        # Handle both relative endpoints (starting with /) and paths
+        if endpoint.startswith("/"):
+            # Absolute endpoint path - append to base_url
+            url = f"{self.base_url}{endpoint}"
+        else:
+            # Relative endpoint, use urljoin
+            url = urljoin(f"{self.base_url}/", endpoint)
 
         try:
             response = self.session.request(method, url, **kwargs)
@@ -52,7 +70,9 @@ class LeggenAPIClient:
         """Check if the leggen server is healthy"""
         try:
             response = self._make_request("GET", "/health")
-            return response.get("status") == "healthy"
+            # The API now returns nested data structure
+            data = response.get("data", {})
+            return data.get("status") == "healthy"
         except Exception:
             return False
 
@@ -60,7 +80,7 @@ class LeggenAPIClient:
     def get_institutions(self, country: str = "PT") -> List[Dict[str, Any]]:
         """Get bank institutions for a country"""
         response = self._make_request(
-            "GET", "/api/v1/banks/institutions", params={"country": country}
+            "GET", "/banks/institutions", params={"country": country}
         )
         return response.get("data", [])
 
@@ -70,35 +90,35 @@ class LeggenAPIClient:
         """Connect to a bank"""
         response = self._make_request(
             "POST",
-            "/api/v1/banks/connect",
+            "/banks/connect",
             json={"institution_id": institution_id, "redirect_url": redirect_url},
         )
         return response.get("data", {})
 
     def get_bank_status(self) -> List[Dict[str, Any]]:
         """Get bank connection status"""
-        response = self._make_request("GET", "/api/v1/banks/status")
+        response = self._make_request("GET", "/banks/status")
         return response.get("data", [])
 
     def get_supported_countries(self) -> List[Dict[str, Any]]:
         """Get supported countries"""
-        response = self._make_request("GET", "/api/v1/banks/countries")
+        response = self._make_request("GET", "/banks/countries")
         return response.get("data", [])
 
     # Account endpoints
     def get_accounts(self) -> List[Dict[str, Any]]:
         """Get all accounts"""
-        response = self._make_request("GET", "/api/v1/accounts")
+        response = self._make_request("GET", "/accounts")
         return response.get("data", [])
 
     def get_account_details(self, account_id: str) -> Dict[str, Any]:
         """Get account details"""
-        response = self._make_request("GET", f"/api/v1/accounts/{account_id}")
+        response = self._make_request("GET", f"/accounts/{account_id}")
         return response.get("data", {})
 
     def get_account_balances(self, account_id: str) -> List[Dict[str, Any]]:
         """Get account balances"""
-        response = self._make_request("GET", f"/api/v1/accounts/{account_id}/balances")
+        response = self._make_request("GET", f"/accounts/{account_id}/balances")
         return response.get("data", [])
 
     def get_account_transactions(
@@ -107,7 +127,7 @@ class LeggenAPIClient:
         """Get account transactions"""
         response = self._make_request(
             "GET",
-            f"/api/v1/accounts/{account_id}/transactions",
+            f"/accounts/{account_id}/transactions",
             params={"limit": limit, "summary_only": summary_only},
         )
         return response.get("data", [])
@@ -120,7 +140,7 @@ class LeggenAPIClient:
         params = {"limit": limit, "summary_only": summary_only}
         params.update(filters)
 
-        response = self._make_request("GET", "/api/v1/transactions", params=params)
+        response = self._make_request("GET", "/transactions", params=params)
         return response.get("data", [])
 
     def get_transaction_stats(
@@ -131,15 +151,13 @@ class LeggenAPIClient:
         if account_id:
             params["account_id"] = account_id
 
-        response = self._make_request(
-            "GET", "/api/v1/transactions/stats", params=params
-        )
+        response = self._make_request("GET", "/transactions/stats", params=params)
         return response.get("data", {})
 
     # Sync endpoints
     def get_sync_status(self) -> Dict[str, Any]:
         """Get sync status"""
-        response = self._make_request("GET", "/api/v1/sync/status")
+        response = self._make_request("GET", "/sync/status")
         return response.get("data", {})
 
     def trigger_sync(
@@ -150,7 +168,7 @@ class LeggenAPIClient:
         if account_ids:
             data["account_ids"] = account_ids
 
-        response = self._make_request("POST", "/api/v1/sync", json=data)
+        response = self._make_request("POST", "/sync", json=data)
         return response.get("data", {})
 
     def sync_now(
@@ -161,12 +179,12 @@ class LeggenAPIClient:
         if account_ids:
             data["account_ids"] = account_ids
 
-        response = self._make_request("POST", "/api/v1/sync/now", json=data)
+        response = self._make_request("POST", "/sync/now", json=data)
         return response.get("data", {})
 
     def get_scheduler_config(self) -> Dict[str, Any]:
         """Get scheduler configuration"""
-        response = self._make_request("GET", "/api/v1/sync/scheduler")
+        response = self._make_request("GET", "/sync/scheduler")
         return response.get("data", {})
 
     def update_scheduler_config(
@@ -185,5 +203,5 @@ class LeggenAPIClient:
         if cron:
             data["cron"] = cron
 
-        response = self._make_request("PUT", "/api/v1/sync/scheduler", json=data)
+        response = self._make_request("PUT", "/sync/scheduler", json=data)
         return response.get("data", {})
