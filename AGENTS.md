@@ -138,3 +138,4 @@ This repository follows conventional changelog practices. Refer to `CONTRIBUTING
 - Commit message format and scoping
 - Release process using `scripts/release.sh`
 - Pre-commit hooks setup with `pre-commit install`
+- When the pre-commit fails, the commit is canceled
