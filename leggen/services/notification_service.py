@@ -289,3 +289,69 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Failed to send Telegram expiry notification: {e}")
             raise
+
+    async def send_sync_failure_notification(
+        self, notification_data: Dict[str, Any]
+    ) -> None:
+        """Send notification about sync failure"""
+        if self._is_discord_enabled():
+            await self._send_discord_sync_failure(notification_data)
+
+        if self._is_telegram_enabled():
+            await self._send_telegram_sync_failure(notification_data)
+
+    async def _send_discord_sync_failure(
+        self, notification_data: Dict[str, Any]
+    ) -> None:
+        """Send Discord sync failure notification"""
+        try:
+            import click
+
+            from leggen.notifications.discord import send_sync_failure_notification
+
+            # Create a mock context with the webhook
+            ctx = click.Context(click.Command("sync_failure"))
+            ctx.obj = {
+                "notifications": {
+                    "discord": {
+                        "webhook": self.notifications_config.get("discord", {}).get(
+                            "webhook"
+                        )
+                    }
+                }
+            }
+
+            # Send sync failure notification using the actual implementation
+            send_sync_failure_notification(ctx, notification_data)
+            logger.info(f"Sent Discord sync failure notification: {notification_data}")
+        except Exception as e:
+            logger.error(f"Failed to send Discord sync failure notification: {e}")
+            raise
+
+    async def _send_telegram_sync_failure(
+        self, notification_data: Dict[str, Any]
+    ) -> None:
+        """Send Telegram sync failure notification"""
+        try:
+            import click
+
+            from leggen.notifications.telegram import send_sync_failure_notification
+
+            # Create a mock context with the telegram config
+            ctx = click.Context(click.Command("sync_failure"))
+            telegram_config = self.notifications_config.get("telegram", {})
+            ctx.obj = {
+                "notifications": {
+                    "telegram": {
+                        "token": telegram_config.get("token"),
+                        "chat_id": telegram_config.get("chat_id"),
+                    }
+                }
+            }
+
+            # Send sync failure notification using the actual implementation
+            send_sync_failure_notification(ctx, notification_data)
+            logger.info(f"Sent Telegram sync failure notification: {notification_data}")
+        except Exception as e:
+            logger.error(f"Failed to send Telegram sync failure notification: {e}")
+            raise

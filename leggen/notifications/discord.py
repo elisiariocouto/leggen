@@ -55,3 +55,44 @@ def send_transactions_message(ctx: click.Context, transactions: list):
         response.raise_for_status()
     except Exception as e:
         raise Exception(f"Discord notification failed: {e}\n{response.text}") from e
+
+
+def send_sync_failure_notification(ctx: click.Context, notification: dict):
+    info("Sending sync failure notification to Discord")
+    webhook = DiscordWebhook(url=ctx.obj["notifications"]["discord"]["webhook"])
+
+    # Determine color and title based on failure type
+    if notification.get("type") == "sync_final_failure":
+        color = "ff0000"  # Red for final failure
+        title = "🚨 Sync Final Failure"
+        description = (
+            f"Sync failed permanently after {notification['retry_count']} attempts"
+        )
+    else:
+        color = "ffaa00"  # Orange for retry
+        title = "⚠️ Sync Failure"
+        description = f"Sync failed (attempt {notification['retry_count']}/{notification['max_retries']}). Will retry automatically..."
+
+    embed = DiscordEmbed(
+        title=title,
+        description=description,
+        color=color,
+    )
+    embed.set_author(
+        name="Leggen",
+        url="https://github.com/elisiariocouto/leggen",
+    )
+    embed.add_embed_field(
+        name="Error",
+        value=notification["error"][:1024],  # Discord has field value limits
+        inline=False,
+    )
+    embed.set_footer(text="Sync failure notification")
+    embed.set_timestamp()
+
+    webhook.add_embed(embed)
+    response = webhook.execute()
+    try:
+        response.raise_for_status()
+    except Exception as e:
+        raise Exception(f"Discord notification failed: {e}\n{response.text}") from e

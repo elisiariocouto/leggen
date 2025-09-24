@@ -112,7 +112,7 @@ class BackgroundScheduler:
 
             # Send notification about the failure
             try:
-                await self.notification_service.send_expiry_notification(
+                await self.notification_service.send_sync_failure_notification(
                     {
                         "type": "sync_failure",
                         "error": str(e),
@@ -145,7 +145,7 @@ class BackgroundScheduler:
                 logger.error("Maximum retries exceeded for sync job")
                 # Send final failure notification
                 try:
-                    await self.notification_service.send_expiry_notification(
+                    await self.notification_service.send_sync_failure_notification(
                         {
                             "type": "sync_final_failure",
                             "error": str(e),
