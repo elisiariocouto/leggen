@@ -1,4 +1,20 @@
 
+## 2025.9.24 (2025/09/25)
+
+### Features
+
+- **frontend:** Add comprehensive bank account management system. ([ef7c026d](https://github.com/elisiariocouto/leggen/commit/ef7c026db9911cc3be8d5f48e42a4d7beb4b9d0a))
+
+
+
+## 2025.9.24 (2025/09/25)
+
+### Features
+
+- **frontend:** Add comprehensive bank account management system. ([ef7c026d](https://github.com/elisiariocouto/leggen/commit/ef7c026db9911cc3be8d5f48e42a4d7beb4b9d0a))
+
+
+
 ## 2025.9.23 (2025/09/24)
 
 ### Bug Fixes
