@@ -8,7 +8,7 @@ import { SidebarInset, SidebarProvider } from "../components/ui/sidebar";
 
 function RootLayout() {
   const { updateAvailable, updateSW, forceReload } = usePWA();
-  
+
   // Check for version mismatches and force reload if needed
   useVersionCheck(forceReload);
 

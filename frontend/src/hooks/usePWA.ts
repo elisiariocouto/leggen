@@ -15,21 +15,23 @@ export function usePWA(): PWAUpdate {
   const forceReload = async (): Promise<void> => {
     try {
       // Clear all caches
-      if ('caches' in window) {
+      if ("caches" in window) {
         const cacheNames = await caches.keys();
         await Promise.all(
-          cacheNames.map(cacheName => caches.delete(cacheName))
+          cacheNames.map((cacheName) => caches.delete(cacheName)),
         );
         console.log("All caches cleared");
       }
-      
+
       // Unregister service worker
-      if ('serviceWorker' in navigator) {
+      if ("serviceWorker" in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map(registration => registration.unregister()));
+        await Promise.all(
+          registrations.map((registration) => registration.unregister()),
+        );
         console.log("All service workers unregistered");
       }
-      
+
       // Force reload
       window.location.reload();
     } catch (error) {

@@ -48,7 +48,10 @@ export default function TelegramConfigDrawer({
       apiClient.updateNotificationSettings({
         ...settings,
         telegram: telegramConfig,
-        filters: settings?.filters || { case_insensitive: [], case_sensitive: [] },
+        filters: settings?.filters || {
+          case_insensitive: [],
+          case_sensitive: [],
+        },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notificationSettings"] });
@@ -61,10 +64,12 @@ export default function TelegramConfigDrawer({
   });
 
   const testMutation = useMutation({
-    mutationFn: () => apiClient.testNotification({
-      service: "telegram",
-      message: "Test notification from Leggen - Telegram configuration is working!"
-    }),
+    mutationFn: () =>
+      apiClient.testNotification({
+        service: "telegram",
+        message:
+          "Test notification from Leggen - Telegram configuration is working!",
+      }),
     onSuccess: () => {
       console.log("Test Telegram notification sent successfully");
     },
@@ -86,9 +91,7 @@ export default function TelegramConfigDrawer({
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        {trigger || <EditButton />}
-      </DrawerTrigger>
+      <DrawerTrigger asChild>{trigger || <EditButton />}</DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader>
@@ -104,7 +107,9 @@ export default function TelegramConfigDrawer({
           <form onSubmit={handleSubmit} className="p-4 space-y-6">
             {/* Enable/Disable Toggle */}
             <div className="flex items-center justify-between">
-              <Label className="text-base font-medium">Enable Telegram Notifications</Label>
+              <Label className="text-base font-medium">
+                Enable Telegram Notifications
+              </Label>
               <Switch
                 checked={config.enabled}
                 onCheckedChange={(enabled) => setConfig({ ...config, enabled })}
@@ -119,7 +124,9 @@ export default function TelegramConfigDrawer({
                 type="password"
                 placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
                 value={config.token}
-                onChange={(e) => setConfig({ ...config, token: e.target.value })}
+                onChange={(e) =>
+                  setConfig({ ...config, token: e.target.value })
+                }
                 disabled={!config.enabled}
               />
               <p className="text-xs text-muted-foreground">
@@ -135,11 +142,18 @@ export default function TelegramConfigDrawer({
                 type="number"
                 placeholder="123456789"
                 value={config.chat_id || ""}
-                onChange={(e) => setConfig({ ...config, chat_id: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    chat_id: parseInt(e.target.value) || 0,
+                  })
+                }
                 disabled={!config.enabled}
               />
               <p className="text-xs text-muted-foreground">
-                Send a message to your bot and visit https://api.telegram.org/bot&lt;token&gt;/getUpdates to find your chat ID
+                Send a message to your bot and visit
+                https://api.telegram.org/bot&lt;token&gt;/getUpdates to find
+                your chat ID
               </p>
             </div>
 
@@ -147,23 +161,33 @@ export default function TelegramConfigDrawer({
             {config.enabled && (
               <div className="p-3 bg-muted rounded-md">
                 <div className="flex items-center space-x-2">
-                  <div className={`w-2 h-2 rounded-full ${isConfigValid ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${isConfigValid ? "bg-green-500" : "bg-red-500"}`}
+                  />
                   <span className="text-sm font-medium">
-                    {isConfigValid ? 'Configuration Valid' : 'Missing Token or Chat ID'}
+                    {isConfigValid
+                      ? "Configuration Valid"
+                      : "Missing Token or Chat ID"}
                   </span>
                 </div>
-                {!isConfigValid && (config.token.trim().length > 0 || config.chat_id !== 0) && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Both bot token and chat ID are required
-                  </p>
-                )}
+                {!isConfigValid &&
+                  (config.token.trim().length > 0 || config.chat_id !== 0) && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Both bot token and chat ID are required
+                    </p>
+                  )}
               </div>
             )}
 
             <DrawerFooter className="px-0">
               <div className="flex space-x-2">
-                <Button type="submit" disabled={updateMutation.isPending || !config.enabled}>
-                  {updateMutation.isPending ? "Saving..." : "Save Configuration"}
+                <Button
+                  type="submit"
+                  disabled={updateMutation.isPending || !config.enabled}
+                >
+                  {updateMutation.isPending
+                    ? "Saving..."
+                    : "Save Configuration"}
                 </Button>
                 {config.enabled && isConfigValid && (
                   <Button

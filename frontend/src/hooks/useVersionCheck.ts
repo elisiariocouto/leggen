@@ -5,10 +5,7 @@ import { apiClient } from "../lib/api";
 const VERSION_STORAGE_KEY = "leggen_app_version";
 
 export function useVersionCheck(forceReload: () => Promise<void>) {
-  const {
-    data: healthStatus,
-    isSuccess: healthSuccess,
-  } = useQuery({
+  const { data: healthStatus, isSuccess: healthSuccess } = useQuery({
     queryKey: ["health"],
     queryFn: apiClient.getHealth,
     refetchInterval: 30000,
@@ -20,14 +17,16 @@ export function useVersionCheck(forceReload: () => Promise<void>) {
     if (healthSuccess && healthStatus?.version) {
       const currentVersion = healthStatus.version;
       const storedVersion = localStorage.getItem(VERSION_STORAGE_KEY);
-      
+
       if (storedVersion && storedVersion !== currentVersion) {
-        console.log(`Version mismatch detected: stored=${storedVersion}, current=${currentVersion}`);
+        console.log(
+          `Version mismatch detected: stored=${storedVersion}, current=${currentVersion}`,
+        );
         console.log("Clearing cache and reloading...");
-        
+
         // Update stored version first
         localStorage.setItem(VERSION_STORAGE_KEY, currentVersion);
-        
+
         // Force reload to clear cache
         forceReload();
       } else if (!storedVersion) {

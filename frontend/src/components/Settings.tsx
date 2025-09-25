@@ -10,7 +10,6 @@ import {
   Edit2,
   Check,
   X,
-  Plus,
   Bell,
   MessageSquare,
   Send,
@@ -35,6 +34,7 @@ import AccountsSkeleton from "./AccountsSkeleton";
 import NotificationFiltersDrawer from "./NotificationFiltersDrawer";
 import DiscordConfigDrawer from "./DiscordConfigDrawer";
 import TelegramConfigDrawer from "./TelegramConfigDrawer";
+import AddBankAccountDrawer from "./AddBankAccountDrawer";
 import type {
   Account,
   Balance,
@@ -120,6 +120,11 @@ export default function Settings() {
     queryFn: apiClient.getNotificationServices,
   });
 
+  const { data: bankConnections } = useQuery({
+    queryKey: ["bankConnections"],
+    queryFn: apiClient.getBankConnectionsStatus,
+  });
+
   // Account mutations
   const updateAccountMutation = useMutation({
     mutationFn: ({ id, display_name }: { id: string; display_name: string }) =>
@@ -140,6 +145,16 @@ export default function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notificationSettings"] });
       queryClient.invalidateQueries({ queryKey: ["notificationServices"] });
+    },
+  });
+
+  // Bank connection mutations
+  const deleteBankConnectionMutation = useMutation({
+    mutationFn: apiClient.deleteBankConnection,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["bankConnections"] });
+      queryClient.invalidateQueries({ queryKey: ["balances"] });
     },
   });
 
@@ -245,13 +260,6 @@ export default function Settings() {
                 <p className="text-muted-foreground mb-4">
                   Connect your first bank account to get started with Leggen.
                 </p>
-                <Button disabled className="flex items-center space-x-2">
-                  <Plus className="h-4 w-4" />
-                  <span>Add Bank Account</span>
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Coming soon: Add new bank connections
-                </p>
               </CardContent>
             ) : (
               <CardContent className="p-0">
@@ -288,8 +296,12 @@ export default function Settings() {
                                   alt={`${account.institution_id} logo`}
                                   className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
                                   onError={() => {
-                                    console.warn(`Failed to load bank logo for ${account.institution_id}: ${account.logo}`);
-                                    setFailedImages(prev => new Set([...prev, account.id]));
+                                    console.warn(
+                                      `Failed to load bank logo for ${account.institution_id}: ${account.logo}`,
+                                    );
+                                    setFailedImages(
+                                      (prev) => new Set([...prev, account.id]),
+                                    );
                                   }}
                                 />
                               ) : (
@@ -417,30 +429,110 @@ export default function Settings() {
             )}
           </Card>
 
-          {/* Add Bank Section (Future Feature) */}
+          {/* Bank Connections Status */}
           <Card>
             <CardHeader>
-              <CardTitle>Add New Bank Account</CardTitle>
-              <CardDescription>
-                Connect additional bank accounts to track all your finances in
-                one place
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="text-center space-y-4">
-                <div className="p-4 bg-muted rounded-lg">
-                  <Plus className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Bank connection functionality is coming soon. Stay tuned for
-                    updates!
-                  </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Bank Connections</CardTitle>
+                  <CardDescription>
+                    Status of all bank connection requests and their
+                    authorization state
+                  </CardDescription>
                 </div>
-                <Button disabled variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Connect Bank Account
-                </Button>
+                <AddBankAccountDrawer />
               </div>
-            </CardContent>
+            </CardHeader>
+
+            {!bankConnections || bankConnections.length === 0 ? (
+              <CardContent className="p-6 text-center">
+                <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  No bank connections found
+                </h3>
+                <p className="text-muted-foreground">
+                  Bank connection requests will appear here after you connect
+                  accounts.
+                </p>
+              </CardContent>
+            ) : (
+              <CardContent className="p-0">
+                <div className="divide-y divide-border">
+                  {bankConnections.map((connection) => {
+                    const statusColor =
+                      connection.status.toLowerCase() === "ln"
+                        ? "bg-green-500"
+                        : connection.status.toLowerCase() === "cr"
+                          ? "bg-amber-500"
+                          : connection.status.toLowerCase() === "ex"
+                            ? "bg-red-500"
+                            : "bg-muted-foreground";
+
+                    return (
+                      <div
+                        key={connection.requisition_id}
+                        className="p-4 sm:p-6 hover:bg-accent transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4 min-w-0 flex-1">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                              <Building2 className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-2">
+                                <h4 className="text-base font-medium text-foreground truncate">
+                                  {connection.bank_name}
+                                </h4>
+                                <div
+                                  className={`w-3 h-3 rounded-full ${statusColor}`}
+                                  title={connection.status_display}
+                                />
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {connection.status_display} •{" "}
+                                {connection.accounts_count} account
+                                {connection.accounts_count !== 1 ? "s" : ""}
+                              </p>
+                              <p className="text-xs text-muted-foreground font-mono">
+                                ID: {connection.requisition_id}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2 flex-shrink-0">
+                            <div className="text-right">
+                              <p className="text-xs text-muted-foreground">
+                                Created {formatDate(connection.created_at)}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const isWorking =
+                                  connection.status.toLowerCase() === "ln";
+                                const message = isWorking
+                                  ? `Are you sure you want to disconnect "${connection.bank_name}"? This will stop syncing new transactions but keep your existing transaction history.`
+                                  : `Delete connection to ${connection.bank_name}?`;
+
+                                if (confirm(message)) {
+                                  deleteBankConnectionMutation.mutate(
+                                    connection.requisition_id,
+                                  );
+                                }
+                              }}
+                              disabled={deleteBankConnectionMutation.isPending}
+                              className="p-1 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete connection"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            )}
           </Card>
         </TabsContent>
 
@@ -495,19 +587,21 @@ export default function Settings() {
                                 {service.name}
                               </h4>
                               <div className="flex items-center space-x-2">
-                                <div className={`w-2 h-2 rounded-full ${
-                                  service.enabled && service.configured
-                                    ? 'bg-green-500'
-                                    : service.enabled
-                                      ? 'bg-amber-500'
-                                      : 'bg-muted-foreground'
-                                }`} />
+                                <div
+                                  className={`w-2 h-2 rounded-full ${
+                                    service.enabled && service.configured
+                                      ? "bg-green-500"
+                                      : service.enabled
+                                        ? "bg-amber-500"
+                                        : "bg-muted-foreground"
+                                  }`}
+                                />
                                 <span className="text-sm text-muted-foreground">
                                   {service.enabled && service.configured
-                                    ? 'Active'
+                                    ? "Active"
                                     : service.enabled
-                                      ? 'Needs Configuration'
-                                      : 'Disabled'}
+                                      ? "Needs Configuration"
+                                      : "Disabled"}
                                 </span>
                               </div>
                             </div>
@@ -516,9 +610,15 @@ export default function Settings() {
 
                         <div className="flex items-center space-x-2">
                           {service.name.toLowerCase().includes("discord") ? (
-                            <DiscordConfigDrawer settings={notificationSettings} />
-                          ) : service.name.toLowerCase().includes("telegram") ? (
-                            <TelegramConfigDrawer settings={notificationSettings} />
+                            <DiscordConfigDrawer
+                              settings={notificationSettings}
+                            />
+                          ) : service.name
+                              .toLowerCase()
+                              .includes("telegram") ? (
+                            <TelegramConfigDrawer
+                              settings={notificationSettings}
+                            />
                           ) : null}
 
                           <Button
@@ -560,17 +660,22 @@ export default function Settings() {
                           Case Insensitive Filters
                         </Label>
                         <div className="min-h-[2rem] flex flex-wrap gap-1">
-                          {notificationSettings.filters.case_insensitive.length > 0 ? (
-                            notificationSettings.filters.case_insensitive.map((filter, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs"
-                              >
-                                {filter}
-                              </span>
-                            ))
+                          {notificationSettings.filters.case_insensitive
+                            .length > 0 ? (
+                            notificationSettings.filters.case_insensitive.map(
+                              (filter, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs"
+                                >
+                                  {filter}
+                                </span>
+                              ),
+                            )
                           ) : (
-                            <p className="text-sm text-muted-foreground">None</p>
+                            <p className="text-sm text-muted-foreground">
+                              None
+                            </p>
                           )}
                         </div>
                       </div>
@@ -580,25 +685,31 @@ export default function Settings() {
                         </Label>
                         <div className="min-h-[2rem] flex flex-wrap gap-1">
                           {notificationSettings.filters.case_sensitive &&
-                          notificationSettings.filters.case_sensitive.length > 0 ? (
-                            notificationSettings.filters.case_sensitive.map((filter, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs"
-                              >
-                                {filter}
-                              </span>
-                            ))
+                          notificationSettings.filters.case_sensitive.length >
+                            0 ? (
+                            notificationSettings.filters.case_sensitive.map(
+                              (filter, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs"
+                                >
+                                  {filter}
+                                </span>
+                              ),
+                            )
                           ) : (
-                            <p className="text-sm text-muted-foreground">None</p>
+                            <p className="text-sm text-muted-foreground">
+                              None
+                            </p>
                           )}
                         </div>
                       </div>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Filters determine which transaction descriptions will trigger notifications.
-                    Add terms to exclude transactions containing those words.
+                    Filters determine which transaction descriptions will
+                    trigger notifications. Add terms to exclude transactions
+                    containing those words.
                   </p>
                 </div>
               ) : (
@@ -608,7 +719,8 @@ export default function Settings() {
                     No notification filters configured
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    Set up filters to control which transactions trigger notifications.
+                    Set up filters to control which transactions trigger
+                    notifications.
                   </p>
                   <NotificationFiltersDrawer settings={notificationSettings} />
                 </div>

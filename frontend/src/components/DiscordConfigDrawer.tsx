@@ -47,7 +47,10 @@ export default function DiscordConfigDrawer({
       apiClient.updateNotificationSettings({
         ...settings,
         discord: discordConfig,
-        filters: settings?.filters || { case_insensitive: [], case_sensitive: [] },
+        filters: settings?.filters || {
+          case_insensitive: [],
+          case_sensitive: [],
+        },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notificationSettings"] });
@@ -60,10 +63,12 @@ export default function DiscordConfigDrawer({
   });
 
   const testMutation = useMutation({
-    mutationFn: () => apiClient.testNotification({
-      service: "discord",
-      message: "Test notification from Leggen - Discord configuration is working!"
-    }),
+    mutationFn: () =>
+      apiClient.testNotification({
+        service: "discord",
+        message:
+          "Test notification from Leggen - Discord configuration is working!",
+      }),
     onSuccess: () => {
       console.log("Test Discord notification sent successfully");
     },
@@ -81,13 +86,13 @@ export default function DiscordConfigDrawer({
     testMutation.mutate();
   };
 
-  const isConfigValid = config.webhook.trim().length > 0 && config.webhook.includes('discord.com/api/webhooks');
+  const isConfigValid =
+    config.webhook.trim().length > 0 &&
+    config.webhook.includes("discord.com/api/webhooks");
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        {trigger || <EditButton />}
-      </DrawerTrigger>
+      <DrawerTrigger asChild>{trigger || <EditButton />}</DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader>
@@ -103,7 +108,9 @@ export default function DiscordConfigDrawer({
           <form onSubmit={handleSubmit} className="p-4 space-y-6">
             {/* Enable/Disable Toggle */}
             <div className="flex items-center justify-between">
-              <Label className="text-base font-medium">Enable Discord Notifications</Label>
+              <Label className="text-base font-medium">
+                Enable Discord Notifications
+              </Label>
               <Switch
                 checked={config.enabled}
                 onCheckedChange={(enabled) => setConfig({ ...config, enabled })}
@@ -118,11 +125,14 @@ export default function DiscordConfigDrawer({
                 type="url"
                 placeholder="https://discord.com/api/webhooks/..."
                 value={config.webhook}
-                onChange={(e) => setConfig({ ...config, webhook: e.target.value })}
+                onChange={(e) =>
+                  setConfig({ ...config, webhook: e.target.value })
+                }
                 disabled={!config.enabled}
               />
               <p className="text-xs text-muted-foreground">
-                Create a webhook in your Discord server settings under Integrations → Webhooks
+                Create a webhook in your Discord server settings under
+                Integrations → Webhooks
               </p>
             </div>
 
@@ -130,9 +140,13 @@ export default function DiscordConfigDrawer({
             {config.enabled && (
               <div className="p-3 bg-muted rounded-md">
                 <div className="flex items-center space-x-2">
-                  <div className={`w-2 h-2 rounded-full ${isConfigValid ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${isConfigValid ? "bg-green-500" : "bg-red-500"}`}
+                  />
                   <span className="text-sm font-medium">
-                    {isConfigValid ? 'Configuration Valid' : 'Invalid Webhook URL'}
+                    {isConfigValid
+                      ? "Configuration Valid"
+                      : "Invalid Webhook URL"}
                   </span>
                 </div>
                 {!isConfigValid && config.webhook.trim().length > 0 && (
@@ -145,8 +159,13 @@ export default function DiscordConfigDrawer({
 
             <DrawerFooter className="px-0">
               <div className="flex space-x-2">
-                <Button type="submit" disabled={updateMutation.isPending || !config.enabled}>
-                  {updateMutation.isPending ? "Saving..." : "Save Configuration"}
+                <Button
+                  type="submit"
+                  disabled={updateMutation.isPending || !config.enabled}
+                >
+                  {updateMutation.isPending
+                    ? "Saving..."
+                    : "Save Configuration"}
                 </Button>
                 {config.enabled && isConfigValid && (
                   <Button

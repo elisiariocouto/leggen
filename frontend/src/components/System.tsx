@@ -210,7 +210,8 @@ export default function System() {
                                   : "Sync Failed"}
                             </h4>
                             <Badge variant="outline" className="text-xs">
-                              {operation.trigger_type.charAt(0).toUpperCase() + operation.trigger_type.slice(1)}
+                              {operation.trigger_type.charAt(0).toUpperCase() +
+                                operation.trigger_type.slice(1)}
                             </Badge>
                           </div>
                           <div className="flex items-center space-x-4 mt-1 text-xs text-muted-foreground">
@@ -272,7 +273,8 @@ export default function System() {
                                   : "Sync Failed"}
                             </h4>
                             <Badge variant="outline" className="text-xs mt-1">
-                              {operation.trigger_type.charAt(0).toUpperCase() + operation.trigger_type.slice(1)}
+                              {operation.trigger_type.charAt(0).toUpperCase() +
+                                operation.trigger_type.slice(1)}
                             </Badge>
                           </div>
                         </div>
@@ -286,7 +288,9 @@ export default function System() {
                             {startedAt.toLocaleDateString()}{" "}
                             {startedAt.toLocaleTimeString()}
                           </span>
-                          {duration && <span className="ml-2">• {duration}</span>}
+                          {duration && (
+                            <span className="ml-2">• {duration}</span>
+                          )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 text-xs">
@@ -296,7 +300,9 @@ export default function System() {
                           </div>
                           <div className="flex items-center space-x-1">
                             <TrendingUp className="h-3 w-3" />
-                            <span>{operation.transactions_added} new transactions</span>
+                            <span>
+                              {operation.transactions_added} new transactions
+                            </span>
                           </div>
                         </div>
                       </div>

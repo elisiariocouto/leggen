@@ -67,20 +67,32 @@ export default function NotificationFiltersDrawer({
   };
 
   const addCaseInsensitiveFilter = () => {
-    if (newCaseInsensitive.trim() && !filters.case_insensitive.includes(newCaseInsensitive.trim())) {
+    if (
+      newCaseInsensitive.trim() &&
+      !filters.case_insensitive.includes(newCaseInsensitive.trim())
+    ) {
       setFilters({
         ...filters,
-        case_insensitive: [...filters.case_insensitive, newCaseInsensitive.trim()],
+        case_insensitive: [
+          ...filters.case_insensitive,
+          newCaseInsensitive.trim(),
+        ],
       });
       setNewCaseInsensitive("");
     }
   };
 
   const addCaseSensitiveFilter = () => {
-    if (newCaseSensitive.trim() && !filters.case_sensitive?.includes(newCaseSensitive.trim())) {
+    if (
+      newCaseSensitive.trim() &&
+      !filters.case_sensitive?.includes(newCaseSensitive.trim())
+    ) {
       setFilters({
         ...filters,
-        case_sensitive: [...(filters.case_sensitive || []), newCaseSensitive.trim()],
+        case_sensitive: [
+          ...(filters.case_sensitive || []),
+          newCaseSensitive.trim(),
+        ],
       });
       setNewCaseSensitive("");
     }
@@ -96,30 +108,33 @@ export default function NotificationFiltersDrawer({
   const removeCaseSensitiveFilter = (index: number) => {
     setFilters({
       ...filters,
-      case_sensitive: filters.case_sensitive?.filter((_, i) => i !== index) || [],
+      case_sensitive:
+        filters.case_sensitive?.filter((_, i) => i !== index) || [],
     });
   };
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        {trigger || <EditButton />}
-      </DrawerTrigger>
+      <DrawerTrigger asChild>{trigger || <EditButton />}</DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-2xl">
           <DrawerHeader>
             <DrawerTitle>Notification Filters</DrawerTitle>
             <DrawerDescription>
-              Configure which transaction descriptions should trigger notifications
+              Configure which transaction descriptions should trigger
+              notifications
             </DrawerDescription>
           </DrawerHeader>
 
           <form onSubmit={handleSubmit} className="p-4 space-y-6">
             {/* Case Insensitive Filters */}
             <div className="space-y-3">
-              <Label className="text-base font-medium">Case Insensitive Filters</Label>
+              <Label className="text-base font-medium">
+                Case Insensitive Filters
+              </Label>
               <p className="text-sm text-muted-foreground">
-                Filters that match regardless of capitalization (e.g., "AMAZON" matches "amazon")
+                Filters that match regardless of capitalization (e.g., "AMAZON"
+                matches "amazon")
               </p>
 
               <div className="flex space-x-2">
@@ -134,7 +149,11 @@ export default function NotificationFiltersDrawer({
                     }
                   }}
                 />
-                <Button type="button" onClick={addCaseInsensitiveFilter} size="sm">
+                <Button
+                  type="button"
+                  onClick={addCaseInsensitiveFilter}
+                  size="sm"
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -157,16 +176,21 @@ export default function NotificationFiltersDrawer({
                     </div>
                   ))
                 ) : (
-                  <span className="text-muted-foreground text-sm">No filters added</span>
+                  <span className="text-muted-foreground text-sm">
+                    No filters added
+                  </span>
                 )}
               </div>
             </div>
 
             {/* Case Sensitive Filters */}
             <div className="space-y-3">
-              <Label className="text-base font-medium">Case Sensitive Filters</Label>
+              <Label className="text-base font-medium">
+                Case Sensitive Filters
+              </Label>
               <p className="text-sm text-muted-foreground">
-                Filters that match exactly as typed (e.g., "AMAZON" only matches "AMAZON")
+                Filters that match exactly as typed (e.g., "AMAZON" only matches
+                "AMAZON")
               </p>
 
               <div className="flex space-x-2">
@@ -181,7 +205,11 @@ export default function NotificationFiltersDrawer({
                     }
                   }}
                 />
-                <Button type="button" onClick={addCaseSensitiveFilter} size="sm">
+                <Button
+                  type="button"
+                  onClick={addCaseSensitiveFilter}
+                  size="sm"
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -204,7 +232,9 @@ export default function NotificationFiltersDrawer({
                     </div>
                   ))
                 ) : (
-                  <span className="text-muted-foreground text-sm">No filters added</span>
+                  <span className="text-muted-foreground text-sm">
+                    No filters added
+                  </span>
                 )}
               </div>
             </div>

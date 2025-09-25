@@ -7,7 +7,13 @@ interface EditButtonProps {
   disabled?: boolean;
   className?: string;
   size?: "default" | "sm" | "lg" | "icon";
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  variant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
   children?: React.ReactNode;
 }
 
@@ -28,7 +34,7 @@ export function EditButton({
       variant={variant}
       className={cn(
         "h-8 px-3 text-muted-foreground hover:text-foreground transition-colors",
-        className
+        className,
       )}
       {...props}
     >

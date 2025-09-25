@@ -15,7 +15,9 @@ export default function TimePeriodFilter({
   className = "",
 }: TimePeriodFilterProps) {
   return (
-    <div className={`flex flex-col sm:flex-row sm:items-center gap-4 ${className}`}>
+    <div
+      className={`flex flex-col sm:flex-row sm:items-center gap-4 ${className}`}
+    >
       <div className="flex items-center gap-2 text-foreground">
         <Calendar size={20} />
         <span className="font-medium">Time Period:</span>

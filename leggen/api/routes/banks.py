@@ -1,3 +1,4 @@
+import httpx
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
@@ -22,7 +23,11 @@ async def get_bank_institutions(
     """Get available bank institutions for a country"""
     try:
         institutions_response = await gocardless_service.get_institutions(country)
-        institutions_data = institutions_response.get("results", [])
+        # Handle both list and dict responses
+        if isinstance(institutions_response, list):
+            institutions_data = institutions_response
+        else:
+            institutions_data = institutions_response.get("results", [])
 
         institutions = [
             BankInstitution(
@@ -122,13 +127,36 @@ async def get_bank_connections_status() -> APIResponse:
 async def delete_bank_connection(requisition_id: str) -> APIResponse:
     """Delete a bank connection"""
     try:
-        # This would need to be implemented in GoCardlessService
-        # For now, return success
+        # Delete the requisition from GoCardless
+        result = await gocardless_service.delete_requisition(requisition_id)
+
+        # GoCardless returns different responses for successful deletes
+        # We should check if the operation was actually successful
+        logger.info(f"GoCardless delete response for {requisition_id}: {result}")
+
         return APIResponse(
             success=True,
             message=f"Bank connection {requisition_id} deleted successfully",
         )
 
+    except httpx.HTTPStatusError as http_err:
+        logger.error(
+            f"HTTP error deleting bank connection {requisition_id}: {http_err}"
+        )
+        if http_err.response.status_code == 404:
+            raise HTTPException(
+                status_code=404, detail=f"Bank connection {requisition_id} not found"
+            ) from http_err
+        elif http_err.response.status_code == 400:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid request to delete connection {requisition_id}",
+            ) from http_err
+        else:
+            raise HTTPException(
+                status_code=http_err.response.status_code,
+                detail=f"GoCardless API error: {http_err}",
+            ) from http_err
     except Exception as e:
         logger.error(f"Failed to delete bank connection {requisition_id}: {e}")
         raise HTTPException(

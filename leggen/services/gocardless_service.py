@@ -144,6 +144,12 @@ class GoCardlessService:
             "GET", f"{self.base_url}/requisitions/"
         )
 
+    async def delete_requisition(self, requisition_id: str) -> Dict[str, Any]:
+        """Delete a requisition"""
+        return await self._make_authenticated_request(
+            "DELETE", f"{self.base_url}/requisitions/{requisition_id}/"
+        )
+
     async def get_account_details(self, account_id: str) -> Dict[str, Any]:
         """Get account details"""
         return await self._make_authenticated_request(

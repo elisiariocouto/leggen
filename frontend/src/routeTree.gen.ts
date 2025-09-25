@@ -13,6 +13,7 @@ import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SystemRouteImport } from './routes/system'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as BankConnectedRouteImport } from './routes/bank-connected'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -36,6 +37,11 @@ const NotificationsRoute = NotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BankConnectedRoute = BankConnectedRouteImport.update({
+  id: '/bank-connected',
+  path: '/bank-connected',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -50,6 +56,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
+  '/bank-connected': typeof BankConnectedRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/system': typeof SystemRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
+  '/bank-connected': typeof BankConnectedRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/system': typeof SystemRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
+  '/bank-connected': typeof BankConnectedRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/system': typeof SystemRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/analytics'
+    | '/bank-connected'
     | '/notifications'
     | '/settings'
     | '/system'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/analytics'
+    | '/bank-connected'
     | '/notifications'
     | '/settings'
     | '/system'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/analytics'
+    | '/bank-connected'
     | '/notifications'
     | '/settings'
     | '/system'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyticsRoute: typeof AnalyticsRoute
+  BankConnectedRoute: typeof BankConnectedRoute
   NotificationsRoute: typeof NotificationsRoute
   SettingsRoute: typeof SettingsRoute
   SystemRoute: typeof SystemRoute
@@ -138,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bank-connected': {
+      id: '/bank-connected'
+      path: '/bank-connected'
+      fullPath: '/bank-connected'
+      preLoaderRoute: typeof BankConnectedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analytics': {
       id: '/analytics'
       path: '/analytics'
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
+  BankConnectedRoute: BankConnectedRoute,
   NotificationsRoute: NotificationsRoute,
   SettingsRoute: SettingsRoute,
   SystemRoute: SystemRoute,

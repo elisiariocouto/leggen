@@ -242,3 +242,38 @@ export interface SyncOperationsResponse {
   operations: SyncOperation[];
   count: number;
 }
+
+// Bank-related types
+export interface BankInstitution {
+  id: string;
+  name: string;
+  bic?: string;
+  transaction_total_days: number;
+  countries: string[];
+  logo?: string;
+}
+
+export interface BankRequisition {
+  id: string;
+  institution_id: string;
+  status: string;
+  status_display?: string;
+  created: string;
+  link: string;
+  accounts: string[];
+}
+
+export interface BankConnectionStatus {
+  bank_id: string;
+  bank_name: string;
+  status: string;
+  status_display: string;
+  created_at: string;
+  requisition_id: string;
+  accounts_count: number;
+}
+
+export interface Country {
+  code: string;
+  name: string;
+}

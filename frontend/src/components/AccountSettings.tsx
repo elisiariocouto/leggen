@@ -202,8 +202,12 @@ export default function AccountSettings() {
                               alt={`${account.institution_id} logo`}
                               className="w-full h-full object-contain"
                               onError={() => {
-                                console.warn(`Failed to load bank logo for ${account.institution_id}: ${account.logo}`);
-                                setFailedImages(prev => new Set([...prev, account.id]));
+                                console.warn(
+                                  `Failed to load bank logo for ${account.institution_id}: ${account.logo}`,
+                                );
+                                setFailedImages(
+                                  (prev) => new Set([...prev, account.id]),
+                                );
                               }}
                             />
                           ) : (

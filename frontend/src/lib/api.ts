@@ -13,6 +13,10 @@ import type {
   AccountUpdate,
   TransactionStats,
   SyncOperationsResponse,
+  BankInstitution,
+  BankConnectionStatus,
+  BankRequisition,
+  Country,
 } from "../types/api";
 
 // Use VITE_API_URL for development, relative URLs for production
@@ -168,8 +172,6 @@ export const apiClient = {
     return response.data.data;
   },
 
-
-
   // Analytics endpoints
   getTransactionStats: async (days?: number): Promise<TransactionStats> => {
     const queryParams = new URLSearchParams();
@@ -229,6 +231,47 @@ export const apiClient = {
     const response = await api.get<ApiResponse<SyncOperationsResponse>>(
       `/sync/operations?limit=${limit}&offset=${offset}`,
     );
+    return response.data.data;
+  },
+
+  // Bank management endpoints
+  getBankInstitutions: async (country: string): Promise<BankInstitution[]> => {
+    const response = await api.get<ApiResponse<BankInstitution[]>>(
+      `/banks/institutions?country=${country}`,
+    );
+    return response.data.data;
+  },
+
+  getBankConnectionsStatus: async (): Promise<BankConnectionStatus[]> => {
+    const response =
+      await api.get<ApiResponse<BankConnectionStatus[]>>("/banks/status");
+    return response.data.data;
+  },
+
+  createBankConnection: async (
+    institutionId: string,
+    redirectUrl?: string,
+  ): Promise<BankRequisition> => {
+    // If no redirect URL provided, construct it from current location
+    const finalRedirectUrl =
+      redirectUrl || `${window.location.origin}/bank-connected`;
+
+    const response = await api.post<ApiResponse<BankRequisition>>(
+      "/banks/connect",
+      {
+        institution_id: institutionId,
+        redirect_url: finalRedirectUrl,
+      },
+    );
+    return response.data.data;
+  },
+
+  deleteBankConnection: async (requisitionId: string): Promise<void> => {
+    await api.delete(`/banks/connections/${requisitionId}`);
+  },
+
+  getSupportedCountries: async (): Promise<Country[]> => {
+    const response = await api.get<ApiResponse<Country[]>>("/banks/countries");
     return response.data.data;
   },
 };
