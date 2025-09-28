@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Cloud, TestTube } from "lucide-react";
+import { toast } from "sonner";
 import { apiClient } from "../lib/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -55,9 +56,12 @@ export default function S3BackupConfigDrawer({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["backupSettings"] });
       setOpen(false);
+      toast.success("S3 backup configuration saved successfully");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Failed to update S3 backup configuration:", error);
+      const message = error?.response?.data?.detail || "Failed to save S3 configuration. Please check your settings and try again.";
+      toast.error(message);
     },
   });
 
@@ -69,9 +73,12 @@ export default function S3BackupConfigDrawer({
       }),
     onSuccess: () => {
       console.log("S3 connection test successful");
+      toast.success("S3 connection test successful! Your configuration is working correctly.");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Failed to test S3 connection:", error);
+      const message = error?.response?.data?.detail || "S3 connection test failed. Please verify your credentials and settings.";
+      toast.error(message);
     },
   });
 

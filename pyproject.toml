@@ -89,5 +89,5 @@ markers = [
 ]
 
 [[tool.mypy.overrides]]
-module = ["apscheduler.*", "discord_webhook.*"]
+module = ["apscheduler.*", "discord_webhook.*", "botocore.*", "boto3.*"]
 ignore_missing_imports = true

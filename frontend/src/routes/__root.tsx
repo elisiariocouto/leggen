@@ -5,6 +5,7 @@ import { PWAInstallPrompt, PWAUpdatePrompt } from "../components/PWAPrompts";
 import { usePWA } from "../hooks/usePWA";
 import { useVersionCheck } from "../hooks/useVersionCheck";
 import { SidebarInset, SidebarProvider } from "../components/ui/sidebar";
+import { Toaster } from "../components/ui/sonner";
 
 function RootLayout() {
   const { updateAvailable, updateSW, forceReload } = usePWA();
@@ -48,6 +49,9 @@ function RootLayout() {
         updateAvailable={updateAvailable}
         onUpdate={handlePWAUpdate}
       />
+
+      {/* Toast Notifications */}
+      <Toaster />
     </SidebarProvider>
   );
 }
