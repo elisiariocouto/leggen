@@ -8,170 +8,170 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as TransactionsRouteImport } from './routes/transactions'
-import { Route as SystemRouteImport } from './routes/system'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as NotificationsRouteImport } from './routes/notifications'
-import { Route as BankConnectedRouteImport } from './routes/bank-connected'
-import { Route as AnalyticsRouteImport } from './routes/analytics'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as TransactionsRouteImport } from "./routes/transactions";
+import { Route as SystemRouteImport } from "./routes/system";
+import { Route as SettingsRouteImport } from "./routes/settings";
+import { Route as NotificationsRouteImport } from "./routes/notifications";
+import { Route as BankConnectedRouteImport } from "./routes/bank-connected";
+import { Route as AnalyticsRouteImport } from "./routes/analytics";
+import { Route as IndexRouteImport } from "./routes/index";
 
 const TransactionsRoute = TransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
+  id: "/transactions",
+  path: "/transactions",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SystemRoute = SystemRouteImport.update({
-  id: '/system',
-  path: '/system',
+  id: "/system",
+  path: "/system",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+  id: "/settings",
+  path: "/settings",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const NotificationsRoute = NotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
+  id: "/notifications",
+  path: "/notifications",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const BankConnectedRoute = BankConnectedRouteImport.update({
-  id: '/bank-connected',
-  path: '/bank-connected',
+  id: "/bank-connected",
+  path: "/bank-connected",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AnalyticsRoute = AnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
+  id: "/analytics",
+  path: "/analytics",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
-  '/bank-connected': typeof BankConnectedRoute
-  '/notifications': typeof NotificationsRoute
-  '/settings': typeof SettingsRoute
-  '/system': typeof SystemRoute
-  '/transactions': typeof TransactionsRoute
+  "/": typeof IndexRoute;
+  "/analytics": typeof AnalyticsRoute;
+  "/bank-connected": typeof BankConnectedRoute;
+  "/notifications": typeof NotificationsRoute;
+  "/settings": typeof SettingsRoute;
+  "/system": typeof SystemRoute;
+  "/transactions": typeof TransactionsRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
-  '/bank-connected': typeof BankConnectedRoute
-  '/notifications': typeof NotificationsRoute
-  '/settings': typeof SettingsRoute
-  '/system': typeof SystemRoute
-  '/transactions': typeof TransactionsRoute
+  "/": typeof IndexRoute;
+  "/analytics": typeof AnalyticsRoute;
+  "/bank-connected": typeof BankConnectedRoute;
+  "/notifications": typeof NotificationsRoute;
+  "/settings": typeof SettingsRoute;
+  "/system": typeof SystemRoute;
+  "/transactions": typeof TransactionsRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
-  '/bank-connected': typeof BankConnectedRoute
-  '/notifications': typeof NotificationsRoute
-  '/settings': typeof SettingsRoute
-  '/system': typeof SystemRoute
-  '/transactions': typeof TransactionsRoute
+  __root__: typeof rootRouteImport;
+  "/": typeof IndexRoute;
+  "/analytics": typeof AnalyticsRoute;
+  "/bank-connected": typeof BankConnectedRoute;
+  "/notifications": typeof NotificationsRoute;
+  "/settings": typeof SettingsRoute;
+  "/system": typeof SystemRoute;
+  "/transactions": typeof TransactionsRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
-    | '/'
-    | '/analytics'
-    | '/bank-connected'
-    | '/notifications'
-    | '/settings'
-    | '/system'
-    | '/transactions'
-  fileRoutesByTo: FileRoutesByTo
+    | "/"
+    | "/analytics"
+    | "/bank-connected"
+    | "/notifications"
+    | "/settings"
+    | "/system"
+    | "/transactions";
+  fileRoutesByTo: FileRoutesByTo;
   to:
-    | '/'
-    | '/analytics'
-    | '/bank-connected'
-    | '/notifications'
-    | '/settings'
-    | '/system'
-    | '/transactions'
+    | "/"
+    | "/analytics"
+    | "/bank-connected"
+    | "/notifications"
+    | "/settings"
+    | "/system"
+    | "/transactions";
   id:
-    | '__root__'
-    | '/'
-    | '/analytics'
-    | '/bank-connected'
-    | '/notifications'
-    | '/settings'
-    | '/system'
-    | '/transactions'
-  fileRoutesById: FileRoutesById
+    | "__root__"
+    | "/"
+    | "/analytics"
+    | "/bank-connected"
+    | "/notifications"
+    | "/settings"
+    | "/system"
+    | "/transactions";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AnalyticsRoute: typeof AnalyticsRoute
-  BankConnectedRoute: typeof BankConnectedRoute
-  NotificationsRoute: typeof NotificationsRoute
-  SettingsRoute: typeof SettingsRoute
-  SystemRoute: typeof SystemRoute
-  TransactionsRoute: typeof TransactionsRoute
+  IndexRoute: typeof IndexRoute;
+  AnalyticsRoute: typeof AnalyticsRoute;
+  BankConnectedRoute: typeof BankConnectedRoute;
+  NotificationsRoute: typeof NotificationsRoute;
+  SettingsRoute: typeof SettingsRoute;
+  SystemRoute: typeof SystemRoute;
+  TransactionsRoute: typeof TransactionsRoute;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/transactions': {
-      id: '/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof TransactionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/system': {
-      id: '/system'
-      path: '/system'
-      fullPath: '/system'
-      preLoaderRoute: typeof SystemRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notifications': {
-      id: '/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof NotificationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bank-connected': {
-      id: '/bank-connected'
-      path: '/bank-connected'
-      fullPath: '/bank-connected'
-      preLoaderRoute: typeof BankConnectedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/analytics': {
-      id: '/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AnalyticsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+    "/transactions": {
+      id: "/transactions";
+      path: "/transactions";
+      fullPath: "/transactions";
+      preLoaderRoute: typeof TransactionsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/system": {
+      id: "/system";
+      path: "/system";
+      fullPath: "/system";
+      preLoaderRoute: typeof SystemRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/settings": {
+      id: "/settings";
+      path: "/settings";
+      fullPath: "/settings";
+      preLoaderRoute: typeof SettingsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/notifications": {
+      id: "/notifications";
+      path: "/notifications";
+      fullPath: "/notifications";
+      preLoaderRoute: typeof NotificationsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/bank-connected": {
+      id: "/bank-connected";
+      path: "/bank-connected";
+      fullPath: "/bank-connected";
+      preLoaderRoute: typeof BankConnectedRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/analytics": {
+      id: "/analytics";
+      path: "/analytics";
+      fullPath: "/analytics";
+      preLoaderRoute: typeof AnalyticsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -183,7 +183,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SystemRoute: SystemRoute,
   TransactionsRoute: TransactionsRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();

@@ -37,7 +37,9 @@ class S3BackupConfig(BaseModel):
     secret_access_key: str = Field(..., description="AWS S3 secret access key")
     bucket_name: str = Field(..., description="S3 bucket name")
     region: str = Field(default="us-east-1", description="AWS S3 region")
-    endpoint_url: Optional[str] = Field(default=None, description="Custom S3 endpoint URL")
+    endpoint_url: Optional[str] = Field(
+        default=None, description="Custom S3 endpoint URL"
+    )
     path_style: bool = Field(default=False, description="Use path-style addressing")
     enabled: bool = Field(default=True, description="Enable S3 backups")
 

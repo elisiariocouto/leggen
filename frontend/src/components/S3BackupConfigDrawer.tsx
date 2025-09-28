@@ -58,9 +58,11 @@ export default function S3BackupConfigDrawer({
       setOpen(false);
       toast.success("S3 backup configuration saved successfully");
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
       console.error("Failed to update S3 backup configuration:", error);
-      const message = error?.response?.data?.detail || "Failed to save S3 configuration. Please check your settings and try again.";
+      const message =
+        error?.response?.data?.detail ||
+        "Failed to save S3 configuration. Please check your settings and try again.";
       toast.error(message);
     },
   });
@@ -73,11 +75,15 @@ export default function S3BackupConfigDrawer({
       }),
     onSuccess: () => {
       console.log("S3 connection test successful");
-      toast.success("S3 connection test successful! Your configuration is working correctly.");
+      toast.success(
+        "S3 connection test successful! Your configuration is working correctly.",
+      );
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
       console.error("Failed to test S3 connection:", error);
-      const message = error?.response?.data?.detail || "S3 connection test failed. Please verify your credentials and settings.";
+      const message =
+        error?.response?.data?.detail ||
+        "S3 connection test failed. Please verify your credentials and settings.";
       toast.error(message);
     },
   });
@@ -98,9 +104,7 @@ export default function S3BackupConfigDrawer({
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        {trigger || <EditButton />}
-      </DrawerTrigger>
+      <DrawerTrigger asChild>{trigger || <EditButton />}</DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
@@ -148,7 +152,10 @@ export default function S3BackupConfigDrawer({
                     type="password"
                     value={config.secret_access_key}
                     onChange={(e) =>
-                      setConfig({ ...config, secret_access_key: e.target.value })
+                      setConfig({
+                        ...config,
+                        secret_access_key: e.target.value,
+                      })
                     }
                     placeholder="Your AWS Secret Access Key"
                     required
@@ -212,15 +219,21 @@ export default function S3BackupConfigDrawer({
                   <Label htmlFor="path_style">Use path-style addressing</Label>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Enable for older S3 implementations or certain S3-compatible services
+                  Enable for older S3 implementations or certain S3-compatible
+                  services
                 </p>
               </>
             )}
 
             <DrawerFooter className="px-0">
               <div className="flex space-x-2">
-                <Button type="submit" disabled={updateMutation.isPending || !config.enabled}>
-                  {updateMutation.isPending ? "Saving..." : "Save Configuration"}
+                <Button
+                  type="submit"
+                  disabled={updateMutation.isPending || !config.enabled}
+                >
+                  {updateMutation.isPending
+                    ? "Saving..."
+                    : "Save Configuration"}
                 </Button>
                 {config.enabled && isConfigValid && (
                   <Button
