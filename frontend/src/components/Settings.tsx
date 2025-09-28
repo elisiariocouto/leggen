@@ -17,7 +17,10 @@ import {
   User,
   Filter,
   Cloud,
+  Archive,
+  Eye,
 } from "lucide-react";
+import { toast } from "sonner";
 import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
 import {
@@ -43,6 +46,7 @@ import type {
   NotificationSettings,
   NotificationService,
   BackupSettings,
+  BackupInfo,
 } from "../types/api";
 
 // Helper function to get status indicator color and styles
@@ -83,6 +87,7 @@ export default function Settings() {
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [showBackups, setShowBackups] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -139,6 +144,17 @@ export default function Settings() {
     queryFn: apiClient.getBackupSettings,
   });
 
+  const {
+    data: backups,
+    isLoading: backupsLoading,
+    error: backupsError,
+    refetch: refetchBackups,
+  } = useQuery<BackupInfo[]>({
+    queryKey: ["backups"],
+    queryFn: apiClient.listBackups,
+    enabled: showBackups,
+  });
+
   // Account mutations
   const updateAccountMutation = useMutation({
     mutationFn: ({ id, display_name }: { id: string; display_name: string }) =>
@@ -172,6 +188,26 @@ export default function Settings() {
     },
   });
 
+  // Backup mutations
+  const createBackupMutation = useMutation({
+    mutationFn: () => apiClient.performBackupOperation({ operation: "backup" }),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success(response.message || "Backup created successfully!");
+        queryClient.invalidateQueries({ queryKey: ["backups"] });
+      } else {
+        toast.error(response.message || "Failed to create backup.");
+      }
+    },
+    onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
+      console.error("Failed to create backup:", error);
+      const message =
+        error?.response?.data?.detail ||
+        "Failed to create backup. Please check your S3 configuration.";
+      toast.error(message);
+    },
+  });
+
   // Account handlers
   const handleEditStart = (account: Account) => {
     setEditingAccountId(account.id);
@@ -201,6 +237,23 @@ export default function Settings() {
     ) {
       deleteServiceMutation.mutate(serviceName.toLowerCase());
     }
+  };
+
+  // Backup handlers
+  const handleCreateBackup = () => {
+    if (!backupSettings?.s3?.enabled) {
+      toast.error("S3 backup is not enabled. Please configure and enable S3 backup first.");
+      return;
+    }
+    createBackupMutation.mutate();
+  };
+
+  const handleViewBackups = () => {
+    if (!backupSettings?.s3?.enabled) {
+      toast.error("S3 backup is not enabled. Please configure and enable S3 backup first.");
+      return;
+    }
+    setShowBackups(true);
   };
 
   const isLoading =
@@ -836,25 +889,82 @@ export default function Settings() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          // TODO: Implement manual backup trigger
-                          console.log("Manual backup triggered");
-                        }}
+                        onClick={handleCreateBackup}
+                        disabled={createBackupMutation.isPending}
                       >
-                        Create Backup Now
+                        {createBackupMutation.isPending ? (
+                          <>
+                            <Archive className="h-4 w-4 mr-2 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <Archive className="h-4 w-4 mr-2" />
+                            Create Backup Now
+                          </>
+                        )}
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          // TODO: Implement backup list view
-                          console.log("View backups");
-                        }}
+                        onClick={handleViewBackups}
                       >
+                        <Eye className="h-4 w-4 mr-2" />
                         View Backups
                       </Button>
                     </div>
                   </div>
+
+                  {/* Backup List Modal/View */}
+                  {showBackups && (
+                    <div className="mt-6 p-4 border rounded-lg bg-background">
+                      <div className="flex items-center justify-between mb-4">
+                        <h5 className="font-medium">Available Backups</h5>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setShowBackups(false)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      {backupsLoading ? (
+                        <p className="text-sm text-muted-foreground">Loading backups...</p>
+                      ) : backupsError ? (
+                        <div className="space-y-2">
+                          <p className="text-sm text-destructive">Failed to load backups</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => refetchBackups()}
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Retry
+                          </Button>
+                        </div>
+                      ) : !backups || backups.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No backups found</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {backups.map((backup, index) => (
+                            <div
+                              key={backup.key || index}
+                              className="flex items-center justify-between p-3 border rounded bg-muted/50"
+                            >
+                              <div>
+                                <p className="text-sm font-medium">{backup.key}</p>
+                                <div className="flex items-center space-x-4 text-xs text-muted-foreground mt-1">
+                                  <span>Modified: {formatDate(backup.last_modified)}</span>
+                                  <span>Size: {(backup.size / 1024 / 1024).toFixed(2)} MB</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

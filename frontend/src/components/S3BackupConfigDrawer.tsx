@@ -73,11 +73,16 @@ export default function S3BackupConfigDrawer({
         service: "s3",
         config: config,
       }),
-    onSuccess: () => {
-      console.log("S3 connection test successful");
-      toast.success(
-        "S3 connection test successful! Your configuration is working correctly.",
-      );
+    onSuccess: (response) => {
+      if (response.success) {
+        console.log("S3 connection test successful");
+        toast.success(
+          "S3 connection test successful! Your configuration is working correctly.",
+        );
+      } else {
+        console.error("S3 connection test failed:", response.message);
+        toast.error(response.message || "S3 connection test failed. Please verify your credentials and settings.");
+      }
     },
     onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
       console.error("Failed to test S3 connection:", error);
