@@ -203,8 +203,10 @@ export default function Settings() {
     }
   };
 
-  const isLoading = accountsLoading || settingsLoading || servicesLoading || backupLoading;
-  const hasError = accountsError || settingsError || servicesError || backupError;
+  const isLoading =
+    accountsLoading || settingsLoading || servicesLoading || backupLoading;
+  const hasError =
+    accountsError || settingsError || servicesError || backupError;
 
   if (isLoading) {
     return <AccountsSkeleton />;
@@ -757,7 +759,8 @@ export default function Settings() {
                 <span>S3 Backup Configuration</span>
               </CardTitle>
               <CardDescription>
-                Configure automatic database backups to Amazon S3 or S3-compatible storage
+                Configure automatic database backups to Amazon S3 or
+                S3-compatible storage
               </CardDescription>
             </CardHeader>
 
@@ -769,7 +772,8 @@ export default function Settings() {
                     No S3 backup configured
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    Set up S3 backup to automatically backup your database to the cloud.
+                    Set up S3 backup to automatically backup your database to
+                    the cloud.
                   </p>
                   <S3BackupConfigDrawer settings={backupSettings} />
                 </div>
@@ -786,26 +790,33 @@ export default function Settings() {
                             S3 Backup
                           </h4>
                           <div className="flex items-center space-x-2">
-                            <div className={`w-2 h-2 rounded-full ${
-                              backupSettings.s3.enabled
-                                ? 'bg-green-500'
-                                : 'bg-muted-foreground'
-                            }`} />
+                            <div
+                              className={`w-2 h-2 rounded-full ${
+                                backupSettings.s3.enabled
+                                  ? "bg-green-500"
+                                  : "bg-muted-foreground"
+                              }`}
+                            />
                             <span className="text-sm text-muted-foreground">
-                              {backupSettings.s3.enabled ? 'Enabled' : 'Disabled'}
+                              {backupSettings.s3.enabled
+                                ? "Enabled"
+                                : "Disabled"}
                             </span>
                           </div>
                         </div>
                         <div className="mt-2 space-y-1">
                           <p className="text-sm text-muted-foreground">
-                            <span className="font-medium">Bucket:</span> {backupSettings.s3.bucket_name}
+                            <span className="font-medium">Bucket:</span>{" "}
+                            {backupSettings.s3.bucket_name}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            <span className="font-medium">Region:</span> {backupSettings.s3.region}
+                            <span className="font-medium">Region:</span>{" "}
+                            {backupSettings.s3.region}
                           </p>
                           {backupSettings.s3.endpoint_url && (
                             <p className="text-sm text-muted-foreground">
-                              <span className="font-medium">Endpoint:</span> {backupSettings.s3.endpoint_url}
+                              <span className="font-medium">Endpoint:</span>{" "}
+                              {backupSettings.s3.endpoint_url}
                             </p>
                           )}
                         </div>
@@ -813,16 +824,17 @@ export default function Settings() {
                     </div>
                     <S3BackupConfigDrawer settings={backupSettings} />
                   </div>
-                  
+
                   <div className="p-4 bg-muted rounded-lg">
                     <h5 className="font-medium mb-2">Backup Information</h5>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Database backups are stored in the "leggen_backups/" folder in your S3 bucket.
-                      Backups include the complete SQLite database file.
+                      Database backups are stored in the "leggen_backups/"
+                      folder in your S3 bucket. Backups include the complete
+                      SQLite database file.
                     </p>
                     <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => {
                           // TODO: Implement manual backup trigger
@@ -831,8 +843,8 @@ export default function Settings() {
                       >
                         Create Backup Now
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => {
                           // TODO: Implement backup list view

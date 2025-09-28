@@ -281,9 +281,8 @@ export const apiClient = {
 
   // Backup endpoints
   getBackupSettings: async (): Promise<BackupSettings> => {
-    const response = await api.get<ApiResponse<BackupSettings>>(
-      "/backup/settings",
-    );
+    const response =
+      await api.get<ApiResponse<BackupSettings>>("/backup/settings");
     return response.data.data;
   },
 
