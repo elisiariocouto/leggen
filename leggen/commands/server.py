@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-from leggen.api.routes import accounts, banks, backup, notifications, sync, transactions
+from leggen.api.routes import accounts, backup, banks, notifications, sync, transactions
 from leggen.background.scheduler import scheduler
 from leggen.utils.config import config
 from leggen.utils.paths import path_manager

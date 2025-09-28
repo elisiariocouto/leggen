@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from botocore.exceptions import ClientError, NoCredentialsError
@@ -41,20 +41,20 @@ class TestBackupService:
             bucket_name="test-bucket",
             region="us-east-1",
         )
-        
+
         service = BackupService()
-        
+
         # Mock S3 client
         with patch("boto3.Session") as mock_session:
             mock_client = MagicMock()
             mock_session.return_value.client.return_value = mock_client
-            
+
             # Mock successful list_objects_v2 call
             mock_client.list_objects_v2.return_value = {"Contents": []}
-            
+
             result = await service.test_connection(s3_config)
             assert result is True
-            
+
             # Verify the client was called correctly
             mock_client.list_objects_v2.assert_called_once_with(
                 Bucket="test-bucket", MaxKeys=1
@@ -69,15 +69,15 @@ class TestBackupService:
             bucket_name="test-bucket",
             region="us-east-1",
         )
-        
+
         service = BackupService()
-        
+
         # Mock S3 client to raise NoCredentialsError
         with patch("boto3.Session") as mock_session:
             mock_client = MagicMock()
             mock_session.return_value.client.return_value = mock_client
             mock_client.list_objects_v2.side_effect = NoCredentialsError()
-            
+
             result = await service.test_connection(s3_config)
             assert result is False
 
@@ -90,16 +90,20 @@ class TestBackupService:
             bucket_name="test-bucket",
             region="us-east-1",
         )
-        
+
         service = BackupService()
-        
+
         # Mock S3 client to raise ClientError
         with patch("boto3.Session") as mock_session:
             mock_client = MagicMock()
             mock_session.return_value.client.return_value = mock_client
-            error_response = {"Error": {"Code": "NoSuchBucket", "Message": "Bucket not found"}}
-            mock_client.list_objects_v2.side_effect = ClientError(error_response, "ListObjectsV2")
-            
+            error_response = {
+                "Error": {"Code": "NoSuchBucket", "Message": "Bucket not found"}
+            }
+            mock_client.list_objects_v2.side_effect = ClientError(
+                error_response, "ListObjectsV2"
+            )
+
             result = await service.test_connection(s3_config)
             assert result is False
 
@@ -107,11 +111,11 @@ class TestBackupService:
     async def test_backup_database_no_config(self):
         """Test backup database with no configuration."""
         service = BackupService()
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test.db"
             db_path.write_text("test database content")
-            
+
             result = await service.backup_database(db_path)
             assert result is False
 
@@ -126,11 +130,11 @@ class TestBackupService:
             enabled=False,
         )
         service = BackupService(s3_config)
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test.db"
             db_path.write_text("test database content")
-            
+
             result = await service.backup_database(db_path)
             assert result is False
 
@@ -144,7 +148,7 @@ class TestBackupService:
             region="us-east-1",
         )
         service = BackupService(s3_config)
-        
+
         non_existent_path = Path("/non/existent/path.db")
         result = await service.backup_database(non_existent_path)
         assert result is False
@@ -159,19 +163,19 @@ class TestBackupService:
             region="us-east-1",
         )
         service = BackupService(s3_config)
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test.db"
             db_path.write_text("test database content")
-            
+
             # Mock S3 client
             with patch("boto3.Session") as mock_session:
                 mock_client = MagicMock()
                 mock_session.return_value.client.return_value = mock_client
-                
+
                 result = await service.backup_database(db_path)
                 assert result is True
-                
+
                 # Verify upload_file was called
                 mock_client.upload_file.assert_called_once()
                 args = mock_client.upload_file.call_args[0]
@@ -189,13 +193,14 @@ class TestBackupService:
             region="us-east-1",
         )
         service = BackupService(s3_config)
-        
+
         # Mock S3 client response
         with patch("boto3.Session") as mock_session:
             mock_client = MagicMock()
             mock_session.return_value.client.return_value = mock_client
-            
+
             from datetime import datetime
+
             mock_response = {
                 "Contents": [
                     {
@@ -211,10 +216,10 @@ class TestBackupService:
                 ]
             }
             mock_client.list_objects_v2.return_value = mock_response
-            
+
             backups = await service.list_backups()
             assert len(backups) == 2
-            
+
             # Check that backups are sorted by last modified (newest first)
             assert backups[0]["last_modified"] > backups[1]["last_modified"]
             assert backups[0]["size"] == 2048
