@@ -44,6 +44,14 @@ class AccountUpdate(BaseModel):
         json_encoders = {datetime: lambda v: v.isoformat() if v else None}
 
 
+class TransactionEnrichmentData(BaseModel):
+    """Embedded enrichment data in transaction"""
+
+    clean_name: Optional[str] = None
+    category: Optional[str] = None
+    logo_url: Optional[str] = None
+
+
 class Transaction(BaseModel):
     """Transaction model"""
 
@@ -58,6 +66,7 @@ class Transaction(BaseModel):
     transaction_currency: str
     transaction_status: str  # "booked" or "pending"
     raw_transaction: Dict[str, Any]
+    enrichment: Optional[TransactionEnrichmentData] = None
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
@@ -74,6 +83,32 @@ class TransactionSummary(BaseModel):
     currency: str
     status: str
     account_id: str
+
+    class Config:
+        json_encoders = {datetime: lambda v: v.isoformat()}
+
+
+class TransactionEnrichment(BaseModel):
+    """Transaction enrichment model"""
+
+    account_id: str
+    transaction_id: str
+    clean_name: Optional[str] = None
+    category: Optional[str] = None
+    logo_url: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        json_encoders = {datetime: lambda v: v.isoformat()}
+
+
+class TransactionEnrichmentUpdate(BaseModel):
+    """Transaction enrichment update model"""
+
+    clean_name: Optional[str] = None
+    category: Optional[str] = None
+    logo_url: Optional[str] = None
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}

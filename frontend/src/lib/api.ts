@@ -21,6 +21,7 @@ import type {
   BackupTest,
   BackupInfo,
   BackupOperation,
+  TransactionEnrichmentUpdate,
 } from "../types/api";
 
 // Use VITE_API_URL for development, relative URLs for production
@@ -309,6 +310,30 @@ export const apiClient = {
   performBackupOperation: async (operation: BackupOperation): Promise<ApiResponse<{ operation: string; completed: boolean }>> => {
     const response = await api.post<ApiResponse<{ operation: string; completed: boolean }>>("/backup/operation", operation);
     return response.data;
+  },
+
+  // Transaction enrichment endpoints
+  updateTransactionEnrichment: async (
+    accountId: string,
+    transactionId: string,
+    enrichment: TransactionEnrichmentUpdate,
+  ): Promise<void> => {
+    const queryParams = new URLSearchParams({
+      account_id: accountId,
+      transaction_id: transactionId,
+    });
+    await api.put(`/transactions/enrichments?${queryParams.toString()}`, enrichment);
+  },
+
+  deleteTransactionEnrichment: async (
+    accountId: string,
+    transactionId: string,
+  ): Promise<void> => {
+    const queryParams = new URLSearchParams({
+      account_id: accountId,
+      transaction_id: transactionId,
+    });
+    await api.delete(`/transactions/enrichments?${queryParams.toString()}`);
   },
 };
 

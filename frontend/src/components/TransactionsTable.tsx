@@ -20,17 +20,20 @@ import {
   Eye,
   ChevronUp,
   ChevronDown,
+  Pencil,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
 import TransactionSkeleton from "./TransactionSkeleton";
 import FiltersSkeleton from "./FiltersSkeleton";
 import RawTransactionModal from "./RawTransactionModal";
+import TransactionEnrichmentDrawer from "./TransactionEnrichmentDrawer";
 import { FilterBar, type FilterState } from "./filters";
 import { DataTablePagination } from "./ui/data-table-pagination";
 import { Card } from "./ui/card";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import type { Account, Transaction, ApiResponse } from "../types/api";
 
 export default function TransactionsTable() {
@@ -43,6 +46,7 @@ export default function TransactionsTable() {
   });
 
   const [showRawModal, setShowRawModal] = useState(false);
+  const [showEnrichmentDrawer, setShowEnrichmentDrawer] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
 
@@ -147,8 +151,18 @@ export default function TransactionsTable() {
     setShowRawModal(true);
   };
 
+  const handleEnrichTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setShowEnrichmentDrawer(true);
+  };
+
   const handleCloseModal = () => {
     setShowRawModal(false);
+    setSelectedTransaction(null);
+  };
+
+  const handleCloseEnrichmentDrawer = () => {
+    setShowEnrichmentDrawer(false);
     setSelectedTransaction(null);
   };
 
@@ -184,10 +198,24 @@ export default function TransactionsTable() {
               )}
             </div>
             <div className="flex-1 min-w-0">
+              {/* Show clean name if available, otherwise show original description */}
               <h4 className="text-sm font-medium text-foreground truncate">
-                {transaction.description}
+                {transaction.enrichment?.clean_name ||
+                  transaction.description}
               </h4>
-              <div className="text-xs text-muted-foreground space-y-1">
+              {/* Show category badge if available */}
+              {transaction.enrichment?.category && (
+                <Badge variant="secondary" className="text-xs mt-1">
+                  {transaction.enrichment.category}
+                </Badge>
+              )}
+              <div className="text-xs text-muted-foreground space-y-1 mt-1">
+                {/* Show original description if clean name is used */}
+                {transaction.enrichment?.clean_name && (
+                  <p className="truncate italic">
+                    {transaction.description}
+                  </p>
+                )}
                 {account && (
                   <p className="truncate">
                     {account.display_name || "Unnamed Account"}
@@ -259,14 +287,24 @@ export default function TransactionsTable() {
       cell: ({ row }) => {
         const transaction = row.original;
         return (
-          <button
-            onClick={() => handleViewRaw(transaction)}
-            className="inline-flex items-center px-2 py-1 text-xs bg-muted text-muted-foreground rounded hover:bg-accent transition-colors"
-            title="View raw transaction data"
-          >
-            <Eye className="h-3 w-3 mr-1" />
-            Raw
-          </button>
+          <div className="flex gap-1">
+            <button
+              onClick={() => handleEnrichTransaction(transaction)}
+              className="inline-flex items-center px-2 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+              title="Enrich transaction"
+            >
+              <Pencil className="h-3 w-3 mr-1" />
+              Edit
+            </button>
+            <button
+              onClick={() => handleViewRaw(transaction)}
+              className="inline-flex items-center px-2 py-1 text-xs bg-muted text-muted-foreground rounded hover:bg-accent transition-colors"
+              title="View raw transaction data"
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              Raw
+            </button>
+          </div>
         );
       },
     },
@@ -479,10 +517,24 @@ export default function TransactionsTable() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
+                            {/* Show clean name if available, otherwise show original description */}
                             <h4 className="text-sm font-medium text-foreground break-words">
-                              {transaction.description}
+                              {transaction.enrichment?.clean_name ||
+                                transaction.description}
                             </h4>
+                            {/* Show category badge if available */}
+                            {transaction.enrichment?.category && (
+                              <Badge variant="secondary" className="text-xs mt-1">
+                                {transaction.enrichment.category}
+                              </Badge>
+                            )}
                             <div className="text-xs text-muted-foreground space-y-1 mt-1">
+                              {/* Show original description if clean name is used */}
+                              {transaction.enrichment?.clean_name && (
+                                <p className="break-words italic">
+                                  {transaction.description}
+                                </p>
+                              )}
                               {account && (
                                 <p className="break-words">
                                   {account.display_name || "Unnamed Account"}
@@ -530,14 +582,24 @@ export default function TransactionsTable() {
                             transaction.transaction_currency,
                           )}
                         </p>
-                        <button
-                          onClick={() => handleViewRaw(transaction)}
-                          className="inline-flex items-center px-2 py-1 text-xs bg-muted text-muted-foreground rounded hover:bg-accent transition-colors"
-                          title="View raw transaction data"
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          Raw
-                        </button>
+                        <div className="flex flex-col gap-1">
+                          <button
+                            onClick={() => handleEnrichTransaction(transaction)}
+                            className="inline-flex items-center px-2 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+                            title="Enrich transaction"
+                          >
+                            <Pencil className="h-3 w-3 mr-1" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleViewRaw(transaction)}
+                            className="inline-flex items-center px-2 py-1 text-xs bg-muted text-muted-foreground rounded hover:bg-accent transition-colors"
+                            title="View raw transaction data"
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            Raw
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -568,6 +630,13 @@ export default function TransactionsTable() {
         onClose={handleCloseModal}
         rawTransaction={selectedTransaction?.raw_transaction}
         transactionId={selectedTransaction?.transaction_id || "unknown"}
+      />
+
+      {/* Transaction Enrichment Drawer */}
+      <TransactionEnrichmentDrawer
+        transaction={selectedTransaction}
+        isOpen={showEnrichmentDrawer}
+        onClose={handleCloseEnrichmentDrawer}
       />
     </div>
   );

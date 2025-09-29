@@ -61,6 +61,19 @@ export interface RawTransactionData {
   [key: string]: unknown; // Allow additional fields
 }
 
+// Transaction enrichment types
+export interface TransactionEnrichment {
+  clean_name?: string;
+  category?: string;
+  logo_url?: string;
+}
+
+export interface TransactionEnrichmentUpdate {
+  clean_name?: string;
+  category?: string;
+  logo_url?: string;
+}
+
 // Type for analytics transaction data
 export interface AnalyticsTransaction {
   transaction_id: string;
@@ -70,6 +83,7 @@ export interface AnalyticsTransaction {
   currency: string;
   status: string;
   account_id: string;
+  enrichment?: TransactionEnrichment;
 }
 
 export interface Transaction {
@@ -94,6 +108,8 @@ export interface Transaction {
   updated_at?: string;
   // Raw transaction data (only present when summary_only=false)
   raw_transaction?: RawTransactionData;
+  // Enrichment data
+  enrichment?: TransactionEnrichment;
 }
 
 // Type for raw transaction data from API (before sanitization)

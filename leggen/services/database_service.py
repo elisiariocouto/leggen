@@ -218,6 +218,7 @@ class DatabaseService:
         await self._migrate_add_display_name_if_needed()
         await self._migrate_add_sync_operations_if_needed()
         await self._migrate_add_logo_if_needed()
+        await self._migrate_add_transaction_enrichments_if_needed()
 
     async def _migrate_balance_timestamps_if_needed(self):
         """Check and migrate balance timestamps if needed"""
@@ -939,36 +940,45 @@ class DatabaseService:
         conn.row_factory = sqlite3.Row  # Enable dict-like access
         cursor = conn.cursor()
 
-        # Build query with filters
-        query = "SELECT * FROM transactions WHERE 1=1"
+        # Build query with filters and LEFT JOIN enrichments
+        query = """
+            SELECT t.*,
+                   e.clean_name as enrichment_clean_name,
+                   e.category as enrichment_category,
+                   e.logo_url as enrichment_logo_url
+            FROM transactions t
+            LEFT JOIN transaction_enrichments e
+                ON t.accountId = e.accountId AND t.transactionId = e.transactionId
+            WHERE 1=1
+        """
         params = []
 
         if account_id:
-            query += " AND accountId = ?"
+            query += " AND t.accountId = ?"
             params.append(account_id)
 
         if date_from:
-            query += " AND transactionDate >= ?"
+            query += " AND t.transactionDate >= ?"
             params.append(date_from)
 
         if date_to:
-            query += " AND transactionDate <= ?"
+            query += " AND t.transactionDate <= ?"
             params.append(date_to)
 
         if min_amount is not None:
-            query += " AND transactionValue >= ?"
+            query += " AND t.transactionValue >= ?"
             params.append(min_amount)
 
         if max_amount is not None:
-            query += " AND transactionValue <= ?"
+            query += " AND t.transactionValue <= ?"
             params.append(max_amount)
 
         if search:
-            query += " AND description LIKE ?"
+            query += " AND t.description LIKE ?"
             params.append(f"%{search}%")
 
         # Add ordering and pagination
-        query += " ORDER BY transactionDate DESC"
+        query += " ORDER BY t.transactionDate DESC"
 
         if limit:
             query += " LIMIT ?"
@@ -990,6 +1000,20 @@ class DatabaseService:
                     transaction["rawTransaction"] = json.loads(
                         transaction["rawTransaction"]
                     )
+
+                # Add enrichment data if present
+                if transaction.get("enrichment_clean_name"):
+                    transaction["enrichment"] = {
+                        "clean_name": transaction.pop("enrichment_clean_name"),
+                        "category": transaction.pop("enrichment_category"),
+                        "logo_url": transaction.pop("enrichment_logo_url"),
+                    }
+                else:
+                    # Remove enrichment fields if null
+                    transaction.pop("enrichment_clean_name", None)
+                    transaction.pop("enrichment_category", None)
+                    transaction.pop("enrichment_logo_url", None)
+
                 transactions.append(transaction)
 
             conn.close()
@@ -1694,3 +1718,266 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Failed to get sync operations: {e}")
             return []
+
+    async def _migrate_add_transaction_enrichments_if_needed(self):
+        """Check and add transaction_enrichments table if needed"""
+        try:
+            if await self._check_transaction_enrichments_migration_needed():
+                logger.info(
+                    "Transaction enrichments table migration needed, starting..."
+                )
+                await self._migrate_add_transaction_enrichments()
+                logger.info("Transaction enrichments table migration completed")
+            else:
+                logger.info("Transaction enrichments table already exists")
+        except Exception as e:
+            logger.error(f"Transaction enrichments table migration failed: {e}")
+            raise
+
+    async def _check_transaction_enrichments_migration_needed(self) -> bool:
+        """Check if transaction_enrichments table needs to be created"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return False
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            # Check if transaction_enrichments table exists
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='transaction_enrichments'"
+            )
+            table_exists = cursor.fetchone() is not None
+
+            conn.close()
+            return not table_exists
+
+        except Exception as e:
+            logger.error(
+                f"Failed to check transaction_enrichments migration status: {e}"
+            )
+            return False
+
+    async def _migrate_add_transaction_enrichments(self):
+        """Add transaction_enrichments table"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            logger.warning("Database file not found, skipping migration")
+            return
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            logger.info("Creating transaction_enrichments table...")
+
+            # Create the transaction_enrichments table
+            cursor.execute("""
+                CREATE TABLE transaction_enrichments (
+                    accountId TEXT NOT NULL,
+                    transactionId TEXT NOT NULL,
+                    clean_name TEXT,
+                    category TEXT,
+                    logo_url TEXT,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    PRIMARY KEY (accountId, transactionId),
+                    FOREIGN KEY (accountId, transactionId)
+                        REFERENCES transactions(accountId, transactionId)
+                        ON DELETE CASCADE
+                )
+            """)
+
+            # Create indexes for better performance
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_transaction_enrichments_category ON transaction_enrichments(category)"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_transaction_enrichments_clean_name ON transaction_enrichments(clean_name)"
+            )
+
+            conn.commit()
+            conn.close()
+
+            logger.info(
+                "Transaction enrichments table migration completed successfully"
+            )
+
+        except Exception as e:
+            logger.error(f"Transaction enrichments table migration failed: {e}")
+            raise
+
+    async def get_transaction_enrichment(
+        self, account_id: str, transaction_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get enrichment data for a specific transaction"""
+        if not self.sqlite_enabled:
+            return None
+
+        try:
+            return self._get_transaction_enrichment(account_id, transaction_id)
+        except Exception as e:
+            logger.error(f"Failed to get transaction enrichment: {e}")
+            return None
+
+    def _get_transaction_enrichment(
+        self, account_id: str, transaction_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get enrichment data from database"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return None
+
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute(
+                """
+                SELECT accountId, transactionId, clean_name, category, logo_url,
+                       created_at, updated_at
+                FROM transaction_enrichments
+                WHERE accountId = ? AND transactionId = ?
+            """,
+                (account_id, transaction_id),
+            )
+
+            row = cursor.fetchone()
+            conn.close()
+
+            if row:
+                return dict(row)
+            return None
+
+        except Exception as e:
+            conn.close()
+            raise e
+
+    async def upsert_transaction_enrichment(
+        self, account_id: str, transaction_id: str, enrichment_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Create or update transaction enrichment"""
+        if not self.sqlite_enabled:
+            logger.warning(
+                "SQLite database disabled, cannot upsert transaction enrichment"
+            )
+            raise ValueError("Database is disabled")
+
+        try:
+            return self._upsert_transaction_enrichment(
+                account_id, transaction_id, enrichment_data
+            )
+        except Exception as e:
+            logger.error(f"Failed to upsert transaction enrichment: {e}")
+            raise
+
+    def _upsert_transaction_enrichment(
+        self, account_id: str, transaction_id: str, enrichment_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Upsert enrichment data in database"""
+        db_path = path_manager.get_database_path()
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+
+        try:
+            now = datetime.now().isoformat()
+
+            # Check if enrichment exists
+            cursor.execute(
+                """
+                SELECT created_at FROM transaction_enrichments
+                WHERE accountId = ? AND transactionId = ?
+            """,
+                (account_id, transaction_id),
+            )
+            existing = cursor.fetchone()
+            created_at = existing[0] if existing else now
+
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO transaction_enrichments (
+                    accountId, transactionId, clean_name, category, logo_url,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    account_id,
+                    transaction_id,
+                    enrichment_data.get("clean_name"),
+                    enrichment_data.get("category"),
+                    enrichment_data.get("logo_url"),
+                    created_at,
+                    now,
+                ),
+            )
+
+            conn.commit()
+            conn.close()
+
+            result = {
+                "accountId": account_id,
+                "transactionId": transaction_id,
+                "clean_name": enrichment_data.get("clean_name"),
+                "category": enrichment_data.get("category"),
+                "logo_url": enrichment_data.get("logo_url"),
+                "created_at": created_at,
+                "updated_at": now,
+            }
+
+            logger.info(
+                f"Upserted enrichment for transaction {transaction_id} in account {account_id}"
+            )
+            return result
+
+        except Exception as e:
+            conn.close()
+            raise e
+
+    async def delete_transaction_enrichment(
+        self, account_id: str, transaction_id: str
+    ) -> bool:
+        """Delete transaction enrichment"""
+        if not self.sqlite_enabled:
+            logger.warning(
+                "SQLite database disabled, cannot delete transaction enrichment"
+            )
+            return False
+
+        try:
+            return self._delete_transaction_enrichment(account_id, transaction_id)
+        except Exception as e:
+            logger.error(f"Failed to delete transaction enrichment: {e}")
+            return False
+
+    def _delete_transaction_enrichment(
+        self, account_id: str, transaction_id: str
+    ) -> bool:
+        """Delete enrichment data from database"""
+        db_path = path_manager.get_database_path()
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute(
+                """
+                DELETE FROM transaction_enrichments
+                WHERE accountId = ? AND transactionId = ?
+            """,
+                (account_id, transaction_id),
+            )
+
+            deleted = cursor.rowcount > 0
+            conn.commit()
+            conn.close()
+
+            if deleted:
+                logger.info(
+                    f"Deleted enrichment for transaction {transaction_id} in account {account_id}"
+                )
+            return deleted
+
+        except Exception as e:
+            conn.close()
+            raise e
