@@ -42,6 +42,9 @@ echo " > Version bumped to $NEXT_VERSION"
 echo "Updating CHANGELOG.md"
 git-cliff --unreleased --tag "$NEXT_VERSION" --prepend CHANGELOG.md > /dev/null
 
+echo "Locking dependencies"
+uv lock
+
 echo " > Commiting changes and adding git tag"
 git add pyproject.toml CHANGELOG.md uv.lock
 git commit -m "chore(ci): Bump version to $NEXT_VERSION"
