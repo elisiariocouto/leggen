@@ -4,8 +4,8 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from leggen.services.database import init_database
 from leggen.services.database_helpers import get_db_connection
-from leggen.services.database_migrations import run_all_migrations
 from leggen.services.transaction_processor import TransactionProcessor
 from leggen.utils.config import config
 from leggen.utils.paths import path_manager
@@ -208,13 +208,73 @@ class DatabaseService:
             return None
 
     async def run_migrations_if_needed(self):
-        """Run all necessary database migrations"""
+        """Run all necessary database migrations using Alembic"""
         if not self.sqlite_enabled:
             logger.info("SQLite database disabled, skipping migrations")
             return
 
         db_path = path_manager.get_database_path()
-        run_all_migrations(db_path)
+
+        # Initialize SQLModel tables (creates if not exists)
+        init_database()
+
+        # Run Alembic migrations
+        import os
+
+        from alembic.config import Config
+
+        from alembic import command
+
+        # Get the alembic.ini path (project root)
+        alembic_ini_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "alembic.ini"
+        )
+
+        if not os.path.exists(alembic_ini_path):
+            logger.warning(f"Alembic config not found at {alembic_ini_path}")
+            return
+
+        alembic_cfg = Config(alembic_ini_path)
+
+        try:
+            # Check if database already has all tables (existing database)
+            # If so, stamp it with the latest revision without running migrations
+            import sqlite3
+
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            # Check if alembic_version table exists
+            cursor.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name='alembic_version'
+            """)
+            has_alembic = cursor.fetchone() is not None
+
+            # Check if all main tables exist
+            cursor.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name IN ('accounts', 'transactions', 'balances', 'sync_operations')
+            """)
+            existing_tables = [row[0] for row in cursor.fetchall()]
+            conn.close()
+
+            if not has_alembic and len(existing_tables) >= 4:
+                # This is an existing database without Alembic tracking
+                # Stamp it with the latest revision
+                logger.info("Marking existing database with current Alembic revision")
+                command.stamp(alembic_cfg, "head")
+            else:
+                # Run migrations normally
+                logger.info("Running Alembic migrations")
+                command.upgrade(alembic_cfg, "head")
+
+            logger.info("Database migrations completed successfully")
+        except Exception as e:
+            logger.error(f"Failed to run Alembic migrations: {e}")
+            raise
+
+        logger.info("Database migrations completed")
 
     async def _persist_balance_sqlite(
         self, account_id: str, balance_data: Dict[str, Any]

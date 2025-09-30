@@ -1,4 +1,4 @@
-"""Database helper utilities for Leggen."""
+"""Database helper utilities for Leggen - Compatibility layer."""
 
 import sqlite3
 from contextlib import contextmanager
