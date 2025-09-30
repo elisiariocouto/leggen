@@ -1,16 +1,54 @@
 """Tests for database service."""
 
+import tempfile
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
+from leggen.services.database import init_database
 from leggen.services.database_service import DatabaseService
+from leggen.utils.paths import path_manager
 
 
 @pytest.fixture
-def database_service():
-    """Create a database service instance for testing."""
+def test_db_path():
+    """Create a temporary test database."""
+    import os
+
+    # Create a writable temporary file
+    fd, temp_path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)  # Close the file descriptor
+    db_path = Path(temp_path)
+
+    # Set the test database path
+    original_path = path_manager._database_path
+    path_manager._database_path = db_path
+
+    # Reset the engine to use the new database path
+    import leggen.services.database as db_module
+
+    original_engine = db_module._engine
+    db_module._engine = None
+
+    # Initialize database tables
+    init_database()
+
+    yield db_path
+
+    # Cleanup - close any sessions first
+    if db_module._engine:
+        db_module._engine.dispose()
+    db_module._engine = original_engine
+    path_manager._database_path = original_path
+    if db_path.exists():
+        db_path.unlink()
+
+
+@pytest.fixture
+def database_service(test_db_path):
+    """Create a database service instance for testing with real database."""
     return DatabaseService()
 
 
@@ -282,6 +320,7 @@ class TestDatabaseService:
         """Test successful balance persistence."""
         balance_data = {
             "institution_id": "REVOLUT_REVOLT21",
+            "account_status": "active",
             "iban": "LT313250081177977789",
             "balances": [
                 {
@@ -291,26 +330,23 @@ class TestDatabaseService:
             ],
         }
 
-        with patch("sqlite3.connect") as mock_connect:
-            mock_conn = mock_connect.return_value
-            mock_cursor = mock_conn.cursor.return_value
+        # Test actual persistence
+        await database_service._persist_balance_sqlite("test-account-123", balance_data)
 
-            await database_service._persist_balance_sqlite(
-                "test-account-123", balance_data
-            )
-
-            # Verify database operations
-            mock_connect.assert_called()
-            mock_cursor.execute.assert_called()  # Table creation and insert
-            mock_conn.commit.assert_called_once()
-            mock_conn.close.assert_called_once()
+        # Verify balance was persisted
+        balances = await database_service.get_balances_from_db("test-account-123")
+        assert len(balances) == 1
+        assert balances[0]["account_id"] == "test-account-123"
+        assert balances[0]["amount"] == 1000.0
+        assert balances[0]["currency"] == "EUR"
 
     async def test_persist_balance_sqlite_error(self, database_service):
         """Test handling error during balance persistence."""
         balance_data = {"balances": []}
 
-        with patch("sqlite3.connect") as mock_connect:
-            mock_connect.side_effect = Exception("Database error")
+        # Mock get_session to raise an error
+        with patch("leggen.services.database_service.get_session") as mock_session:
+            mock_session.side_effect = Exception("Database error")
 
             with pytest.raises(Exception, match="Database error"):
                 await database_service._persist_balance_sqlite(
@@ -321,52 +357,48 @@ class TestDatabaseService:
         self, database_service, sample_transactions_db_format
     ):
         """Test successful transaction persistence."""
-        with patch("sqlite3.connect") as mock_connect:
-            mock_conn = mock_connect.return_value
-            mock_cursor = mock_conn.cursor.return_value
-            # Mock fetchone to return (0,) indicating transaction doesn't exist yet
-            mock_cursor.fetchone.return_value = (0,)
+        result = await database_service._persist_transactions_sqlite(
+            "test-account-123", sample_transactions_db_format
+        )
 
-            result = await database_service._persist_transactions_sqlite(
-                "test-account-123", sample_transactions_db_format
-            )
+        # Should return all transactions as new
+        assert len(result) == 2
 
-            # Should return the transactions (assuming no duplicates)
-            assert len(result) >= 0  # Could be empty if all are duplicates
-
-            # Verify database operations
-            mock_connect.assert_called()
-            mock_cursor.execute.assert_called()
-            mock_conn.commit.assert_called_once()
-            mock_conn.close.assert_called_once()
+        # Verify transactions were persisted
+        transactions = await database_service.get_transactions_from_db(
+            account_id="test-account-123"
+        )
+        assert len(transactions) == 2
+        assert transactions[0]["accountId"] == "test-account-123"
 
     async def test_persist_transactions_sqlite_duplicate_detection(
         self, database_service, sample_transactions_db_format
     ):
         """Test that existing transactions are not returned as new."""
-        with patch("sqlite3.connect") as mock_connect:
-            mock_conn = mock_connect.return_value
-            mock_cursor = mock_conn.cursor.return_value
-            # Mock fetchone to return (1,) indicating transaction already exists
-            mock_cursor.fetchone.return_value = (1,)
+        # First insert
+        result1 = await database_service._persist_transactions_sqlite(
+            "test-account-123", sample_transactions_db_format
+        )
+        assert len(result1) == 2
 
-            result = await database_service._persist_transactions_sqlite(
-                "test-account-123", sample_transactions_db_format
-            )
+        # Second insert (duplicates)
+        result2 = await database_service._persist_transactions_sqlite(
+            "test-account-123", sample_transactions_db_format
+        )
 
-            # Should return empty list since all transactions already exist
-            assert len(result) == 0
+        # Should return empty list since all transactions already exist
+        assert len(result2) == 0
 
-            # Verify database operations still happened (INSERT OR REPLACE executed)
-            mock_connect.assert_called()
-            mock_cursor.execute.assert_called()
-            mock_conn.commit.assert_called_once()
-            mock_conn.close.assert_called_once()
+        # Verify still only 2 transactions in database
+        transactions = await database_service.get_transactions_from_db(
+            account_id="test-account-123"
+        )
+        assert len(transactions) == 2
 
     async def test_persist_transactions_sqlite_error(self, database_service):
         """Test handling error during transaction persistence."""
-        with patch("sqlite3.connect") as mock_connect:
-            mock_connect.side_effect = Exception("Database error")
+        with patch("leggen.services.database_service.get_session") as mock_session:
+            mock_session.side_effect = Exception("Database error")
 
             with pytest.raises(Exception, match="Database error"):
                 await database_service._persist_transactions_sqlite(
