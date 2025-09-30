@@ -11,17 +11,18 @@ from leggen.utils.paths import path_manager
 
 def _log_rate_limits(response, method, url):
     """Log GoCardless API rate limit headers"""
-    limit = response.headers.get("http_x_ratelimit_limit") or response.headers.get(
-        "http_x_ratelimit_account_success_limit"
+    limit = response.headers.get("http_x_ratelimit_limit")
+    remaining = response.headers.get("http_x_ratelimit_remaining")
+    reset = response.headers.get("http_x_ratelimit_reset")
+
+    account_limit = response.headers.get("http_x_ratelimit_account_success_limit")
+    account_remaining = response.headers.get(
+        "http_x_ratelimit_account_success_remaining"
     )
-    remaining = response.headers.get(
-        "http_x_ratelimit_remaining"
-    ) or response.headers.get("http_x_ratelimit_account_success_remaining")
-    reset = response.headers.get("http_x_ratelimit_reset") or response.headers.get(
-        "http_x_ratelimit_account_success_reset"
-    )
+    account_reset = response.headers.get("http_x_ratelimit_account_success_reset")
+
     logger.debug(
-        f"{method} {url} - Limit: {limit}, Remaining: {remaining}, Reset: {reset}s"
+        f"{method} {url} Limit/Remaining/Reset (Global: {limit}/{remaining}/{reset}s) (Account: {account_limit}/{account_remaining}/{account_reset}s)"
     )
 
 
