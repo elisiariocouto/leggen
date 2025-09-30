@@ -1,4 +1,24 @@
 
+## 2025.9.25 (2025/09/30)
+
+### Bug Fixes
+
+- **api:** Fix S3 backup path-style configuration and improve UX. ([22ec0e36](https://github.com/elisiariocouto/leggen/commit/22ec0e36b11e5b017075bee51de0423a53ec4648))
+
+
+### Features
+
+- **api:** Add S3 backup functionality to backend ([7f2a4634](https://github.com/elisiariocouto/leggen/commit/7f2a4634c51814b6785433a25ce42d20aea0558c))
+- **frontend:** Add S3 backup UI and complete backup functionality ([01229130](https://github.com/elisiariocouto/leggen/commit/0122913052793bcbf011cb557ef182be21c5de93))
+- **frontend:** Add ability to list backups and create a backup on demand. ([473f126d](https://github.com/elisiariocouto/leggen/commit/473f126d3e699521172539f2ca0bff0579ccee51))
+
+
+### Miscellaneous Tasks
+
+-  Log more rate limit headers. ([d36568da](https://github.com/elisiariocouto/leggen/commit/d36568da540d4fb4ae1fa10b322a3fa77dcc5360))
+
+
+
 ## 2025.9.24 (2025/09/25)
 
 ### Features

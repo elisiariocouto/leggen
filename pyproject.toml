@@ -1,6 +1,6 @@
 [project]
 name = "leggen"
-version = "2025.9.24"
+version = "2025.9.25"
 description = "An Open Banking CLI"
 authors = [{ name = "Elisiário Couto", email = "elisiario@couto.io" }]
 requires-python = "~=3.13.0"
