@@ -1,4 +1,12 @@
 
+## 2025.9.26 (2025/09/30)
+
+### Debug
+
+-  Log different sets of GoCardless rate limits. ([8802d247](https://github.com/elisiariocouto/leggen/commit/8802d24789cbb8e854d857a0d7cc89a25a26f378))
+
+
+
 ## 2025.9.25 (2025/09/30)
 
 ### Bug Fixes
