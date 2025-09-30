@@ -2,7 +2,6 @@ import click
 
 from leggen.api_client import LeggenAPIClient
 from leggen.main import cli
-from leggen.utils.disk import save_file
 from leggen.utils.text import info, print_table, success, warning
 
 
@@ -62,9 +61,6 @@ def add(ctx):
 
         # Connect to bank via API
         result = api_client.connect_to_bank(bank_id, "http://localhost:8000/")
-
-        # Save requisition details
-        save_file(f"req_{result['id']}.json", result)
 
         success("Bank connection request created successfully!")
         warning(
