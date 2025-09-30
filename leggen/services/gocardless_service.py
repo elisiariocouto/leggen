@@ -9,16 +9,20 @@ from leggen.utils.config import config
 from leggen.utils.paths import path_manager
 
 
-def _log_rate_limits(response):
+def _log_rate_limits(response, method, url):
     """Log GoCardless API rate limit headers"""
-    limit = response.headers.get("http_x_ratelimit_limit")
-    remaining = response.headers.get("http_x_ratelimit_remaining")
-    reset = response.headers.get("http_x_ratelimit_reset")
-
-    if limit or remaining or reset:
-        logger.info(
-            f"GoCardless rate limits - Limit: {limit}, Remaining: {remaining}, Reset: {reset}s"
-        )
+    limit = response.headers.get("http_x_ratelimit_limit") or response.headers.get(
+        "http_x_ratelimit_account_success_limit"
+    )
+    remaining = response.headers.get(
+        "http_x_ratelimit_remaining"
+    ) or response.headers.get("http_x_ratelimit_account_success_remaining")
+    reset = response.headers.get("http_x_ratelimit_reset") or response.headers.get(
+        "http_x_ratelimit_account_success_reset"
+    )
+    logger.debug(
+        f"{method} {url} - Limit: {limit}, Remaining: {remaining}, Reset: {reset}s"
+    )
 
 
 class GoCardlessService:
@@ -37,7 +41,7 @@ class GoCardlessService:
 
         async with httpx.AsyncClient() as client:
             response = await client.request(method, url, headers=headers, **kwargs)
-            _log_rate_limits(response)
+            _log_rate_limits(response, method, url)
 
             # If we get 401, clear token cache and retry once
             if response.status_code == 401:
@@ -45,7 +49,7 @@ class GoCardlessService:
                 self._token = None
                 headers = await self._get_auth_headers()
                 response = await client.request(method, url, headers=headers, **kwargs)
-                _log_rate_limits(response)
+                _log_rate_limits(response, method, url)
 
             response.raise_for_status()
             return response.json()
@@ -76,7 +80,9 @@ class GoCardlessService:
                                 f"{self.base_url}/token/refresh/",
                                 json={"refresh": auth["refresh"]},
                             )
-                            _log_rate_limits(response)
+                            _log_rate_limits(
+                                response, "POST", f"{self.base_url}/token/refresh/"
+                            )
                             response.raise_for_status()
                             auth.update(response.json())
                             self._save_auth(auth)
@@ -104,7 +110,7 @@ class GoCardlessService:
                         "secret_key": self.config["secret"],
                     },
                 )
-                _log_rate_limits(response)
+                _log_rate_limits(response, "POST", f"{self.base_url}/token/new/")
                 response.raise_for_status()
                 auth = response.json()
                 self._save_auth(auth)
