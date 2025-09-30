@@ -106,6 +106,11 @@ class TestConfigurablePaths:
             # Set custom database path
             path_manager.set_database_path(test_db_path)
 
+            # Initialize database tables for the custom path
+            from leggen.services.database import init_database
+
+            init_database()
+
             # Test database operations using DatabaseService
             database_service = DatabaseService()
             balance_data = {
