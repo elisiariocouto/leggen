@@ -1,4 +1,12 @@
 
+## 2025.10.0 (2025/10/01)
+
+### Bug Fixes
+
+- **gocardless:** Increase timeout to 30 seconds, some requests take some time. ([ca7968cc](https://github.com/elisiariocouto/leggen/commit/ca7968cc3c625e243fe2d75590a9e56f3100072b))
+
+
+
 ## 2025.9.26 (2025/09/30)
 
 ### Debug
