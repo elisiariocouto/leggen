@@ -41,7 +41,9 @@ class GoCardlessService:
         headers = await self._get_auth_headers()
 
         async with httpx.AsyncClient() as client:
-            response = await client.request(method, url, headers=headers, **kwargs)
+            response = await client.request(
+                method, url, headers=headers, timeout=30, **kwargs
+            )
             _log_rate_limits(response, method, url)
 
             # If we get 401, clear token cache and retry once
@@ -49,7 +51,9 @@ class GoCardlessService:
                 logger.warning("Got 401, clearing token cache and retrying")
                 self._token = None
                 headers = await self._get_auth_headers()
-                response = await client.request(method, url, headers=headers, **kwargs)
+                response = await client.request(
+                    method, url, headers=headers, timeout=30, **kwargs
+                )
                 _log_rate_limits(response, method, url)
 
             response.raise_for_status()
