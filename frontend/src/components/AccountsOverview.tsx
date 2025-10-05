@@ -273,24 +273,28 @@ export default function AccountsOverview() {
                                   }}
                                   autoFocus
                                 />
-                                <button
+                                <Button
                                   onClick={handleEditSave}
                                   disabled={
                                     !editingName.trim() ||
                                     updateAccountMutation.isPending
                                   }
-                                  className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100"
                                   title="Save changes"
                                 >
                                   <Check className="h-4 w-4" />
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                   onClick={handleEditCancel}
-                                  className="p-1 text-gray-600 hover:text-gray-700"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8"
                                   title="Cancel editing"
                                 >
                                   <X className="h-4 w-4" />
-                                </button>
+                                </Button>
                               </div>
                               <p className="text-sm text-muted-foreground truncate">
                                 {account.institution_id}
@@ -304,13 +308,15 @@ export default function AccountsOverview() {
                                     account.name ||
                                     "Unnamed Account"}
                                 </h4>
-                                <button
+                                <Button
                                   onClick={() => handleEditStart(account)}
-                                  className="flex-shrink-0 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 flex-shrink-0"
                                   title="Edit account name"
                                 >
                                   <Edit2 className="h-4 w-4" />
-                                </button>
+                                </Button>
                               </div>
                               <p className="text-sm text-muted-foreground truncate">
                                 {account.institution_id}

@@ -259,14 +259,15 @@ export default function TransactionsTable() {
       cell: ({ row }) => {
         const transaction = row.original;
         return (
-          <button
+          <Button
             onClick={() => handleViewRaw(transaction)}
-            className="inline-flex items-center px-2 py-1 text-xs bg-muted text-muted-foreground rounded hover:bg-accent transition-colors"
+            variant="ghost"
+            size="sm"
             title="View raw transaction data"
           >
             <Eye className="h-3 w-3 mr-1" />
             Raw
-          </button>
+          </Button>
         );
       },
     },
@@ -530,14 +531,15 @@ export default function TransactionsTable() {
                             transaction.transaction_currency,
                           )}
                         </p>
-                        <button
+                        <Button
                           onClick={() => handleViewRaw(transaction)}
-                          className="inline-flex items-center px-2 py-1 text-xs bg-muted text-muted-foreground rounded hover:bg-accent transition-colors"
+                          variant="ghost"
+                          size="sm"
                           title="View raw transaction data"
                         >
                           <Eye className="h-3 w-3 mr-1" />
                           Raw
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>

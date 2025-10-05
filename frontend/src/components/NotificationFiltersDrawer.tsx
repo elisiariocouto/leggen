@@ -166,13 +166,15 @@ export default function NotificationFiltersDrawer({
                       className="flex items-center space-x-1 bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm"
                     >
                       <span>{filter}</span>
-                      <button
+                      <Button
                         type="button"
                         onClick={() => removeCaseInsensitiveFilter(index)}
-                        className="text-secondary-foreground hover:text-foreground"
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 hover:bg-secondary-foreground/10"
                       >
                         <X className="h-3 w-3" />
-                      </button>
+                      </Button>
                     </div>
                   ))
                 ) : (
@@ -222,13 +224,15 @@ export default function NotificationFiltersDrawer({
                       className="flex items-center space-x-1 bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm"
                     >
                       <span>{filter}</span>
-                      <button
+                      <Button
                         type="button"
                         onClick={() => removeCaseSensitiveFilter(index)}
-                        className="text-secondary-foreground hover:text-foreground"
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 hover:bg-secondary-foreground/10"
                       >
                         <X className="h-3 w-3" />
-                      </button>
+                      </Button>
                     </div>
                   ))
                 ) : (
