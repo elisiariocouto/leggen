@@ -11,10 +11,7 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: [
-        "favicon.ico",
-        "apple-touch-icon-180x180.png",
-        "maskable-icon-512x512.png",
-        "robots.txt",
+        "robots.txt"
       ],
       manifest: {
         name: "Leggen",

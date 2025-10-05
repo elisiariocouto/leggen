@@ -1,4 +1,9 @@
 server {
+
+    types {
+       application/manifest+json  webmanifest;
+    }
+
     listen 80;
     server_name localhost;
     root /usr/share/nginx/html;
@@ -13,6 +18,9 @@ server {
 
     # Handle client-side routing
     location / {
+        autoindex off;
+        expires off;
+        add_header Cache-Control "public, max-age=0, s-maxage=0, must-revalidate" always;
         try_files $uri $uri/ /index.html;
     }
 
@@ -26,7 +34,7 @@ server {
     }
 
     # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    location ~* \.(css|png|jpg|jpeg|gif|ico|svg)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }

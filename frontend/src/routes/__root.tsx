@@ -1,31 +1,10 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { AppSidebar } from "../components/AppSidebar";
 import { SiteHeader } from "../components/SiteHeader";
-import { PWAInstallPrompt, PWAUpdatePrompt } from "../components/PWAPrompts";
-import { usePWA } from "../hooks/usePWA";
-import { useVersionCheck } from "../hooks/useVersionCheck";
 import { SidebarInset, SidebarProvider } from "../components/ui/sidebar";
 import { Toaster } from "../components/ui/sonner";
 
 function RootLayout() {
-  const { updateAvailable, updateSW, forceReload } = usePWA();
-
-  // Check for version mismatches and force reload if needed
-  useVersionCheck(forceReload);
-
-  const handlePWAInstall = () => {
-    console.log("PWA installed successfully");
-  };
-
-  const handlePWAUpdate = async () => {
-    try {
-      await updateSW();
-      console.log("PWA updated successfully");
-    } catch (error) {
-      console.error("Error updating PWA:", error);
-    }
-  };
-
   return (
     <SidebarProvider
       style={
@@ -42,13 +21,6 @@ function RootLayout() {
           <Outlet />
         </main>
       </SidebarInset>
-
-      {/* PWA Prompts */}
-      <PWAInstallPrompt onInstall={handlePWAInstall} />
-      <PWAUpdatePrompt
-        updateAvailable={updateAvailable}
-        onUpdate={handlePWAUpdate}
-      />
 
       {/* Toast Notifications */}
       <Toaster />
