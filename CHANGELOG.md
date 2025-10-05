@@ -1,4 +1,22 @@
 
+## 2025.10.1 (2025/10/05)
+
+### Bug Fixes
+
+- **frontend:** Fix PWA caching system, remove prompts. ([1cd63731](https://github.com/elisiariocouto/leggen/commit/1cd63731a35a1c77a59d7ae1a898ad8f22e362e4))
+
+
+### Documentation
+
+-  Improve documentation, add gif showing web app. ([0750c41b](https://github.com/elisiariocouto/leggen/commit/0750c41b7b6634900ec19b1701d58b06346028e3))
+
+
+### Refactor
+
+- **frontend:** Standardize button styling using shadcn Button component. ([38fddeb2](https://github.com/elisiariocouto/leggen/commit/38fddeb281588de41d8ff6292c1dd48443a059a4))
+
+
+
 ## 2025.10.0 (2025/10/01)
 
 ### Bug Fixes
