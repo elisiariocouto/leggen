@@ -41,7 +41,7 @@ The command outputs instructions for setting the required environment variable t
    uv run leggen server
    ```
    - For development mode with auto-reload: `uv run leggen server --reload`
-   - API will be available at `http://localhost:8000` with docs at `http://localhost:8000/docs`
+   - API will be available at `http://localhost:8000` with docs at `http://localhost:8000/api/v1/docs`
 
 ### Start the Frontend
 1. Navigate to the frontend directory: `cd frontend`

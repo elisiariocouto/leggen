@@ -60,6 +60,8 @@ def create_app() -> FastAPI:
         description="Open Banking API for Leggen",
         version=version,
         lifespan=lifespan,
+        docs_url="/api/v1/docs",
+        openapi_url="/api/v1/openapi.json",
     )
 
     # Add CORS middleware
