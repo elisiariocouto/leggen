@@ -1,5 +1,6 @@
 server {
 
+    # MIME types for PWA
     types {
        application/manifest+json  webmanifest;
     }
@@ -9,33 +10,92 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Trust proxy headers from Caddy/upstream proxy
+    set_real_ip_from 0.0.0.0/0;
+    real_ip_header X-Forwarded-For;
+    real_ip_recursive on;
+
+    # Security headers
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
     # Enable gzip compression
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
     gzip_proxied expired no-cache no-store private auth;
-    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json application/manifest+json image/svg+xml;
 
-    # Handle client-side routing
+    # Service worker - no cache, must revalidate
+    location ~ ^/(sw\.js|workbox-.*\.js)$ {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
+        add_header Service-Worker-Allowed "/" always;
+        types {
+            application/javascript js;
+        }
+    }
+
+    # PWA manifest - short cache with revalidation
+    location ~ ^/manifest\.webmanifest$ {
+        add_header Cache-Control "public, max-age=3600, must-revalidate" always;
+        types {
+            application/manifest+json webmanifest;
+        }
+    }
+
+    # Handle client-side routing (SPA)
     location / {
         autoindex off;
         expires off;
         add_header Cache-Control "public, max-age=0, s-maxage=0, must-revalidate" always;
-        try_files $uri $uri/ /index.html;
+        try_files $uri $uri/ /index.html =404;
     }
 
     # API proxy to backend (configurable via API_BACKEND_URL env var)
     location /api/ {
         proxy_pass ${API_BACKEND_URL};
-        proxy_set_header Host $host;
+        proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+        proxy_set_header X-Forwarded-Host $http_x_forwarded_host;
+        proxy_redirect off;
+
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
 
-    # Cache static assets
-    location ~* \.(css|png|jpg|jpeg|gif|ico|svg)$ {
+    # Cache static assets with immutable flag
+    location ~* \.(css|js)$ {
         expires 1y;
-        add_header Cache-Control "public, immutable";
+        add_header Cache-Control "public, immutable" always;
+        access_log off;
+    }
+
+    # Cache images and icons
+    location ~* \.(png|jpg|jpeg|gif|ico|svg|webp)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable" always;
+        access_log off;
+    }
+
+    # Cache fonts (if any are added later)
+    location ~* \.(woff|woff2|ttf|eot|otf)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable" always;
+        add_header Access-Control-Allow-Origin "*" always;
+        access_log off;
+    }
+
+    # Other static files
+    location ~* \.(xml|txt)$ {
+        expires 1d;
+        add_header Cache-Control "public, must-revalidate" always;
     }
 }
