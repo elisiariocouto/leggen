@@ -1,4 +1,13 @@
 
+## 2025.10.2 (2025/10/06)
+
+### Bug Fixes
+
+- **frontend:** Improve nginx config. ([d78f4811](https://github.com/elisiariocouto/leggen/commit/d78f4811922df7e637abe65b1d0b1157dd331c3c))
+- **frontend:** Include default mime types. ([7c06a1d8](https://github.com/elisiariocouto/leggen/commit/7c06a1d8b9bca3da2c481d9e89e7564cfffe32a3))
+
+
+
 ## 2025.10.1 (2025/10/05)
 
 ### Bug Fixes
