@@ -1,6 +1,7 @@
 server {
 
     # MIME types for PWA
+    include mime.types;
     types {
        application/manifest+json  webmanifest;
     }
