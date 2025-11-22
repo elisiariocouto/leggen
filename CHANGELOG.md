@@ -1,4 +1,13 @@
 
+## 2025.11.0 (2025/11/22)
+
+### Bug Fixes
+
+- **frontend:** Apply iOS safe area insets to body element instead of individual components. ([d2bc179d](https://github.com/elisiariocouto/leggen/commit/d2bc179d5937172a01ebbfffd35e7617f0ac32af))
+-  Fallback to internal_transaction_id when bank transactions do not have transaction_id. ([b1b348ba](https://github.com/elisiariocouto/leggen/commit/b1b348badb5d1ea9c01ef9ecab1003252165468c))
+
+
+
 ## 2025.10.2 (2025/10/06)
 
 ### Bug Fixes
