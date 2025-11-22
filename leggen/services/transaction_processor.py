@@ -70,7 +70,10 @@ class TransactionProcessor:
         internal_transaction_id = transaction.get("internalTransactionId")
 
         if not transaction_id:
-            raise ValueError("Transaction missing required transactionId field")
+            if internal_transaction_id:
+                transaction_id = internal_transaction_id
+            else:
+                raise ValueError("Transaction missing required transactionId field")
 
         return {
             "accountId": account_id,
