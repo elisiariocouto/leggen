@@ -165,7 +165,11 @@ class Config:
         """Get the full configuration, loading it if necessary."""
         if self._config is None:
             self.load_config()
-        return self._config  # type: ignore
+        
+        if self._config is None:
+            raise RuntimeError("Configuration failed to load")
+        
+        return self._config
 
     @property
     def gocardless_config(self) -> Dict[str, str]:
