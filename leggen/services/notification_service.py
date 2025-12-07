@@ -52,11 +52,17 @@ class NotificationService:
 
     async def send_expiry_notification(self, notification_data: Dict[str, Any]) -> None:
         """Send notification about account expiry"""
-        if self._is_discord_enabled():
-            await self._send_discord_expiry(notification_data)
+        try:
+            if self._is_discord_enabled():
+                await self._send_discord_expiry(notification_data)
+        except Exception as e:
+            logger.error(f"Failed to send Discord expiry notification: {e}")
 
-        if self._is_telegram_enabled():
-            await self._send_telegram_expiry(notification_data)
+        try:
+            if self._is_telegram_enabled():
+                await self._send_telegram_expiry(notification_data)
+        except Exception as e:
+            logger.error(f"Failed to send Telegram expiry notification: {e}")
 
     def _filter_transactions(
         self, transactions: List[Dict[str, Any]]
@@ -262,7 +268,6 @@ class NotificationService:
             logger.info(f"Sent Discord expiry notification: {notification_data}")
         except Exception as e:
             logger.error(f"Failed to send Discord expiry notification: {e}")
-            raise
 
     async def _send_telegram_expiry(self, notification_data: Dict[str, Any]) -> None:
         """Send Telegram expiry notification"""
@@ -288,17 +293,22 @@ class NotificationService:
             logger.info(f"Sent Telegram expiry notification: {notification_data}")
         except Exception as e:
             logger.error(f"Failed to send Telegram expiry notification: {e}")
-            raise
 
     async def send_sync_failure_notification(
         self, notification_data: Dict[str, Any]
     ) -> None:
         """Send notification about sync failure"""
-        if self._is_discord_enabled():
-            await self._send_discord_sync_failure(notification_data)
+        try:
+            if self._is_discord_enabled():
+                await self._send_discord_sync_failure(notification_data)
+        except Exception as e:
+            logger.error(f"Failed to send Discord sync failure notification: {e}")
 
-        if self._is_telegram_enabled():
-            await self._send_telegram_sync_failure(notification_data)
+        try:
+            if self._is_telegram_enabled():
+                await self._send_telegram_sync_failure(notification_data)
+        except Exception as e:
+            logger.error(f"Failed to send Telegram sync failure notification: {e}")
 
     async def _send_discord_sync_failure(
         self, notification_data: Dict[str, Any]
@@ -326,7 +336,6 @@ class NotificationService:
             logger.info(f"Sent Discord sync failure notification: {notification_data}")
         except Exception as e:
             logger.error(f"Failed to send Discord sync failure notification: {e}")
-            raise
 
     async def _send_telegram_sync_failure(
         self, notification_data: Dict[str, Any]
@@ -354,4 +363,3 @@ class NotificationService:
             logger.info(f"Sent Telegram sync failure notification: {notification_data}")
         except Exception as e:
             logger.error(f"Failed to send Telegram sync failure notification: {e}")
-            raise
