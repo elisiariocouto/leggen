@@ -67,6 +67,9 @@ class SyncService:
             self._sync_status.total_accounts = len(all_accounts)
             logs.append(f"Found {len(all_accounts)} accounts to sync")
 
+            # Check for expired or expiring requisitions
+            await self._check_requisition_expiry(requisitions.get("results", []))
+
             # Process each account
             for account_id in all_accounts:
                 try:
@@ -166,6 +169,22 @@ class SyncService:
                     logger.error(error_msg)
                     logs.append(error_msg)
 
+                    # Send notification for account sync failure
+                    try:
+                        await self.notifications.send_sync_failure_notification(
+                            {
+                                "account_id": account_id,
+                                "error": error_msg,
+                                "type": "account_sync_failure",
+                                "retry_count": 1,
+                                "max_retries": 1,
+                            }
+                        )
+                    except Exception as notif_error:
+                        logger.error(
+                            f"Failed to send sync failure notification: {notif_error}"
+                        )
+
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
 
@@ -251,6 +270,30 @@ class SyncService:
             raise
         finally:
             self._sync_status.is_running = False
+
+    async def _check_requisition_expiry(self, requisitions: List[dict]) -> None:
+        """Check requisitions for expiry and send notifications"""
+        for req in requisitions:
+            requisition_id = req.get("id", "unknown")
+            institution_id = req.get("institution_id", "unknown")
+            status = req.get("status", "")
+
+            # Check if requisition is expired
+            if status == "EX":
+                logger.warning(
+                    f"Requisition {requisition_id} for {institution_id} has expired"
+                )
+                try:
+                    await self.notifications.send_expiry_notification(
+                        {
+                            "bank": institution_id,
+                            "requisition_id": requisition_id,
+                            "status": "expired",
+                            "days_left": 0,
+                        }
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send expiry notification: {e}")
 
     async def sync_specific_accounts(
         self, account_ids: List[str], force: bool = False, trigger_type: str = "manual"
