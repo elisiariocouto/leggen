@@ -10,8 +10,6 @@ from leggen.services.notification_service import NotificationService
 
 # Constants for notification
 EXPIRED_DAYS_LEFT = 0
-ACCOUNT_SYNC_RETRY_COUNT = 1
-ACCOUNT_SYNC_MAX_RETRIES = 1
 
 
 class SyncService:
@@ -175,20 +173,13 @@ class SyncService:
                     logs.append(error_msg)
 
                     # Send notification for account sync failure
-                    try:
-                        await self.notifications.send_sync_failure_notification(
-                            {
-                                "account_id": account_id,
-                                "error": error_msg,
-                                "type": "account_sync_failure",
-                                "retry_count": ACCOUNT_SYNC_RETRY_COUNT,
-                                "max_retries": ACCOUNT_SYNC_MAX_RETRIES,
-                            }
-                        )
-                    except Exception as notif_error:
-                        logger.error(
-                            f"Failed to send sync failure notification: {notif_error}"
-                        )
+                    await self.notifications.send_sync_failure_notification(
+                        {
+                            "account_id": account_id,
+                            "error": error_msg,
+                            "type": "account_sync_failure",
+                        }
+                    )
 
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
@@ -277,7 +268,11 @@ class SyncService:
             self._sync_status.is_running = False
 
     async def _check_requisition_expiry(self, requisitions: List[dict]) -> None:
-        """Check requisitions for expiry and send notifications"""
+        """Check requisitions for expiry and send notifications.
+
+        Args:
+            requisitions: List of requisition dictionaries to check
+        """
         for req in requisitions:
             requisition_id = req.get("id", "unknown")
             institution_id = req.get("institution_id", "unknown")
@@ -288,17 +283,14 @@ class SyncService:
                 logger.warning(
                     f"Requisition {requisition_id} for {institution_id} has expired"
                 )
-                try:
-                    await self.notifications.send_expiry_notification(
-                        {
-                            "bank": institution_id,
-                            "requisition_id": requisition_id,
-                            "status": "expired",
-                            "days_left": EXPIRED_DAYS_LEFT,
-                        }
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to send expiry notification: {e}")
+                await self.notifications.send_expiry_notification(
+                    {
+                        "bank": institution_id,
+                        "requisition_id": requisition_id,
+                        "status": "expired",
+                        "days_left": EXPIRED_DAYS_LEFT,
+                    }
+                )
 
     async def sync_specific_accounts(
         self, account_ids: List[str], force: bool = False, trigger_type: str = "manual"

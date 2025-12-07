@@ -87,19 +87,14 @@ def send_sync_failure_notification(ctx: click.Context, notification: dict):
     bot_url = f"https://api.telegram.org/bot{token}/sendMessage"
     info("Sending sync failure notification to Telegram")
 
-    message = "*🚨 [Leggen](https://github.com/elisiariocouto/leggen)*\n"
+    message = "*⚠️ [Leggen](https://github.com/elisiariocouto/leggen)*\n"
     message += "*Sync Failed*\n\n"
-    message += escape_markdown(f"Error: {notification['error']}\n")
 
-    if notification.get("type") == "sync_final_failure":
-        message += escape_markdown(
-            f"❌ Final failure after {notification['retry_count']} attempts\n"
-        )
-    else:
-        message += escape_markdown(
-            f"🔄 Attempt {notification['retry_count']}/{notification['max_retries']}\n"
-        )
-        message += escape_markdown("Will retry automatically...\n")
+    # Add account info if available
+    if notification.get("account_id"):
+        message += escape_markdown(f"Account: {notification['account_id']}\n")
+
+    message += escape_markdown(f"Error: {notification['error']}\n")
 
     res = requests.post(
         bot_url,

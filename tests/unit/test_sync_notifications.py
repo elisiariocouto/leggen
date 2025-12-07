@@ -217,8 +217,11 @@ class TestSyncNotifications:
                 sync_service.gocardless, "get_account_details"
             ) as mock_get_details,
             patch.object(
-                sync_service.notifications, "send_sync_failure_notification"
-            ) as mock_send_notification,
+                sync_service.notifications, "_send_discord_sync_failure"
+            ) as mock_discord_notification,
+            patch.object(
+                sync_service.notifications, "_send_telegram_sync_failure"
+            ) as mock_telegram_notification,
             patch.object(
                 sync_service.database, "persist_sync_operation", return_value=1
             ),
@@ -238,15 +241,14 @@ class TestSyncNotifications:
             # Make account details fail
             mock_get_details.side_effect = Exception("API Error")
 
-            # Make notification sending fail
-            mock_send_notification.side_effect = Exception("Notification Error")
+            # Make both notification methods fail
+            mock_discord_notification.side_effect = Exception("Discord Error")
+            mock_telegram_notification.side_effect = Exception("Telegram Error")
 
             # Execute: Run sync - should not raise exception from notification
-            try:
-                result = await sync_service.sync_all_accounts()
-                # The sync should complete with errors but not crash
-                assert result.success is False
-                assert len(result.errors) > 0
-            except Exception as e:
-                # If exception is raised, it should not be the notification error
-                assert "Notification Error" not in str(e)
+            result = await sync_service.sync_all_accounts()
+
+            # The sync should complete with errors but not crash from notifications
+            assert result.success is False
+            assert len(result.errors) > 0
+            assert "API Error" in result.errors[0]

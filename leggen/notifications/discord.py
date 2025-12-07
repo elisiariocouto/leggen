@@ -61,17 +61,13 @@ def send_sync_failure_notification(ctx: click.Context, notification: dict):
     info("Sending sync failure notification to Discord")
     webhook = DiscordWebhook(url=ctx.obj["notifications"]["discord"]["webhook"])
 
-    # Determine color and title based on failure type
-    if notification.get("type") == "sync_final_failure":
-        color = "ff0000"  # Red for final failure
-        title = "🚨 Sync Final Failure"
-        description = (
-            f"Sync failed permanently after {notification['retry_count']} attempts"
-        )
-    else:
-        color = "ffaa00"  # Orange for retry
-        title = "⚠️ Sync Failure"
-        description = f"Sync failed (attempt {notification['retry_count']}/{notification['max_retries']}). Will retry automatically..."
+    color = "ffaa00"  # Orange for sync failure
+    title = "⚠️ Sync Failure"
+
+    # Build description with account info if available
+    description = "Account sync failed"
+    if notification.get("account_id"):
+        description = f"Account {notification['account_id']} sync failed"
 
     embed = DiscordEmbed(
         title=title,
