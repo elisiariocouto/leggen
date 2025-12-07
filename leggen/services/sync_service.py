@@ -8,6 +8,11 @@ from leggen.services.database_service import DatabaseService
 from leggen.services.gocardless_service import GoCardlessService
 from leggen.services.notification_service import NotificationService
 
+# Constants for notification
+EXPIRED_DAYS_LEFT = 0
+ACCOUNT_SYNC_RETRY_COUNT = 1
+ACCOUNT_SYNC_MAX_RETRIES = 1
+
 
 class SyncService:
     def __init__(self):
@@ -176,8 +181,8 @@ class SyncService:
                                 "account_id": account_id,
                                 "error": error_msg,
                                 "type": "account_sync_failure",
-                                "retry_count": 1,
-                                "max_retries": 1,
+                                "retry_count": ACCOUNT_SYNC_RETRY_COUNT,
+                                "max_retries": ACCOUNT_SYNC_MAX_RETRIES,
                             }
                         )
                     except Exception as notif_error:
@@ -289,7 +294,7 @@ class SyncService:
                             "bank": institution_id,
                             "requisition_id": requisition_id,
                             "status": "expired",
-                            "days_left": 0,
+                            "days_left": EXPIRED_DAYS_LEFT,
                         }
                     )
                 except Exception as e:
