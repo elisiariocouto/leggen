@@ -64,11 +64,9 @@ async def get_all_transactions(
             search=search,
         )
 
-        data: Union[List[TransactionSummary], List[Transaction]]
-
         if summary_only:
             # Return simplified transaction summaries
-            data = [
+            data: list[TransactionSummary | Transaction] = [
                 TransactionSummary(
                     transaction_id=txn["transactionId"],  # NEW: stable bank-provided ID
                     internal_transaction_id=txn.get("internalTransactionId"),

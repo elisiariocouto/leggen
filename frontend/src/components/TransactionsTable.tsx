@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   useReactTable,
@@ -126,16 +126,20 @@ export default function TransactionsTable() {
   });
 
   const transactions = transactionsResponse?.data || [];
-  const pagination = transactionsResponse
-    ? {
-        page: transactionsResponse.page,
-        total_pages: transactionsResponse.total_pages,
-        per_page: transactionsResponse.per_page,
-        total: transactionsResponse.total,
-        has_next: transactionsResponse.has_next,
-        has_prev: transactionsResponse.has_prev,
-      }
-    : undefined;
+  const pagination = useMemo(
+    () =>
+      transactionsResponse
+        ? {
+            page: transactionsResponse.page,
+            total_pages: transactionsResponse.total_pages,
+            per_page: transactionsResponse.per_page,
+            total: transactionsResponse.total,
+            has_next: transactionsResponse.has_next,
+            has_prev: transactionsResponse.has_prev,
+          }
+        : undefined,
+    [transactionsResponse],
+  );
 
   // Check if search is currently debouncing
   const isSearchLoading = filterState.searchTerm !== debouncedSearchTerm;

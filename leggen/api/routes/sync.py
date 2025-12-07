@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from loguru import logger
 
-from leggen.api.models.sync import SchedulerConfig, SyncRequest
+from leggen.api.models.sync import SchedulerConfig, SyncRequest, SyncResult, SyncStatus
 from leggen.background.scheduler import scheduler
 from leggen.services.sync_service import SyncService
 from leggen.utils.config import config
@@ -13,7 +13,7 @@ sync_service = SyncService()
 
 
 @router.get("/sync/status")
-async def get_sync_status() -> dict:
+async def get_sync_status() -> SyncStatus:
     """Get current sync status"""
     try:
         status = await sync_service.get_sync_status()
@@ -78,7 +78,7 @@ async def trigger_sync(
 
 
 @router.post("/sync/now")
-async def sync_now(sync_request: Optional[SyncRequest] = None) -> dict:
+async def sync_now(sync_request: Optional[SyncRequest] = None) -> SyncResult:
     """Run sync synchronously and return results (slower, for testing)"""
     try:
         if sync_request and sync_request.account_ids:

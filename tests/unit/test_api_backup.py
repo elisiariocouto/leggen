@@ -211,10 +211,7 @@ class TestBackupAPI:
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2
-        assert (
-            data[0]["key"]
-            == "leggen_backups/database_backup_20250101_120000.db"
-        )
+        assert data[0]["key"] == "leggen_backups/database_backup_20250101_120000.db"
 
     def test_list_backups_no_config(self, api_client, mock_config):
         """Test backup listing with no configuration."""

@@ -157,7 +157,6 @@ class TestTransactionsAPI:
             )
 
         assert response.status_code == 200
-        data = response.json()
 
         # Verify the database service was called with correct filters
         mock_get_transactions.assert_called_once_with(

@@ -8,8 +8,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import tomli_w
 from fastapi.testclient import TestClient
 
+from leggen.commands.server import create_app
 from leggen.utils.config import Config
 
 # Create test config before any imports that might load it
@@ -27,14 +29,11 @@ _config_data = {
     "scheduler": {"sync": {"enabled": True, "hour": 3, "minute": 0}},
 }
 
-import tomli_w
 with open(_test_config_path, "wb") as f:
     tomli_w.dump(_config_data, f)
 
 # Set environment variables to point to test config BEFORE importing the app
 os.environ["LEGGEN_CONFIG_FILE"] = str(_test_config_path)
-
-from leggen.commands.server import create_app
 
 
 def pytest_configure(config):
@@ -114,7 +113,9 @@ def mock_auth_token(temp_config_dir):
 def fastapi_app(mock_db_path):
     """Create FastAPI test application."""
     # Patch the database path for the app
-    with patch("leggen.utils.paths.path_manager.get_database_path", return_value=mock_db_path):
+    with patch(
+        "leggen.utils.paths.path_manager.get_database_path", return_value=mock_db_path
+    ):
         app = create_app()
         yield app
 
