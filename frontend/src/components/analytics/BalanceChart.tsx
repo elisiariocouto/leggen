@@ -8,6 +8,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
+import { cn } from "../../lib/utils";
 import type { Balance, Account } from "../../types/api";
 
 interface BalanceChartProps {
@@ -42,6 +44,8 @@ export default function BalanceChart({
   accounts,
   className,
 }: BalanceChartProps) {
+  const { isBalanceVisible } = useBalanceVisibility();
+
   // Create a lookup map for account info
   const accountMap = accounts.reduce(
     (map, account) => {
@@ -149,7 +153,7 @@ export default function BalanceChart({
       <h3 className="text-lg font-medium text-foreground mb-4">
         Balance Progress Over Time
       </h3>
-      <div className="h-80">
+      <div className={cn("h-80", !isBalanceVisible && "blur-md select-none")}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={finalData}>
             <CartesianGrid strokeDasharray="3 3" />

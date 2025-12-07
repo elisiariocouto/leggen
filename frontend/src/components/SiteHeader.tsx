@@ -3,6 +3,7 @@ import { Activity, Wifi, WifiOff } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../lib/api";
 import { ThemeToggle } from "./ui/theme-toggle";
+import { BalanceToggle } from "./ui/balance-toggle";
 import { Separator } from "./ui/separator";
 import { SidebarTrigger } from "./ui/sidebar";
 
@@ -77,6 +78,7 @@ export function SiteHeader() {
               </>
             )}
           </div>
+          <BalanceToggle />
           <ThemeToggle />
         </div>
       </div>
