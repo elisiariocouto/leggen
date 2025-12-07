@@ -366,6 +366,9 @@ export default function TransactionsTable() {
       .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0)
   );
 
+  // Get currency from first transaction, fallback to EUR
+  const displayCurrency = transactions.length > 0 ? transactions[0].transaction_currency : "EUR";
+
   const stats = {
     totalCount: pagination?.total || 0,
     pageCount: transactions.length,
@@ -411,7 +414,7 @@ export default function TransactionsTable() {
                   Income
                 </p>
                 <p className="text-2xl font-bold text-green-600 mt-1">
-                  +{formatCurrency(stats.totalIncome, transactions[0]?.transaction_currency || "EUR")}
+                  +{formatCurrency(stats.totalIncome, displayCurrency)}
                 </p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600 opacity-50" />
@@ -425,7 +428,7 @@ export default function TransactionsTable() {
                   Expenses
                 </p>
                 <p className="text-2xl font-bold text-red-600 mt-1">
-                  -{formatCurrency(stats.totalExpenses, transactions[0]?.transaction_currency || "EUR")}
+                  -{formatCurrency(stats.totalExpenses, displayCurrency)}
                 </p>
               </div>
               <TrendingDown className="h-8 w-8 text-red-600 opacity-50" />
@@ -444,7 +447,7 @@ export default function TransactionsTable() {
                   }`}
                 >
                   {stats.netChange >= 0 ? "+" : ""}
-                  {formatCurrency(stats.netChange, transactions[0]?.transaction_currency || "EUR")}
+                  {formatCurrency(stats.netChange, displayCurrency)}
                 </p>
               </div>
               {stats.netChange >= 0 ? (

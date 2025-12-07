@@ -32,24 +32,22 @@ export function FilterBar({
   className,
 }: FilterBarProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const wasFocused = useRef(false);
 
-  // Track if search input was focused before re-render
+  // Maintain focus on search input during re-renders
   useEffect(() => {
     const currentInput = searchInputRef.current;
     if (!currentInput) return;
 
-    // Check if the input was focused before the effect runs
-    if (document.activeElement === currentInput) {
-      wasFocused.current = true;
+    // Only restore focus if the search input had focus before
+    const wasFocused = document.activeElement === currentInput;
+    
+    // Use requestAnimationFrame to restore focus after React finishes rendering
+    if (wasFocused && document.activeElement !== currentInput) {
+      requestAnimationFrame(() => {
+        currentInput.focus();
+      });
     }
-
-    // If it was focused, restore focus after render
-    if (wasFocused.current && document.activeElement !== currentInput) {
-      currentInput.focus();
-      wasFocused.current = false;
-    }
-  });
+  }, [isSearchLoading]);
 
   const hasActiveFilters =
     filterState.searchTerm ||
