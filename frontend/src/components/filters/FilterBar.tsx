@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,26 @@ export function FilterBar({
   isSearchLoading = false,
   className,
 }: FilterBarProps) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const wasFocused = useRef(false);
+
+  // Track if search input was focused before re-render
+  useEffect(() => {
+    const currentInput = searchInputRef.current;
+    if (!currentInput) return;
+
+    // Check if the input was focused before the effect runs
+    if (document.activeElement === currentInput) {
+      wasFocused.current = true;
+    }
+
+    // If it was focused, restore focus after render
+    if (wasFocused.current && document.activeElement !== currentInput) {
+      currentInput.focus();
+      wasFocused.current = false;
+    }
+  });
+
   const hasActiveFilters =
     filterState.searchTerm ||
     filterState.selectedAccount ||
@@ -61,6 +82,7 @@ export function FilterBar({
               <div className="relative w-[200px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
+                  ref={searchInputRef}
                   placeholder="Search transactions..."
                   value={filterState.searchTerm}
                   onChange={(e) => onFilterChange("searchTerm", e.target.value)}
@@ -99,6 +121,7 @@ export function FilterBar({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                ref={searchInputRef}
                 placeholder="Search..."
                 value={filterState.searchTerm}
                 onChange={(e) => onFilterChange("searchTerm", e.target.value)}

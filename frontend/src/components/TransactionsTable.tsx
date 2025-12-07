@@ -355,6 +355,25 @@ export default function TransactionsTable() {
     );
   }
 
+  // Calculate stats from current page transactions
+  const totalIncome = transactions
+    .filter((t: Transaction) => t.transaction_value > 0)
+    .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0);
+
+  const totalExpenses = Math.abs(
+    transactions
+      .filter((t: Transaction) => t.transaction_value < 0)
+      .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0)
+  );
+
+  const stats = {
+    totalCount: pagination?.total || 0,
+    pageCount: transactions.length,
+    totalIncome,
+    totalExpenses,
+    netChange: totalIncome - totalExpenses,
+  };
+
   return (
     <div className="space-y-6 max-w-full">
       {/* New FilterBar */}
@@ -365,6 +384,78 @@ export default function TransactionsTable() {
         accounts={accounts}
         isSearchLoading={isSearchLoading}
       />
+
+      {/* Transaction Statistics */}
+      {transactions.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Showing
+                </p>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  {stats.pageCount}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  of {stats.totalCount} total
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Income
+                </p>
+                <p className="text-2xl font-bold text-green-600 mt-1">
+                  +{formatCurrency(stats.totalIncome, transactions[0]?.transaction_currency || "EUR")}
+                </p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-green-600 opacity-50" />
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Expenses
+                </p>
+                <p className="text-2xl font-bold text-red-600 mt-1">
+                  -{formatCurrency(stats.totalExpenses, transactions[0]?.transaction_currency || "EUR")}
+                </p>
+              </div>
+              <TrendingDown className="h-8 w-8 text-red-600 opacity-50" />
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Net Change
+                </p>
+                <p
+                  className={`text-2xl font-bold mt-1 ${
+                    stats.netChange >= 0 ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {stats.netChange >= 0 ? "+" : ""}
+                  {formatCurrency(stats.netChange, transactions[0]?.transaction_currency || "EUR")}
+                </p>
+              </div>
+              {stats.netChange >= 0 ? (
+                <TrendingUp className="h-8 w-8 text-green-600 opacity-50" />
+              ) : (
+                <TrendingDown className="h-8 w-8 text-red-600 opacity-50" />
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Responsive Table/Cards */}
       <Card>
