@@ -246,11 +246,6 @@ async def get_account_transactions(
             offset=offset,
         )
 
-        # Get total count for pagination info
-        total_transactions = await database_service.get_transaction_count_from_db(
-            account_id=account_id,
-        )
-
         data: Union[List[TransactionSummary], List[Transaction]]
 
         if summary_only:
@@ -299,9 +294,7 @@ async def get_account_transactions(
 
 
 @router.put("/accounts/{account_id}")
-async def update_account_details(
-    account_id: str, update_data: AccountUpdate
-) -> dict:
+async def update_account_details(account_id: str, update_data: AccountUpdate) -> dict:
     """Update account details (currently only display_name)"""
     try:
         # Get current account details

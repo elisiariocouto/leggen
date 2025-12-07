@@ -5,9 +5,17 @@ import random
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import click
+
+
+class TransactionType(TypedDict):
+    """Type definition for transaction type configuration."""
+
+    description: str
+    amount_range: tuple[float, float]
+    frequency: float
 
 
 class SampleDataGenerator:
@@ -42,7 +50,7 @@ class SampleDataGenerator:
             },
         ]
 
-        self.transaction_types = [
+        self.transaction_types: list[TransactionType] = [
             {
                 "description": "Grocery Store",
                 "amount_range": (-150, -20),
@@ -227,6 +235,8 @@ class SampleDataGenerator:
                 )[0]
 
                 # Generate transaction amount
+                min_amount: float
+                max_amount: float
                 min_amount, max_amount = transaction_type["amount_range"]
                 amount = round(random.uniform(min_amount, max_amount), 2)
 
@@ -245,7 +255,7 @@ class SampleDataGenerator:
                 internal_transaction_id = f"int-txn-{random.randint(100000, 999999)}"
 
                 # Create realistic descriptions
-                descriptions = {
+                descriptions: dict[str, list[str]] = {
                     "Grocery Store": [
                         "TESCO",
                         "SAINSBURY'S",
@@ -273,7 +283,7 @@ class SampleDataGenerator:
                     "Transfer to Savings": ["SAVINGS TRANSFER", "INVESTMENT TRANSFER"],
                 }
 
-                specific_descriptions = descriptions.get(
+                specific_descriptions: list[str] = descriptions.get(
                     transaction_type["description"], [transaction_type["description"]]
                 )
                 description = random.choice(specific_descriptions)

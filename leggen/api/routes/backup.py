@@ -129,9 +129,7 @@ async def test_backup_connection(test_request: BackupTest) -> dict:
         success = await backup_service.test_connection(s3_config)
 
         if not success:
-            raise HTTPException(
-                status_code=400, detail="S3 connection test failed"
-            )
+            raise HTTPException(status_code=400, detail="S3 connection test failed")
 
         return {"connected": True}
 
@@ -193,9 +191,7 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
             success = await backup_service.backup_database(database_path)
 
             if not success:
-                raise HTTPException(
-                    status_code=500, detail="Database backup failed"
-                )
+                raise HTTPException(status_code=500, detail="Database backup failed")
 
             return {"operation": "backup", "completed": True}
 
@@ -213,9 +209,7 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
             )
 
             if not success:
-                raise HTTPException(
-                    status_code=500, detail="Database restore failed"
-                )
+                raise HTTPException(status_code=500, detail="Database restore failed")
 
             return {"operation": "restore", "completed": True}
         else:
