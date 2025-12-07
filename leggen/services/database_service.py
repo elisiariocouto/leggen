@@ -1,11 +1,15 @@
 import json
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from leggen.services.transaction_processor import TransactionProcessor
+from leggen.services.data_processors import (
+    AnalyticsProcessor,
+    BalanceTransformer,
+    TransactionProcessor,
+)
 from leggen.utils.config import config
 from leggen.utils.paths import path_manager
 
@@ -14,7 +18,11 @@ class DatabaseService:
     def __init__(self):
         self.db_config = config.database_config
         self.sqlite_enabled = self.db_config.get("sqlite", True)
+
+        # Data processors
         self.transaction_processor = TransactionProcessor()
+        self.balance_transformer = BalanceTransformer()
+        self.analytics_processor = AnalyticsProcessor()
 
     async def persist_balance(
         self, account_id: str, balance_data: Dict[str, Any]
@@ -136,7 +144,10 @@ class DatabaseService:
             return []
 
         try:
-            balances = self._get_historical_balances(account_id=account_id, days=days)
+            db_path = path_manager.get_database_path()
+            balances = self.analytics_processor.calculate_historical_balances(
+                db_path, account_id=account_id, days=days
+            )
             logger.debug(
                 f"Retrieved {len(balances)} historical balance points from database"
             )
@@ -753,10 +764,12 @@ class DatabaseService:
                    ON balances(account_id, type, timestamp)"""
             )
 
-            # Convert GoCardless balance format to our format and persist
-            for balance in balance_data.get("balances", []):
-                balance_amount = balance["balanceAmount"]
+            # Transform and persist balances
+            balance_rows = self.balance_transformer.transform_to_database_format(
+                account_id, balance_data
+            )
 
+            for row in balance_rows:
                 try:
                     cursor.execute(
                         """INSERT INTO balances (
@@ -769,16 +782,7 @@ class DatabaseService:
                         type,
                         timestamp
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (
-                            account_id,
-                            balance_data.get("institution_id", "unknown"),
-                            balance_data.get("account_status"),
-                            balance_data.get("iban", "N/A"),
-                            float(balance_amount["amount"]),
-                            balance_amount["currency"],
-                            balance["balanceType"],
-                            datetime.now().isoformat(),
-                        ),
+                        row,
                     )
                 except sqlite3.IntegrityError:
                     logger.warning(f"Skipped duplicate balance for {account_id}")
@@ -1251,90 +1255,6 @@ class DatabaseService:
             conn.close()
             raise e
 
-    def _get_historical_balances(self, account_id=None, days=365):
-        """Get historical balance progression based on transaction history"""
-        db_path = path_manager.get_database_path()
-        if not db_path.exists():
-            return []
-
-        conn = sqlite3.connect(str(db_path))
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-
-        try:
-            cutoff_date = (datetime.now() - timedelta(days=days)).date().isoformat()
-            today_date = datetime.now().date().isoformat()
-
-            # Single SQL query to generate historical balances using window functions
-            query = """
-            WITH RECURSIVE date_series AS (
-                -- Generate weekly dates from cutoff_date to today
-                SELECT date(?) as ref_date
-                UNION ALL
-                SELECT date(ref_date, '+7 days')
-                FROM date_series
-                WHERE ref_date < date(?)
-            ),
-            current_balances AS (
-                -- Get current balance for each account/type
-                SELECT account_id, type, amount, currency
-                FROM balances b1
-                WHERE b1.timestamp = (
-                    SELECT MAX(b2.timestamp)
-                    FROM balances b2
-                    WHERE b2.account_id = b1.account_id AND b2.type = b1.type
-                )
-                {account_filter}
-                AND b1.type = 'closingBooked'  -- Focus on closingBooked for charts
-            ),
-            historical_points AS (
-                -- Calculate balance at each weekly point by subtracting future transactions
-                SELECT
-                    cb.account_id,
-                    cb.type as balance_type,
-                    cb.currency,
-                    ds.ref_date,
-                    cb.amount - COALESCE(
-                        (SELECT SUM(t.transactionValue)
-                         FROM transactions t
-                         WHERE t.accountId = cb.account_id
-                         AND date(t.transactionDate) > ds.ref_date), 0
-                    ) as balance_amount
-                FROM current_balances cb
-                CROSS JOIN date_series ds
-            )
-            SELECT
-                account_id || '_' || balance_type || '_' || ref_date as id,
-                account_id,
-                balance_amount,
-                balance_type,
-                currency,
-                ref_date as reference_date
-            FROM historical_points
-            ORDER BY account_id, ref_date
-            """
-
-            # Build parameters and account filter
-            params = [cutoff_date, today_date]
-            if account_id:
-                account_filter = "AND b1.account_id = ?"
-                params.append(account_id)
-            else:
-                account_filter = ""
-
-            # Format the query with conditional filter
-            formatted_query = query.format(account_filter=account_filter)
-
-            cursor.execute(formatted_query, params)
-            rows = cursor.fetchall()
-
-            conn.close()
-            return [dict(row) for row in rows]
-
-        except Exception as e:
-            conn.close()
-            raise e
-
     async def get_monthly_transaction_stats_from_db(
         self,
         account_id: Optional[str] = None,
@@ -1347,10 +1267,9 @@ class DatabaseService:
             return []
 
         try:
-            monthly_stats = self._get_monthly_transaction_stats(
-                account_id=account_id,
-                date_from=date_from,
-                date_to=date_to,
+            db_path = path_manager.get_database_path()
+            monthly_stats = self.analytics_processor.calculate_monthly_stats(
+                db_path, account_id=account_id, date_from=date_from, date_to=date_to
             )
             logger.debug(
                 f"Retrieved {len(monthly_stats)} monthly stat points from database"
@@ -1359,79 +1278,6 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Failed to get monthly transaction stats from database: {e}")
             return []
-
-    def _get_monthly_transaction_stats(
-        self,
-        account_id: Optional[str] = None,
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
-        """Get monthly transaction statistics from SQLite database"""
-        db_path = path_manager.get_database_path()
-        if not db_path.exists():
-            return []
-
-        conn = sqlite3.connect(str(db_path))
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-
-        try:
-            # SQL query to aggregate transactions by month
-            query = """
-            SELECT
-                strftime('%Y-%m', transactionDate) as month,
-                COALESCE(SUM(CASE WHEN transactionValue > 0 THEN transactionValue ELSE 0 END), 0) as income,
-                COALESCE(SUM(CASE WHEN transactionValue < 0 THEN ABS(transactionValue) ELSE 0 END), 0) as expenses,
-                COALESCE(SUM(transactionValue), 0) as net
-            FROM transactions
-            WHERE 1=1
-            """
-
-            params = []
-
-            if account_id:
-                query += " AND accountId = ?"
-                params.append(account_id)
-
-            if date_from:
-                query += " AND transactionDate >= ?"
-                params.append(date_from)
-
-            if date_to:
-                query += " AND transactionDate <= ?"
-                params.append(date_to)
-
-            query += """
-            GROUP BY strftime('%Y-%m', transactionDate)
-            ORDER BY month ASC
-            """
-
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
-
-            # Convert to desired format with proper month display
-            monthly_stats = []
-            for row in rows:
-                # Convert YYYY-MM to display format like "Mar 2024"
-                year, month_num = row["month"].split("-")
-                month_date = datetime.strptime(f"{year}-{month_num}-01", "%Y-%m-%d")
-                display_month = month_date.strftime("%b %Y")
-
-                monthly_stats.append(
-                    {
-                        "month": display_month,
-                        "income": round(row["income"], 2),
-                        "expenses": round(row["expenses"], 2),
-                        "net": round(row["net"], 2),
-                    }
-                )
-
-            conn.close()
-            return monthly_stats
-
-        except Exception as e:
-            conn.close()
-            raise e
 
     async def _check_sync_operations_migration_needed(self) -> bool:
         """Check if sync_operations table needs to be created"""

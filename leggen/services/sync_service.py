@@ -4,6 +4,11 @@ from typing import List
 from loguru import logger
 
 from leggen.api.models.sync import SyncResult, SyncStatus
+from leggen.services.data_processors import (
+    AccountEnricher,
+    BalanceTransformer,
+    TransactionProcessor,
+)
 from leggen.services.database_service import DatabaseService
 from leggen.services.gocardless_service import GoCardlessService
 from leggen.services.notification_service import NotificationService
@@ -17,8 +22,13 @@ class SyncService:
         self.gocardless = GoCardlessService()
         self.database = DatabaseService()
         self.notifications = NotificationService()
+
+        # Data processors
+        self.account_enricher = AccountEnricher()
+        self.balance_transformer = BalanceTransformer()
+        self.transaction_processor = TransactionProcessor()
+
         self._sync_status = SyncStatus(is_running=False)
-        self._institution_logos = {}  # Cache for institution logos
 
     async def get_sync_status(self) -> SyncStatus:
         """Get current sync status"""
@@ -84,54 +94,25 @@ class SyncService:
                     # Get balances to extract currency information
                     balances = await self.gocardless.get_account_balances(account_id)
 
-                    # Enrich account details with currency and institution logo
+                    # Enrich and persist account details
                     if account_details and balances:
-                        enriched_account_details = account_details.copy()
-
-                        # Extract currency from first balance
-                        balances_list = balances.get("balances", [])
-                        if balances_list:
-                            first_balance = balances_list[0]
-                            balance_amount = first_balance.get("balanceAmount", {})
-                            currency = balance_amount.get("currency")
-                            if currency:
-                                enriched_account_details["currency"] = currency
-
-                        # Get institution details to fetch logo
-                        institution_id = enriched_account_details.get("institution_id")
-                        if institution_id:
-                            try:
-                                institution_details = (
-                                    await self.gocardless.get_institution_details(
-                                        institution_id
-                                    )
-                                )
-                                enriched_account_details["logo"] = (
-                                    institution_details.get("logo", "")
-                                )
-                                logger.info(
-                                    f"Fetched logo for institution {institution_id}: {enriched_account_details.get('logo', 'No logo')}"
-                                )
-                            except Exception as e:
-                                logger.warning(
-                                    f"Failed to fetch institution details for {institution_id}: {e}"
-                                )
+                        # Enrich account with currency and institution logo
+                        enriched_account_details = (
+                            await self.account_enricher.enrich_account_details(
+                                account_details, balances
+                            )
+                        )
 
                         # Persist enriched account details to database
                         await self.database.persist_account_details(
                             enriched_account_details
                         )
 
-                        # Merge account details into balances data for proper persistence
-                        balances_with_account_info = balances.copy()
-                        balances_with_account_info["institution_id"] = (
-                            enriched_account_details.get("institution_id")
-                        )
-                        balances_with_account_info["iban"] = (
-                            enriched_account_details.get("iban")
-                        )
-                        balances_with_account_info["account_status"] = (
-                            enriched_account_details.get("status")
+                        # Merge account metadata into balances for persistence
+                        balances_with_account_info = (
+                            self.balance_transformer.merge_account_metadata_into_balances(
+                                balances, enriched_account_details
+                            )
                         )
                         await self.database.persist_balance(
                             account_id, balances_with_account_info
@@ -146,8 +127,10 @@ class SyncService:
                         account_id
                     )
                     if transactions:
-                        processed_transactions = self.database.process_transactions(
-                            account_id, account_details, transactions
+                        processed_transactions = (
+                            self.transaction_processor.process_transactions(
+                                account_id, account_details, transactions
+                            )
                         )
                         new_transactions = await self.database.persist_transactions(
                             account_id, processed_transactions
