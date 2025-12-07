@@ -34,6 +34,7 @@ import { Button } from "./ui/button";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Label } from "./ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { BlurredValue } from "./ui/blurred-value";
 import AccountsSkeleton from "./AccountsSkeleton";
 import NotificationFiltersDrawer from "./NotificationFiltersDrawer";
 import DiscordConfigDrawer from "./DiscordConfigDrawer";
@@ -491,13 +492,13 @@ export default function Settings() {
                               ) : (
                                 <TrendingDown className="h-4 w-4 text-red-500" />
                               )}
-                              <p
+                              <BlurredValue
                                 className={`text-base sm:text-lg font-semibold ${
                                   isPositive ? "text-green-600" : "text-red-600"
                                 }`}
                               >
                                 {formatCurrency(balance, currency)}
-                              </p>
+                              </BlurredValue>
                             </div>
                           </div>
                         </div>
