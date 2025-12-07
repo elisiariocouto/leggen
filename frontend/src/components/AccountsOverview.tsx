@@ -23,6 +23,7 @@ import {
 import { Button } from "./ui/button";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import AccountsSkeleton from "./AccountsSkeleton";
+import { BlurredValue } from "./ui/blurred-value";
 import type { Account, Balance } from "../types/api";
 
 // Helper function to get status indicator color and styles
@@ -158,7 +159,7 @@ export default function AccountsOverview() {
                   Total Balance
                 </p>
                 <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(totalBalance)}
+                  <BlurredValue>{formatCurrency(totalBalance)}</BlurredValue>
                 </p>
               </div>
               <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-full">
@@ -369,7 +370,9 @@ export default function AccountsOverview() {
                               isPositive ? "text-green-600" : "text-red-600"
                             }`}
                           >
-                            {formatCurrency(balance, currency)}
+                            <BlurredValue>
+                              {formatCurrency(balance, currency)}
+                            </BlurredValue>
                           </p>
                         </div>
                       </div>

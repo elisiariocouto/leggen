@@ -8,6 +8,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
+import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
+import { cn } from "../../lib/utils";
 import apiClient from "../../lib/api";
 
 interface MonthlyTrendsProps {
@@ -29,6 +31,8 @@ export default function MonthlyTrends({
   className,
   days = 365,
 }: MonthlyTrendsProps) {
+  const { isBalanceVisible } = useBalanceVisibility();
+
   // Get pre-calculated monthly stats from the new endpoint
   const { data: monthlyData, isLoading } = useQuery({
     queryKey: ["monthly-stats", days],
@@ -103,7 +107,7 @@ export default function MonthlyTrends({
       <h3 className="text-lg font-medium text-foreground mb-4">
         {getTitle(days)}
       </h3>
-      <div className="h-80">
+      <div className={cn("h-80", !isBalanceVisible && "blur-md select-none")}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={displayData}

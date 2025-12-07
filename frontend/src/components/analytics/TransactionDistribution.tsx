@@ -6,6 +6,8 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
+import { BlurredValue } from "../ui/blurred-value";
 import type { Account } from "../../types/api";
 
 interface TransactionDistributionProps {
@@ -31,6 +33,8 @@ export default function TransactionDistribution({
   accounts,
   className,
 }: TransactionDistributionProps) {
+  const { isBalanceVisible } = useBalanceVisibility();
+
   // Helper function to get bank name from institution_id
   const getBankName = (institutionId: string): string => {
     const bankMapping: Record<string, string> = {
@@ -85,7 +89,8 @@ export default function TransactionDistribution({
         <div className="bg-card p-3 border rounded shadow-lg">
           <p className="font-medium text-foreground">{data.name}</p>
           <p className="text-primary">
-            Balance: €{data.value.toLocaleString()}
+            Balance:{" "}
+            <BlurredValue>€{data.value.toLocaleString()}</BlurredValue>
           </p>
           <p className="text-muted-foreground">{percentage}% of total</p>
         </div>
@@ -138,7 +143,7 @@ export default function TransactionDistribution({
               <span className="text-foreground">{item.name}</span>
             </div>
             <span className="font-medium text-foreground">
-              €{item.value.toLocaleString()}
+              <BlurredValue>€{item.value.toLocaleString()}</BlurredValue>
             </span>
           </div>
         ))}

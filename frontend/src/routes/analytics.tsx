@@ -88,6 +88,7 @@ function AnalyticsDashboard() {
           subtitle="Inflows this period"
           icon={TrendingUp}
           iconColor="green"
+          shouldBlur={true}
         />
         <StatCard
           title="Total Expenses"
@@ -95,6 +96,7 @@ function AnalyticsDashboard() {
           subtitle="Outflows this period"
           icon={TrendingDown}
           iconColor="red"
+          shouldBlur={true}
         />
       </div>
 
@@ -106,6 +108,7 @@ function AnalyticsDashboard() {
           subtitle="Income minus expenses"
           icon={CreditCard}
           iconColor={(stats?.net_change || 0) >= 0 ? "green" : "red"}
+          shouldBlur={true}
         />
         <StatCard
           title="Average Transaction"
@@ -113,6 +116,7 @@ function AnalyticsDashboard() {
           subtitle="Per transaction"
           icon={Activity}
           iconColor="purple"
+          shouldBlur={true}
         />
         <StatCard
           title="Active Accounts"

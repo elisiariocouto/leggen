@@ -16,6 +16,7 @@ import { apiClient } from "../lib/api";
 import { formatCurrency } from "../lib/utils";
 import { useState } from "react";
 import type { Account } from "../types/api";
+import { BlurredValue } from "./ui/blurred-value";
 import {
   Sidebar,
   SidebarContent,
@@ -130,7 +131,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
             <div className="px-3 pb-2">
               <p className="text-xl font-bold text-foreground">
-                {formatCurrency(totalBalance)}
+                <BlurredValue>{formatCurrency(totalBalance)}</BlurredValue>
               </p>
               <p className="text-sm text-muted-foreground">
                 {accounts?.length || 0} accounts
@@ -163,7 +164,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                               "Unnamed Account"}
                           </p>
                           <p className="text-xs font-semibold text-foreground">
-                            {formatCurrency(primaryBalance, currency)}
+                            <BlurredValue>
+                              {formatCurrency(primaryBalance, currency)}
+                            </BlurredValue>
                           </p>
                         </div>
                       </div>

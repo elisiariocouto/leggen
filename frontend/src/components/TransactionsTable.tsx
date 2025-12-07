@@ -31,7 +31,8 @@ import { DataTablePagination } from "./ui/data-table-pagination";
 import { Card } from "./ui/card";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Button } from "./ui/button";
-import type { Account, Transaction, ApiResponse } from "../types/api";
+import { BlurredValue } from "./ui/blurred-value";
+import type { Account, Transaction, PaginatedResponse } from "../types/api";
 
 export default function TransactionsTable() {
   // Filter state consolidated into a single object
@@ -102,7 +103,7 @@ export default function TransactionsTable() {
     isLoading: transactionsLoading,
     error: transactionsError,
     refetch: refetchTransactions,
-  } = useQuery<ApiResponse<Transaction[]>>({
+  } = useQuery<PaginatedResponse<Transaction>>({
     queryKey: [
       "transactions",
       filterState.selectedAccount,
@@ -125,7 +126,16 @@ export default function TransactionsTable() {
   });
 
   const transactions = transactionsResponse?.data || [];
-  const pagination = transactionsResponse?.pagination;
+  const pagination = transactionsResponse
+    ? {
+        page: transactionsResponse.page,
+        total_pages: transactionsResponse.total_pages,
+        per_page: transactionsResponse.per_page,
+        total: transactionsResponse.total,
+        has_next: transactionsResponse.has_next,
+        has_prev: transactionsResponse.has_prev,
+      }
+    : undefined;
 
   // Check if search is currently debouncing
   const isSearchLoading = filterState.searchTerm !== debouncedSearchTerm;
@@ -221,11 +231,13 @@ export default function TransactionsTable() {
                 isPositive ? "text-green-600" : "text-red-600"
               }`}
             >
-              {isPositive ? "+" : ""}
-              {formatCurrency(
-                transaction.transaction_value,
-                transaction.transaction_currency,
-              )}
+              <BlurredValue>
+                {isPositive ? "+" : ""}
+                {formatCurrency(
+                  transaction.transaction_value,
+                  transaction.transaction_currency,
+                )}
+              </BlurredValue>
             </p>
           </div>
         );
@@ -525,11 +537,13 @@ export default function TransactionsTable() {
                             isPositive ? "text-green-600" : "text-red-600"
                           }`}
                         >
-                          {isPositive ? "+" : ""}
-                          {formatCurrency(
-                            transaction.transaction_value,
-                            transaction.transaction_currency,
-                          )}
+                          <BlurredValue>
+                            {isPositive ? "+" : ""}
+                            {formatCurrency(
+                              transaction.transaction_value,
+                              transaction.transaction_currency,
+                            )}
+                          </BlurredValue>
                         </p>
                         <Button
                           onClick={() => handleViewRaw(transaction)}
