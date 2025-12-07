@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 
 from leggen.services.transaction_processor import TransactionProcessor
+from leggen.utils import paths
 from leggen.utils.config import config
-from leggen.utils.paths import path_manager
 
 
 class DatabaseService:
@@ -234,7 +234,7 @@ class DatabaseService:
 
     async def _check_balance_timestamp_migration_needed(self) -> bool:
         """Check if balance timestamps need migration"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return False
 
@@ -262,7 +262,7 @@ class DatabaseService:
 
     async def _migrate_balance_timestamps(self):
         """Convert all Unix timestamps to datetime strings"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             logger.warning("Database file not found, skipping migration")
             return
@@ -349,7 +349,7 @@ class DatabaseService:
 
     async def _check_null_transaction_ids_migration_needed(self) -> bool:
         """Check if null transaction IDs need migration"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return False
 
@@ -378,7 +378,7 @@ class DatabaseService:
         """Populate null internalTransactionId fields using transactionId from raw data"""
         import uuid
 
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             logger.warning("Database file not found, skipping migration")
             return
@@ -485,7 +485,7 @@ class DatabaseService:
 
     async def _check_composite_key_migration_needed(self) -> bool:
         """Check if composite key migration is needed"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return False
 
@@ -531,7 +531,7 @@ class DatabaseService:
 
     async def _migrate_to_composite_key(self):
         """Migrate transactions table to use composite primary key (accountId, transactionId)"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             logger.warning("Database file not found, skipping migration")
             return
@@ -650,7 +650,7 @@ class DatabaseService:
 
     async def _check_display_name_migration_needed(self) -> bool:
         """Check if display_name column needs to be added to accounts table"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return False
 
@@ -682,7 +682,7 @@ class DatabaseService:
 
     async def _migrate_add_display_name(self):
         """Add display_name column to accounts table"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             logger.warning("Database file not found, skipping migration")
             return
@@ -720,7 +720,7 @@ class DatabaseService:
         try:
             import sqlite3
 
-            db_path = path_manager.get_database_path()
+            db_path = paths.get_database_path()
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
 
@@ -799,7 +799,7 @@ class DatabaseService:
             import json
             import sqlite3
 
-            db_path = path_manager.get_database_path()
+            db_path = paths.get_database_path()
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
 
@@ -932,7 +932,7 @@ class DatabaseService:
         search=None,
     ):
         """Get transactions from SQLite database with optional filtering"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return []
         conn = sqlite3.connect(str(db_path))
@@ -1001,7 +1001,7 @@ class DatabaseService:
 
     def _get_balances(self, account_id=None):
         """Get latest balances from SQLite database"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return []
         conn = sqlite3.connect(str(db_path))
@@ -1039,7 +1039,7 @@ class DatabaseService:
 
     def _get_account_summary(self, account_id):
         """Get basic account info from transactions table (avoids GoCardless API call)"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return None
         conn = sqlite3.connect(str(db_path))
@@ -1072,7 +1072,7 @@ class DatabaseService:
 
     def _get_transaction_count(self, account_id=None, **filters):
         """Get total count of transactions matching filters"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return 0
         conn = sqlite3.connect(str(db_path))
@@ -1118,7 +1118,7 @@ class DatabaseService:
 
     def _persist_account(self, account_data: dict):
         """Persist account details to SQLite database"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
 
@@ -1200,7 +1200,7 @@ class DatabaseService:
 
     def _get_accounts(self, account_ids=None):
         """Get account details from SQLite database"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return []
         conn = sqlite3.connect(str(db_path))
@@ -1231,7 +1231,7 @@ class DatabaseService:
 
     def _get_account(self, account_id: str):
         """Get specific account details from SQLite database"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return None
         conn = sqlite3.connect(str(db_path))
@@ -1253,7 +1253,7 @@ class DatabaseService:
 
     def _get_historical_balances(self, account_id=None, days=365):
         """Get historical balance progression based on transaction history"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return []
 
@@ -1367,7 +1367,7 @@ class DatabaseService:
         date_to: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Get monthly transaction statistics from SQLite database"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return []
 
@@ -1435,7 +1435,7 @@ class DatabaseService:
 
     async def _check_sync_operations_migration_needed(self) -> bool:
         """Check if sync_operations table needs to be created"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return False
 
@@ -1458,7 +1458,7 @@ class DatabaseService:
 
     async def _migrate_add_sync_operations(self):
         """Add sync_operations table"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             logger.warning("Database file not found, skipping migration")
             return
@@ -1535,7 +1535,7 @@ class DatabaseService:
 
     async def _check_logo_migration_needed(self) -> bool:
         """Check if logo column needs to be added to accounts table"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             return False
 
@@ -1567,7 +1567,7 @@ class DatabaseService:
 
     async def _migrate_add_logo(self):
         """Add logo column to accounts table"""
-        db_path = path_manager.get_database_path()
+        db_path = paths.get_database_path()
         if not db_path.exists():
             logger.warning("Database file not found, skipping migration")
             return
@@ -1603,7 +1603,7 @@ class DatabaseService:
             import json
             import sqlite3
 
-            db_path = path_manager.get_database_path()
+            db_path = paths.get_database_path()
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
 
@@ -1655,7 +1655,7 @@ class DatabaseService:
             import json
             import sqlite3
 
-            db_path = path_manager.get_database_path()
+            db_path = paths.get_database_path()
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
 

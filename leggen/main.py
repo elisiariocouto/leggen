@@ -5,8 +5,8 @@ from pathlib import Path
 
 import click
 
+from leggen.utils import paths
 from leggen.utils.config import load_config
-from leggen.utils.paths import path_manager
 from leggen.utils.text import error
 
 cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "commands"))
@@ -78,7 +78,7 @@ class Group(click.Group):
     "-c",
     "--config",
     type=click.Path(dir_okay=False),
-    default=lambda: str(path_manager.get_config_file_path()),
+    default=lambda: str(paths.get_config_file_path()),
     show_default=True,
     callback=load_config,
     is_eager=True,
@@ -124,11 +124,11 @@ def cli(ctx: click.Context, config_dir: Path, database: Path, api_url: str):
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
         return
 
-    # Set up path manager with user-provided paths
+    # Set environment variables for path overrides if provided
     if config_dir:
-        path_manager.set_config_dir(config_dir)
+        os.environ["LEGGEN_CONFIG_DIR"] = str(config_dir)
     if database:
-        path_manager.set_database_path(database)
+        os.environ["LEGGEN_DATABASE_PATH"] = str(database)
 
     # Store API URL in context for commands to use
     ctx.obj["api_url"] = api_url

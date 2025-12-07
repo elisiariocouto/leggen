@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from importlib import metadata
 
@@ -10,7 +11,6 @@ from loguru import logger
 from leggen.api.routes import accounts, backup, banks, notifications, sync, transactions
 from leggen.background.scheduler import scheduler
 from leggen.utils.config import config
-from leggen.utils.paths import path_manager
 
 
 @asynccontextmanager
@@ -140,11 +140,13 @@ def server(ctx: click.Context, reload: bool, host: str, port: int):
         config_dir = ctx.parent.params.get("config_dir")
         database = ctx.parent.params.get("database")
 
-    # Set up path manager with user-provided paths
+    # Set environment variables for path overrides if provided
+    # Note: These are already set by the main CLI, but we set them again
+    # in case the server command is called directly
     if config_dir:
-        path_manager.set_config_dir(config_dir)
+        os.environ["LEGGEN_CONFIG_DIR"] = str(config_dir)
     if database:
-        path_manager.set_database_path(database)
+        os.environ["LEGGEN_DATABASE_PATH"] = str(database)
 
     if reload:
         # Use string import for reload to work properly

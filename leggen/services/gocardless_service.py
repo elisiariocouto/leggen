@@ -5,8 +5,8 @@ from typing import Any, Dict
 import httpx
 from loguru import logger
 
+from leggen.utils import paths
 from leggen.utils.config import config
-from leggen.utils.paths import path_manager
 
 
 def _log_rate_limits(response, method, url):
@@ -70,7 +70,7 @@ class GoCardlessService:
             return self._token
 
         # Use path manager for auth file
-        auth_file = path_manager.get_auth_file_path()
+        auth_file = paths.get_auth_file_path()
 
         if auth_file.exists():
             try:

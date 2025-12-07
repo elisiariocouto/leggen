@@ -11,8 +11,8 @@ from leggen.api.models.backup import (
 )
 from leggen.models.config import S3BackupConfig
 from leggen.services.backup_service import BackupService
+from leggen.utils import paths
 from leggen.utils.config import config
-from leggen.utils.paths import path_manager
 
 router = APIRouter()
 
@@ -189,7 +189,7 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
 
         if operation_request.operation == "backup":
             # Backup database
-            database_path = path_manager.get_database_path()
+            database_path = paths.get_database_path()
             success = await backup_service.backup_database(database_path)
 
             if not success:
@@ -207,7 +207,7 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
                 )
 
             # Restore database
-            database_path = path_manager.get_database_path()
+            database_path = paths.get_database_path()
             success = await backup_service.restore_database(
                 operation_request.backup_key, database_path
             )

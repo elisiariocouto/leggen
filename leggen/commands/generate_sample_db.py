@@ -508,7 +508,7 @@ def generate_sample_db(
     """Generate a sample database with realistic financial data for testing."""
     import os
 
-    from leggen.utils.paths import path_manager
+    from leggen.utils import paths
 
     # Determine database path
     if database:
@@ -520,7 +520,7 @@ def generate_sample_db(
             db_path = Path(env_path)
         else:
             # Default to development database in config directory
-            db_path = path_manager.get_config_dir() / "leggen-dev.db"
+            db_path = paths.get_config_dir() / "leggen-dev.db"
 
     # Check if database exists and ask for confirmation
     if db_path.exists() and not force:

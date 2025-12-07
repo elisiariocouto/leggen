@@ -228,7 +228,7 @@ class TestBackupAPI:
         assert data == []
 
     @patch("leggen.services.backup_service.BackupService.backup_database")
-    @patch("leggen.utils.paths.path_manager.get_database_path")
+    @patch("leggen.utils.paths.get_database_path")
     def test_backup_operation_success(
         self, mock_get_db_path, mock_backup_db, api_client, mock_config
     ):

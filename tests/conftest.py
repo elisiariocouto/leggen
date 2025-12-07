@@ -27,14 +27,15 @@ _config_data = {
     "scheduler": {"sync": {"enabled": True, "hour": 3, "minute": 0}},
 }
 
-import tomli_w
+import tomli_w  # noqa: E402
+
 with open(_test_config_path, "wb") as f:
     tomli_w.dump(_config_data, f)
 
 # Set environment variables to point to test config BEFORE importing the app
 os.environ["LEGGEN_CONFIG_FILE"] = str(_test_config_path)
 
-from leggen.commands.server import create_app
+from leggen.commands.server import create_app  # noqa: E402
 
 
 def pytest_configure(config):
@@ -114,7 +115,7 @@ def mock_auth_token(temp_config_dir):
 def fastapi_app(mock_db_path):
     """Create FastAPI test application."""
     # Patch the database path for the app
-    with patch("leggen.utils.paths.path_manager.get_database_path", return_value=mock_db_path):
+    with patch("leggen.utils.paths.get_database_path", return_value=mock_db_path):
         app = create_app()
         yield app
 
@@ -128,17 +129,9 @@ def api_client(fastapi_app):
 @pytest.fixture
 def mock_db_path(temp_db_path):
     """Mock the database path to use temporary database for testing."""
-    from leggen.utils.paths import path_manager
-
-    # Set the path manager to use the temporary database
-    original_database_path = path_manager._database_path
-    path_manager.set_database_path(temp_db_path)
-
-    try:
+    # Set the database path via environment variable
+    with patch.dict(os.environ, {"LEGGEN_DATABASE_PATH": str(temp_db_path)}):
         yield temp_db_path
-    finally:
-        # Restore original path
-        path_manager._database_path = original_database_path
 
 
 @pytest.fixture

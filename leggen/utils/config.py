@@ -10,30 +10,60 @@ from loguru import logger
 from pydantic import ValidationError
 
 from leggen.models.config import Config as ConfigModel
-from leggen.utils.paths import path_manager
+from leggen.utils import paths
 from leggen.utils.text import error
 
 
 class Config:
+    """Configuration manager singleton.
+    
+    Loads and manages the application configuration from a TOML file.
+    Configuration is cached after first load for performance.
+    """
     _instance = None
-    _config = None
-    _config_model = None
-    _config_path = None
+    _config: Optional[Dict[str, Any]] = None
+    _config_path: Optional[str] = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
+    def _get_config_path(self, config_path: Optional[str] = None) -> str:
+        """Determine the configuration file path.
+        
+        Priority:
+        1. Provided config_path parameter
+        2. LEGGEN_CONFIG_FILE environment variable
+        3. Default path from paths module
+        """
+        if config_path is not None:
+            return config_path
+        
+        config_path = os.environ.get("LEGGEN_CONFIG_FILE")
+        if config_path:
+            return config_path
+            
+        return str(paths.get_config_file_path())
+
     def load_config(self, config_path: Optional[str] = None) -> Dict[str, Any]:
+        """Load configuration from TOML file.
+        
+        Args:
+            config_path: Optional path to configuration file.
+                        Falls back to environment variable or default path.
+        
+        Returns:
+            Validated configuration dictionary
+        
+        Raises:
+            FileNotFoundError: If configuration file doesn't exist
+            ValueError: If configuration validation fails
+        """
         if self._config is not None:
             return self._config
 
-        if config_path is None:
-            config_path = os.environ.get("LEGGEN_CONFIG_FILE")
-            if not config_path:
-                config_path = str(path_manager.get_config_file_path())
-
+        config_path = self._get_config_path(config_path)
         self._config_path = config_path
 
         try:
@@ -42,8 +72,8 @@ class Config:
 
             # Validate configuration using Pydantic
             try:
-                self._config_model = ConfigModel(**raw_config)
-                self._config = self._config_model.dict(by_alias=True, exclude_none=True)
+                config_model = ConfigModel(**raw_config)
+                self._config = config_model.dict(by_alias=True, exclude_none=True)
             except ValidationError as e:
                 logger.error(f"Configuration validation failed: {e}")
                 raise ValueError(f"Invalid configuration: {e}") from e
@@ -62,14 +92,20 @@ class Config:
         config_data: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
     ) -> None:
-        """Save configuration to TOML file"""
+        """Save configuration to TOML file.
+        
+        Args:
+            config_data: Configuration data to save. Uses current config if None.
+            config_path: Path to save configuration. Uses current path if None.
+        
+        Raises:
+            ValueError: If no config data or path is available
+        """
         if config_data is None:
             config_data = self._config
 
         if config_path is None:
-            config_path = self._config_path or os.environ.get("LEGGEN_CONFIG_FILE")
-            if not config_path:
-                config_path = str(path_manager.get_config_file_path())
+            config_path = self._get_config_path(self._config_path)
 
         if config_path is None:
             raise ValueError("No config path specified")
@@ -93,7 +129,6 @@ class Config:
 
             # Update in-memory config
             self._config = validated_config
-            self._config_model = validated_model
             self._config_path = config_path
             logger.info(f"Configuration saved to {config_path}")
         except Exception as e:
@@ -127,44 +162,47 @@ class Config:
 
     @property
     def config(self) -> Dict[str, Any]:
+        """Get the full configuration, loading it if necessary."""
         if self._config is None:
             self.load_config()
-        if self._config is None:
-            raise RuntimeError("Failed to load config")
-        return self._config
+        return self._config  # type: ignore
 
     @property
     def gocardless_config(self) -> Dict[str, str]:
+        """Get GoCardless configuration section."""
         return self.config.get("gocardless", {})
 
     @property
     def database_config(self) -> Dict[str, Any]:
+        """Get database configuration section."""
         return self.config.get("database", {})
 
     @property
     def notifications_config(self) -> Dict[str, Any]:
+        """Get notifications configuration section."""
         return self.config.get("notifications", {})
 
     @property
     def filters_config(self) -> Dict[str, Any]:
+        """Get filters configuration section."""
         return self.config.get("filters", {})
 
     @property
     def scheduler_config(self) -> Dict[str, Any]:
-        """Get scheduler configuration with defaults"""
+        """Get scheduler configuration with defaults."""
         default_schedule = {
             "sync": {
                 "enabled": True,
                 "hour": 3,
                 "minute": 0,
-                "cron": None,  # Optional custom cron expression
+                "cron": None,
             }
         }
         return self.config.get("scheduler", default_schedule)
 
     @property
     def backup_config(self) -> Dict[str, Any]:
-        """Get backup configuration"""
+        """Get backup configuration section."""
         return self.config.get("backup", {})
 
 
