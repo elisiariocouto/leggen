@@ -6,7 +6,6 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { BlurredValue } from "../ui/blurred-value";
 import type { Account } from "../../types/api";
 
@@ -33,8 +32,6 @@ export default function TransactionDistribution({
   accounts,
   className,
 }: TransactionDistributionProps) {
-  const { isBalanceVisible } = useBalanceVisibility();
-
   // Helper function to get bank name from institution_id
   const getBankName = (institutionId: string): string => {
     const bankMapping: Record<string, string> = {
