@@ -19,8 +19,7 @@ class TestBackupAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert data["data"]["s3"] is None
+        assert data["s3"] is None
 
     def test_get_backup_settings_with_s3_config(self, api_client, mock_config):
         """Test getting backup settings with S3 configuration."""
@@ -42,10 +41,9 @@ class TestBackupAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert data["data"]["s3"] is not None
+        assert data["s3"] is not None
 
-        s3_config = data["data"]["s3"]
+        s3_config = data["s3"]
         assert s3_config["access_key_id"] == "***"  # Masked
         assert s3_config["secret_access_key"] == "***"  # Masked
         assert s3_config["bucket_name"] == "test-bucket"
@@ -77,8 +75,7 @@ class TestBackupAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert data["data"]["updated"] is True
+        assert data["updated"] is True
 
         # Verify connection test was called
         mock_test_connection.assert_called_once()
@@ -132,8 +129,7 @@ class TestBackupAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert data["data"]["connected"] is True
+        assert data["connected"] is True
 
         # Verify connection test was called
         mock_test_connection.assert_called_once()
@@ -158,9 +154,9 @@ class TestBackupAPI:
 
         response = api_client.post("/api/v1/backup/test", json=request_data)
 
-        assert response.status_code == 200
+        assert response.status_code == 400
         data = response.json()
-        assert data["success"] is False
+        assert "S3 connection test failed" in data["detail"]
 
     def test_test_backup_connection_invalid_service(self, api_client):
         """Test backup connection test with invalid service."""
@@ -214,10 +210,9 @@ class TestBackupAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert len(data["data"]) == 2
+        assert len(data) == 2
         assert (
-            data["data"][0]["key"]
+            data[0]["key"]
             == "leggen_backups/database_backup_20250101_120000.db"
         )
 
@@ -230,8 +225,7 @@ class TestBackupAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert data["data"] == []
+        assert data == []
 
     @patch("leggen.services.backup_service.BackupService.backup_database")
     @patch("leggen.utils.paths.path_manager.get_database_path")
@@ -261,9 +255,8 @@ class TestBackupAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert data["data"]["operation"] == "backup"
-        assert data["data"]["completed"] is True
+        assert data["operation"] == "backup"
+        assert data["completed"] is True
 
         # Verify backup was called
         mock_backup_db.assert_called_once()

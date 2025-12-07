@@ -66,8 +66,7 @@ class TestAnalyticsFix:
             )
 
             # Verify that the response contains stats for all 600 transactions
-            assert data["success"] is True
-            stats = data["data"]
+            stats = data
             assert stats["total_transactions"] == 600, (
                 "Should process all 600 transactions, not just 100"
             )
@@ -132,8 +131,7 @@ class TestAnalyticsFix:
             )
 
             # Verify that all 600 transactions are returned
-            assert data["success"] is True
-            transactions_data = data["data"]
+            transactions_data = data
             assert len(transactions_data) == 600, (
                 "Analytics endpoint should return all 600 transactions"
             )

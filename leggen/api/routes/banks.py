@@ -8,7 +8,6 @@ from leggen.api.models.banks import (
     BankInstitution,
     BankRequisition,
 )
-from leggen.api.models.common import APIResponse
 from leggen.services.gocardless_service import GoCardlessService
 from leggen.utils.gocardless import REQUISITION_STATUS
 
@@ -16,10 +15,10 @@ router = APIRouter()
 gocardless_service = GoCardlessService()
 
 
-@router.get("/banks/institutions", response_model=APIResponse)
+@router.get("/banks/institutions")
 async def get_bank_institutions(
     country: str = Query(default="PT", description="Country code (e.g., PT, ES, FR)"),
-) -> APIResponse:
+) -> list[BankInstitution]:
     """Get available bank institutions for a country"""
     try:
         institutions_response = await gocardless_service.get_institutions(country)
@@ -41,11 +40,7 @@ async def get_bank_institutions(
             for inst in institutions_data
         ]
 
-        return APIResponse(
-            success=True,
-            data=institutions,
-            message=f"Found {len(institutions)} institutions for {country}",
-        )
+        return institutions
 
     except Exception as e:
         logger.error(f"Failed to get institutions for {country}: {e}")
@@ -54,8 +49,8 @@ async def get_bank_institutions(
         ) from e
 
 
-@router.post("/banks/connect", response_model=APIResponse)
-async def connect_to_bank(request: BankConnectionRequest) -> APIResponse:
+@router.post("/banks/connect")
+async def connect_to_bank(request: BankConnectionRequest) -> BankRequisition:
     """Create a connection to a bank (requisition)"""
     try:
         redirect_url = request.redirect_url or "http://localhost:8000/"
@@ -72,11 +67,7 @@ async def connect_to_bank(request: BankConnectionRequest) -> APIResponse:
             accounts=requisition_data.get("accounts", []),
         )
 
-        return APIResponse(
-            success=True,
-            data=requisition,
-            message="Bank connection created. Please visit the link to authorize.",
-        )
+        return requisition
 
     except Exception as e:
         logger.error(f"Failed to connect to bank {request.institution_id}: {e}")
@@ -85,8 +76,8 @@ async def connect_to_bank(request: BankConnectionRequest) -> APIResponse:
         ) from e
 
 
-@router.get("/banks/status", response_model=APIResponse)
-async def get_bank_connections_status() -> APIResponse:
+@router.get("/banks/status")
+async def get_bank_connections_status() -> list[BankConnectionStatus]:
     """Get status of all bank connections"""
     try:
         requisitions_data = await gocardless_service.get_requisitions()
@@ -110,11 +101,7 @@ async def get_bank_connections_status() -> APIResponse:
                 )
             )
 
-        return APIResponse(
-            success=True,
-            data=connections,
-            message=f"Found {len(connections)} bank connections",
-        )
+        return connections
 
     except Exception as e:
         logger.error(f"Failed to get bank connection status: {e}")
@@ -123,8 +110,8 @@ async def get_bank_connections_status() -> APIResponse:
         ) from e
 
 
-@router.delete("/banks/connections/{requisition_id}", response_model=APIResponse)
-async def delete_bank_connection(requisition_id: str) -> APIResponse:
+@router.delete("/banks/connections/{requisition_id}")
+async def delete_bank_connection(requisition_id: str) -> dict:
     """Delete a bank connection"""
     try:
         # Delete the requisition from GoCardless
@@ -134,10 +121,7 @@ async def delete_bank_connection(requisition_id: str) -> APIResponse:
         # We should check if the operation was actually successful
         logger.info(f"GoCardless delete response for {requisition_id}: {result}")
 
-        return APIResponse(
-            success=True,
-            message=f"Bank connection {requisition_id} deleted successfully",
-        )
+        return {"deleted": requisition_id}
 
     except httpx.HTTPStatusError as http_err:
         logger.error(
@@ -164,8 +148,8 @@ async def delete_bank_connection(requisition_id: str) -> APIResponse:
         ) from e
 
 
-@router.get("/banks/countries", response_model=APIResponse)
-async def get_supported_countries() -> APIResponse:
+@router.get("/banks/countries")
+async def get_supported_countries() -> list[dict]:
     """Get list of supported countries"""
     countries = [
         {"code": "AT", "name": "Austria"},
@@ -201,8 +185,4 @@ async def get_supported_countries() -> APIResponse:
         {"code": "GB", "name": "United Kingdom"},
     ]
 
-    return APIResponse(
-        success=True,
-        data=countries,
-        message="Supported countries retrieved successfully",
-    )
+    return countries

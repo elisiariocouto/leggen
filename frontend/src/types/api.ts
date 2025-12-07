@@ -133,26 +133,14 @@ export interface Bank {
   logo_url?: string;
 }
 
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  success: boolean;
-  pagination?: {
-    total: number;
-    page: number;
-    per_page: number;
-    total_pages: number;
-    has_next: boolean;
-    has_prev: boolean;
-  };
-}
-
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
   page: number;
   per_page: number;
   total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
 }
 
 // Notification types

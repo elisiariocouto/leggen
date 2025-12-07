@@ -3,7 +3,6 @@ from typing import Any, Dict
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
-from leggen.api.models.common import APIResponse
 from leggen.api.models.notifications import (
     DiscordConfig,
     NotificationFilters,
@@ -18,8 +17,8 @@ router = APIRouter()
 notification_service = NotificationService()
 
 
-@router.get("/notifications/settings", response_model=APIResponse)
-async def get_notification_settings() -> APIResponse:
+@router.get("/notifications/settings")
+async def get_notification_settings() -> NotificationSettings:
     """Get current notification settings"""
     try:
         notifications_config = config.notifications_config
@@ -49,11 +48,7 @@ async def get_notification_settings() -> APIResponse:
             ),
         )
 
-        return APIResponse(
-            success=True,
-            data=settings,
-            message="Notification settings retrieved successfully",
-        )
+        return settings
 
     except Exception as e:
         logger.error(f"Failed to get notification settings: {e}")
@@ -62,8 +57,8 @@ async def get_notification_settings() -> APIResponse:
         ) from e
 
 
-@router.put("/notifications/settings", response_model=APIResponse)
-async def update_notification_settings(settings: NotificationSettings) -> APIResponse:
+@router.put("/notifications/settings")
+async def update_notification_settings(settings: NotificationSettings) -> dict:
     """Update notification settings"""
     try:
         # Update notifications config
@@ -95,11 +90,7 @@ async def update_notification_settings(settings: NotificationSettings) -> APIRes
         if filters_config:
             config.update_section("filters", filters_config)
 
-        return APIResponse(
-            success=True,
-            data={"updated": True},
-            message="Notification settings updated successfully",
-        )
+        return {"updated": True}
 
     except Exception as e:
         logger.error(f"Failed to update notification settings: {e}")
@@ -108,26 +99,24 @@ async def update_notification_settings(settings: NotificationSettings) -> APIRes
         ) from e
 
 
-@router.post("/notifications/test", response_model=APIResponse)
-async def test_notification(test_request: NotificationTest) -> APIResponse:
+@router.post("/notifications/test")
+async def test_notification(test_request: NotificationTest) -> dict:
     """Send a test notification"""
     try:
         success = await notification_service.send_test_notification(
             test_request.service, test_request.message
         )
 
-        if success:
-            return APIResponse(
-                success=True,
-                data={"sent": True},
-                message=f"Test notification sent to {test_request.service} successfully",
-            )
-        else:
-            return APIResponse(
-                success=False,
-                message=f"Failed to send test notification to {test_request.service}",
+        if not success:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to send test notification to {test_request.service}",
             )
 
+        return {"sent": True}
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to send test notification: {e}")
         raise HTTPException(
@@ -135,8 +124,8 @@ async def test_notification(test_request: NotificationTest) -> APIResponse:
         ) from e
 
 
-@router.get("/notifications/services", response_model=APIResponse)
-async def get_notification_services() -> APIResponse:
+@router.get("/notifications/services")
+async def get_notification_services() -> dict:
     """Get available notification services and their status"""
     try:
         notifications_config = config.notifications_config
@@ -164,11 +153,7 @@ async def get_notification_services() -> APIResponse:
             },
         }
 
-        return APIResponse(
-            success=True,
-            data=services,
-            message="Notification services status retrieved successfully",
-        )
+        return services
 
     except Exception as e:
         logger.error(f"Failed to get notification services: {e}")
@@ -177,8 +162,8 @@ async def get_notification_services() -> APIResponse:
         ) from e
 
 
-@router.delete("/notifications/settings/{service}", response_model=APIResponse)
-async def delete_notification_service(service: str) -> APIResponse:
+@router.delete("/notifications/settings/{service}")
+async def delete_notification_service(service: str) -> dict:
     """Delete/disable a notification service"""
     try:
         if service not in ["discord", "telegram"]:
@@ -191,12 +176,10 @@ async def delete_notification_service(service: str) -> APIResponse:
             del notifications_config[service]
             config.update_section("notifications", notifications_config)
 
-        return APIResponse(
-            success=True,
-            data={"deleted": service},
-            message=f"{service.capitalize()} notification service deleted successfully",
-        )
+        return {"deleted": service}
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to delete notification service {service}: {e}")
         raise HTTPException(

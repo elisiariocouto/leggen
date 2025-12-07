@@ -58,7 +58,6 @@ class TestTransactionsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
         assert len(data["data"]) == 2
 
         # Check first transaction summary
@@ -105,7 +104,6 @@ class TestTransactionsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
         assert len(data["data"]) == 1
 
         transaction = data["data"][0]
@@ -160,7 +158,6 @@ class TestTransactionsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
 
         # Verify the database service was called with correct filters
         mock_get_transactions.assert_called_once_with(
@@ -193,11 +190,10 @@ class TestTransactionsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
         assert len(data["data"]) == 0
-        assert data["pagination"]["total"] == 0
-        assert data["pagination"]["page"] == 1
-        assert data["pagination"]["total_pages"] == 0
+        assert data["total"] == 0
+        assert data["page"] == 1
+        assert data["total_pages"] == 0
 
     def test_get_transactions_database_error(
         self, api_client, mock_config, mock_auth_token
@@ -254,21 +250,19 @@ class TestTransactionsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
 
-        stats = data["data"]
-        assert stats["period_days"] == 30
-        assert stats["total_transactions"] == 3
-        assert stats["booked_transactions"] == 2
-        assert stats["pending_transactions"] == 1
-        assert stats["total_income"] == 100.00
-        assert stats["total_expenses"] == 35.80  # abs(-10.50) + abs(-25.30)
-        assert stats["net_change"] == 64.20  # 100.00 - 35.80
-        assert stats["accounts_included"] == 2  # Two unique account IDs
+        assert data["period_days"] == 30
+        assert data["total_transactions"] == 3
+        assert data["booked_transactions"] == 2
+        assert data["pending_transactions"] == 1
+        assert data["total_income"] == 100.00
+        assert data["total_expenses"] == 35.80  # abs(-10.50) + abs(-25.30)
+        assert data["net_change"] == 64.20  # 100.00 - 35.80
+        assert data["accounts_included"] == 2  # Two unique account IDs
 
         # Average transaction: ((-10.50) + 100.00 + (-25.30)) / 3 = 64.20 / 3 = 21.4
         expected_avg = round(64.20 / 3, 2)
-        assert stats["average_transaction"] == expected_avg
+        assert data["average_transaction"] == expected_avg
 
     def test_get_transaction_stats_with_account_filter(
         self, api_client, mock_config, mock_auth_token
@@ -317,15 +311,13 @@ class TestTransactionsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
 
-        stats = data["data"]
-        assert stats["total_transactions"] == 0
-        assert stats["total_income"] == 0.0
-        assert stats["total_expenses"] == 0.0
-        assert stats["net_change"] == 0.0
-        assert stats["average_transaction"] == 0  # Division by zero handled
-        assert stats["accounts_included"] == 0
+        assert data["total_transactions"] == 0
+        assert data["total_income"] == 0.0
+        assert data["total_expenses"] == 0.0
+        assert data["net_change"] == 0.0
+        assert data["average_transaction"] == 0  # Division by zero handled
+        assert data["accounts_included"] == 0
 
     def test_get_transaction_stats_database_error(
         self, api_client, mock_config, mock_auth_token
@@ -368,7 +360,7 @@ class TestTransactionsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["data"]["period_days"] == 7
+        assert data["period_days"] == 7
 
         # Verify the date range was calculated correctly for 7 days
         mock_get_transactions.assert_called_once()

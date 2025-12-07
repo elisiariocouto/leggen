@@ -3,7 +3,6 @@ from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from loguru import logger
 
-from leggen.api.models.common import APIResponse
 from leggen.api.models.sync import SchedulerConfig, SyncRequest
 from leggen.background.scheduler import scheduler
 from leggen.services.sync_service import SyncService
@@ -13,8 +12,8 @@ router = APIRouter()
 sync_service = SyncService()
 
 
-@router.get("/sync/status", response_model=APIResponse)
-async def get_sync_status() -> APIResponse:
+@router.get("/sync/status")
+async def get_sync_status() -> dict:
     """Get current sync status"""
     try:
         status = await sync_service.get_sync_status()
@@ -24,9 +23,7 @@ async def get_sync_status() -> APIResponse:
         if next_sync_time:
             status.next_sync = next_sync_time
 
-        return APIResponse(
-            success=True, data=status, message="Sync status retrieved successfully"
-        )
+        return status
 
     except Exception as e:
         logger.error(f"Failed to get sync status: {e}")
@@ -35,18 +32,18 @@ async def get_sync_status() -> APIResponse:
         ) from e
 
 
-@router.post("/sync", response_model=APIResponse)
+@router.post("/sync")
 async def trigger_sync(
     background_tasks: BackgroundTasks, sync_request: Optional[SyncRequest] = None
-) -> APIResponse:
+) -> dict:
     """Trigger a manual sync operation"""
     try:
         # Check if sync is already running
         status = await sync_service.get_sync_status()
         if status.is_running and not (sync_request and sync_request.force):
-            return APIResponse(
-                success=False,
-                message="Sync is already running. Use 'force: true' to override.",
+            raise HTTPException(
+                status_code=409,
+                detail="Sync is already running. Use 'force: true' to override.",
             )
 
         # Determine what to sync
@@ -58,9 +55,6 @@ async def trigger_sync(
                 sync_request.force if sync_request else False,
                 "api",  # trigger_type
             )
-            message = (
-                f"Started sync for {len(sync_request.account_ids)} specific accounts"
-            )
         else:
             # Sync all accounts in background
             background_tasks.add_task(
@@ -68,17 +62,14 @@ async def trigger_sync(
                 sync_request.force if sync_request else False,
                 "api",  # trigger_type
             )
-            message = "Started sync for all accounts"
 
-        return APIResponse(
-            success=True,
-            data={
-                "sync_started": True,
-                "force": sync_request.force if sync_request else False,
-            },
-            message=message,
-        )
+        return {
+            "sync_started": True,
+            "force": sync_request.force if sync_request else False,
+        }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to trigger sync: {e}")
         raise HTTPException(
@@ -86,8 +77,8 @@ async def trigger_sync(
         ) from e
 
 
-@router.post("/sync/now", response_model=APIResponse)
-async def sync_now(sync_request: Optional[SyncRequest] = None) -> APIResponse:
+@router.post("/sync/now")
+async def sync_now(sync_request: Optional[SyncRequest] = None) -> dict:
     """Run sync synchronously and return results (slower, for testing)"""
     try:
         if sync_request and sync_request.account_ids:
@@ -99,13 +90,7 @@ async def sync_now(sync_request: Optional[SyncRequest] = None) -> APIResponse:
                 sync_request.force if sync_request else False, "api"
             )
 
-        return APIResponse(
-            success=result.success,
-            data=result,
-            message="Sync completed"
-            if result.success
-            else f"Sync failed with {len(result.errors)} errors",
-        )
+        return result
 
     except Exception as e:
         logger.error(f"Failed to run sync: {e}")
@@ -114,8 +99,8 @@ async def sync_now(sync_request: Optional[SyncRequest] = None) -> APIResponse:
         ) from e
 
 
-@router.get("/sync/scheduler", response_model=APIResponse)
-async def get_scheduler_config() -> APIResponse:
+@router.get("/sync/scheduler")
+async def get_scheduler_config() -> dict:
     """Get current scheduler configuration"""
     try:
         scheduler_config = config.scheduler_config
@@ -131,11 +116,7 @@ async def get_scheduler_config() -> APIResponse:
             else False,
         }
 
-        return APIResponse(
-            success=True,
-            data=response_data,
-            message="Scheduler configuration retrieved successfully",
-        )
+        return response_data
 
     except Exception as e:
         logger.error(f"Failed to get scheduler config: {e}")
@@ -144,8 +125,8 @@ async def get_scheduler_config() -> APIResponse:
         ) from e
 
 
-@router.put("/sync/scheduler", response_model=APIResponse)
-async def update_scheduler_config(scheduler_config: SchedulerConfig) -> APIResponse:
+@router.put("/sync/scheduler")
+async def update_scheduler_config(scheduler_config: SchedulerConfig) -> dict:
     """Update scheduler configuration"""
     try:
         # Validate cron expression if provided
@@ -168,12 +149,10 @@ async def update_scheduler_config(scheduler_config: SchedulerConfig) -> APIRespo
         # Reschedule the job
         scheduler.reschedule_sync(schedule_data)
 
-        return APIResponse(
-            success=True,
-            data=schedule_data,
-            message="Scheduler configuration updated successfully",
-        )
+        return schedule_data
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to update scheduler config: {e}")
         raise HTTPException(
@@ -181,15 +160,15 @@ async def update_scheduler_config(scheduler_config: SchedulerConfig) -> APIRespo
         ) from e
 
 
-@router.post("/sync/scheduler/start", response_model=APIResponse)
-async def start_scheduler() -> APIResponse:
+@router.post("/sync/scheduler/start")
+async def start_scheduler() -> dict:
     """Start the background scheduler"""
     try:
         if not scheduler.scheduler.running:
             scheduler.start()
-            return APIResponse(success=True, message="Scheduler started successfully")
+            return {"started": True}
         else:
-            return APIResponse(success=True, message="Scheduler is already running")
+            return {"started": False, "message": "Scheduler is already running"}
 
     except Exception as e:
         logger.error(f"Failed to start scheduler: {e}")
@@ -198,15 +177,15 @@ async def start_scheduler() -> APIResponse:
         ) from e
 
 
-@router.post("/sync/scheduler/stop", response_model=APIResponse)
-async def stop_scheduler() -> APIResponse:
+@router.post("/sync/scheduler/stop")
+async def stop_scheduler() -> dict:
     """Stop the background scheduler"""
     try:
         if scheduler.scheduler.running:
             scheduler.shutdown()
-            return APIResponse(success=True, message="Scheduler stopped successfully")
+            return {"stopped": True}
         else:
-            return APIResponse(success=True, message="Scheduler is already stopped")
+            return {"stopped": False, "message": "Scheduler is already stopped"}
 
     except Exception as e:
         logger.error(f"Failed to stop scheduler: {e}")
@@ -215,19 +194,15 @@ async def stop_scheduler() -> APIResponse:
         ) from e
 
 
-@router.get("/sync/operations", response_model=APIResponse)
-async def get_sync_operations(limit: int = 50, offset: int = 0) -> APIResponse:
+@router.get("/sync/operations")
+async def get_sync_operations(limit: int = 50, offset: int = 0) -> dict:
     """Get sync operations history"""
     try:
         operations = await sync_service.database.get_sync_operations(
             limit=limit, offset=offset
         )
 
-        return APIResponse(
-            success=True,
-            data={"operations": operations, "count": len(operations)},
-            message="Sync operations retrieved successfully",
-        )
+        return {"operations": operations, "count": len(operations)}
 
     except Exception as e:
         logger.error(f"Failed to get sync operations: {e}")

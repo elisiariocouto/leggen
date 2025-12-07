@@ -1,6 +1,8 @@
 """Pytest configuration and shared fixtures."""
 
 import json
+import os
+import shutil
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -8,8 +10,44 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from leggen.commands.server import create_app
 from leggen.utils.config import Config
+
+# Create test config before any imports that might load it
+_test_config_dir = tempfile.mkdtemp(prefix="leggen_test_")
+_test_config_path = Path(_test_config_dir) / "config.toml"
+
+# Create minimal test config
+_config_data = {
+    "gocardless": {
+        "key": "test-key",
+        "secret": "test-secret",
+        "url": "https://bankaccountdata.gocardless.com/api/v2",
+    },
+    "database": {"sqlite": True},
+    "scheduler": {"sync": {"enabled": True, "hour": 3, "minute": 0}},
+}
+
+import tomli_w
+with open(_test_config_path, "wb") as f:
+    tomli_w.dump(_config_data, f)
+
+# Set environment variables to point to test config BEFORE importing the app
+os.environ["LEGGEN_CONFIG_FILE"] = str(_test_config_path)
+
+from leggen.commands.server import create_app
+
+
+def pytest_configure(config):
+    """Pytest hook called before test collection."""
+    # Ensure test config is set
+    os.environ["LEGGEN_CONFIG_FILE"] = str(_test_config_path)
+
+
+def pytest_unconfigure(config):
+    """Pytest hook called after all tests."""
+    # Cleanup test config directory
+    if Path(_test_config_dir).exists():
+        shutil.rmtree(_test_config_dir)
 
 
 @pytest.fixture
@@ -73,9 +111,12 @@ def mock_auth_token(temp_config_dir):
 
 
 @pytest.fixture
-def fastapi_app():
+def fastapi_app(mock_db_path):
     """Create FastAPI test application."""
-    return create_app()
+    # Patch the database path for the app
+    with patch("leggen.utils.paths.path_manager.get_database_path", return_value=mock_db_path):
+        app = create_app()
+        yield app
 
 
 @pytest.fixture

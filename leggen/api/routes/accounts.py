@@ -10,15 +10,14 @@ from leggen.api.models.accounts import (
     Transaction,
     TransactionSummary,
 )
-from leggen.api.models.common import APIResponse
 from leggen.services.database_service import DatabaseService
 
 router = APIRouter()
 database_service = DatabaseService()
 
 
-@router.get("/accounts", response_model=APIResponse)
-async def get_all_accounts() -> APIResponse:
+@router.get("/accounts")
+async def get_all_accounts() -> List[AccountDetails]:
     """Get all connected accounts from database"""
     try:
         accounts = []
@@ -68,11 +67,7 @@ async def get_all_accounts() -> APIResponse:
                 )
                 continue
 
-        return APIResponse(
-            success=True,
-            data=accounts,
-            message=f"Retrieved {len(accounts)} accounts from database",
-        )
+        return accounts
 
     except Exception as e:
         logger.error(f"Failed to get accounts: {e}")
@@ -81,8 +76,8 @@ async def get_all_accounts() -> APIResponse:
         ) from e
 
 
-@router.get("/accounts/{account_id}", response_model=APIResponse)
-async def get_account_details(account_id: str) -> APIResponse:
+@router.get("/accounts/{account_id}")
+async def get_account_details(account_id: str) -> AccountDetails:
     """Get details for a specific account from database"""
     try:
         # Get account details from database
@@ -122,11 +117,7 @@ async def get_account_details(account_id: str) -> APIResponse:
             balances=balances,
         )
 
-        return APIResponse(
-            success=True,
-            data=account,
-            message=f"Account details retrieved from database for {account_id}",
-        )
+        return account
 
     except HTTPException:
         raise
@@ -137,8 +128,8 @@ async def get_account_details(account_id: str) -> APIResponse:
         ) from e
 
 
-@router.get("/accounts/{account_id}/balances", response_model=APIResponse)
-async def get_account_balances(account_id: str) -> APIResponse:
+@router.get("/accounts/{account_id}/balances")
+async def get_account_balances(account_id: str) -> List[AccountBalance]:
     """Get balances for a specific account from database"""
     try:
         # Get balances from database instead of GoCardless API
@@ -155,11 +146,7 @@ async def get_account_balances(account_id: str) -> APIResponse:
                 )
             )
 
-        return APIResponse(
-            success=True,
-            data=balances,
-            message=f"Retrieved {len(balances)} balances for account {account_id}",
-        )
+        return balances
 
     except Exception as e:
         logger.error(
@@ -170,8 +157,8 @@ async def get_account_balances(account_id: str) -> APIResponse:
         ) from e
 
 
-@router.get("/balances", response_model=APIResponse)
-async def get_all_balances() -> APIResponse:
+@router.get("/balances")
+async def get_all_balances() -> List[dict]:
     """Get all balances from all accounts in database"""
     try:
         # Get all accounts first to iterate through them
@@ -207,11 +194,7 @@ async def get_all_balances() -> APIResponse:
                 )
                 continue
 
-        return APIResponse(
-            success=True,
-            data=all_balances,
-            message=f"Retrieved {len(all_balances)} balances from {len(db_accounts)} accounts",
-        )
+        return all_balances
 
     except Exception as e:
         logger.error(f"Failed to get all balances: {e}")
@@ -220,7 +203,7 @@ async def get_all_balances() -> APIResponse:
         ) from e
 
 
-@router.get("/balances/history", response_model=APIResponse)
+@router.get("/balances/history")
 async def get_historical_balances(
     days: Optional[int] = Query(
         default=365, le=1095, ge=1, description="Number of days of history to retrieve"
@@ -228,7 +211,7 @@ async def get_historical_balances(
     account_id: Optional[str] = Query(
         default=None, description="Filter by specific account ID"
     ),
-) -> APIResponse:
+) -> List[dict]:
     """Get historical balance progression calculated from transaction history"""
     try:
         # Get historical balances from database
@@ -236,11 +219,7 @@ async def get_historical_balances(
             account_id=account_id, days=days or 365
         )
 
-        return APIResponse(
-            success=True,
-            data=historical_balances,
-            message=f"Retrieved {len(historical_balances)} historical balance points over {days} days",
-        )
+        return historical_balances
 
     except Exception as e:
         logger.error(f"Failed to get historical balances: {e}")
@@ -249,7 +228,7 @@ async def get_historical_balances(
         ) from e
 
 
-@router.get("/accounts/{account_id}/transactions", response_model=APIResponse)
+@router.get("/accounts/{account_id}/transactions")
 async def get_account_transactions(
     account_id: str,
     limit: Optional[int] = Query(default=100, le=500),
@@ -257,7 +236,7 @@ async def get_account_transactions(
     summary_only: bool = Query(
         default=False, description="Return transaction summaries only"
     ),
-) -> APIResponse:
+) -> Union[List[TransactionSummary], List[Transaction]]:
     """Get transactions for a specific account from database"""
     try:
         # Get transactions from database instead of GoCardless API
@@ -308,12 +287,7 @@ async def get_account_transactions(
                 for txn in db_transactions
             ]
 
-        actual_offset = offset or 0
-        return APIResponse(
-            success=True,
-            data=data,
-            message=f"Retrieved {len(data)} transactions (showing {actual_offset + 1}-{actual_offset + len(data)} of {total_transactions})",
-        )
+        return data
 
     except Exception as e:
         logger.error(
@@ -324,10 +298,10 @@ async def get_account_transactions(
         ) from e
 
 
-@router.put("/accounts/{account_id}", response_model=APIResponse)
+@router.put("/accounts/{account_id}")
 async def update_account_details(
     account_id: str, update_data: AccountUpdate
-) -> APIResponse:
+) -> dict:
     """Update account details (currently only display_name)"""
     try:
         # Get current account details
@@ -346,11 +320,7 @@ async def update_account_details(
         # Persist updated account details
         await database_service.persist_account_details(updated_account_data)
 
-        return APIResponse(
-            success=True,
-            data={"id": account_id, "display_name": update_data.display_name},
-            message=f"Account {account_id} display name updated successfully",
-        )
+        return {"id": account_id, "display_name": update_data.display_name}
 
     except HTTPException:
         raise

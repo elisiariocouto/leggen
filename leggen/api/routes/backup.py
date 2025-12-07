@@ -9,7 +9,6 @@ from leggen.api.models.backup import (
     BackupTest,
     S3Config,
 )
-from leggen.api.models.common import APIResponse
 from leggen.models.config import S3BackupConfig
 from leggen.services.backup_service import BackupService
 from leggen.utils.config import config
@@ -18,8 +17,8 @@ from leggen.utils.paths import path_manager
 router = APIRouter()
 
 
-@router.get("/backup/settings", response_model=APIResponse)
-async def get_backup_settings() -> APIResponse:
+@router.get("/backup/settings")
+async def get_backup_settings() -> BackupSettings:
     """Get current backup settings."""
     try:
         backup_config = config.backup_config
@@ -41,11 +40,7 @@ async def get_backup_settings() -> APIResponse:
             else None,
         )
 
-        return APIResponse(
-            success=True,
-            data=settings,
-            message="Backup settings retrieved successfully",
-        )
+        return settings
 
     except Exception as e:
         logger.error(f"Failed to get backup settings: {e}")
@@ -54,8 +49,8 @@ async def get_backup_settings() -> APIResponse:
         ) from e
 
 
-@router.put("/backup/settings", response_model=APIResponse)
-async def update_backup_settings(settings: BackupSettings) -> APIResponse:
+@router.put("/backup/settings")
+async def update_backup_settings(settings: BackupSettings) -> dict:
     """Update backup settings."""
     try:
         # First test the connection if S3 config is provided
@@ -99,11 +94,7 @@ async def update_backup_settings(settings: BackupSettings) -> APIResponse:
         if backup_config:
             config.update_section("backup", backup_config)
 
-        return APIResponse(
-            success=True,
-            data={"updated": True},
-            message="Backup settings updated successfully",
-        )
+        return {"updated": True}
 
     except HTTPException:
         raise
@@ -114,8 +105,8 @@ async def update_backup_settings(settings: BackupSettings) -> APIResponse:
         ) from e
 
 
-@router.post("/backup/test", response_model=APIResponse)
-async def test_backup_connection(test_request: BackupTest) -> APIResponse:
+@router.post("/backup/test")
+async def test_backup_connection(test_request: BackupTest) -> dict:
     """Test backup connection."""
     try:
         if test_request.service != "s3":
@@ -137,17 +128,12 @@ async def test_backup_connection(test_request: BackupTest) -> APIResponse:
         backup_service = BackupService()
         success = await backup_service.test_connection(s3_config)
 
-        if success:
-            return APIResponse(
-                success=True,
-                data={"connected": True},
-                message="S3 connection test successful",
+        if not success:
+            raise HTTPException(
+                status_code=400, detail="S3 connection test failed"
             )
-        else:
-            return APIResponse(
-                success=False,
-                message="S3 connection test failed",
-            )
+
+        return {"connected": True}
 
     except HTTPException:
         raise
@@ -158,18 +144,14 @@ async def test_backup_connection(test_request: BackupTest) -> APIResponse:
         ) from e
 
 
-@router.get("/backup/list", response_model=APIResponse)
-async def list_backups() -> APIResponse:
+@router.get("/backup/list")
+async def list_backups() -> list:
     """List available backups."""
     try:
         backup_config = config.backup_config.get("s3", {})
 
         if not backup_config.get("bucket_name"):
-            return APIResponse(
-                success=True,
-                data=[],
-                message="No S3 backup configuration found",
-            )
+            return []
 
         # Convert config to model
         s3_config = S3BackupConfig(**backup_config)
@@ -177,11 +159,7 @@ async def list_backups() -> APIResponse:
 
         backups = await backup_service.list_backups()
 
-        return APIResponse(
-            success=True,
-            data=backups,
-            message=f"Found {len(backups)} backups",
-        )
+        return backups
 
     except Exception as e:
         logger.error(f"Failed to list backups: {e}")
@@ -190,8 +168,8 @@ async def list_backups() -> APIResponse:
         ) from e
 
 
-@router.post("/backup/operation", response_model=APIResponse)
-async def backup_operation(operation_request: BackupOperation) -> APIResponse:
+@router.post("/backup/operation")
+async def backup_operation(operation_request: BackupOperation) -> dict:
     """Perform backup operation (backup or restore)."""
     try:
         backup_config = config.backup_config.get("s3", {})
@@ -214,17 +192,12 @@ async def backup_operation(operation_request: BackupOperation) -> APIResponse:
             database_path = path_manager.get_database_path()
             success = await backup_service.backup_database(database_path)
 
-            if success:
-                return APIResponse(
-                    success=True,
-                    data={"operation": "backup", "completed": True},
-                    message="Database backup completed successfully",
+            if not success:
+                raise HTTPException(
+                    status_code=500, detail="Database backup failed"
                 )
-            else:
-                return APIResponse(
-                    success=False,
-                    message="Database backup failed",
-                )
+
+            return {"operation": "backup", "completed": True}
 
         elif operation_request.operation == "restore":
             if not operation_request.backup_key:
@@ -239,17 +212,12 @@ async def backup_operation(operation_request: BackupOperation) -> APIResponse:
                 operation_request.backup_key, database_path
             )
 
-            if success:
-                return APIResponse(
-                    success=True,
-                    data={"operation": "restore", "completed": True},
-                    message="Database restore completed successfully",
+            if not success:
+                raise HTTPException(
+                    status_code=500, detail="Database restore failed"
                 )
-            else:
-                return APIResponse(
-                    success=False,
-                    message="Database restore failed",
-                )
+
+            return {"operation": "restore", "completed": True}
         else:
             raise HTTPException(
                 status_code=400, detail="Invalid operation. Use 'backup' or 'restore'"

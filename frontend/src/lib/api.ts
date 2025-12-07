@@ -4,7 +4,7 @@ import type {
   Transaction,
   AnalyticsTransaction,
   Balance,
-  ApiResponse,
+  PaginatedResponse,
   NotificationSettings,
   NotificationTest,
   NotificationService,
@@ -36,14 +36,14 @@ const api = axios.create({
 export const apiClient = {
   // Get all accounts
   getAccounts: async (): Promise<Account[]> => {
-    const response = await api.get<ApiResponse<Account[]>>("/accounts");
-    return response.data.data;
+    const response = await api.get<Account[]>("/accounts");
+    return response.data;
   },
 
   // Get account by ID
   getAccount: async (id: string): Promise<Account> => {
-    const response = await api.get<ApiResponse<Account>>(`/accounts/${id}`);
-    return response.data.data;
+    const response = await api.get<Account>(`/accounts/${id}`);
+    return response.data;
   },
 
   // Update account details
@@ -51,16 +51,17 @@ export const apiClient = {
     id: string,
     updates: AccountUpdate,
   ): Promise<{ id: string; display_name?: string }> => {
-    const response = await api.put<
-      ApiResponse<{ id: string; display_name?: string }>
-    >(`/accounts/${id}`, updates);
-    return response.data.data;
+    const response = await api.put<{ id: string; display_name?: string }>(
+      `/accounts/${id}`,
+      updates,
+    );
+    return response.data;
   },
 
   // Get all balances
   getBalances: async (): Promise<Balance[]> => {
-    const response = await api.get<ApiResponse<Balance[]>>("/balances");
-    return response.data.data;
+    const response = await api.get<Balance[]>("/balances");
+    return response.data;
   },
 
   // Get historical balances for balance progression chart
@@ -72,18 +73,18 @@ export const apiClient = {
     if (days) queryParams.append("days", days.toString());
     if (accountId) queryParams.append("account_id", accountId);
 
-    const response = await api.get<ApiResponse<Balance[]>>(
+    const response = await api.get<Balance[]>(
       `/balances/history?${queryParams.toString()}`,
     );
-    return response.data.data;
+    return response.data;
   },
 
   // Get balances for specific account
   getAccountBalances: async (accountId: string): Promise<Balance[]> => {
-    const response = await api.get<ApiResponse<Balance[]>>(
+    const response = await api.get<Balance[]>(
       `/accounts/${accountId}/balances`,
     );
-    return response.data.data;
+    return response.data;
   },
 
   // Get transactions with optional filters
@@ -97,7 +98,7 @@ export const apiClient = {
     summaryOnly?: boolean;
     minAmount?: number;
     maxAmount?: number;
-  }): Promise<ApiResponse<Transaction[]>> => {
+  }): Promise<PaginatedResponse<Transaction>> => {
     const queryParams = new URLSearchParams();
 
     if (params?.accountId) queryParams.append("account_id", params.accountId);
@@ -117,7 +118,7 @@ export const apiClient = {
       queryParams.append("max_amount", params.maxAmount.toString());
     }
 
-    const response = await api.get<ApiResponse<Transaction[]>>(
+    const response = await api.get<PaginatedResponse<Transaction>>(
       `/transactions?${queryParams.toString()}`,
     );
     return response.data;
@@ -125,29 +126,27 @@ export const apiClient = {
 
   // Get transaction by ID
   getTransaction: async (id: string): Promise<Transaction> => {
-    const response = await api.get<ApiResponse<Transaction>>(
-      `/transactions/${id}`,
-    );
-    return response.data.data;
+    const response = await api.get<Transaction>(`/transactions/${id}`);
+    return response.data;
   },
 
   // Get notification settings
   getNotificationSettings: async (): Promise<NotificationSettings> => {
-    const response = await api.get<ApiResponse<NotificationSettings>>(
+    const response = await api.get<NotificationSettings>(
       "/notifications/settings",
     );
-    return response.data.data;
+    return response.data;
   },
 
   // Update notification settings
   updateNotificationSettings: async (
     settings: NotificationSettings,
   ): Promise<NotificationSettings> => {
-    const response = await api.put<ApiResponse<NotificationSettings>>(
+    const response = await api.put<NotificationSettings>(
       "/notifications/settings",
       settings,
     );
-    return response.data.data;
+    return response.data;
   },
 
   // Test notification
@@ -157,11 +156,11 @@ export const apiClient = {
 
   // Get notification services
   getNotificationServices: async (): Promise<NotificationService[]> => {
-    const response = await api.get<ApiResponse<NotificationServicesResponse>>(
+    const response = await api.get<NotificationServicesResponse>(
       "/notifications/services",
     );
     // Convert object to array format
-    const servicesData = response.data.data;
+    const servicesData = response.data;
     return Object.values(servicesData);
   },
 
@@ -172,8 +171,8 @@ export const apiClient = {
 
   // Health check
   getHealth: async (): Promise<HealthData> => {
-    const response = await api.get<ApiResponse<HealthData>>("/health");
-    return response.data.data;
+    const response = await api.get<HealthData>("/health");
+    return response.data;
   },
 
   // Analytics endpoints
@@ -181,10 +180,10 @@ export const apiClient = {
     const queryParams = new URLSearchParams();
     if (days) queryParams.append("days", days.toString());
 
-    const response = await api.get<ApiResponse<TransactionStats>>(
+    const response = await api.get<TransactionStats>(
       `/transactions/stats?${queryParams.toString()}`,
     );
-    return response.data.data;
+    return response.data;
   },
 
   // Get all transactions for analytics (no pagination)
@@ -194,10 +193,10 @@ export const apiClient = {
     const queryParams = new URLSearchParams();
     if (days) queryParams.append("days", days.toString());
 
-    const response = await api.get<ApiResponse<AnalyticsTransaction[]>>(
+    const response = await api.get<AnalyticsTransaction[]>(
       `/transactions/analytics?${queryParams.toString()}`,
     );
-    return response.data.data;
+    return response.data;
   },
 
   // Get monthly transaction statistics (pre-calculated)
@@ -215,16 +214,14 @@ export const apiClient = {
     if (days) queryParams.append("days", days.toString());
 
     const response = await api.get<
-      ApiResponse<
-        Array<{
-          month: string;
-          income: number;
-          expenses: number;
-          net: number;
-        }>
-      >
+      Array<{
+        month: string;
+        income: number;
+        expenses: number;
+        net: number;
+      }>
     >(`/transactions/monthly-stats?${queryParams.toString()}`);
-    return response.data.data;
+    return response.data;
   },
 
   // Get sync operations history
@@ -232,24 +229,23 @@ export const apiClient = {
     limit: number = 50,
     offset: number = 0,
   ): Promise<SyncOperationsResponse> => {
-    const response = await api.get<ApiResponse<SyncOperationsResponse>>(
+    const response = await api.get<SyncOperationsResponse>(
       `/sync/operations?limit=${limit}&offset=${offset}`,
     );
-    return response.data.data;
+    return response.data;
   },
 
   // Bank management endpoints
   getBankInstitutions: async (country: string): Promise<BankInstitution[]> => {
-    const response = await api.get<ApiResponse<BankInstitution[]>>(
+    const response = await api.get<BankInstitution[]>(
       `/banks/institutions?country=${country}`,
     );
-    return response.data.data;
+    return response.data;
   },
 
   getBankConnectionsStatus: async (): Promise<BankConnectionStatus[]> => {
-    const response =
-      await api.get<ApiResponse<BankConnectionStatus[]>>("/banks/status");
-    return response.data.data;
+    const response = await api.get<BankConnectionStatus[]>("/banks/status");
+    return response.data;
   },
 
   createBankConnection: async (
@@ -260,14 +256,11 @@ export const apiClient = {
     const finalRedirectUrl =
       redirectUrl || `${window.location.origin}/bank-connected`;
 
-    const response = await api.post<ApiResponse<BankRequisition>>(
-      "/banks/connect",
-      {
-        institution_id: institutionId,
-        redirect_url: finalRedirectUrl,
-      },
-    );
-    return response.data.data;
+    const response = await api.post<BankRequisition>("/banks/connect", {
+      institution_id: institutionId,
+      redirect_url: finalRedirectUrl,
+    });
+    return response.data;
   },
 
   deleteBankConnection: async (requisitionId: string): Promise<void> => {
@@ -275,39 +268,44 @@ export const apiClient = {
   },
 
   getSupportedCountries: async (): Promise<Country[]> => {
-    const response = await api.get<ApiResponse<Country[]>>("/banks/countries");
-    return response.data.data;
+    const response = await api.get<Country[]>("/banks/countries");
+    return response.data;
   },
 
   // Backup endpoints
   getBackupSettings: async (): Promise<BackupSettings> => {
-    const response =
-      await api.get<ApiResponse<BackupSettings>>("/backup/settings");
-    return response.data.data;
+    const response = await api.get<BackupSettings>("/backup/settings");
+    return response.data;
   },
 
   updateBackupSettings: async (
     settings: BackupSettings,
   ): Promise<BackupSettings> => {
-    const response = await api.put<ApiResponse<BackupSettings>>(
+    const response = await api.put<BackupSettings>(
       "/backup/settings",
       settings,
     );
-    return response.data.data;
+    return response.data;
   },
 
-  testBackupConnection: async (test: BackupTest): Promise<ApiResponse<{ connected?: boolean }>> => {
-    const response = await api.post<ApiResponse<{ connected?: boolean }>>("/backup/test", test);
+  testBackupConnection: async (test: BackupTest): Promise<{ connected?: boolean }> => {
+    const response = await api.post<{ connected?: boolean }>(
+      "/backup/test",
+      test,
+    );
     return response.data;
   },
 
   listBackups: async (): Promise<BackupInfo[]> => {
-    const response = await api.get<ApiResponse<BackupInfo[]>>("/backup/list");
-    return response.data.data;
+    const response = await api.get<BackupInfo[]>("/backup/list");
+    return response.data;
   },
 
-  performBackupOperation: async (operation: BackupOperation): Promise<ApiResponse<{ operation: string; completed: boolean }>> => {
-    const response = await api.post<ApiResponse<{ operation: string; completed: boolean }>>("/backup/operation", operation);
+  performBackupOperation: async (operation: BackupOperation): Promise<{ operation: string; completed: boolean }> => {
+    const response = await api.post<{ operation: string; completed: boolean }>(
+      "/backup/operation",
+      operation,
+    );
     return response.data;
   },
 };

@@ -33,10 +33,9 @@ class TestBanksAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert len(data["data"]) == 2
-        assert data["data"][0]["id"] == "REVOLUT_REVOLT21"
-        assert data["data"][1]["id"] == "BANCOBPI_BBPIPTPL"
+        assert len(data) == 2
+        assert data[0]["id"] == "REVOLUT_REVOLT21"
+        assert data[1]["id"] == "BANCOBPI_BBPIPTPL"
 
     @respx.mock
     def test_get_institutions_invalid_country(self, api_client, mock_config):
@@ -92,9 +91,8 @@ class TestBanksAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert data["data"]["id"] == "req-123"
-        assert data["data"]["institution_id"] == "REVOLUT_REVOLT21"
+        assert data["id"] == "req-123"
+        assert data["institution_id"] == "REVOLUT_REVOLT21"
 
     @respx.mock
     def test_get_bank_status_success(self, api_client, mock_config, mock_auth_token):
@@ -128,10 +126,9 @@ class TestBanksAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert len(data["data"]) == 1
-        assert data["data"][0]["bank_id"] == "REVOLUT_REVOLT21"
-        assert data["data"][0]["status_display"] == "LINKED"
+        assert len(data) == 1
+        assert data[0]["bank_id"] == "REVOLUT_REVOLT21"
+        assert data[0]["status_display"] == "LINKED"
 
     def test_get_supported_countries(self, api_client):
         """Test supported countries endpoint."""
@@ -139,11 +136,10 @@ class TestBanksAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert len(data["data"]) > 0
+        assert len(data) > 0
 
         # Check some expected countries
-        country_codes = [country["code"] for country in data["data"]]
+        country_codes = [country["code"] for country in data]
         assert "PT" in country_codes
         assert "GB" in country_codes
         assert "DE" in country_codes

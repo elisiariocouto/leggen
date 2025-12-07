@@ -60,9 +60,8 @@ class TestAccountsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert len(data["data"]) == 1
-        account = data["data"][0]
+        assert len(data) == 1
+        account = data[0]
         assert account["id"] == "test-account-123"
         assert account["institution_id"] == "REVOLUT_REVOLT21"
         assert len(account["balances"]) == 1
@@ -117,11 +116,9 @@ class TestAccountsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        account = data["data"]
-        assert account["id"] == "test-account-123"
-        assert account["iban"] == "LT313250081177977789"
-        assert len(account["balances"]) == 1
+        assert data["id"] == "test-account-123"
+        assert data["iban"] == "LT313250081177977789"
+        assert len(data["balances"]) == 1
 
     def test_get_account_balances_success(
         self, api_client, mock_config, mock_auth_token, mock_db_path
@@ -163,11 +160,10 @@ class TestAccountsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert len(data["data"]) == 2
-        assert data["data"][0]["amount"] == 1000.00
-        assert data["data"][0]["currency"] == "EUR"
-        assert data["data"][0]["balance_type"] == "interimAvailable"
+        assert len(data) == 2
+        assert data[0]["amount"] == 1000.00
+        assert data[0]["currency"] == "EUR"
+        assert data[0]["balance_type"] == "interimAvailable"
 
     def test_get_account_transactions_success(
         self,
@@ -212,10 +208,9 @@ class TestAccountsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert len(data["data"]) == 1
+        assert len(data) == 1
 
-        transaction = data["data"][0]
+        transaction = data[0]
         assert transaction["internal_transaction_id"] == "txn-123"
         assert transaction["amount"] == -10.50
         assert transaction["currency"] == "EUR"
@@ -264,10 +259,9 @@ class TestAccountsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert len(data["data"]) == 1
+        assert len(data) == 1
 
-        transaction = data["data"][0]
+        transaction = data[0]
         assert transaction["internal_transaction_id"] == "txn-123"
         assert transaction["institution_id"] == "REVOLUT_REVOLT21"
         assert transaction["iban"] == "LT313250081177977789"
@@ -321,9 +315,8 @@ class TestAccountsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert data["data"]["id"] == "test-account-123"
-        assert data["data"]["display_name"] == "My Custom Account Name"
+        assert data["id"] == "test-account-123"
+        assert data["display_name"] == "My Custom Account Name"
 
     def test_update_account_not_found(
         self, api_client, mock_config, mock_auth_token, mock_db_path

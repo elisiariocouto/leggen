@@ -5,14 +5,14 @@ from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
 from leggen.api.models.accounts import Transaction, TransactionSummary
-from leggen.api.models.common import APIResponse, PaginatedResponse
+from leggen.api.models.common import PaginatedResponse
 from leggen.services.database_service import DatabaseService
 
 router = APIRouter()
 database_service = DatabaseService()
 
 
-@router.get("/transactions", response_model=PaginatedResponse)
+@router.get("/transactions")
 async def get_all_transactions(
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     per_page: int = Query(default=50, le=500, description="Items per page"),
@@ -35,7 +35,7 @@ async def get_all_transactions(
         default=None, description="Search in transaction descriptions"
     ),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
-) -> PaginatedResponse:
+) -> PaginatedResponse[Union[TransactionSummary, Transaction]]:
     """Get all transactions from database with filtering options"""
     try:
         # Calculate offset from page and per_page
@@ -103,16 +103,13 @@ async def get_all_transactions(
         total_pages = (total_transactions + per_page - 1) // per_page
 
         return PaginatedResponse(
-            success=True,
             data=data,
-            pagination={
-                "total": total_transactions,
-                "page": page,
-                "per_page": per_page,
-                "total_pages": total_pages,
-                "has_next": page < total_pages,
-                "has_prev": page > 1,
-            },
+            total=total_transactions,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1,
         )
 
     except Exception as e:
@@ -122,11 +119,11 @@ async def get_all_transactions(
         ) from e
 
 
-@router.get("/transactions/stats", response_model=APIResponse)
+@router.get("/transactions/stats")
 async def get_transaction_stats(
     days: int = Query(default=30, description="Number of days to include in stats"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
-) -> APIResponse:
+) -> dict:
     """Get transaction statistics for the last N days from database"""
     try:
         # Date range for stats
@@ -192,11 +189,7 @@ async def get_transaction_stats(
             "accounts_included": unique_accounts,
         }
 
-        return APIResponse(
-            success=True,
-            data=stats,
-            message=f"Transaction statistics for last {days} days",
-        )
+        return stats
 
     except Exception as e:
         logger.error(f"Failed to get transaction stats from database: {e}")
@@ -205,11 +198,11 @@ async def get_transaction_stats(
         ) from e
 
 
-@router.get("/transactions/analytics", response_model=APIResponse)
+@router.get("/transactions/analytics")
 async def get_transactions_for_analytics(
     days: int = Query(default=365, description="Number of days to include"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
-) -> APIResponse:
+) -> List[dict]:
     """Get all transactions for analytics (no pagination) for the last N days"""
     try:
         # Date range for analytics
@@ -242,11 +235,7 @@ async def get_transactions_for_analytics(
             for txn in transactions
         ]
 
-        return APIResponse(
-            success=True,
-            data=transaction_summaries,
-            message=f"Retrieved {len(transaction_summaries)} transactions for analytics",
-        )
+        return transaction_summaries
 
     except Exception as e:
         logger.error(f"Failed to get transactions for analytics: {e}")
@@ -255,11 +244,11 @@ async def get_transactions_for_analytics(
         ) from e
 
 
-@router.get("/transactions/monthly-stats", response_model=APIResponse)
+@router.get("/transactions/monthly-stats")
 async def get_monthly_transaction_stats(
     days: int = Query(default=365, description="Number of days to include"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
-) -> APIResponse:
+) -> List[dict]:
     """Get monthly transaction statistics aggregated by the database"""
     try:
         # Date range for monthly stats
@@ -277,11 +266,7 @@ async def get_monthly_transaction_stats(
             date_to=date_to,
         )
 
-        return APIResponse(
-            success=True,
-            data=monthly_stats,
-            message=f"Retrieved monthly stats for last {days} days",
-        )
+        return monthly_stats
 
     except Exception as e:
         logger.error(f"Failed to get monthly transaction stats: {e}")

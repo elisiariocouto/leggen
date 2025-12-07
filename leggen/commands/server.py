@@ -89,8 +89,6 @@ def create_app() -> FastAPI:
     async def health():
         """Health check endpoint for API connectivity"""
         try:
-            from leggen.api.models.common import APIResponse
-
             config_loaded = config._config is not None
 
             # Get version dynamically
@@ -99,25 +97,17 @@ def create_app() -> FastAPI:
             except metadata.PackageNotFoundError:
                 version = "dev"
 
-            return APIResponse(
-                success=True,
-                data={
-                    "status": "healthy",
-                    "config_loaded": config_loaded,
-                    "version": version,
-                    "message": "API is running and responsive",
-                },
-                message="Health check successful",
-            )
+            return {
+                "status": "healthy",
+                "config_loaded": config_loaded,
+                "version": version,
+            }
         except Exception as e:
             logger.error(f"Health check failed: {e}")
-            from leggen.api.models.common import APIResponse
-
-            return APIResponse(
-                success=False,
-                data={"status": "unhealthy", "error": str(e)},
-                message="Health check failed",
-            )
+            return {
+                "status": "unhealthy",
+                "error": str(e),
+            }
 
     return app
 
