@@ -44,7 +44,7 @@ export function FilterBar({
       currentInput.focus();
       currentInput.setSelectionRange(cursorPositionRef.current, cursorPositionRef.current);
     }
-  });
+  }, [isSearchLoading]);
 
   const hasActiveFilters =
     filterState.searchTerm ||
