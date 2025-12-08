@@ -85,7 +85,7 @@ class TestDatabaseService:
     ):
         """Test successful retrieval of transactions from database."""
         with patch.object(
-            database_service, "_get_transactions"
+            database_service.transactions, "get_transactions"
         ) as mock_get_transactions:
             mock_get_transactions.return_value = sample_transactions_db_format
 
@@ -111,7 +111,7 @@ class TestDatabaseService:
     ):
         """Test retrieving transactions with filters."""
         with patch.object(
-            database_service, "_get_transactions"
+            database_service.transactions, "get_transactions"
         ) as mock_get_transactions:
             mock_get_transactions.return_value = sample_transactions_db_format
 
@@ -149,7 +149,7 @@ class TestDatabaseService:
     async def test_get_transactions_from_db_error(self, database_service):
         """Test handling error when getting transactions."""
         with patch.object(
-            database_service, "_get_transactions"
+            database_service.transactions, "get_transactions"
         ) as mock_get_transactions:
             mock_get_transactions.side_effect = Exception("Database error")
 
@@ -159,7 +159,7 @@ class TestDatabaseService:
 
     async def test_get_transaction_count_from_db_success(self, database_service):
         """Test successful retrieval of transaction count."""
-        with patch.object(database_service, "_get_transaction_count") as mock_get_count:
+        with patch.object(database_service.transactions, "get_count") as mock_get_count:
             mock_get_count.return_value = 42
 
             result = await database_service.get_transaction_count_from_db(
@@ -167,11 +167,18 @@ class TestDatabaseService:
             )
 
             assert result == 42
-            mock_get_count.assert_called_once_with(account_id="test-account-123")
+            mock_get_count.assert_called_once_with(
+                account_id="test-account-123",
+                date_from=None,
+                date_to=None,
+                min_amount=None,
+                max_amount=None,
+                search=None,
+            )
 
     async def test_get_transaction_count_from_db_with_filters(self, database_service):
         """Test getting transaction count with filters."""
-        with patch.object(database_service, "_get_transaction_count") as mock_get_count:
+        with patch.object(database_service.transactions, "get_count") as mock_get_count:
             mock_get_count.return_value = 15
 
             result = await database_service.get_transaction_count_from_db(
@@ -185,7 +192,9 @@ class TestDatabaseService:
             mock_get_count.assert_called_once_with(
                 account_id="test-account-123",
                 date_from="2025-09-01",
+                date_to=None,
                 min_amount=-100.0,
+                max_amount=None,
                 search="Coffee",
             )
 
@@ -201,7 +210,7 @@ class TestDatabaseService:
 
     async def test_get_transaction_count_from_db_error(self, database_service):
         """Test handling error when getting count."""
-        with patch.object(database_service, "_get_transaction_count") as mock_get_count:
+        with patch.object(database_service.transactions, "get_count") as mock_get_count:
             mock_get_count.side_effect = Exception("Database error")
 
             result = await database_service.get_transaction_count_from_db()
@@ -212,7 +221,9 @@ class TestDatabaseService:
         self, database_service, sample_balances_db_format
     ):
         """Test successful retrieval of balances from database."""
-        with patch.object(database_service, "_get_balances") as mock_get_balances:
+        with patch.object(
+            database_service.balances, "get_balances"
+        ) as mock_get_balances:
             mock_get_balances.return_value = sample_balances_db_format
 
             result = await database_service.get_balances_from_db(
@@ -234,7 +245,9 @@ class TestDatabaseService:
 
     async def test_get_balances_from_db_error(self, database_service):
         """Test handling error when getting balances."""
-        with patch.object(database_service, "_get_balances") as mock_get_balances:
+        with patch.object(
+            database_service.balances, "get_balances"
+        ) as mock_get_balances:
             mock_get_balances.side_effect = Exception("Database error")
 
             result = await database_service.get_balances_from_db()
@@ -249,7 +262,9 @@ class TestDatabaseService:
             "iban": "LT313250081177977789",
         }
 
-        with patch.object(database_service, "_get_account_summary") as mock_get_summary:
+        with patch.object(
+            database_service.transactions, "get_account_summary"
+        ) as mock_get_summary:
             mock_get_summary.return_value = mock_summary
 
             result = await database_service.get_account_summary_from_db(
@@ -269,7 +284,9 @@ class TestDatabaseService:
 
     async def test_get_account_summary_from_db_error(self, database_service):
         """Test handling error when getting summary."""
-        with patch.object(database_service, "_get_account_summary") as mock_get_summary:
+        with patch.object(
+            database_service.transactions, "get_account_summary"
+        ) as mock_get_summary:
             mock_get_summary.side_effect = Exception("Database error")
 
             result = await database_service.get_account_summary_from_db(
@@ -291,87 +308,87 @@ class TestDatabaseService:
             ],
         }
 
-        with patch("sqlite3.connect") as mock_connect:
-            mock_conn = mock_connect.return_value
-            mock_cursor = mock_conn.cursor.return_value
+        with (
+            patch.object(database_service.balances, "persist") as mock_persist,
+            patch.object(
+                database_service.balance_transformer, "transform_to_database_format"
+            ) as mock_transform,
+        ):
+            mock_transform.return_value = [
+                (
+                    "test-account-123",
+                    "REVOLUT_REVOLT21",
+                    "active",
+                    "LT313250081177977789",
+                    1000.0,
+                    "EUR",
+                    "interimAvailable",
+                    "2025-09-01T10:00:00",
+                )
+            ]
 
-            await database_service._persist_balance_sqlite(
-                "test-account-123", balance_data
-            )
+            await database_service.persist_balance("test-account-123", balance_data)
 
-            # Verify database operations
-            mock_connect.assert_called()
-            mock_cursor.execute.assert_called()  # Table creation and insert
-            mock_conn.commit.assert_called_once()
-            mock_conn.close.assert_called_once()
+            # Verify transformation and persistence were called
+            mock_transform.assert_called_once_with("test-account-123", balance_data)
+            mock_persist.assert_called_once()
 
     async def test_persist_balance_sqlite_error(self, database_service):
         """Test handling error during balance persistence."""
         balance_data = {"balances": []}
 
-        with patch("sqlite3.connect") as mock_connect:
-            mock_connect.side_effect = Exception("Database error")
+        with (
+            patch.object(database_service.balances, "persist") as mock_persist,
+            patch.object(
+                database_service.balance_transformer, "transform_to_database_format"
+            ) as mock_transform,
+        ):
+            mock_persist.side_effect = Exception("Database error")
+            mock_transform.return_value = []
 
             with pytest.raises(Exception, match="Database error"):
-                await database_service._persist_balance_sqlite(
-                    "test-account-123", balance_data
-                )
+                await database_service.persist_balance("test-account-123", balance_data)
 
     async def test_persist_transactions_sqlite_success(
         self, database_service, sample_transactions_db_format
     ):
         """Test successful transaction persistence."""
-        with patch("sqlite3.connect") as mock_connect:
-            mock_conn = mock_connect.return_value
-            mock_cursor = mock_conn.cursor.return_value
-            # Mock fetchone to return (0,) indicating transaction doesn't exist yet
-            mock_cursor.fetchone.return_value = (0,)
+        with patch.object(database_service.transactions, "persist") as mock_persist:
+            mock_persist.return_value = sample_transactions_db_format
 
-            result = await database_service._persist_transactions_sqlite(
+            result = await database_service.persist_transactions(
                 "test-account-123", sample_transactions_db_format
             )
 
-            # Should return the transactions (assuming no duplicates)
-            assert len(result) >= 0  # Could be empty if all are duplicates
-
-            # Verify database operations
-            mock_connect.assert_called()
-            mock_cursor.execute.assert_called()
-            mock_conn.commit.assert_called_once()
-            mock_conn.close.assert_called_once()
+            # Should return the new transactions
+            assert len(result) == 2
+            mock_persist.assert_called_once_with(
+                "test-account-123", sample_transactions_db_format
+            )
 
     async def test_persist_transactions_sqlite_duplicate_detection(
         self, database_service, sample_transactions_db_format
     ):
         """Test that existing transactions are not returned as new."""
-        with patch("sqlite3.connect") as mock_connect:
-            mock_conn = mock_connect.return_value
-            mock_cursor = mock_conn.cursor.return_value
-            # Mock fetchone to return (1,) indicating transaction already exists
-            mock_cursor.fetchone.return_value = (1,)
+        with patch.object(database_service.transactions, "persist") as mock_persist:
+            # Return empty list indicating all were duplicates
+            mock_persist.return_value = []
 
-            result = await database_service._persist_transactions_sqlite(
+            result = await database_service.persist_transactions(
                 "test-account-123", sample_transactions_db_format
             )
 
             # Should return empty list since all transactions already exist
             assert len(result) == 0
-
-            # Verify database operations still happened (INSERT OR REPLACE executed)
-            mock_connect.assert_called()
-            mock_cursor.execute.assert_called()
-            mock_conn.commit.assert_called_once()
-            mock_conn.close.assert_called_once()
+            mock_persist.assert_called_once()
 
     async def test_persist_transactions_sqlite_error(self, database_service):
         """Test handling error during transaction persistence."""
-        with patch("sqlite3.connect") as mock_connect:
-            mock_connect.side_effect = Exception("Database error")
+        with patch.object(database_service.transactions, "persist") as mock_persist:
+            mock_persist.side_effect = Exception("Database error")
 
             with pytest.raises(Exception, match="Database error"):
-                await database_service._persist_transactions_sqlite(
-                    "test-account-123", []
-                )
+                await database_service.persist_transactions("test-account-123", [])
 
     async def test_process_transactions_booked_and_pending(self, database_service):
         """Test processing transactions with both booked and pending."""

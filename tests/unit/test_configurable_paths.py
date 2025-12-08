@@ -120,12 +120,10 @@ class TestConfigurablePaths:
                 "iban": "TEST_IBAN",
             }
 
-            # Use the internal balance persistence method since the test needs direct database access
+            # Use the public balance persistence method
             import asyncio
 
-            asyncio.run(
-                database_service._persist_balance_sqlite("test-account", balance_data)
-            )
+            asyncio.run(database_service.persist_balance("test-account", balance_data))
 
             # Retrieve balances
             balances = asyncio.run(
