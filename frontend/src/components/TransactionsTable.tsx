@@ -413,9 +413,9 @@ export default function TransactionsTable() {
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">
                   Income
                 </p>
-                <p className="text-2xl font-bold text-green-600 mt-1">
+                <BlurredValue className="text-2xl font-bold text-green-600 mt-1 block">
                   +{formatCurrency(stats.totalIncome, displayCurrency)}
-                </p>
+                </BlurredValue>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600 opacity-50" />
             </div>
@@ -427,9 +427,9 @@ export default function TransactionsTable() {
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">
                   Expenses
                 </p>
-                <p className="text-2xl font-bold text-red-600 mt-1">
+                <BlurredValue className="text-2xl font-bold text-red-600 mt-1 block">
                   -{formatCurrency(stats.totalExpenses, displayCurrency)}
-                </p>
+                </BlurredValue>
               </div>
               <TrendingDown className="h-8 w-8 text-red-600 opacity-50" />
             </div>
@@ -441,14 +441,14 @@ export default function TransactionsTable() {
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">
                   Net Change
                 </p>
-                <p
-                  className={`text-2xl font-bold mt-1 ${
+                <BlurredValue
+                  className={`text-2xl font-bold mt-1 block ${
                     stats.netChange >= 0 ? "text-green-600" : "text-red-600"
                   }`}
                 >
                   {stats.netChange >= 0 ? "+" : ""}
                   {formatCurrency(stats.netChange, displayCurrency)}
-                </p>
+                </BlurredValue>
               </div>
               {stats.netChange >= 0 ? (
                 <TrendingUp className="h-8 w-8 text-green-600 opacity-50" />
