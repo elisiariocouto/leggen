@@ -123,6 +123,7 @@ export default function TransactionsTable() {
         search: debouncedSearchTerm || undefined,
         summaryOnly: false,
       }),
+    placeholderData: (previousData) => previousData,
   });
 
   const transactions = transactionsResponse?.data || [];
