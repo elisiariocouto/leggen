@@ -356,28 +356,31 @@ export default function TransactionsTable() {
     );
   }
 
-  // Calculate stats from current page transactions
-  const totalIncome = transactions
-    .filter((t: Transaction) => t.transaction_value > 0)
-    .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0);
+  // Calculate stats from current page transactions, memoized for performance
+  const { totalIncome, totalExpenses, displayCurrency, stats } = useMemo(() => {
+    const totalIncome = transactions
+      .filter((t: Transaction) => t.transaction_value > 0)
+      .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0);
 
-  const totalExpenses = Math.abs(
-    transactions
-      .filter((t: Transaction) => t.transaction_value < 0)
-      .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0)
-  );
+    const totalExpenses = Math.abs(
+      transactions
+        .filter((t: Transaction) => t.transaction_value < 0)
+        .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0)
+    );
 
-  // Get currency from first transaction, fallback to EUR
-  const displayCurrency = transactions.length > 0 ? transactions[0].transaction_currency : "EUR";
+    // Get currency from first transaction, fallback to EUR
+    const displayCurrency = transactions.length > 0 ? transactions[0].transaction_currency : "EUR";
 
-  const stats = {
-    totalCount: pagination?.total || 0,
-    pageCount: transactions.length,
-    totalIncome,
-    totalExpenses,
-    netChange: totalIncome - totalExpenses,
-  };
+    const stats = {
+      totalCount: pagination?.total || 0,
+      pageCount: transactions.length,
+      totalIncome,
+      totalExpenses,
+      netChange: totalIncome - totalExpenses,
+    };
 
+    return { totalIncome, totalExpenses, displayCurrency, stats };
+  }, [transactions, pagination]);
   return (
     <div className="space-y-6 max-w-full">
       {/* New FilterBar */}
