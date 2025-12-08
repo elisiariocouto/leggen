@@ -126,7 +126,10 @@ export default function TransactionsTable() {
     placeholderData: (previousData) => previousData,
   });
 
-  const transactions = transactionsResponse?.data || [];
+  const transactions = useMemo(
+    () => transactionsResponse?.data || [],
+    [transactionsResponse],
+  );
   const pagination = useMemo(
     () =>
       transactionsResponse
@@ -141,6 +144,31 @@ export default function TransactionsTable() {
         : undefined,
     [transactionsResponse],
   );
+
+  // Calculate stats from current page transactions, memoized for performance
+  const stats = useMemo(() => {
+    const totalIncome = transactions
+      .filter((t: Transaction) => t.transaction_value > 0)
+      .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0);
+
+    const totalExpenses = Math.abs(
+      transactions
+        .filter((t: Transaction) => t.transaction_value < 0)
+        .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0)
+    );
+
+    // Get currency from first transaction, fallback to EUR
+    const displayCurrency = transactions.length > 0 ? transactions[0].transaction_currency : "EUR";
+
+    return {
+      totalCount: pagination?.total || 0,
+      pageCount: transactions.length,
+      totalIncome,
+      totalExpenses,
+      netChange: totalIncome - totalExpenses,
+      displayCurrency,
+    };
+  }, [transactions, pagination]);
 
   // Check if search is currently debouncing
   const isSearchLoading = filterState.searchTerm !== debouncedSearchTerm;
@@ -356,31 +384,6 @@ export default function TransactionsTable() {
     );
   }
 
-  // Calculate stats from current page transactions, memoized for performance
-  const { totalIncome, totalExpenses, displayCurrency, stats } = useMemo(() => {
-    const totalIncome = transactions
-      .filter((t: Transaction) => t.transaction_value > 0)
-      .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0);
-
-    const totalExpenses = Math.abs(
-      transactions
-        .filter((t: Transaction) => t.transaction_value < 0)
-        .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0)
-    );
-
-    // Get currency from first transaction, fallback to EUR
-    const displayCurrency = transactions.length > 0 ? transactions[0].transaction_currency : "EUR";
-
-    const stats = {
-      totalCount: pagination?.total || 0,
-      pageCount: transactions.length,
-      totalIncome,
-      totalExpenses,
-      netChange: totalIncome - totalExpenses,
-    };
-
-    return { totalIncome, totalExpenses, displayCurrency, stats };
-  }, [transactions, pagination]);
   return (
     <div className="space-y-6 max-w-full">
       {/* New FilterBar */}
@@ -418,7 +421,7 @@ export default function TransactionsTable() {
                   Income
                 </p>
                 <BlurredValue className="text-2xl font-bold text-green-600 mt-1 block">
-                  +{formatCurrency(stats.totalIncome, displayCurrency)}
+                  +{formatCurrency(stats.totalIncome, stats.displayCurrency)}
                 </BlurredValue>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600 opacity-50" />
@@ -432,7 +435,7 @@ export default function TransactionsTable() {
                   Expenses
                 </p>
                 <BlurredValue className="text-2xl font-bold text-red-600 mt-1 block">
-                  -{formatCurrency(stats.totalExpenses, displayCurrency)}
+                  -{formatCurrency(stats.totalExpenses, stats.displayCurrency)}
                 </BlurredValue>
               </div>
               <TrendingDown className="h-8 w-8 text-red-600 opacity-50" />
@@ -451,7 +454,7 @@ export default function TransactionsTable() {
                   }`}
                 >
                   {stats.netChange >= 0 ? "+" : ""}
-                  {formatCurrency(stats.netChange, displayCurrency)}
+                  {formatCurrency(stats.netChange, stats.displayCurrency)}
                 </BlurredValue>
               </div>
               {stats.netChange >= 0 ? (
