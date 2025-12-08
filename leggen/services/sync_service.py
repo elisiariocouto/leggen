@@ -109,10 +109,8 @@ class SyncService:
                         )
 
                         # Merge account metadata into balances for persistence
-                        balances_with_account_info = (
-                            self.balance_transformer.merge_account_metadata_into_balances(
-                                balances, enriched_account_details
-                            )
+                        balances_with_account_info = self.balance_transformer.merge_account_metadata_into_balances(
+                            balances, enriched_account_details
                         )
                         await self.database.persist_balance(
                             account_id, balances_with_account_info

@@ -57,8 +57,8 @@ class AccountEnricher:
     async def _fetch_institution_logo(self, institution_id: str) -> str | None:
         """Fetch institution logo from GoCardless API."""
         try:
-            institution_details = (
-                await self.gocardless.get_institution_details(institution_id)
+            institution_details = await self.gocardless.get_institution_details(
+                institution_id
             )
             logo = institution_details.get("logo", "")
             if logo:
