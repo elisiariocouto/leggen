@@ -32,22 +32,19 @@ export function FilterBar({
   className,
 }: FilterBarProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const cursorPositionRef = useRef<number | null>(null);
 
-  // Maintain focus on search input during re-renders
+  // Maintain focus and cursor position on search input during re-renders
   useEffect(() => {
     const currentInput = searchInputRef.current;
     if (!currentInput) return;
 
-    // Only restore focus if the search input had focus before
-    const wasFocused = document.activeElement === currentInput;
-    
-    // Use requestAnimationFrame to restore focus after React finishes rendering
-    if (wasFocused && document.activeElement !== currentInput) {
-      requestAnimationFrame(() => {
-        currentInput.focus();
-      });
+    // Restore focus and cursor position after data fetches complete
+    if (cursorPositionRef.current !== null && document.activeElement !== currentInput) {
+      currentInput.focus();
+      currentInput.setSelectionRange(cursorPositionRef.current, cursorPositionRef.current);
     }
-  }, [isSearchLoading]);
+  });
 
   const hasActiveFilters =
     filterState.searchTerm ||
@@ -83,7 +80,16 @@ export function FilterBar({
                   ref={searchInputRef}
                   placeholder="Search transactions..."
                   value={filterState.searchTerm}
-                  onChange={(e) => onFilterChange("searchTerm", e.target.value)}
+                  onChange={(e) => {
+                    cursorPositionRef.current = e.target.selectionStart;
+                    onFilterChange("searchTerm", e.target.value);
+                  }}
+                  onFocus={() => {
+                    cursorPositionRef.current = searchInputRef.current?.selectionStart ?? null;
+                  }}
+                  onBlur={() => {
+                    cursorPositionRef.current = null;
+                  }}
                   className="pl-9 pr-8 bg-background"
                 />
                 {isSearchLoading && (
@@ -122,7 +128,16 @@ export function FilterBar({
                 ref={searchInputRef}
                 placeholder="Search..."
                 value={filterState.searchTerm}
-                onChange={(e) => onFilterChange("searchTerm", e.target.value)}
+                onChange={(e) => {
+                  cursorPositionRef.current = e.target.selectionStart;
+                  onFilterChange("searchTerm", e.target.value);
+                }}
+                onFocus={() => {
+                  cursorPositionRef.current = searchInputRef.current?.selectionStart ?? null;
+                }}
+                onBlur={() => {
+                  cursorPositionRef.current = null;
+                }}
                 className="pl-9 pr-8 bg-background w-full"
               />
               {isSearchLoading && (
