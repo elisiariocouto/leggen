@@ -4,6 +4,12 @@ from unittest.mock import patch
 
 import pytest
 
+from leggen.api.dependencies import (
+    get_account_repository,
+    get_balance_repository,
+    get_transaction_repository,
+)
+
 
 @pytest.mark.api
 class TestAccountsAPI:
@@ -11,11 +17,14 @@ class TestAccountsAPI:
 
     def test_get_all_accounts_success(
         self,
+        fastapi_app,
         api_client,
         mock_config,
         mock_auth_token,
         sample_account_data,
         mock_db_path,
+        mock_account_repo,
+        mock_balance_repo,
     ):
         """Test successful retrieval of all accounts from database."""
         mock_accounts = [
@@ -45,18 +54,20 @@ class TestAccountsAPI:
             }
         ]
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_accounts_from_db",
-                return_value=mock_accounts,
-            ),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_balances_from_db",
-                return_value=mock_balances,
-            ),
-        ):
+        mock_account_repo.get_accounts.return_value = mock_accounts
+        mock_balance_repo.get_balances.return_value = mock_balances
+
+        fastapi_app.dependency_overrides[get_account_repository] = (
+            lambda: mock_account_repo
+        )
+        fastapi_app.dependency_overrides[get_balance_repository] = (
+            lambda: mock_balance_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/accounts")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
@@ -69,11 +80,14 @@ class TestAccountsAPI:
 
     def test_get_account_details_success(
         self,
+        fastapi_app,
         api_client,
         mock_config,
         mock_auth_token,
         sample_account_data,
         mock_db_path,
+        mock_account_repo,
+        mock_balance_repo,
     ):
         """Test successful retrieval of specific account details from database."""
         mock_account = {
@@ -101,18 +115,20 @@ class TestAccountsAPI:
             }
         ]
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_account_details_from_db",
-                return_value=mock_account,
-            ),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_balances_from_db",
-                return_value=mock_balances,
-            ),
-        ):
+        mock_account_repo.get_account.return_value = mock_account
+        mock_balance_repo.get_balances.return_value = mock_balances
+
+        fastapi_app.dependency_overrides[get_account_repository] = (
+            lambda: mock_account_repo
+        )
+        fastapi_app.dependency_overrides[get_balance_repository] = (
+            lambda: mock_balance_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/accounts/test-account-123")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
@@ -121,7 +137,13 @@ class TestAccountsAPI:
         assert len(data["balances"]) == 1
 
     def test_get_account_balances_success(
-        self, api_client, mock_config, mock_auth_token, mock_db_path
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_db_path,
+        mock_balance_repo,
     ):
         """Test successful retrieval of account balances from database."""
         mock_balances = [
@@ -149,14 +171,16 @@ class TestAccountsAPI:
             },
         ]
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_balances_from_db",
-                return_value=mock_balances,
-            ),
-        ):
+        mock_balance_repo.get_balances.return_value = mock_balances
+
+        fastapi_app.dependency_overrides[get_balance_repository] = (
+            lambda: mock_balance_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/accounts/test-account-123/balances")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
@@ -167,12 +191,14 @@ class TestAccountsAPI:
 
     def test_get_account_transactions_success(
         self,
+        fastapi_app,
         api_client,
         mock_config,
         mock_auth_token,
         sample_account_data,
         sample_transaction_data,
         mock_db_path,
+        mock_transaction_repo,
     ):
         """Test successful retrieval of account transactions from database."""
         mock_transactions = [
@@ -191,20 +217,18 @@ class TestAccountsAPI:
             }
         ]
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_transactions_from_db",
-                return_value=mock_transactions,
-            ),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_transaction_count_from_db",
-                return_value=1,
-            ),
-        ):
+        mock_transaction_repo.get_transactions.return_value = mock_transactions
+
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get(
                 "/api/v1/accounts/test-account-123/transactions?summary_only=true"
             )
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
@@ -218,12 +242,14 @@ class TestAccountsAPI:
 
     def test_get_account_transactions_full_details(
         self,
+        fastapi_app,
         api_client,
         mock_config,
         mock_auth_token,
         sample_account_data,
         sample_transaction_data,
         mock_db_path,
+        mock_transaction_repo,
     ):
         """Test retrieval of full transaction details from database."""
         mock_transactions = [
@@ -242,20 +268,18 @@ class TestAccountsAPI:
             }
         ]
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_transactions_from_db",
-                return_value=mock_transactions,
-            ),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_transaction_count_from_db",
-                return_value=1,
-            ),
-        ):
+        mock_transaction_repo.get_transactions.return_value = mock_transactions
+
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get(
                 "/api/v1/accounts/test-account-123/transactions?summary_only=false"
             )
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
@@ -268,22 +292,36 @@ class TestAccountsAPI:
         assert "raw_transaction" in transaction
 
     def test_get_account_not_found(
-        self, api_client, mock_config, mock_auth_token, mock_db_path
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_db_path,
+        mock_account_repo,
     ):
         """Test handling of non-existent account."""
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_account_details_from_db",
-                return_value=None,
-            ),
-        ):
+        mock_account_repo.get_account.return_value = None
+
+        fastapi_app.dependency_overrides[get_account_repository] = (
+            lambda: mock_account_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/accounts/nonexistent")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 404
 
     def test_update_account_display_name_success(
-        self, api_client, mock_config, mock_auth_token, mock_db_path
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_db_path,
+        mock_account_repo,
     ):
         """Test successful update of account display name."""
         mock_account = {
@@ -297,21 +335,20 @@ class TestAccountsAPI:
             "last_accessed": "2025-09-01T09:30:00Z",
         }
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_account_details_from_db",
-                return_value=mock_account,
-            ),
-            patch(
-                "leggen.api.routes.accounts.database_service.persist_account_details",
-                return_value=None,
-            ),
-        ):
+        mock_account_repo.get_account.return_value = mock_account
+        mock_account_repo.persist.return_value = mock_account
+
+        fastapi_app.dependency_overrides[get_account_repository] = (
+            lambda: mock_account_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.put(
                 "/api/v1/accounts/test-account-123",
                 json={"display_name": "My Custom Account Name"},
             )
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
@@ -319,19 +356,27 @@ class TestAccountsAPI:
         assert data["display_name"] == "My Custom Account Name"
 
     def test_update_account_not_found(
-        self, api_client, mock_config, mock_auth_token, mock_db_path
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_db_path,
+        mock_account_repo,
     ):
         """Test updating non-existent account."""
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.accounts.database_service.get_account_details_from_db",
-                return_value=None,
-            ),
-        ):
+        mock_account_repo.get_account.return_value = None
+
+        fastapi_app.dependency_overrides[get_account_repository] = (
+            lambda: mock_account_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.put(
                 "/api/v1/accounts/nonexistent",
                 json={"display_name": "New Name"},
             )
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 404

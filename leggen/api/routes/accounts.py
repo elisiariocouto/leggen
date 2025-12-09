@@ -3,6 +3,12 @@ from typing import List, Optional, Union
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
+from leggen.api.dependencies import (
+    AccountRepo,
+    AnalyticsProc,
+    BalanceRepo,
+    TransactionRepo,
+)
 from leggen.api.models.accounts import (
     AccountBalance,
     AccountDetails,
@@ -10,28 +16,27 @@ from leggen.api.models.accounts import (
     Transaction,
     TransactionSummary,
 )
-from leggen.services.database_service import DatabaseService
 
 router = APIRouter()
-database_service = DatabaseService()
 
 
 @router.get("/accounts")
-async def get_all_accounts() -> List[AccountDetails]:
+async def get_all_accounts(
+    account_repo: AccountRepo,
+    balance_repo: BalanceRepo,
+) -> List[AccountDetails]:
     """Get all connected accounts from database"""
     try:
         accounts = []
 
         # Get all account details from database
-        db_accounts = await database_service.get_accounts_from_db()
+        db_accounts = account_repo.get_accounts()
 
         # Process accounts found in database
         for db_account in db_accounts:
             try:
                 # Get latest balances from database for this account
-                balances_data = await database_service.get_balances_from_db(
-                    db_account["id"]
-                )
+                balances_data = balance_repo.get_balances(db_account["id"])
 
                 # Process balances
                 balances = []
@@ -77,11 +82,15 @@ async def get_all_accounts() -> List[AccountDetails]:
 
 
 @router.get("/accounts/{account_id}")
-async def get_account_details(account_id: str) -> AccountDetails:
+async def get_account_details(
+    account_id: str,
+    account_repo: AccountRepo,
+    balance_repo: BalanceRepo,
+) -> AccountDetails:
     """Get details for a specific account from database"""
     try:
         # Get account details from database
-        db_account = await database_service.get_account_details_from_db(account_id)
+        db_account = account_repo.get_account(account_id)
 
         if not db_account:
             raise HTTPException(
@@ -89,7 +98,7 @@ async def get_account_details(account_id: str) -> AccountDetails:
             )
 
         # Get latest balances from database for this account
-        balances_data = await database_service.get_balances_from_db(account_id)
+        balances_data = balance_repo.get_balances(account_id)
 
         # Process balances
         balances = []
@@ -129,11 +138,14 @@ async def get_account_details(account_id: str) -> AccountDetails:
 
 
 @router.get("/accounts/{account_id}/balances")
-async def get_account_balances(account_id: str) -> List[AccountBalance]:
+async def get_account_balances(
+    account_id: str,
+    balance_repo: BalanceRepo,
+) -> List[AccountBalance]:
     """Get balances for a specific account from database"""
     try:
         # Get balances from database instead of GoCardless API
-        db_balances = await database_service.get_balances_from_db(account_id=account_id)
+        db_balances = balance_repo.get_balances(account_id=account_id)
 
         balances = []
         for balance in db_balances:
@@ -158,19 +170,20 @@ async def get_account_balances(account_id: str) -> List[AccountBalance]:
 
 
 @router.get("/balances")
-async def get_all_balances() -> List[dict]:
+async def get_all_balances(
+    account_repo: AccountRepo,
+    balance_repo: BalanceRepo,
+) -> List[dict]:
     """Get all balances from all accounts in database"""
     try:
         # Get all accounts first to iterate through them
-        db_accounts = await database_service.get_accounts_from_db()
+        db_accounts = account_repo.get_accounts()
 
         all_balances = []
         for db_account in db_accounts:
             try:
                 # Get balances for this account
-                db_balances = await database_service.get_balances_from_db(
-                    account_id=db_account["id"]
-                )
+                db_balances = balance_repo.get_balances(account_id=db_account["id"])
 
                 # Process balances and add account info
                 for balance in db_balances:
@@ -205,6 +218,7 @@ async def get_all_balances() -> List[dict]:
 
 @router.get("/balances/history")
 async def get_historical_balances(
+    analytics_proc: AnalyticsProc,
     days: Optional[int] = Query(
         default=365, le=1095, ge=1, description="Number of days of history to retrieve"
     ),
@@ -214,9 +228,12 @@ async def get_historical_balances(
 ) -> List[dict]:
     """Get historical balance progression calculated from transaction history"""
     try:
+        from leggen.utils.paths import path_manager
+
         # Get historical balances from database
-        historical_balances = await database_service.get_historical_balances_from_db(
-            account_id=account_id, days=days or 365
+        db_path = path_manager.get_database_path()
+        historical_balances = analytics_proc.calculate_historical_balances(
+            db_path, account_id=account_id, days=days or 365
         )
 
         return historical_balances
@@ -231,6 +248,7 @@ async def get_historical_balances(
 @router.get("/accounts/{account_id}/transactions")
 async def get_account_transactions(
     account_id: str,
+    transaction_repo: TransactionRepo,
     limit: Optional[int] = Query(default=100, le=500),
     offset: Optional[int] = Query(default=0, ge=0),
     summary_only: bool = Query(
@@ -240,10 +258,10 @@ async def get_account_transactions(
     """Get transactions for a specific account from database"""
     try:
         # Get transactions from database instead of GoCardless API
-        db_transactions = await database_service.get_transactions_from_db(
+        db_transactions = transaction_repo.get_transactions(
             account_id=account_id,
             limit=limit,
-            offset=offset,
+            offset=offset or 0,
         )
 
         data: Union[List[TransactionSummary], List[Transaction]]
@@ -294,11 +312,15 @@ async def get_account_transactions(
 
 
 @router.put("/accounts/{account_id}")
-async def update_account_details(account_id: str, update_data: AccountUpdate) -> dict:
+async def update_account_details(
+    account_id: str,
+    update_data: AccountUpdate,
+    account_repo: AccountRepo,
+) -> dict:
     """Update account details (currently only display_name)"""
     try:
         # Get current account details
-        current_account = await database_service.get_account_details_from_db(account_id)
+        current_account = account_repo.get_account(account_id)
 
         if not current_account:
             raise HTTPException(
@@ -311,7 +333,7 @@ async def update_account_details(account_id: str, update_data: AccountUpdate) ->
             updated_account_data["display_name"] = update_data.display_name
 
         # Persist updated account details
-        await database_service.persist_account_details(updated_account_data)
+        account_repo.persist(updated_account_data)
 
         return {"id": account_id, "display_name": update_data.display_name}
 

@@ -5,13 +5,20 @@ from unittest.mock import patch
 
 import pytest
 
+from leggen.api.dependencies import get_transaction_repository
+
 
 @pytest.mark.api
 class TestTransactionsAPI:
     """Test transaction-related API endpoints."""
 
     def test_get_all_transactions_success(
-        self, api_client, mock_config, mock_auth_token
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_transaction_repo,
     ):
         """Test successful retrieval of all transactions from database."""
         mock_transactions = [
@@ -43,18 +50,16 @@ class TestTransactionsAPI:
             },
         ]
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
-                return_value=mock_transactions,
-            ),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transaction_count_from_db",
-                return_value=2,
-            ),
-        ):
+        mock_transaction_repo.get_transactions.return_value = mock_transactions
+        mock_transaction_repo.get_count.return_value = len(mock_transactions)
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/transactions?summary_only=true")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
@@ -70,7 +75,12 @@ class TestTransactionsAPI:
         assert transaction["account_id"] == "test-account-123"
 
     def test_get_all_transactions_full_details(
-        self, api_client, mock_config, mock_auth_token
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_transaction_repo,
     ):
         """Test retrieval of full transaction details from database."""
         mock_transactions = [
@@ -89,18 +99,16 @@ class TestTransactionsAPI:
             }
         ]
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
-                return_value=mock_transactions,
-            ),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transaction_count_from_db",
-                return_value=1,
-            ),
-        ):
+        mock_transaction_repo.get_transactions.return_value = mock_transactions
+        mock_transaction_repo.get_count.return_value = len(mock_transactions)
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/transactions?summary_only=false")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
@@ -114,7 +122,12 @@ class TestTransactionsAPI:
         assert "raw_transaction" in transaction
 
     def test_get_transactions_with_filters(
-        self, api_client, mock_config, mock_auth_token
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_transaction_repo,
     ):
         """Test getting transactions with various filters."""
         mock_transactions = [
@@ -133,17 +146,14 @@ class TestTransactionsAPI:
             }
         ]
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
-                return_value=mock_transactions,
-            ) as mock_get_transactions,
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transaction_count_from_db",
-                return_value=1,
-            ),
-        ):
+        mock_transaction_repo.get_transactions.return_value = mock_transactions
+        mock_transaction_repo.get_count.return_value = 1
+
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get(
                 "/api/v1/transactions?"
                 "account_id=test-account-123&"
@@ -156,10 +166,12 @@ class TestTransactionsAPI:
                 "per_page=10"
             )
 
+        fastapi_app.dependency_overrides.clear()
+
         assert response.status_code == 200
 
-        # Verify the database service was called with correct filters
-        mock_get_transactions.assert_called_once_with(
+        # Verify the repository was called with correct filters
+        mock_transaction_repo.get_transactions.assert_called_once_with(
             account_id="test-account-123",
             limit=10,
             offset=10,  # (page-1) * per_page = (2-1) * 10 = 10
@@ -171,21 +183,25 @@ class TestTransactionsAPI:
         )
 
     def test_get_transactions_empty_result(
-        self, api_client, mock_config, mock_auth_token
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_transaction_repo,
     ):
         """Test getting transactions when database returns empty result."""
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
-                return_value=[],
-            ),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transaction_count_from_db",
-                return_value=0,
-            ),
-        ):
+        mock_transaction_repo.get_transactions.return_value = []
+        mock_transaction_repo.get_count.return_value = 0
+
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/transactions")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
@@ -195,23 +211,37 @@ class TestTransactionsAPI:
         assert data["total_pages"] == 0
 
     def test_get_transactions_database_error(
-        self, api_client, mock_config, mock_auth_token
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_transaction_repo,
     ):
         """Test handling database error when getting transactions."""
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
-                side_effect=Exception("Database connection failed"),
-            ),
-        ):
+        mock_transaction_repo.get_transactions.side_effect = Exception(
+            "Database connection failed"
+        )
+
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/transactions")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 500
         assert "Failed to get transactions" in response.json()["detail"]
 
     def test_get_transaction_stats_success(
-        self, api_client, mock_config, mock_auth_token
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_transaction_repo,
     ):
         """Test successful retrieval of transaction statistics from database."""
         mock_transactions = [
@@ -238,14 +268,15 @@ class TestTransactionsAPI:
             },
         ]
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
-                return_value=mock_transactions,
-            ),
-        ):
+        mock_transaction_repo.get_transactions.return_value = mock_transactions
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/transactions/stats?days=30")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
@@ -264,7 +295,12 @@ class TestTransactionsAPI:
         assert data["average_transaction"] == expected_avg
 
     def test_get_transaction_stats_with_account_filter(
-        self, api_client, mock_config, mock_auth_token
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_transaction_repo,
     ):
         """Test getting transaction stats filtered by account."""
         mock_transactions = [
@@ -277,36 +313,45 @@ class TestTransactionsAPI:
             }
         ]
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
-                return_value=mock_transactions,
-            ) as mock_get_transactions,
-        ):
+        mock_transaction_repo.get_transactions.return_value = mock_transactions
+
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get(
                 "/api/v1/transactions/stats?account_id=test-account-123"
             )
 
+        fastapi_app.dependency_overrides.clear()
+
         assert response.status_code == 200
 
-        # Verify the database service was called with account filter
-        mock_get_transactions.assert_called_once()
-        call_kwargs = mock_get_transactions.call_args.kwargs
+        # Verify the repository was called with account filter
+        mock_transaction_repo.get_transactions.assert_called_once()
+        call_kwargs = mock_transaction_repo.get_transactions.call_args.kwargs
         assert call_kwargs["account_id"] == "test-account-123"
 
     def test_get_transaction_stats_empty_result(
-        self, api_client, mock_config, mock_auth_token
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_transaction_repo,
     ):
         """Test getting stats when no transactions match criteria."""
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
-                return_value=[],
-            ),
-        ):
+        mock_transaction_repo.get_transactions.return_value = []
+
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/transactions/stats")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
@@ -319,23 +364,37 @@ class TestTransactionsAPI:
         assert data["accounts_included"] == 0
 
     def test_get_transaction_stats_database_error(
-        self, api_client, mock_config, mock_auth_token
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_transaction_repo,
     ):
         """Test handling database error when getting stats."""
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
-                side_effect=Exception("Database connection failed"),
-            ),
-        ):
+        mock_transaction_repo.get_transactions.side_effect = Exception(
+            "Database connection failed"
+        )
+
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/transactions/stats")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 500
         assert "Failed to get transaction stats" in response.json()["detail"]
 
     def test_get_transaction_stats_custom_period(
-        self, api_client, mock_config, mock_auth_token
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_auth_token,
+        mock_transaction_repo,
     ):
         """Test getting transaction stats for custom time period."""
         mock_transactions = [
@@ -348,21 +407,23 @@ class TestTransactionsAPI:
             }
         ]
 
-        with (
-            patch("leggen.utils.config.config", mock_config),
-            patch(
-                "leggen.api.routes.transactions.database_service.get_transactions_from_db",
-                return_value=mock_transactions,
-            ) as mock_get_transactions,
-        ):
+        mock_transaction_repo.get_transactions.return_value = mock_transactions
+
+        fastapi_app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/transactions/stats?days=7")
+
+        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
         assert data["period_days"] == 7
 
         # Verify the date range was calculated correctly for 7 days
-        mock_get_transactions.assert_called_once()
-        call_kwargs = mock_get_transactions.call_args.kwargs
+        mock_transaction_repo.get_transactions.assert_called_once()
+        call_kwargs = mock_transaction_repo.get_transactions.call_args.kwargs
         assert "date_from" in call_kwargs
         assert "date_to" in call_kwargs

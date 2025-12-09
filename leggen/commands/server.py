@@ -28,10 +28,10 @@ async def lifespan(app: FastAPI):
 
     # Run database migrations
     try:
-        from leggen.services.database_service import DatabaseService
+        from leggen.api.dependencies import get_migration_repository
 
-        db_service = DatabaseService()
-        await db_service.run_migrations_if_needed()
+        migrations = get_migration_repository()
+        await migrations.run_all_migrations()
         logger.info("Database migrations completed")
     except Exception as e:
         logger.error(f"Database migration failed: {e}")

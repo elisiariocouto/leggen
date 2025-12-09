@@ -127,6 +127,38 @@ def api_client(fastapi_app):
 
 
 @pytest.fixture
+def mock_account_repo():
+    """Create mock AccountRepository for testing."""
+    from unittest.mock import MagicMock
+
+    return MagicMock()
+
+
+@pytest.fixture
+def mock_balance_repo():
+    """Create mock BalanceRepository for testing."""
+    from unittest.mock import MagicMock
+
+    return MagicMock()
+
+
+@pytest.fixture
+def mock_transaction_repo():
+    """Create mock TransactionRepository for testing."""
+    from unittest.mock import MagicMock
+
+    return MagicMock()
+
+
+@pytest.fixture
+def mock_analytics_proc():
+    """Create mock AnalyticsProcessor for testing."""
+    from unittest.mock import MagicMock
+
+    return MagicMock()
+
+
+@pytest.fixture
 def mock_db_path(temp_db_path):
     """Mock the database path to use temporary database for testing."""
     from leggen.utils.paths import path_manager

@@ -27,9 +27,7 @@ class TestSyncNotifications:
             patch.object(
                 sync_service.notifications, "send_sync_failure_notification"
             ) as mock_send_notification,
-            patch.object(
-                sync_service.database, "persist_sync_operation", return_value=1
-            ),
+            patch.object(sync_service.sync, "persist", return_value=1),
         ):
             # Setup: One requisition with one account that will fail
             mock_get_requisitions.return_value = {
@@ -69,9 +67,7 @@ class TestSyncNotifications:
             patch.object(
                 sync_service.notifications, "send_expiry_notification"
             ) as mock_send_expiry,
-            patch.object(
-                sync_service.database, "persist_sync_operation", return_value=1
-            ),
+            patch.object(sync_service.sync, "persist", return_value=1),
         ):
             # Setup: One expired requisition
             mock_get_requisitions.return_value = {
@@ -112,9 +108,7 @@ class TestSyncNotifications:
             patch.object(
                 sync_service.notifications, "send_sync_failure_notification"
             ) as mock_send_notification,
-            patch.object(
-                sync_service.database, "persist_sync_operation", return_value=1
-            ),
+            patch.object(sync_service.sync, "persist", return_value=1),
         ):
             # Setup: One requisition with two accounts that will fail
             mock_get_requisitions.return_value = {
@@ -160,17 +154,15 @@ class TestSyncNotifications:
                 sync_service.notifications, "send_sync_failure_notification"
             ) as mock_send_notification,
             patch.object(sync_service.notifications, "send_transaction_notifications"),
-            patch.object(sync_service.database, "persist_account_details"),
-            patch.object(sync_service.database, "persist_balance"),
+            patch.object(sync_service.accounts, "persist"),
+            patch.object(sync_service.balances, "persist"),
             patch.object(
-                sync_service.database, "process_transactions", return_value=[]
+                sync_service.transaction_processor,
+                "process_transactions",
+                return_value=[],
             ),
-            patch.object(
-                sync_service.database, "persist_transactions", return_value=[]
-            ),
-            patch.object(
-                sync_service.database, "persist_sync_operation", return_value=1
-            ),
+            patch.object(sync_service.transactions, "persist", return_value=[]),
+            patch.object(sync_service.sync, "persist", return_value=1),
         ):
             # Setup: One requisition with one account that succeeds
             mock_get_requisitions.return_value = {
@@ -222,9 +214,7 @@ class TestSyncNotifications:
             patch.object(
                 sync_service.notifications, "_send_telegram_sync_failure"
             ) as mock_telegram_notification,
-            patch.object(
-                sync_service.database, "persist_sync_operation", return_value=1
-            ),
+            patch.object(sync_service.sync, "persist", return_value=1),
         ):
             # Setup: One requisition with one account that will fail
             mock_get_requisitions.return_value = {

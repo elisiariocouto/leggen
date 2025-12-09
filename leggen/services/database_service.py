@@ -1,3 +1,11 @@
+"""
+DEPRECATED: DatabaseService is deprecated in favor of direct repository usage via dependency injection.
+
+This module is kept for backward compatibility with existing tests.
+New code should use repositories directly via leggen.api.dependencies.
+"""
+
+import warnings
 from functools import wraps
 from typing import Any, Dict, List, Optional
 
@@ -38,9 +46,19 @@ def require_sqlite(func):
 
 
 class DatabaseService:
-    """Simplified database service using repository pattern"""
+    """
+    DEPRECATED: Use repositories directly via dependency injection.
+
+    This class is maintained for backward compatibility with existing tests.
+    For new code, inject repositories using leggen.api.dependencies.
+    """
 
     def __init__(self):
+        warnings.warn(
+            "DatabaseService is deprecated. Use repositories via dependency injection.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.db_config = config.database_config
         self.sqlite_enabled = self.db_config.get("sqlite", True)
 
