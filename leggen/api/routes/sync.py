@@ -198,9 +198,10 @@ async def stop_scheduler() -> dict:
 async def get_sync_operations(limit: int = 50, offset: int = 0) -> dict:
     """Get sync operations history"""
     try:
-        operations = await sync_service.database.get_sync_operations(
-            limit=limit, offset=offset
-        )
+        from leggen.repositories import SyncRepository
+
+        sync_repo = SyncRepository()
+        operations = sync_repo.get_operations(limit=limit, offset=offset)
 
         return {"operations": operations, "count": len(operations)}
 

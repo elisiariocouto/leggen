@@ -1,13 +1,13 @@
 """Tests for analytics fixes to ensure all transactions are used in statistics."""
 
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
 
+from leggen.api.dependencies import get_transaction_repository
 from leggen.commands.server import create_app
-from leggen.services.database_service import DatabaseService
 
 
 class TestAnalyticsFix:
@@ -19,11 +19,11 @@ class TestAnalyticsFix:
         return TestClient(app)
 
     @pytest.fixture
-    def mock_database_service(self):
-        return Mock(spec=DatabaseService)
+    def mock_transaction_repo(self):
+        return Mock()
 
     @pytest.mark.asyncio
-    async def test_transaction_stats_uses_all_transactions(self, mock_database_service):
+    async def test_transaction_stats_uses_all_transactions(self, mock_transaction_repo):
         """Test that transaction stats endpoint uses all transactions (not limited to 100)"""
         # Mock data for 600 transactions (simulating the issue)
         mock_transactions = []
@@ -42,53 +42,50 @@ class TestAnalyticsFix:
                 }
             )
 
-        mock_database_service.get_transactions_from_db = AsyncMock(
-            return_value=mock_transactions
+        mock_transaction_repo.get_transactions.return_value = mock_transactions
+
+        app = create_app()
+        app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+        client = TestClient(app)
+
+        response = client.get("/api/v1/transactions/stats?days=365")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify that limit=None was passed to get all transactions
+        mock_transaction_repo.get_transactions.assert_called_once()
+        call_args = mock_transaction_repo.get_transactions.call_args
+        assert call_args.kwargs.get("limit") is None, (
+            "Stats endpoint should pass limit=None to get all transactions"
         )
 
-        # Test that the endpoint calls get_transactions_from_db with limit=None
-        with patch(
-            "leggen.api.routes.transactions.database_service", mock_database_service
-        ):
-            app = create_app()
-            client = TestClient(app)
+        # Verify that the response contains stats for all 600 transactions
+        stats = data
+        assert stats["total_transactions"] == 600, (
+            "Should process all 600 transactions, not just 100"
+        )
 
-            response = client.get("/api/v1/transactions/stats?days=365")
+        # Verify calculations are correct for all transactions
+        expected_income = sum(
+            txn["transactionValue"]
+            for txn in mock_transactions
+            if txn["transactionValue"] > 0
+        )
+        expected_expenses = sum(
+            abs(txn["transactionValue"])
+            for txn in mock_transactions
+            if txn["transactionValue"] < 0
+        )
 
-            assert response.status_code == 200
-            data = response.json()
-
-            # Verify that limit=None was passed to get all transactions
-            mock_database_service.get_transactions_from_db.assert_called_once()
-            call_args = mock_database_service.get_transactions_from_db.call_args
-            assert call_args.kwargs.get("limit") is None, (
-                "Stats endpoint should pass limit=None to get all transactions"
-            )
-
-            # Verify that the response contains stats for all 600 transactions
-            stats = data
-            assert stats["total_transactions"] == 600, (
-                "Should process all 600 transactions, not just 100"
-            )
-
-            # Verify calculations are correct for all transactions
-            expected_income = sum(
-                txn["transactionValue"]
-                for txn in mock_transactions
-                if txn["transactionValue"] > 0
-            )
-            expected_expenses = sum(
-                abs(txn["transactionValue"])
-                for txn in mock_transactions
-                if txn["transactionValue"] < 0
-            )
-
-            assert stats["total_income"] == expected_income
-            assert stats["total_expenses"] == expected_expenses
+        assert stats["total_income"] == expected_income
+        assert stats["total_expenses"] == expected_expenses
 
     @pytest.mark.asyncio
     async def test_analytics_endpoint_returns_all_transactions(
-        self, mock_database_service
+        self, mock_transaction_repo
     ):
         """Test that the new analytics endpoint returns all transactions without pagination"""
         # Mock data for 600 transactions
@@ -108,30 +105,28 @@ class TestAnalyticsFix:
                 }
             )
 
-        mock_database_service.get_transactions_from_db = AsyncMock(
-            return_value=mock_transactions
+        mock_transaction_repo.get_transactions.return_value = mock_transactions
+
+        app = create_app()
+        app.dependency_overrides[get_transaction_repository] = (
+            lambda: mock_transaction_repo
+        )
+        client = TestClient(app)
+
+        response = client.get("/api/v1/transactions/analytics?days=365")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify that limit=None was passed to get all transactions
+        mock_transaction_repo.get_transactions.assert_called_once()
+        call_args = mock_transaction_repo.get_transactions.call_args
+        assert call_args.kwargs.get("limit") is None, (
+            "Analytics endpoint should pass limit=None"
         )
 
-        with patch(
-            "leggen.api.routes.transactions.database_service", mock_database_service
-        ):
-            app = create_app()
-            client = TestClient(app)
-
-            response = client.get("/api/v1/transactions/analytics?days=365")
-
-            assert response.status_code == 200
-            data = response.json()
-
-            # Verify that limit=None was passed to get all transactions
-            mock_database_service.get_transactions_from_db.assert_called_once()
-            call_args = mock_database_service.get_transactions_from_db.call_args
-            assert call_args.kwargs.get("limit") is None, (
-                "Analytics endpoint should pass limit=None"
-            )
-
-            # Verify that all 600 transactions are returned
-            transactions_data = data
-            assert len(transactions_data) == 600, (
-                "Analytics endpoint should return all 600 transactions"
-            )
+        # Verify that all 600 transactions are returned
+        transactions_data = data
+        assert len(transactions_data) == 600, (
+            "Analytics endpoint should return all 600 transactions"
+        )

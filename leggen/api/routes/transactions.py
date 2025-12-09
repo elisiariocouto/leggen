@@ -4,16 +4,16 @@ from typing import List, Optional, Union
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
+from leggen.api.dependencies import AnalyticsProc, TransactionRepo
 from leggen.api.models.accounts import Transaction, TransactionSummary
 from leggen.api.models.common import PaginatedResponse
-from leggen.services.database_service import DatabaseService
 
 router = APIRouter()
-database_service = DatabaseService()
 
 
 @router.get("/transactions")
 async def get_all_transactions(
+    transaction_repo: TransactionRepo,
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     per_page: int = Query(default=50, le=500, description="Items per page"),
     summary_only: bool = Query(
@@ -43,7 +43,7 @@ async def get_all_transactions(
         limit = per_page
 
         # Get transactions from database instead of GoCardless API
-        db_transactions = await database_service.get_transactions_from_db(
+        db_transactions = transaction_repo.get_transactions(
             account_id=account_id,
             limit=limit,
             offset=offset,
@@ -55,7 +55,7 @@ async def get_all_transactions(
         )
 
         # Get total count for pagination info (respecting the same filters)
-        total_transactions = await database_service.get_transaction_count_from_db(
+        total_transactions = transaction_repo.get_count(
             account_id=account_id,
             date_from=date_from,
             date_to=date_to,
@@ -119,6 +119,7 @@ async def get_all_transactions(
 
 @router.get("/transactions/stats")
 async def get_transaction_stats(
+    transaction_repo: TransactionRepo,
     days: int = Query(default=30, description="Number of days to include in stats"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
 ) -> dict:
@@ -133,7 +134,7 @@ async def get_transaction_stats(
         date_to = end_date.isoformat()
 
         # Get transactions from database
-        recent_transactions = await database_service.get_transactions_from_db(
+        recent_transactions = transaction_repo.get_transactions(
             account_id=account_id,
             date_from=date_from,
             date_to=date_to,
@@ -198,6 +199,7 @@ async def get_transaction_stats(
 
 @router.get("/transactions/analytics")
 async def get_transactions_for_analytics(
+    transaction_repo: TransactionRepo,
     days: int = Query(default=365, description="Number of days to include"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
 ) -> List[dict]:
@@ -212,7 +214,7 @@ async def get_transactions_for_analytics(
         date_to = end_date.isoformat()
 
         # Get ALL transactions from database (no limit for analytics)
-        transactions = await database_service.get_transactions_from_db(
+        transactions = transaction_repo.get_transactions(
             account_id=account_id,
             date_from=date_from,
             date_to=date_to,
@@ -244,11 +246,14 @@ async def get_transactions_for_analytics(
 
 @router.get("/transactions/monthly-stats")
 async def get_monthly_transaction_stats(
+    analytics_proc: AnalyticsProc,
     days: int = Query(default=365, description="Number of days to include"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
 ) -> List[dict]:
     """Get monthly transaction statistics aggregated by the database"""
     try:
+        from leggen.utils.paths import path_manager
+
         # Date range for monthly stats
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
@@ -258,10 +263,9 @@ async def get_monthly_transaction_stats(
         date_to = end_date.isoformat()
 
         # Get monthly aggregated stats from database
-        monthly_stats = await database_service.get_monthly_transaction_stats_from_db(
-            account_id=account_id,
-            date_from=date_from,
-            date_to=date_to,
+        db_path = path_manager.get_database_path()
+        monthly_stats = analytics_proc.calculate_monthly_stats(
+            db_path, account_id=account_id, date_from=date_from, date_to=date_to
         )
 
         return monthly_stats

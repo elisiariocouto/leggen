@@ -4,12 +4,17 @@ from typing import List
 from loguru import logger
 
 from leggen.api.models.sync import SyncResult, SyncStatus
+from leggen.repositories import (
+    AccountRepository,
+    BalanceRepository,
+    SyncRepository,
+    TransactionRepository,
+)
 from leggen.services.data_processors import (
     AccountEnricher,
     BalanceTransformer,
     TransactionProcessor,
 )
-from leggen.services.database_service import DatabaseService
 from leggen.services.gocardless_service import GoCardlessService
 from leggen.services.notification_service import NotificationService
 
@@ -20,8 +25,13 @@ EXPIRED_DAYS_LEFT = 0
 class SyncService:
     def __init__(self):
         self.gocardless = GoCardlessService()
-        self.database = DatabaseService()
         self.notifications = NotificationService()
+
+        # Repositories
+        self.accounts = AccountRepository()
+        self.balances = BalanceRepository()
+        self.transactions = TransactionRepository()
+        self.sync = SyncRepository()
 
         # Data processors
         self.account_enricher = AccountEnricher()
@@ -104,21 +114,22 @@ class SyncService:
                         )
 
                         # Persist enriched account details to database
-                        await self.database.persist_account_details(
-                            enriched_account_details
-                        )
+                        self.accounts.persist(enriched_account_details)
 
                         # Merge account metadata into balances for persistence
                         balances_with_account_info = self.balance_transformer.merge_account_metadata_into_balances(
                             balances, enriched_account_details
                         )
-                        await self.database.persist_balance(
-                            account_id, balances_with_account_info
+                        balance_rows = (
+                            self.balance_transformer.transform_to_database_format(
+                                account_id, balances_with_account_info
+                            )
                         )
+                        self.balances.persist(account_id, balance_rows)
                         balances_updated += len(balances.get("balances", []))
                     elif account_details:
                         # Fallback: persist account details without currency if balances failed
-                        await self.database.persist_account_details(account_details)
+                        self.accounts.persist(account_details)
 
                     # Get and save transactions
                     transactions = await self.gocardless.get_account_transactions(
@@ -130,7 +141,7 @@ class SyncService:
                                 account_id, account_details, transactions
                             )
                         )
-                        new_transactions = await self.database.persist_transactions(
+                        new_transactions = self.transactions.persist(
                             account_id, processed_transactions
                         )
                         transactions_added += len(new_transactions)
@@ -184,9 +195,7 @@ class SyncService:
 
             # Persist sync operation to database
             try:
-                operation_id = await self.database.persist_sync_operation(
-                    sync_operation
-                )
+                operation_id = self.sync.persist(sync_operation)
                 logger.debug(f"Saved sync operation with ID: {operation_id}")
             except Exception as e:
                 logger.error(f"Failed to persist sync operation: {e}")
@@ -235,9 +244,7 @@ class SyncService:
             )
 
             try:
-                operation_id = await self.database.persist_sync_operation(
-                    sync_operation
-                )
+                operation_id = self.sync.persist(sync_operation)
                 logger.debug(f"Saved failed sync operation with ID: {operation_id}")
             except Exception as persist_error:
                 logger.error(
