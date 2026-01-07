@@ -1,4 +1,44 @@
 
+## 2026.1.0 (2026/01/07)
+
+### Bug Fixes
+
+- **frontend:** Remove unused import in TransactionDistribution ([96644000](https://github.com/elisiariocouto/leggen/commit/966440006a9f369044a63883e8defea09197c99f))
+- **frontend:** Blur balances in Account Management page. ([5de9badf](https://github.com/elisiariocouto/leggen/commit/5de9badfde264afa5782d68564d9938b17d0a203))
+- **frontend:** Blur balances in transactions page cards. ([07edfeaf](https://github.com/elisiariocouto/leggen/commit/07edfeaf25200305ba02c6aca8915e273e04184c))
+- **frontend:** Prevent full transactions page reload on search. ([18ee52bd](https://github.com/elisiariocouto/leggen/commit/18ee52bdffd9ba73cc5db4bfb2afdab08145a4ef))
+-  Resolve all lint warnings and type errors across frontend and backend. ([159cba50](https://github.com/elisiariocouto/leggen/commit/159cba508e749de13bb709201b542f3a8fb052a7))
+-  Address code review feedback on notification error handling. ([88037f32](https://github.com/elisiariocouto/leggen/commit/88037f328d48cfd3e8bbd01c98fa22324e278262))
+
+
+### Features
+
+- **cli:** Add log level configuration with flag and environment variable. ([c765accf](https://github.com/elisiariocouto/leggen/commit/c765accfd7e447a3a27d232edfb58310d1df9e43))
+- **frontend:** Add balance visibility toggle with blur effect ([a592b827](https://github.com/elisiariocouto/leggen/commit/a592b827aa0c5ce17b204e140cc8f88d35eed811))
+- **frontend:** Fix search focus issue and add transaction statistics. ([2c85722f](https://github.com/elisiariocouto/leggen/commit/2c85722fd010f0345a77dde3f403c7a3b1683238))
+-  Add sync error and account expiry notifications. ([1a2ec45f](https://github.com/elisiariocouto/leggen/commit/1a2ec45f89b59942ea792552a220ccab12b4ba90))
+
+
+### Miscellaneous Tasks
+
+- **ci:** Fix workflow permissions. ([cbbc3165](https://github.com/elisiariocouto/leggen/commit/cbbc316537a901735899ec2145d79ca2718362d7))
+-  Merge sample data scripts. ([31abe68b](https://github.com/elisiariocouto/leggen/commit/31abe68b2a15e0f1333e4d4bd173ce7594b78ad0))
+-  Update dependencies. ([a75365d8](https://github.com/elisiariocouto/leggen/commit/a75365d80530a685443899bc29eb32b1ec26bc91))
+
+
+### Refactor
+
+- **api:** Improve database connection management and reduce boilerplate. ([267db8ac](https://github.com/elisiariocouto/leggen/commit/267db8ac632a0da33c1dd2ea74cbc0a343d48d5c))
+- **api:** Split DatabaseService into repository pattern. ([5f879910](https://github.com/elisiariocouto/leggen/commit/5f87991076757d510132aec0488a1cc7873dd62d))
+- **api:** Remove DatabaseService layer and implement dependency injection. ([9dc63579](https://github.com/elisiariocouto/leggen/commit/9dc635790596c90e01d1515577000282bae05114))
+- **api:** Update all modified files with dependency injection changes. ([9e9b1cf1](https://github.com/elisiariocouto/leggen/commit/9e9b1cf15f6762f6f363ebbc60279634147086ee))
+- **frontend:** Address code review feedback on focus and currency handling. ([c8b161e7](https://github.com/elisiariocouto/leggen/commit/c8b161e7f2727f799e2fad7c5033a46edf759b75))
+-  Remove API response wrapper pattern. ([fabea404](https://github.com/elisiariocouto/leggen/commit/fabea404efbcd33927d400582e4ac5e928ff3828))
+-  Replace magic numbers with named constants. ([d58894d0](https://github.com/elisiariocouto/leggen/commit/d58894d07c805b227b28e421fa9f132fdec3ea86))
+-  Consolidate service layer with dedicated data processors. ([fbb3eb9e](https://github.com/elisiariocouto/leggen/commit/fbb3eb9e64bbb2a5f55dad84f69171411147377b))
+
+
+
 ## 2025.11.0 (2025/11/22)
 
 ### Bug Fixes
