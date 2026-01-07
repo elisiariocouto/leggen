@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Any, Dict, List
 
+from loguru import logger
+
 
 class TransactionProcessor:
     """Handles processing and transformation of raw transaction data"""
@@ -13,6 +15,7 @@ class TransactionProcessor:
     ) -> List[Dict[str, Any]]:
         """Process raw transaction data into standardized format"""
         transactions = []
+        logger.debug(transaction_data)
 
         # Process booked transactions
         for transaction in transaction_data.get("transactions", {}).get("booked", []):

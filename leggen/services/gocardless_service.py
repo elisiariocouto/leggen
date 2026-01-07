@@ -57,7 +57,9 @@ class GoCardlessService:
                 _log_rate_limits(response, method, url)
 
             response.raise_for_status()
-            return response.json()
+            response_data = response.json()
+            logger.debug(f"{method} {url} response: {response_data}")
+            return response_data
 
     async def _get_auth_headers(self) -> Dict[str, str]:
         """Get authentication headers for GoCardless API"""

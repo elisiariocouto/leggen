@@ -133,12 +133,14 @@ def create_app() -> FastAPI:
 def server(ctx: click.Context, reload: bool, host: str, port: int):
     """Start the Leggen API server"""
 
-    # Get config_dir and database from main CLI context
+    # Get config_dir, database, and log_level from main CLI context
     config_dir = None
     database = None
+    log_level = "info"
     if ctx.parent:
         config_dir = ctx.parent.params.get("config_dir")
         database = ctx.parent.params.get("database")
+        log_level = ctx.parent.params.get("log_level", "info").lower()
 
     # Set up path manager with user-provided paths
     if config_dir:
@@ -153,7 +155,7 @@ def server(ctx: click.Context, reload: bool, host: str, port: int):
             factory=True,
             host=host,
             port=port,
-            log_level="info",
+            log_level=log_level,
             access_log=True,
             reload=True,
             reload_dirs=["leggen"],  # Watch leggen directory
@@ -164,6 +166,6 @@ def server(ctx: click.Context, reload: bool, host: str, port: int):
             app,
             host=host,
             port=port,
-            log_level="info",
+            log_level=log_level,
             access_log=True,
         )

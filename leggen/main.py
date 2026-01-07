@@ -4,6 +4,7 @@ from gettext import gettext as _
 from pathlib import Path
 
 import click
+from loguru import logger
 
 from leggen.utils.config import load_config
 from leggen.utils.paths import path_manager
@@ -109,13 +110,25 @@ class Group(click.Group):
     show_envvar=True,
     help="URL of the leggen API service",
 )
+@click.option(
+    "--log-level",
+    type=click.Choice(
+        ["TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
+    ),
+    default="INFO",
+    envvar="LEGGEN_LOG_LEVEL",
+    show_envvar=True,
+    help="Set the logging level",
+)
 @click.group(
     cls=Group,
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 @click.version_option(package_name="leggen")
 @click.pass_context
-def cli(ctx: click.Context, config_dir: Path, database: Path, api_url: str):
+def cli(
+    ctx: click.Context, config_dir: Path, database: Path, api_url: str, log_level: str
+):
     """
     Leggen: An Open Banking CLI
     """
@@ -124,11 +137,20 @@ def cli(ctx: click.Context, config_dir: Path, database: Path, api_url: str):
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
         return
 
+    # Configure loguru log level
+    logger.remove()  # Remove default handler
+    logger.add(
+        sys.stderr,
+        level=log_level.upper(),
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+    )
+
     # Set up path manager with user-provided paths
     if config_dir:
         path_manager.set_config_dir(config_dir)
     if database:
         path_manager.set_database_path(database)
 
-    # Store API URL in context for commands to use
+    # Store API URL and log level in context for commands to use
     ctx.obj["api_url"] = api_url
+    ctx.obj["log_level"] = log_level.lower()
