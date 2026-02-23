@@ -1,10 +1,10 @@
 # Agent Guidelines for Leggen
 
-## Quick Setup for Development
+## Setup for Development
 
 ### Prerequisites
-- **uv** must be installed for Python dependency management (can be installed via `pip install uv`)
-- **Configuration file**: Copy `config.example.toml` to `config.toml` before running any commands:
+- **uv** must be installed
+- **Configuration file**: Copy `config.example.toml` to `config.toml` and edit this file:
   ```bash
   cp config.example.toml config.toml
   ```
@@ -13,35 +13,25 @@
 The leggen CLI provides a command to generate a mock database for testing:
 
 ```bash
-# Generate sample database with default settings (3 accounts, 50 transactions each)
-uv run leggen --config config.toml generate_sample_db --database /path/to/test.db --force
-
-# Custom configuration
 uv run leggen --config config.toml generate_sample_db --database ./test-data.db --accounts 5 --transactions 100 --force
 ```
 
 The command outputs instructions for setting the required environment variable to use the generated database.
 
 ### Start the API Server
-1. Install uv if not already installed: `pip install uv`
-2. Set the database environment variable to point to your generated mock database:
+1. Set the database environment variable to point to your generated mock database:
    ```bash
-   export LEGGEN_DATABASE_PATH=/path/to/your/generated/database.db
+   export LEGGEN_DATABASE_PATH=./test-data.db
    ```
-3. Ensure the API can find the configuration file (choose one):
-   ```bash
-   # Option 1: Copy config to the expected location
-   mkdir -p ~/.config/leggen && cp config.toml ~/.config/leggen/config.toml
-   
-   # Option 2: Set environment variable to current config file
+2. Ensure the API can find the configuration file:
    export LEGGEN_CONFIG_FILE=./config.toml
    ```
-4. Start the API server:
+3. Start the API server:
    ```bash
-   uv run leggen server
+   uv run leggen server --reload
    ```
-   - For development mode with auto-reload: `uv run leggen server --reload`
-   - API will be available at `http://localhost:8000` with docs at `http://localhost:8000/api/v1/docs`
+
+API will be available at `http://localhost:8000` with docs at `http://localhost:8000/api/v1/docs`
 
 ### Start the Frontend
 1. Navigate to the frontend directory: `cd frontend`
@@ -69,8 +59,6 @@ The command outputs instructions for setting the required environment variable t
 ## Code Style Guidelines
 
 ### Python
-- **Imports**: Standard library → Third-party → Local (blank lines between groups)
-- **Naming**: snake_case for variables/functions, PascalCase for classes
 - **Types**: Use type hints for all function parameters and return values
 - **Error handling**: Use specific exceptions, loguru for logging
 - **Path handling**: Use `pathlib.Path` instead of `os.path`
@@ -110,7 +98,6 @@ The command outputs instructions for setting the required environment variable t
 - `/settings` - Settings page
 
 ### General
-- **Formatting**: ruff for Python, ESLint for TypeScript
 - **Commits**: Use conventional commits with optional scopes, run pre-commit hooks before pushing
   - Format: `type(scope): Description starting with uppercase and ending with period.`
   - Scopes: `cli`, `api`, `frontend` (optional)
@@ -122,8 +109,6 @@ The command outputs instructions for setting the required environment variable t
   - Avoid including specific numbers, counts, or data-dependent information that may become outdated
 - **Security**: Never log sensitive data, use environment variables for secrets
 
-## AI Development Support
-
 ### shadcn/ui Integration
 This project uses shadcn/ui for consistent UI components. The MCP server is configured for AI agents to:
 - Search and browse available shadcn/ui components
@@ -133,8 +118,6 @@ This project uses shadcn/ui for consistent UI components. The MCP server is conf
 Use the shadcn MCP tools when working with UI components to ensure consistency with the existing design system.
 
 ## Contributing Guidelines
-
-This repository follows conventional changelog practices. Refer to `CONTRIBUTING.md` for detailed contribution guidelines including:
 - Commit message format and scoping
 - Release process using `scripts/release.sh`
 - Pre-commit hooks setup with `pre-commit install`
