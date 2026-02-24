@@ -7,6 +7,7 @@ from leggen.api.models.sync import SyncResult, SyncStatus
 from leggen.repositories import (
     AccountRepository,
     BalanceRepository,
+    SessionRepository,
     SyncRepository,
     TransactionRepository,
 )
@@ -15,7 +16,7 @@ from leggen.services.data_processors import (
     BalanceTransformer,
     TransactionProcessor,
 )
-from leggen.services.gocardless_service import GoCardlessService
+from leggen.services.enablebanking_service import EnableBankingService
 from leggen.services.notification_service import NotificationService
 
 # Constants for notification
@@ -24,7 +25,7 @@ EXPIRED_DAYS_LEFT = 0
 
 class SyncService:
     def __init__(self):
-        self.gocardless = GoCardlessService()
+        self.enablebanking = EnableBankingService()
         self.notifications = NotificationService()
 
         # Repositories
@@ -32,6 +33,7 @@ class SyncService:
         self.balances = BalanceRepository()
         self.transactions = TransactionRepository()
         self.sync = SyncRepository()
+        self.session_repo = SessionRepository()
 
         # Data processors
         self.account_enricher = AccountEnricher()
@@ -80,43 +82,63 @@ class SyncService:
             logger.info("Starting sync of all accounts")
             logs.append("Starting sync of all accounts")
 
-            # Get all requisitions and accounts
-            requisitions = await self.gocardless.get_requisitions()
-            all_accounts = set()
+            # Get all sessions from local DB
+            sessions = self.session_repo.get_sessions()
 
-            for req in requisitions.get("results", []):
-                all_accounts.update(req.get("accounts", []))
+            # Build account-to-session mapping
+            account_session_map = {}
+            all_account_ids = set()
+            for session in sessions:
+                session_accounts = session.get("accounts", []) or []
+                for account in session_accounts:
+                    if isinstance(account, dict):
+                        uid = account.get("uid") or account.get("id")
+                    else:
+                        uid = account
+                    if uid:
+                        all_account_ids.add(uid)
+                        account_session_map[uid] = session
 
-            self._sync_status.total_accounts = len(all_accounts)
-            logs.append(f"Found {len(all_accounts)} accounts to sync")
+            self._sync_status.total_accounts = len(all_account_ids)
+            logs.append(f"Found {len(all_account_ids)} accounts to sync")
 
-            # Check for expired or expiring requisitions
-            await self._check_requisition_expiry(requisitions.get("results", []))
+            # Check for expired sessions
+            await self._check_session_expiry(sessions)
 
             # Process each account
-            for account_id in all_accounts:
+            for account_id in all_account_ids:
                 try:
-                    # Get account details
-                    account_details = await self.gocardless.get_account_details(
-                        account_id
-                    )
+                    session = account_session_map[account_id]
 
-                    # Get balances to extract currency information
-                    balances = await self.gocardless.get_account_balances(account_id)
+                    # Get account details from EnableBanking
+                    details = await self.enablebanking.get_account_details(account_id)
+
+                    # Map to internal format
+                    account_details = {
+                        "id": details.get("uid", account_id),
+                        "institution_id": session["aspsp_name"],
+                        "status": "READY",
+                        "iban": details.get("account_id", {}).get("iban"),
+                        "name": details.get("name"),
+                        "currency": details.get("currency"),
+                        "created": session.get("created_at"),
+                    }
+
+                    # Get balances
+                    balances = await self.enablebanking.get_account_balances(account_id)
 
                     # Enrich and persist account details
                     if account_details and balances:
-                        # Enrich account with currency and institution logo
                         enriched_account_details = (
                             await self.account_enricher.enrich_account_details(
-                                account_details, balances
+                                account_details,
+                                balances,
+                                aspsp_country=session.get("aspsp_country"),
                             )
                         )
 
-                        # Persist enriched account details to database
                         self.accounts.persist(enriched_account_details)
 
-                        # Merge account metadata into balances for persistence
                         balances_with_account_info = self.balance_transformer.merge_account_metadata_into_balances(
                             balances, enriched_account_details
                         )
@@ -128,11 +150,10 @@ class SyncService:
                         self.balances.persist(account_id, balance_rows)
                         balances_updated += len(balances.get("balances", []))
                     elif account_details:
-                        # Fallback: persist account details without currency if balances failed
                         self.accounts.persist(account_details)
 
                     # Get and save transactions
-                    transactions = await self.gocardless.get_account_transactions(
+                    transactions = await self.enablebanking.get_account_transactions(
                         account_id
                     )
                     if transactions:
@@ -255,30 +276,35 @@ class SyncService:
         finally:
             self._sync_status.is_running = False
 
-    async def _check_requisition_expiry(self, requisitions: List[dict]) -> None:
-        """Check requisitions for expiry and send notifications.
+    async def _check_session_expiry(self, sessions: List[dict]) -> None:
+        """Check sessions for expiry and send notifications.
 
         Args:
-            requisitions: List of requisition dictionaries to check
+            sessions: List of session dictionaries to check
         """
-        for req in requisitions:
-            requisition_id = req.get("id", "unknown")
-            institution_id = req.get("institution_id", "unknown")
-            status = req.get("status", "")
+        now = datetime.now()
+        for session in sessions:
+            session_id = session.get("session_id", "unknown")
+            aspsp_name = session.get("aspsp_name", "unknown")
+            valid_until_str = session.get("valid_until")
 
-            # Check if requisition is expired
-            if status == "EX":
-                logger.warning(
-                    f"Requisition {requisition_id} for {institution_id} has expired"
-                )
-                await self.notifications.send_expiry_notification(
-                    {
-                        "bank": institution_id,
-                        "requisition_id": requisition_id,
-                        "status": "expired",
-                        "days_left": EXPIRED_DAYS_LEFT,
-                    }
-                )
+            if not valid_until_str:
+                continue
+
+            try:
+                valid_until = datetime.fromisoformat(valid_until_str)
+                if valid_until < now:
+                    logger.warning(f"Session {session_id} for {aspsp_name} has expired")
+                    await self.notifications.send_expiry_notification(
+                        {
+                            "bank": aspsp_name,
+                            "session_id": session_id,
+                            "status": "expired",
+                            "days_left": EXPIRED_DAYS_LEFT,
+                        }
+                    )
+            except (ValueError, TypeError):
+                continue
 
     async def sync_specific_accounts(
         self, account_ids: List[str], force: bool = False, trigger_type: str = "manual"
@@ -290,14 +316,10 @@ class SyncService:
         self._sync_status.is_running = True
 
         try:
-            # For now, delegate to sync_all_accounts but with specific filtering
-            # This could be optimized later to only process specified accounts
+            # For now, delegate to sync_all_accounts
             result = await self.sync_all_accounts(
                 force=force, trigger_type=trigger_type
             )
-
-            # Filter results to only specified accounts if needed
-            # For simplicity, we'll return the full result for now
             return result
 
         finally:

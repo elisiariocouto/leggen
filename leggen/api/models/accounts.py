@@ -48,7 +48,7 @@ class Transaction(BaseModel):
     """Transaction model"""
 
     transaction_id: str  # NEW: stable bank-provided transaction ID
-    internal_transaction_id: Optional[str] = None  # OLD: unstable GoCardless ID
+    internal_transaction_id: Optional[str] = None
     institution_id: str
     iban: Optional[str] = None
     account_id: str

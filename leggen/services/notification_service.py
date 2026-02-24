@@ -202,7 +202,7 @@ class NotificationService:
             # Send test notification using the actual implementation
             test_notification = {
                 "bank": "Test",
-                "requisition_id": "test-123",
+                "session_id": "test-123",
                 "status": "active",
                 "days_left": 30,
             }
@@ -234,7 +234,7 @@ class NotificationService:
             # Send test notification using the actual implementation
             test_notification = {
                 "bank": "Test",
-                "requisition_id": "test-123",
+                "session_id": "test-123",
                 "status": "active",
                 "days_left": 30,
             }

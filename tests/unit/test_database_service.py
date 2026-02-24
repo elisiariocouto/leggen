@@ -391,33 +391,31 @@ class TestDatabaseService:
                 await database_service.persist_transactions("test-account-123", [])
 
     async def test_process_transactions_booked_and_pending(self, database_service):
-        """Test processing transactions with both booked and pending."""
+        """Test processing transactions with both booked and pending status."""
         account_info = {
             "institution_id": "REVOLUT_REVOLT21",
             "iban": "LT313250081177977789",
         }
 
         transaction_data = {
-            "transactions": {
-                "booked": [
-                    {
-                        "internalTransactionId": "txn-001",
-                        "transactionId": "txn-001",
-                        "bookingDate": "2025-09-01",
-                        "transactionAmount": {"amount": "-10.50", "currency": "EUR"},
-                        "remittanceInformationUnstructured": "Coffee Shop",
-                    }
-                ],
-                "pending": [
-                    {
-                        "internalTransactionId": "txn-002",
-                        "transactionId": "txn-002",
-                        "bookingDate": "2025-09-02",
-                        "transactionAmount": {"amount": "-25.00", "currency": "EUR"},
-                        "remittanceInformationUnstructured": "Gas Station",
-                    }
-                ],
-            }
+            "transactions": [
+                {
+                    "transaction_id": "txn-001",
+                    "entry_reference": "txn-001",
+                    "booking_date": "2025-09-01",
+                    "transaction_amount": {"amount": "-10.50", "currency": "EUR"},
+                    "remittance_information": ["Coffee Shop"],
+                    "status": "BOOK",
+                },
+                {
+                    "transaction_id": "txn-002",
+                    "entry_reference": "txn-002",
+                    "booking_date": "2025-09-02",
+                    "transaction_amount": {"amount": "-25.00", "currency": "EUR"},
+                    "remittance_information": ["Gas Station"],
+                    "status": "PDNG",
+                },
+            ]
         }
 
         result = database_service.process_transactions(
@@ -445,16 +443,15 @@ class TestDatabaseService:
         account_info = {"institution_id": "TEST_BANK"}
 
         transaction_data = {
-            "transactions": {
-                "booked": [
-                    {
-                        "internalTransactionId": "txn-001",
-                        # Missing both bookingDate and valueDate
-                        "transactionAmount": {"amount": "-10.50", "currency": "EUR"},
-                    }
-                ],
-                "pending": [],
-            }
+            "transactions": [
+                {
+                    "transaction_id": "txn-001",
+                    "entry_reference": "txn-001",
+                    # Missing both booking_date and value_date
+                    "transaction_amount": {"amount": "-10.50", "currency": "EUR"},
+                    "status": "BOOK",
+                }
+            ]
         }
 
         with pytest.raises(ValueError, match="No valid date found in transaction"):
@@ -463,22 +460,20 @@ class TestDatabaseService:
             )
 
     async def test_process_transactions_remittance_array(self, database_service):
-        """Test processing transaction with remittance array."""
+        """Test processing transaction with remittance information list."""
         account_info = {"institution_id": "TEST_BANK"}
 
         transaction_data = {
-            "transactions": {
-                "booked": [
-                    {
-                        "internalTransactionId": "txn-001",
-                        "transactionId": "txn-001",
-                        "bookingDate": "2025-09-01",
-                        "transactionAmount": {"amount": "-10.50", "currency": "EUR"},
-                        "remittanceInformationUnstructuredArray": ["Line 1", "Line 2"],
-                    }
-                ],
-                "pending": [],
-            }
+            "transactions": [
+                {
+                    "transaction_id": "txn-001",
+                    "entry_reference": "txn-001",
+                    "booking_date": "2025-09-01",
+                    "transaction_amount": {"amount": "-10.50", "currency": "EUR"},
+                    "remittance_information": ["Line 1", "Line 2"],
+                    "status": "BOOK",
+                }
+            ]
         }
 
         result = database_service.process_transactions(
@@ -486,4 +481,4 @@ class TestDatabaseService:
         )
 
         assert len(result) == 1
-        assert result[0]["description"] == "Line 1,Line 2"
+        assert result[0]["description"] == "Line 1, Line 2"

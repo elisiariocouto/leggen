@@ -20,7 +20,6 @@ class TestAccountsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         sample_account_data,
         mock_db_path,
         mock_account_repo,
@@ -83,7 +82,6 @@ class TestAccountsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         sample_account_data,
         mock_db_path,
         mock_account_repo,
@@ -141,7 +139,6 @@ class TestAccountsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_db_path,
         mock_balance_repo,
     ):
@@ -194,7 +191,6 @@ class TestAccountsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         sample_account_data,
         sample_transaction_data,
         mock_db_path,
@@ -245,7 +241,6 @@ class TestAccountsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         sample_account_data,
         sample_transaction_data,
         mock_db_path,
@@ -296,7 +291,6 @@ class TestAccountsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_db_path,
         mock_account_repo,
     ):
@@ -319,7 +313,6 @@ class TestAccountsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_db_path,
         mock_account_repo,
     ):
@@ -360,7 +353,6 @@ class TestAccountsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_db_path,
         mock_account_repo,
     ):

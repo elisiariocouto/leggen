@@ -111,8 +111,8 @@ class TestConfigurablePaths:
             balance_data = {
                 "balances": [
                     {
-                        "balanceAmount": {"amount": "1000.0", "currency": "EUR"},
-                        "balanceType": "available",
+                        "balance_amount": {"amount": "1000.0", "currency": "EUR"},
+                        "balance_type": "available",
                     }
                 ],
                 "institution_id": "TEST_BANK",

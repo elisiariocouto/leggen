@@ -134,8 +134,8 @@ class Config:
         return self._config
 
     @property
-    def gocardless_config(self) -> Dict[str, str]:
-        return self.config.get("gocardless", {})
+    def enablebanking_config(self) -> Dict[str, str]:
+        return self.config.get("enablebanking", {})
 
     @property
     def database_config(self) -> Dict[str, Any]:

@@ -15,7 +15,7 @@ import type {
   SyncOperationsResponse,
   BankInstitution,
   BankConnectionStatus,
-  BankRequisition,
+  BankAuthResponse,
   Country,
   BackupSettings,
   BackupTest,
@@ -249,22 +249,33 @@ export const apiClient = {
   },
 
   createBankConnection: async (
-    institutionId: string,
+    aspspName: string,
+    aspspCountry: string,
     redirectUrl?: string,
-  ): Promise<BankRequisition> => {
-    // If no redirect URL provided, construct it from current location
+  ): Promise<BankAuthResponse> => {
     const finalRedirectUrl =
       redirectUrl || `${window.location.origin}/bank-connected`;
 
-    const response = await api.post<BankRequisition>("/banks/connect", {
-      institution_id: institutionId,
+    const response = await api.post<BankAuthResponse>("/banks/connect", {
+      aspsp_name: aspspName,
+      aspsp_country: aspspCountry,
       redirect_url: finalRedirectUrl,
     });
     return response.data;
   },
 
-  deleteBankConnection: async (requisitionId: string): Promise<void> => {
-    await api.delete(`/banks/connections/${requisitionId}`);
+  exchangeAuthCode: async (
+    code: string,
+  ): Promise<Record<string, unknown>> => {
+    const response = await api.post<Record<string, unknown>>(
+      "/banks/callback",
+      { code },
+    );
+    return response.data;
+  },
+
+  deleteBankConnection: async (sessionId: string): Promise<void> => {
+    await api.delete(`/banks/connections/${sessionId}`);
   },
 
   getSupportedCountries: async (): Promise<Country[]> => {

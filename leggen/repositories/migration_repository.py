@@ -19,6 +19,7 @@ class MigrationRepository(BaseRepository):
         await self.migrate_add_display_name_if_needed()
         await self.migrate_add_sync_operations_if_needed()
         await self.migrate_add_logo_if_needed()
+        await self.migrate_add_sessions_table_if_needed()
 
     # Balance timestamp migration methods
     async def migrate_balance_timestamps_if_needed(self):
@@ -623,4 +624,74 @@ class MigrationRepository(BaseRepository):
 
         except Exception as e:
             logger.error(f"Logo column migration failed: {e}")
+            raise
+
+    # Sessions table migration methods
+    async def migrate_add_sessions_table_if_needed(self):
+        """Check and add sessions table if needed"""
+        try:
+            if await self._check_sessions_table_migration_needed():
+                logger.info("Sessions table migration needed, starting...")
+                await self._migrate_add_sessions_table()
+                logger.info("Sessions table migration completed")
+            else:
+                logger.info("Sessions table already exists")
+        except Exception as e:
+            logger.error(f"Sessions table migration failed: {e}")
+            raise
+
+    async def _check_sessions_table_migration_needed(self) -> bool:
+        """Check if sessions table needs to be created"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return False
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'"
+            )
+            table_exists = cursor.fetchone() is not None
+
+            conn.close()
+            return not table_exists
+
+        except Exception as e:
+            logger.error(f"Failed to check sessions table migration status: {e}")
+            return False
+
+    async def _migrate_add_sessions_table(self):
+        """Create sessions table for EnableBanking session storage"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            logger.warning("Database file not found, skipping migration")
+            return
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            logger.info("Creating sessions table...")
+
+            cursor.execute("""
+                CREATE TABLE sessions (
+                    session_id TEXT PRIMARY KEY,
+                    aspsp_name TEXT NOT NULL,
+                    aspsp_country TEXT NOT NULL,
+                    accounts JSON,
+                    valid_until DATETIME,
+                    created_at DATETIME,
+                    status TEXT DEFAULT 'active'
+                )
+            """)
+
+            conn.commit()
+            conn.close()
+
+            logger.info("Sessions table migration completed successfully")
+
+        except Exception as e:
+            logger.error(f"Sessions table migration failed: {e}")
             raise

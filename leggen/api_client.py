@@ -78,27 +78,41 @@ class LeggenAPIClient:
 
     # Bank endpoints
     def get_institutions(self, country: str = "PT") -> List[Dict[str, Any]]:
-        """Get bank institutions for a country"""
+        """Get bank institutions (ASPSPs) for a country"""
         response = self._make_request(
             "GET", "/banks/institutions", params={"country": country}
         )
         return response.get("data", [])
 
     def connect_to_bank(
-        self, institution_id: str, redirect_url: str = "http://localhost:8000/"
+        self,
+        aspsp_name: str,
+        aspsp_country: str,
+        redirect_url: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Connect to a bank"""
-        response = self._make_request(
-            "POST",
-            "/banks/connect",
-            json={"institution_id": institution_id, "redirect_url": redirect_url},
-        )
+        """Start bank authorization flow"""
+        payload: Dict[str, Any] = {
+            "aspsp_name": aspsp_name,
+            "aspsp_country": aspsp_country,
+        }
+        if redirect_url:
+            payload["redirect_url"] = redirect_url
+        response = self._make_request("POST", "/banks/connect", json=payload)
+        return response.get("data", {})
+
+    def exchange_auth_code(self, code: str) -> Dict[str, Any]:
+        """Exchange authorization code for a session"""
+        response = self._make_request("POST", "/banks/callback", json={"code": code})
         return response.get("data", {})
 
     def get_bank_status(self) -> List[Dict[str, Any]]:
         """Get bank connection status"""
         response = self._make_request("GET", "/banks/status")
         return response.get("data", [])
+
+    def delete_bank_connection(self, session_id: str) -> Dict[str, Any]:
+        """Delete a bank connection session"""
+        return self._make_request("DELETE", f"/banks/connections/{session_id}")
 
     def get_supported_countries(self) -> List[Dict[str, Any]]:
         """Get supported countries"""

@@ -288,7 +288,7 @@ class SampleDataGenerator:
                 )
                 description = random.choice(specific_descriptions)
 
-                # Create raw transaction (simplified GoCardless format)
+                # Create raw transaction
                 raw_transaction = {
                     "transactionId": transaction_id,
                     "bookingDate": transaction_date.strftime("%Y-%m-%d"),

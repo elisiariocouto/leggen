@@ -1,134 +1,129 @@
 """Tests for banks API endpoints."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
-import httpx
 import pytest
-import respx
+
+from leggen.api.dependencies import get_enablebanking_service
 
 
 @pytest.mark.api
 class TestBanksAPI:
     """Test bank-related API endpoints."""
 
-    @respx.mock
     def test_get_institutions_success(
-        self, api_client, mock_config, mock_auth_token, sample_bank_data
+        self, fastapi_app, api_client, mock_config, sample_bank_data
     ):
         """Test successful retrieval of bank institutions."""
-        # Mock GoCardless token creation/refresh
-        respx.post("https://bankaccountdata.gocardless.com/api/v2/token/new/").mock(
-            return_value=httpx.Response(
-                200, json={"access": "test-token", "refresh": "test-refresh"}
-            )
-        )
-
-        # Mock GoCardless institutions API
-        respx.get("https://bankaccountdata.gocardless.com/api/v2/institutions/").mock(
-            return_value=httpx.Response(200, json=sample_bank_data)
-        )
+        mock_eb = AsyncMock()
+        mock_eb.get_aspsps.return_value = sample_bank_data["aspsps"]
+        fastapi_app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/banks/institutions?country=PT")
 
+        fastapi_app.dependency_overrides.pop(get_enablebanking_service, None)
+
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2
-        assert data[0]["id"] == "REVOLUT_REVOLT21"
-        assert data[1]["id"] == "BANCOBPI_BBPIPTPL"
+        assert data[0]["name"] == "Revolut"
+        assert data[1]["name"] == "Banco BPI"
 
-    @respx.mock
-    def test_get_institutions_invalid_country(self, api_client, mock_config):
+    def test_get_institutions_invalid_country(
+        self, fastapi_app, api_client, mock_config
+    ):
         """Test institutions endpoint with invalid country code."""
-        # Mock GoCardless token creation
-        respx.post("https://bankaccountdata.gocardless.com/api/v2/token/new/").mock(
-            return_value=httpx.Response(
-                200, json={"access": "test-token", "refresh": "test-refresh"}
-            )
-        )
-
-        # Mock empty institutions response for invalid country
-        respx.get("https://bankaccountdata.gocardless.com/api/v2/institutions/").mock(
-            return_value=httpx.Response(200, json={"results": []})
-        )
+        mock_eb = AsyncMock()
+        mock_eb.get_aspsps.return_value = []
+        fastapi_app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/banks/institutions?country=XX")
 
-        # Should still work but return empty or filtered results
-        assert response.status_code in [200, 404]
-
-    @respx.mock
-    def test_connect_to_bank_success(self, api_client, mock_config, mock_auth_token):
-        """Test successful bank connection creation."""
-        requisition_data = {
-            "id": "req-123",
-            "institution_id": "REVOLUT_REVOLT21",
-            "status": "CR",
-            "created": "2025-09-02T00:00:00Z",
-            "link": "https://example.com/auth",
-        }
-
-        # Mock GoCardless token creation
-        respx.post("https://bankaccountdata.gocardless.com/api/v2/token/new/").mock(
-            return_value=httpx.Response(
-                200, json={"access": "test-token", "refresh": "test-refresh"}
-            )
-        )
-
-        # Mock GoCardless requisitions API
-        respx.post("https://bankaccountdata.gocardless.com/api/v2/requisitions/").mock(
-            return_value=httpx.Response(200, json=requisition_data)
-        )
-
-        request_data = {
-            "institution_id": "REVOLUT_REVOLT21",
-            "redirect_url": "http://localhost:8000/",
-        }
-
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.post("/api/v1/banks/connect", json=request_data)
+        fastapi_app.dependency_overrides.pop(get_enablebanking_service, None)
 
         assert response.status_code == 200
         data = response.json()
-        assert data["id"] == "req-123"
-        assert data["institution_id"] == "REVOLUT_REVOLT21"
+        assert len(data) == 0
 
-    @respx.mock
-    def test_get_bank_status_success(self, api_client, mock_config, mock_auth_token):
-        """Test successful retrieval of bank connection status."""
-        requisitions_data = {
-            "results": [
-                {
-                    "id": "req-123",
-                    "institution_id": "REVOLUT_REVOLT21",
-                    "status": "LN",
-                    "created": "2025-09-02T00:00:00Z",
-                    "accounts": ["acc-123"],
-                }
-            ]
+    def test_connect_to_bank_success(self, fastapi_app, api_client, mock_config):
+        """Test successful bank authorization start."""
+        mock_eb = AsyncMock()
+        mock_eb.start_auth.return_value = {
+            "url": "https://bank.example.com/auth?state=abc"
+        }
+        fastapi_app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
+
+        with patch("leggen.utils.config.config", mock_config):
+            request_data = {
+                "aspsp_name": "Revolut",
+                "aspsp_country": "GB",
+                "redirect_url": "http://localhost:8000/bank-connected",
+            }
+            response = api_client.post("/api/v1/banks/connect", json=request_data)
+
+        fastapi_app.dependency_overrides.pop(get_enablebanking_service, None)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["url"] == "https://bank.example.com/auth?state=abc"
+
+    def test_bank_callback_success(self, api_client, mock_config, mock_db_path):
+        """Test successful auth code exchange."""
+        session_response = {
+            "session_id": "sess-123",
+            "aspsp": {"name": "Revolut", "country": "GB"},
+            "access": {"valid_until": "2026-03-24T00:00:00Z"},
+            "accounts": [{"uid": "acc-1"}, {"uid": "acc-2"}],
         }
 
-        # Mock GoCardless token creation
-        respx.post("https://bankaccountdata.gocardless.com/api/v2/token/new/").mock(
-            return_value=httpx.Response(
-                200, json={"access": "test-token", "refresh": "test-refresh"}
+        mock_eb = AsyncMock()
+        mock_eb.create_session.return_value = session_response
+        api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.post(
+                "/api/v1/banks/callback", json={"code": "test-auth-code"}
             )
-        )
 
-        # Mock GoCardless requisitions API
-        respx.get("https://bankaccountdata.gocardless.com/api/v2/requisitions/").mock(
-            return_value=httpx.Response(200, json=requisitions_data)
-        )
+        api_client.app.dependency_overrides.pop(get_enablebanking_service, None)
 
+        assert response.status_code == 200
+        data = response.json()
+        assert data["session_id"] == "sess-123"
+        assert data["aspsp_name"] == "Revolut"
+        assert data["aspsp_country"] == "GB"
+
+    def test_get_bank_status_success(self, api_client, mock_config, mock_db_path):
+        """Test successful retrieval of bank connection status."""
+        # First create a session via callback
+        session_response = {
+            "session_id": "sess-status-test",
+            "aspsp": {"name": "Revolut", "country": "GB"},
+            "access": {"valid_until": "2026-12-31T00:00:00Z"},
+            "accounts": [{"uid": "acc-1"}],
+        }
+
+        mock_eb = AsyncMock()
+        mock_eb.create_session.return_value = session_response
+        api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
+
+        with patch("leggen.utils.config.config", mock_config):
+            api_client.post("/api/v1/banks/callback", json={"code": "test-code"})
+
+        api_client.app.dependency_overrides.pop(get_enablebanking_service, None)
+
+        # Now get status
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/banks/status")
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["bank_id"] == "REVOLUT_REVOLT21"
-        assert data[0]["status_display"] == "LINKED"
+        assert len(data) >= 1
+        session = next(s for s in data if s["session_id"] == "sess-status-test")
+        assert session["aspsp_name"] == "Revolut"
+        assert session["status"] == "active"
 
     def test_get_supported_countries(self, api_client):
         """Test supported countries endpoint."""
@@ -138,23 +133,40 @@ class TestBanksAPI:
         data = response.json()
         assert len(data) > 0
 
-        # Check some expected countries
         country_codes = [country["code"] for country in data]
         assert "PT" in country_codes
         assert "GB" in country_codes
         assert "DE" in country_codes
 
-    @respx.mock
-    def test_authentication_failure(self, api_client, mock_config):
-        """Test handling of authentication failures."""
-        # Mock token creation failure
-        respx.post("https://bankaccountdata.gocardless.com/api/v2/token/new/").mock(
-            return_value=httpx.Response(401, json={"detail": "Invalid credentials"})
-        )
+    def test_delete_bank_connection(self, api_client, mock_config, mock_db_path):
+        """Test deleting a bank connection."""
+        # First create a session
+        session_response = {
+            "session_id": "sess-delete-test",
+            "aspsp": {"name": "Banco BPI", "country": "PT"},
+            "access": {},
+            "accounts": [],
+        }
+
+        mock_eb = AsyncMock()
+        mock_eb.create_session.return_value = session_response
+        api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/banks/institutions")
+            api_client.post("/api/v1/banks/callback", json={"code": "test-code"})
 
-        assert response.status_code == 500
-        data = response.json()
-        assert "Failed to get institutions" in data["detail"]
+        api_client.app.dependency_overrides.pop(get_enablebanking_service, None)
+
+        # Delete the session
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.delete("/api/v1/banks/connections/sess-delete-test")
+
+        assert response.status_code == 200
+        assert response.json()["deleted"] == "sess-delete-test"
+
+    def test_delete_nonexistent_connection(self, api_client, mock_config, mock_db_path):
+        """Test deleting a non-existent connection returns 404."""
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.delete("/api/v1/banks/connections/nonexistent-id")
+
+        assert response.status_code == 404

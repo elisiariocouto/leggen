@@ -1,8 +1,9 @@
+from urllib.parse import parse_qs, urlparse
+
 import click
 
 from leggen.api_client import LeggenAPIClient
 from leggen.main import cli
-from leggen.utils.disk import save_file
 from leggen.utils.text import info, print_table, success, warning
 
 
@@ -41,41 +42,54 @@ def add(ctx):
 
         filtered_banks = [
             {
-                "id": bank["id"],
                 "name": bank["name"],
-                "max_transaction_days": bank["transaction_total_days"],
+                "country": bank.get("country", country),
+                "bic": bank.get("bic", ""),
             }
             for bank in banks
         ]
         print_table(filtered_banks)
 
-        allowed_ids = [str(bank["id"]) for bank in banks]
-        bank_id = click.prompt("Bank ID", type=click.Choice(allowed_ids))
+        allowed_names = [str(bank["name"]) for bank in banks]
+        bank_name = click.prompt("Bank Name", type=click.Choice(allowed_names))
 
         # Show bank details
-        selected_bank = next(bank for bank in banks if bank["id"] == bank_id)
-        info(f"Selected bank: {selected_bank['name']}")
+        info(f"Selected bank: {bank_name}")
 
         click.confirm("Do you agree to connect to this bank?", abort=True)
 
-        info(f"Connecting to bank with ID: {bank_id}")
+        info(f"Connecting to bank: {bank_name}")
 
         # Connect to bank via API
-        result = api_client.connect_to_bank(bank_id, "http://localhost:8000/")
+        result = api_client.connect_to_bank(bank_name, country)
 
-        # Save requisition details
-        save_file(f"req_{result['id']}.json", result)
-
-        success("Bank connection request created successfully!")
+        success("Bank authorization request created!")
         warning(
-            "Please open the following URL in your browser to complete the authorization:"
+            "Please open the following URL in your browser to authorize the connection:"
         )
-        click.echo(f"\n{result['link']}\n")
+        click.echo(f"\n{result['url']}\n")
 
-        info(f"Requisition ID: {result['id']}")
-        info(
-            "After completing the authorization, you can check the connection status with 'leggen status'"
-        )
+        info("After completing the authorization, paste the callback URL here.")
+        callback_url = click.prompt("Callback URL")
+
+        # Parse the code from the callback URL
+        parsed = urlparse(callback_url)
+        query_params = parse_qs(parsed.query)
+        code = query_params.get("code", [None])[0]
+
+        if not code:
+            click.echo("Error: No authorization code found in the callback URL.")
+            return
+
+        # Exchange the code for a session
+        session = api_client.exchange_auth_code(code)
+
+        success("Bank connection established!")
+        info(f"Session ID: {session['session_id']}")
+        info(f"Bank: {session['aspsp_name']} ({session['aspsp_country']})")
+        accounts = session.get("accounts", [])
+        info(f"Accounts: {len(accounts) if accounts else 0}")
+        info("You can now sync your accounts with 'leggen sync'")
 
     except Exception as e:
         click.echo(f"Error: Failed to connect to bank: {str(e)}")

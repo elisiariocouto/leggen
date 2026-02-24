@@ -6,21 +6,20 @@ from leggen.utils.text import info, success
 
 
 @cli.command()
-@click.argument("requisition_id", type=str, required=True, metavar="REQUISITION_ID")
+@click.argument("session_id", type=str, required=True, metavar="SESSION_ID")
 @click.pass_context
-def delete(ctx, requisition_id: str):
+def delete(ctx, session_id: str):
     """
     Delete bank connection
 
-    REQUISITION_ID: The ID of the Bank Requisition to delete
+    SESSION_ID: The ID of the bank session to delete
 
-    Check `leggen status` to get the REQUISITION_ID
+    Check `leggen status` to get the SESSION_ID
     """
     api_client = LeggenAPIClient(ctx.obj.get("api_url"))
 
-    info(f"Deleting Bank Requisition: {requisition_id}")
+    info(f"Deleting bank session: {session_id}")
 
-    # Use API client to make the delete request
-    api_client._make_request("DELETE", f"/requisitions/{requisition_id}")
+    api_client.delete_bank_connection(session_id)
 
-    success(f"Bank Requisition {requisition_id} deleted")
+    success(f"Bank session {session_id} deleted")
