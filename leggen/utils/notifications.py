@@ -12,7 +12,7 @@ def send_expire_notification(ctx: click.Context, notification: dict):
     if not discord_enabled and not telegram_enabled:
         warning("No notification engine is enabled, skipping notifications")
         error(
-            f"Your account {notification['bank']} ({notification['requisition_id']}) is in {notification['status']} status. Days left: {notification['days_left']}"
+            f"Your account {notification['bank']} ({notification['session_id']}) is in {notification['status']} status. Days left: {notification['days_left']}"
         )
 
     if discord_enabled:

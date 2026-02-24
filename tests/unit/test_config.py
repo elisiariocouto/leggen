@@ -17,13 +17,13 @@ class TestConfig:
         config2 = Config()
         assert config1 is config2
 
-    def test_load_config_success(self, temp_config_dir):
+    def test_load_config_success(self, temp_config_dir, test_key_path):
         """Test successful configuration loading."""
         config_data = {
-            "gocardless": {
-                "key": "test-key",
-                "secret": "test-secret",
-                "url": "https://test.example.com",
+            "enablebanking": {
+                "application_id": "test-app-id",
+                "key_path": str(test_key_path),
+                "url": "https://api.enablebanking.com",
             },
             "database": {"sqlite": True},
         }
@@ -43,10 +43,9 @@ class TestConfig:
         result = config.load_config(str(config_file))
 
         # Result should contain validated config data
-        assert result["gocardless"]["key"] == "test-key"
-        assert result["gocardless"]["secret"] == "test-secret"
+        assert result["enablebanking"]["application_id"] == "test-app-id"
         assert result["database"]["sqlite"] is True
-        assert config.gocardless_config["key"] == "test-key"
+        assert config.enablebanking_config["application_id"] == "test-app-id"
         assert config.database_config["sqlite"] is True
 
     def test_load_config_file_not_found(self):
@@ -57,13 +56,13 @@ class TestConfig:
         with pytest.raises(FileNotFoundError):
             config.load_config("/nonexistent/config.toml")
 
-    def test_save_config_success(self, temp_config_dir):
+    def test_save_config_success(self, temp_config_dir, test_key_path):
         """Test successful configuration saving."""
         config_data = {
-            "gocardless": {
-                "key": "new-key",
-                "secret": "new-secret",
-                "url": "https://bankaccountdata.gocardless.com/api/v2",
+            "enablebanking": {
+                "application_id": "new-app-id",
+                "key_path": str(test_key_path),
+                "url": "https://api.enablebanking.com",
             },
             "database": {"sqlite": True},
         }
@@ -83,17 +82,16 @@ class TestConfig:
         with open(config_file, "rb") as f:
             saved_data = tomllib.load(f)
 
-        assert saved_data["gocardless"]["key"] == "new-key"
-        assert saved_data["gocardless"]["secret"] == "new-secret"
+        assert saved_data["enablebanking"]["application_id"] == "new-app-id"
         assert saved_data["database"]["sqlite"] is True
 
-    def test_update_config_success(self, temp_config_dir):
+    def test_update_config_success(self, temp_config_dir, test_key_path):
         """Test updating configuration values."""
         initial_config = {
-            "gocardless": {
-                "key": "old-key",
-                "secret": "old-secret",
-                "url": "https://bankaccountdata.gocardless.com/api/v2",
+            "enablebanking": {
+                "application_id": "old-app-id",
+                "key_path": str(test_key_path),
+                "url": "https://api.enablebanking.com",
             },
             "database": {"sqlite": True},
         }
@@ -109,24 +107,24 @@ class TestConfig:
         config._config_model = None
         config.load_config(str(config_file))
 
-        config.update_config("gocardless", "key", "new-key")
+        config.update_config("enablebanking", "application_id", "new-app-id")
 
-        assert config.gocardless_config["key"] == "new-key"
+        assert config.enablebanking_config["application_id"] == "new-app-id"
 
         # Verify it was saved to file
         import tomllib
 
         with open(config_file, "rb") as f:
             saved_data = tomllib.load(f)
-        assert saved_data["gocardless"]["key"] == "new-key"
+        assert saved_data["enablebanking"]["application_id"] == "new-app-id"
 
-    def test_update_section_success(self, temp_config_dir):
+    def test_update_section_success(self, temp_config_dir, test_key_path):
         """Test updating entire configuration section."""
         initial_config = {
-            "gocardless": {
-                "key": "test-key",
-                "secret": "test-secret",
-                "url": "https://bankaccountdata.gocardless.com/api/v2",
+            "enablebanking": {
+                "application_id": "test-app-id",
+                "key_path": str(test_key_path),
+                "url": "https://api.enablebanking.com",
             },
             "database": {"sqlite": True},
         }

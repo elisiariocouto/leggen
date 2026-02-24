@@ -162,7 +162,7 @@ class DatabaseService:
     async def get_account_summary_from_db(
         self, account_id: str
     ) -> Optional[Dict[str, Any]]:
-        """Get basic account info from database (avoids GoCardless call)"""
+        """Get basic account info from database (avoids API call)"""
         try:
             summary = self.transactions.get_account_summary(account_id)
             if summary:

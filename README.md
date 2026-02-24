@@ -18,7 +18,7 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 
   ### 🔌 API & Backend
   - [FastAPI](https://fastapi.tiangolo.com/): High-performance async API backend (integrated into `leggen server`)
-  - [GoCardless Open Banking API](https://developer.gocardless.com/bank-account-data/overview): for connecting to banks
+  - [EnableBanking](https://enablebanking.com/): Open Banking data access for connecting to banks
   - [APScheduler](https://apscheduler.readthedocs.io/): Background job scheduling with configurable cron
 
   ### 📦 Storage
@@ -28,7 +28,7 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 ## ✨ Features
 
 ### 🎯 Core Banking Features
-- Connect to banks using GoCardless Open Banking API (30+ EU countries)
+- Connect to banks using EnableBanking (30+ EU countries)
 - List all connected banks and their connection statuses
 - View balances of all connected accounts
 - List and filter transactions across all accounts
@@ -53,8 +53,8 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 ## 🚀 Quick Start
 
 ### Prerequisites
-1. Create a GoCardless account at [https://gocardless.com/bank-account-data/](https://gocardless.com/bank-account-data/)
-2. Get your API credentials (key and secret)
+1. Create an EnableBanking account at [https://enablebanking.com/](https://enablebanking.com/)
+2. Get your application ID and RSA private key
 
 ### Installation
 
@@ -67,7 +67,7 @@ cd leggen
 
 # Create your configuration
 mkdir -p data && cp config.example.toml data/config.toml
-# Edit data/config.toml with your GoCardless credentials
+# Edit data/config.toml with your EnableBanking credentials
 
 # Start all services
 docker compose up -d
@@ -81,10 +81,10 @@ docker compose up -d
 Create a configuration file at `./data/config.toml` (for Docker) or `~/.config/leggen/config.toml` (for local development):
 
 ```toml
-[gocardless]
-key = "your-api-key"
-secret = "your-secret-key"
-url = "https://bankaccountdata.gocardless.com/api/v2"
+[enablebanking]
+application_id = "your-application-id"
+key_path = "/path/to/private-key.pem"
+# url = "https://api.enablebanking.com"
 
 [database]
 sqlite = true

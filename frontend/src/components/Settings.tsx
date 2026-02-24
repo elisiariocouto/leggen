@@ -258,9 +258,10 @@ export default function Settings() {
   };
 
   const isLoading =
-    accountsLoading || settingsLoading || servicesLoading || backupLoading;
-  const hasError =
-    accountsError || settingsError || servicesError || backupError;
+    settingsLoading || servicesLoading || backupLoading;
+  // Only treat notification/backup errors as fatal — accounts/balances may
+  // legitimately fail on a fresh database with no tables yet.
+  const hasError = settingsError || servicesError || backupError;
 
   if (isLoading) {
     return <AccountsSkeleton />;
@@ -541,17 +542,15 @@ export default function Settings() {
                 <div className="divide-y divide-border">
                   {bankConnections.map((connection) => {
                     const statusColor =
-                      connection.status.toLowerCase() === "ln"
+                      connection.status === "active"
                         ? "bg-green-500"
-                        : connection.status.toLowerCase() === "cr"
-                          ? "bg-amber-500"
-                          : connection.status.toLowerCase() === "ex"
-                            ? "bg-red-500"
-                            : "bg-muted-foreground";
+                        : connection.status === "expired"
+                          ? "bg-red-500"
+                          : "bg-muted-foreground";
 
                     return (
                       <div
-                        key={connection.requisition_id}
+                        key={connection.session_id}
                         className="p-4 sm:p-6 hover:bg-accent transition-colors"
                       >
                         <div className="flex items-center justify-between">
@@ -562,20 +561,21 @@ export default function Settings() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-2">
                                 <h4 className="text-base font-medium text-foreground truncate">
-                                  {connection.bank_name}
+                                  {connection.aspsp_name}
                                 </h4>
                                 <div
                                   className={`w-3 h-3 rounded-full ${statusColor}`}
-                                  title={connection.status_display}
+                                  title={connection.status}
                                 />
                               </div>
                               <p className="text-sm text-muted-foreground">
-                                {connection.status_display} •{" "}
+                                {connection.aspsp_country} •{" "}
+                                {connection.status} •{" "}
                                 {connection.accounts_count} account
                                 {connection.accounts_count !== 1 ? "s" : ""}
                               </p>
                               <p className="text-xs text-muted-foreground font-mono">
-                                ID: {connection.requisition_id}
+                                ID: {connection.session_id}
                               </p>
                             </div>
                           </div>
@@ -588,15 +588,14 @@ export default function Settings() {
                             </div>
                             <Button
                               onClick={() => {
-                                const isWorking =
-                                  connection.status.toLowerCase() === "ln";
-                                const message = isWorking
-                                  ? `Are you sure you want to disconnect "${connection.bank_name}"? This will stop syncing new transactions but keep your existing transaction history.`
-                                  : `Delete connection to ${connection.bank_name}?`;
+                                const isActive = connection.status === "active";
+                                const message = isActive
+                                  ? `Are you sure you want to disconnect "${connection.aspsp_name}"? This will stop syncing new transactions but keep your existing transaction history.`
+                                  : `Delete connection to ${connection.aspsp_name}?`;
 
                                 if (confirm(message)) {
                                   deleteBankConnectionMutation.mutate(
-                                    connection.requisition_id,
+                                    connection.session_id,
                                   );
                                 }
                               }}

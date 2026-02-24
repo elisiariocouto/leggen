@@ -1,52 +1,45 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
 
 class BankInstitution(BaseModel):
-    """Bank institution model"""
+    """Bank institution (ASPSP) model"""
 
-    id: str
     name: str
+    country: str
     bic: Optional[str] = None
-    transaction_total_days: int
-    countries: List[str]
     logo: Optional[str] = None
 
 
 class BankConnectionRequest(BaseModel):
-    """Request to connect to a bank"""
+    """Request to start bank authorization"""
 
-    institution_id: str
-    redirect_url: Optional[str] = "http://localhost:8000/"
+    aspsp_name: str
+    aspsp_country: str
+    redirect_url: Optional[str] = None
 
 
-class BankRequisition(BaseModel):
-    """Bank requisition/connection model"""
+class BankAuthResponse(BaseModel):
+    """Response with authorization URL"""
 
-    id: str
-    institution_id: str
-    status: str
-    status_display: Optional[str] = None
-    created: datetime
-    link: str
-    accounts: List[str] = []
+    url: str
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+
+class BankCallbackRequest(BaseModel):
+    """Request to exchange authorization code for a session"""
+
+    code: str
 
 
 class BankConnectionStatus(BaseModel):
     """Bank connection status response"""
 
-    bank_id: str
-    bank_name: str
-    status: str
-    status_display: str
-    created_at: datetime
-    requisition_id: str
+    session_id: str
+    aspsp_name: str
+    aspsp_country: str
     accounts_count: int
-
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    created_at: datetime
+    valid_until: Optional[datetime] = None
+    status: str

@@ -74,7 +74,7 @@ export interface AnalyticsTransaction {
 
 export interface Transaction {
   transaction_id: string; // NEW: stable bank-provided transaction ID
-  internal_transaction_id: string | null; // OLD: unstable GoCardless ID
+  internal_transaction_id: string | null;
   account_id: string;
   transaction_value: number;
   transaction_currency: string;
@@ -233,32 +233,24 @@ export interface SyncOperationsResponse {
 
 // Bank-related types
 export interface BankInstitution {
-  id: string;
   name: string;
+  country: string;
   bic?: string;
-  transaction_total_days: number;
-  countries: string[];
   logo?: string;
 }
 
-export interface BankRequisition {
-  id: string;
-  institution_id: string;
-  status: string;
-  status_display?: string;
-  created: string;
-  link: string;
-  accounts: string[];
+export interface BankAuthResponse {
+  url: string;
 }
 
 export interface BankConnectionStatus {
-  bank_id: string;
-  bank_name: string;
-  status: string;
-  status_display: string;
-  created_at: string;
-  requisition_id: string;
+  session_id: string;
+  aspsp_name: string;
+  aspsp_country: string;
   accounts_count: number;
+  created_at: string;
+  valid_until?: string;
+  status: string;
 }
 
 export interface Country {

@@ -1,7 +1,7 @@
-[gocardless]
-key = "your-api-key"
-secret = "your-secret-key"
-url = "https://bankaccountdata.gocardless.com/api/v2"
+[enablebanking]
+application_id = "your-application-id"
+key_path = "/path/to/private-key.pem"
+# url = "https://api.enablebanking.com"
 
 [database]
 sqlite = true

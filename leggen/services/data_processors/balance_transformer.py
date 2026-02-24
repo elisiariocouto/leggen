@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Tuple
 
 
 class BalanceTransformer:
-    """Transforms balance data between GoCardless and internal database formats."""
+    """Transforms balance data between EnableBanking and internal database formats."""
 
     def merge_account_metadata_into_balances(
         self,
@@ -19,7 +19,7 @@ class BalanceTransformer:
         so they can be persisted alongside the balance data.
 
         Args:
-            balances: Raw balance data from GoCardless
+            balances: Raw balance data from EnableBanking
             account_details: Enriched account details containing metadata
 
         Returns:
@@ -37,9 +37,9 @@ class BalanceTransformer:
         balance_data: Dict[str, Any],
     ) -> List[Tuple[Any, ...]]:
         """
-        Transform GoCardless balance format to database row format.
+        Transform EnableBanking balance format to database row format.
 
-        Converts nested GoCardless balance structure into flat tuples
+        Converts nested EnableBanking balance structure into flat tuples
         ready for SQLite insertion.
 
         Args:
@@ -52,7 +52,7 @@ class BalanceTransformer:
         rows = []
 
         for balance in balance_data.get("balances", []):
-            balance_amount = balance.get("balanceAmount", {})
+            balance_amount = balance.get("balance_amount", {})
 
             row = (
                 account_id,
@@ -61,7 +61,7 @@ class BalanceTransformer:
                 balance_data.get("iban", "N/A"),
                 float(balance_amount.get("amount", 0)),
                 balance_amount.get("currency"),
-                balance.get("balanceType"),
+                balance.get("balance_type"),
                 datetime.now().isoformat(),
             )
             rows.append(row)

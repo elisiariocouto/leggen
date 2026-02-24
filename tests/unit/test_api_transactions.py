@@ -17,7 +17,6 @@ class TestTransactionsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_transaction_repo,
     ):
         """Test successful retrieval of all transactions from database."""
@@ -79,7 +78,6 @@ class TestTransactionsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_transaction_repo,
     ):
         """Test retrieval of full transaction details from database."""
@@ -126,7 +124,6 @@ class TestTransactionsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_transaction_repo,
     ):
         """Test getting transactions with various filters."""
@@ -187,7 +184,6 @@ class TestTransactionsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_transaction_repo,
     ):
         """Test getting transactions when database returns empty result."""
@@ -215,7 +211,6 @@ class TestTransactionsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_transaction_repo,
     ):
         """Test handling database error when getting transactions."""
@@ -240,7 +235,6 @@ class TestTransactionsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_transaction_repo,
     ):
         """Test successful retrieval of transaction statistics from database."""
@@ -299,7 +293,6 @@ class TestTransactionsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_transaction_repo,
     ):
         """Test getting transaction stats filtered by account."""
@@ -338,7 +331,6 @@ class TestTransactionsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_transaction_repo,
     ):
         """Test getting stats when no transactions match criteria."""
@@ -368,7 +360,6 @@ class TestTransactionsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_transaction_repo,
     ):
         """Test handling database error when getting stats."""
@@ -393,7 +384,6 @@ class TestTransactionsAPI:
         fastapi_app,
         api_client,
         mock_config,
-        mock_auth_token,
         mock_transaction_repo,
     ):
         """Test getting transaction stats for custom time period."""

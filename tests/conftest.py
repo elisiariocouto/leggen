@@ -1,6 +1,5 @@
 """Pytest configuration and shared fixtures."""
 
-import json
 import os
 import shutil
 import tempfile
@@ -9,21 +8,30 @@ from unittest.mock import patch
 
 import pytest
 import tomli_w
-from fastapi.testclient import TestClient
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
-from leggen.commands.server import create_app
-from leggen.utils.config import Config
-
-# Create test config before any imports that might load it
+# Create a test RSA key pair for EnableBanking BEFORE any app imports
 _test_config_dir = tempfile.mkdtemp(prefix="leggen_test_")
+_test_key_path = Path(_test_config_dir) / "test_key.pem"
+
+_test_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+_test_key_path.write_bytes(
+    _test_private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+)
+
 _test_config_path = Path(_test_config_dir) / "config.toml"
 
 # Create minimal test config
 _config_data = {
-    "gocardless": {
-        "key": "test-key",
-        "secret": "test-secret",
-        "url": "https://bankaccountdata.gocardless.com/api/v2",
+    "enablebanking": {
+        "application_id": "test-app-id",
+        "key_path": str(_test_key_path),
+        "url": "https://api.enablebanking.com",
     },
     "database": {"sqlite": True},
     "scheduler": {"sync": {"enabled": True, "hour": 3, "minute": 0}},
@@ -32,8 +40,22 @@ _config_data = {
 with open(_test_config_path, "wb") as f:
     tomli_w.dump(_config_data, f)
 
-# Set environment variables to point to test config BEFORE importing the app
+# Set environment variable BEFORE any app imports that trigger config loading
 os.environ["LEGGEN_CONFIG_FILE"] = str(_test_config_path)
+
+# Reset the Config singleton's cached data so it reloads from our test config.
+# We must NOT reset _instance itself, because other modules import the `config`
+# singleton object by reference — resetting _instance would leave them with a stale ref.
+from leggen.utils.config import Config, config  # noqa: E402
+
+config._config = None
+config._config_model = None
+config._config_path = None
+
+# Now it's safe to import app modules that trigger config loading
+from fastapi.testclient import TestClient  # noqa: E402
+
+from leggen.commands.server import create_app  # noqa: E402
 
 
 def pytest_configure(config):
@@ -70,13 +92,19 @@ def temp_db_path():
 
 
 @pytest.fixture
-def mock_config(temp_config_dir, temp_db_path):
+def test_key_path():
+    """Return the path to the test RSA private key."""
+    return _test_key_path
+
+
+@pytest.fixture
+def mock_config(temp_config_dir, test_key_path):
     """Mock configuration for testing."""
     config_data = {
-        "gocardless": {
-            "key": "test-key",
-            "secret": "test-secret",
-            "url": "https://bankaccountdata.gocardless.com/api/v2",
+        "enablebanking": {
+            "application_id": "test-app-id",
+            "key_path": str(test_key_path),
+            "url": "https://api.enablebanking.com",
         },
         "database": {"sqlite": True},
         "scheduler": {"sync": {"enabled": True, "hour": 3, "minute": 0}},
@@ -84,8 +112,6 @@ def mock_config(temp_config_dir, temp_db_path):
 
     config_file = temp_config_dir / "config.toml"
     with open(config_file, "wb") as f:
-        import tomli_w
-
         tomli_w.dump(config_data, f)
 
     # Mock the config path
@@ -95,18 +121,6 @@ def mock_config(temp_config_dir, temp_db_path):
         config._config = config_data
         config._config_path = str(config_file)
         yield config
-
-
-@pytest.fixture
-def mock_auth_token(temp_config_dir):
-    """Mock GoCardless authentication token."""
-    auth_data = {"access": "mock-access-token", "refresh": "mock-refresh-token"}
-
-    auth_file = temp_config_dir / "auth.json"
-    with open(auth_file, "w") as f:
-        json.dump(auth_data, f)
-
-    return auth_data
 
 
 @pytest.fixture
@@ -167,6 +181,12 @@ def mock_db_path(temp_db_path):
     original_database_path = path_manager._database_path
     path_manager.set_database_path(temp_db_path)
 
+    # Create the sessions table so bank tests can use it
+    from leggen.repositories import SessionRepository
+
+    session_repo = SessionRepository()
+    session_repo.create_table()
+
     try:
         yield temp_db_path
     finally:
@@ -176,22 +196,20 @@ def mock_db_path(temp_db_path):
 
 @pytest.fixture
 def sample_bank_data():
-    """Sample bank/institution data for testing."""
+    """Sample bank/ASPSP data for testing."""
     return {
-        "results": [
+        "aspsps": [
             {
-                "id": "REVOLUT_REVOLT21",
                 "name": "Revolut",
+                "country": "GB",
                 "bic": "REVOLT21",
-                "transaction_total_days": 90,
-                "countries": ["GB", "LT"],
+                "logo": "https://example.com/revolut.png",
             },
             {
-                "id": "BANCOBPI_BBPIPTPL",
                 "name": "Banco BPI",
+                "country": "PT",
                 "bic": "BBPIPTPL",
-                "transaction_total_days": 90,
-                "countries": ["PT"],
+                "logo": "https://example.com/bpi.png",
             },
         ]
     }
@@ -202,7 +220,7 @@ def sample_account_data():
     """Sample account data for testing."""
     return {
         "id": "test-account-123",
-        "institution_id": "REVOLUT_REVOLT21",
+        "institution_id": "Revolut",
         "status": "READY",
         "iban": "LT313250081177977789",
         "created": "2024-02-13T23:56:00Z",
@@ -212,18 +230,17 @@ def sample_account_data():
 
 @pytest.fixture
 def sample_transaction_data():
-    """Sample transaction data for testing."""
+    """Sample transaction data for testing (EnableBanking format)."""
     return {
-        "transactions": {
-            "booked": [
-                {
-                    "internalTransactionId": "txn-123",
-                    "bookingDate": "2025-09-01",
-                    "valueDate": "2025-09-01",
-                    "transactionAmount": {"amount": "-10.50", "currency": "EUR"},
-                    "remittanceInformationUnstructured": "Coffee Shop Payment",
-                }
-            ],
-            "pending": [],
-        }
+        "transactions": [
+            {
+                "transaction_id": "txn-123",
+                "entry_reference": "ref-123",
+                "booking_date": "2025-09-01",
+                "value_date": "2025-09-01",
+                "transaction_amount": {"amount": "-10.50", "currency": "EUR"},
+                "remittance_information": ["Coffee Shop Payment"],
+                "status": "BOOK",
+            }
+        ]
     }

@@ -19,27 +19,26 @@ class TestSyncNotifications:
         # Mock the dependencies
         with (
             patch.object(
-                sync_service.gocardless, "get_requisitions"
-            ) as mock_get_requisitions,
+                sync_service.session_repo, "get_sessions"
+            ) as mock_get_sessions,
             patch.object(
-                sync_service.gocardless, "get_account_details"
+                sync_service.enablebanking, "get_account_details"
             ) as mock_get_details,
             patch.object(
                 sync_service.notifications, "send_sync_failure_notification"
             ) as mock_send_notification,
             patch.object(sync_service.sync, "persist", return_value=1),
         ):
-            # Setup: One requisition with one account that will fail
-            mock_get_requisitions.return_value = {
-                "results": [
-                    {
-                        "id": "req-123",
-                        "institution_id": "TEST_BANK",
-                        "status": "LN",
-                        "accounts": ["account-1"],
-                    }
-                ]
-            }
+            # Setup: One session with one account that will fail
+            mock_get_sessions.return_value = [
+                {
+                    "session_id": "sess-123",
+                    "aspsp_name": "TEST_BANK",
+                    "aspsp_country": "PT",
+                    "status": "active",
+                    "accounts": ["account-1"],
+                }
+            ]
 
             # Make account details fail
             mock_get_details.side_effect = Exception("API Error")
@@ -55,31 +54,31 @@ class TestSyncNotifications:
             assert call_args["type"] == "account_sync_failure"
 
     @pytest.mark.asyncio
-    async def test_expired_requisition_sends_notification(self):
-        """Test that expired requisitions trigger expiry notifications."""
+    async def test_expired_session_sends_notification(self):
+        """Test that expired sessions trigger expiry notifications."""
         sync_service = SyncService()
 
         # Mock the dependencies
         with (
             patch.object(
-                sync_service.gocardless, "get_requisitions"
-            ) as mock_get_requisitions,
+                sync_service.session_repo, "get_sessions"
+            ) as mock_get_sessions,
             patch.object(
                 sync_service.notifications, "send_expiry_notification"
             ) as mock_send_expiry,
             patch.object(sync_service.sync, "persist", return_value=1),
         ):
-            # Setup: One expired requisition
-            mock_get_requisitions.return_value = {
-                "results": [
-                    {
-                        "id": "req-expired",
-                        "institution_id": "EXPIRED_BANK",
-                        "status": "EX",
-                        "accounts": [],
-                    }
-                ]
-            }
+            # Setup: One expired session (valid_until in the past)
+            mock_get_sessions.return_value = [
+                {
+                    "session_id": "sess-expired",
+                    "aspsp_name": "EXPIRED_BANK",
+                    "aspsp_country": "PT",
+                    "status": "active",
+                    "valid_until": "2020-01-01T00:00:00",
+                    "accounts": [],
+                }
+            ]
 
             # Execute: Run sync
             await sync_service.sync_all_accounts()
@@ -87,7 +86,7 @@ class TestSyncNotifications:
             # Assert: Expiry notification should be sent
             mock_send_expiry.assert_called_once()
             call_args = mock_send_expiry.call_args[0][0]
-            assert call_args["requisition_id"] == "req-expired"
+            assert call_args["session_id"] == "sess-expired"
             assert call_args["bank"] == "EXPIRED_BANK"
             assert call_args["status"] == "expired"
             assert call_args["days_left"] == 0
@@ -100,27 +99,26 @@ class TestSyncNotifications:
         # Mock the dependencies
         with (
             patch.object(
-                sync_service.gocardless, "get_requisitions"
-            ) as mock_get_requisitions,
+                sync_service.session_repo, "get_sessions"
+            ) as mock_get_sessions,
             patch.object(
-                sync_service.gocardless, "get_account_details"
+                sync_service.enablebanking, "get_account_details"
             ) as mock_get_details,
             patch.object(
                 sync_service.notifications, "send_sync_failure_notification"
             ) as mock_send_notification,
             patch.object(sync_service.sync, "persist", return_value=1),
         ):
-            # Setup: One requisition with two accounts that will fail
-            mock_get_requisitions.return_value = {
-                "results": [
-                    {
-                        "id": "req-123",
-                        "institution_id": "TEST_BANK",
-                        "status": "LN",
-                        "accounts": ["account-1", "account-2"],
-                    }
-                ]
-            }
+            # Setup: One session with two accounts that will fail
+            mock_get_sessions.return_value = [
+                {
+                    "session_id": "sess-123",
+                    "aspsp_name": "TEST_BANK",
+                    "aspsp_country": "PT",
+                    "status": "active",
+                    "accounts": ["account-1", "account-2"],
+                }
+            ]
 
             # Make all account details fail
             mock_get_details.side_effect = Exception("API Error")
@@ -139,16 +137,16 @@ class TestSyncNotifications:
         # Mock the dependencies
         with (
             patch.object(
-                sync_service.gocardless, "get_requisitions"
-            ) as mock_get_requisitions,
+                sync_service.session_repo, "get_sessions"
+            ) as mock_get_sessions,
             patch.object(
-                sync_service.gocardless, "get_account_details"
+                sync_service.enablebanking, "get_account_details"
             ) as mock_get_details,
             patch.object(
-                sync_service.gocardless, "get_account_balances"
+                sync_service.enablebanking, "get_account_balances"
             ) as mock_get_balances,
             patch.object(
-                sync_service.gocardless, "get_account_transactions"
+                sync_service.enablebanking, "get_account_transactions"
             ) as mock_get_transactions,
             patch.object(
                 sync_service.notifications, "send_sync_failure_notification"
@@ -164,30 +162,30 @@ class TestSyncNotifications:
             patch.object(sync_service.transactions, "persist", return_value=[]),
             patch.object(sync_service.sync, "persist", return_value=1),
         ):
-            # Setup: One requisition with one account that succeeds
-            mock_get_requisitions.return_value = {
-                "results": [
-                    {
-                        "id": "req-123",
-                        "institution_id": "TEST_BANK",
-                        "status": "LN",
-                        "accounts": ["account-1"],
-                    }
-                ]
-            }
+            # Setup: One session with one account that succeeds
+            mock_get_sessions.return_value = [
+                {
+                    "session_id": "sess-123",
+                    "aspsp_name": "TEST_BANK",
+                    "aspsp_country": "PT",
+                    "status": "active",
+                    "accounts": ["account-1"],
+                    "created_at": "2025-09-01T00:00:00Z",
+                }
+            ]
 
             mock_get_details.return_value = {
-                "id": "account-1",
-                "institution_id": "TEST_BANK",
-                "status": "READY",
-                "iban": "TEST123",
+                "uid": "account-1",
+                "account_id": {"iban": "TEST123"},
+                "name": "Test Account",
+                "currency": "EUR",
             }
 
             mock_get_balances.return_value = {
-                "balances": [{"balanceAmount": {"amount": "100", "currency": "EUR"}}]
+                "balances": [{"balance_amount": {"amount": "100", "currency": "EUR"}}]
             }
 
-            mock_get_transactions.return_value = {"transactions": {"booked": []}}
+            mock_get_transactions.return_value = {"transactions": []}
 
             # Execute: Run sync
             await sync_service.sync_all_accounts()
@@ -203,10 +201,10 @@ class TestSyncNotifications:
         # Mock the dependencies
         with (
             patch.object(
-                sync_service.gocardless, "get_requisitions"
-            ) as mock_get_requisitions,
+                sync_service.session_repo, "get_sessions"
+            ) as mock_get_sessions,
             patch.object(
-                sync_service.gocardless, "get_account_details"
+                sync_service.enablebanking, "get_account_details"
             ) as mock_get_details,
             patch.object(
                 sync_service.notifications, "_send_discord_sync_failure"
@@ -216,17 +214,16 @@ class TestSyncNotifications:
             ) as mock_telegram_notification,
             patch.object(sync_service.sync, "persist", return_value=1),
         ):
-            # Setup: One requisition with one account that will fail
-            mock_get_requisitions.return_value = {
-                "results": [
-                    {
-                        "id": "req-123",
-                        "institution_id": "TEST_BANK",
-                        "status": "LN",
-                        "accounts": ["account-1"],
-                    }
-                ]
-            }
+            # Setup: One session with one account that will fail
+            mock_get_sessions.return_value = [
+                {
+                    "session_id": "sess-123",
+                    "aspsp_name": "TEST_BANK",
+                    "aspsp_country": "PT",
+                    "status": "active",
+                    "accounts": ["account-1"],
+                }
+            ]
 
             # Make account details fail
             mock_get_details.side_effect = Exception("API Error")

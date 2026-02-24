@@ -144,7 +144,7 @@ async def get_account_balances(
 ) -> List[AccountBalance]:
     """Get balances for a specific account from database"""
     try:
-        # Get balances from database instead of GoCardless API
+        # Get balances from database
         db_balances = balance_repo.get_balances(account_id=account_id)
 
         balances = []
@@ -257,7 +257,7 @@ async def get_account_transactions(
 ) -> Union[List[TransactionSummary], List[Transaction]]:
     """Get transactions for a specific account from database"""
     try:
-        # Get transactions from database instead of GoCardless API
+        # Get transactions from database
         db_transactions = transaction_repo.get_transactions(
             account_id=account_id,
             limit=limit,

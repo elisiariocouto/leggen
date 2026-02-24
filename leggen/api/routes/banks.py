@@ -1,47 +1,37 @@
-import httpx
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
+from leggen.api.dependencies import EnableBanking, SessionRepo
 from leggen.api.models.banks import (
+    BankAuthResponse,
+    BankCallbackRequest,
     BankConnectionRequest,
     BankConnectionStatus,
     BankInstitution,
-    BankRequisition,
 )
-from leggen.services.gocardless_service import GoCardlessService
-from leggen.utils.gocardless import REQUISITION_STATUS
 
 router = APIRouter()
-gocardless_service = GoCardlessService()
 
 
 @router.get("/banks/institutions")
 async def get_bank_institutions(
+    enablebanking_service: EnableBanking,
     country: str = Query(default="PT", description="Country code (e.g., PT, ES, FR)"),
 ) -> list[BankInstitution]:
-    """Get available bank institutions for a country"""
+    """Get available bank institutions (ASPSPs) for a country"""
     try:
-        institutions_response = await gocardless_service.get_institutions(country)
-        # Handle both list and dict responses
-        if isinstance(institutions_response, list):
-            institutions_data = institutions_response
-        else:
-            institutions_data = institutions_response.get("results", [])
-
-        institutions = [
+        aspsps = await enablebanking_service.get_aspsps(country)
+        return [
             BankInstitution(
-                id=inst["id"],
-                name=inst["name"],
-                bic=inst.get("bic"),
-                transaction_total_days=int(inst["transaction_total_days"]),
-                countries=inst["countries"],
-                logo=inst.get("logo"),
+                name=aspsp["name"],
+                country=aspsp.get("country", country),
+                bic=aspsp.get("bic"),
+                logo=aspsp.get("logo"),
             )
-            for inst in institutions_data
+            for aspsp in aspsps
         ]
-
-        return institutions
-
     except Exception as e:
         logger.error(f"Failed to get institutions for {country}: {e}")
         raise HTTPException(
@@ -50,59 +40,97 @@ async def get_bank_institutions(
 
 
 @router.post("/banks/connect")
-async def connect_to_bank(request: BankConnectionRequest) -> BankRequisition:
-    """Create a connection to a bank (requisition)"""
+async def connect_to_bank(
+    request: BankConnectionRequest,
+    enablebanking_service: EnableBanking,
+) -> BankAuthResponse:
+    """Start bank authorization flow"""
     try:
         redirect_url = request.redirect_url or "http://localhost:8000/"
-        requisition_data = await gocardless_service.create_requisition(
-            request.institution_id, redirect_url
+        result = await enablebanking_service.start_auth(
+            aspsp_name=request.aspsp_name,
+            aspsp_country=request.aspsp_country,
+            redirect_url=redirect_url,
         )
-
-        requisition = BankRequisition(
-            id=requisition_data["id"],
-            institution_id=requisition_data["institution_id"],
-            status=requisition_data["status"],
-            created=requisition_data["created"],
-            link=requisition_data["link"],
-            accounts=requisition_data.get("accounts", []),
-        )
-
-        return requisition
-
+        return BankAuthResponse(url=result["url"])
     except Exception as e:
-        logger.error(f"Failed to connect to bank {request.institution_id}: {e}")
+        logger.error(
+            f"Failed to start auth for {request.aspsp_name} ({request.aspsp_country}): {e}"
+        )
         raise HTTPException(
             status_code=500, detail=f"Failed to connect to bank: {str(e)}"
         ) from e
 
 
+@router.post("/banks/callback")
+async def bank_auth_callback(
+    request: BankCallbackRequest,
+    enablebanking_service: EnableBanking,
+    session_repo: SessionRepo,
+) -> dict:
+    """Exchange authorization code for a session"""
+    try:
+        session_data = await enablebanking_service.create_session(request.code)
+
+        # Store session locally
+        aspsp = session_data.get("aspsp", {})
+        access = session_data.get("access", {})
+        session_record = {
+            "session_id": session_data["session_id"],
+            "aspsp_name": aspsp.get("name", ""),
+            "aspsp_country": aspsp.get("country", ""),
+            "accounts": session_data.get("accounts"),
+            "valid_until": access.get("valid_until"),
+            "created_at": datetime.now().isoformat(),
+            "status": "active",
+        }
+        session_repo.persist(session_record)
+
+        return session_record
+    except Exception as e:
+        logger.error(f"Failed to exchange auth code: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to create session: {str(e)}"
+        ) from e
+
+
 @router.get("/banks/status")
-async def get_bank_connections_status() -> list[BankConnectionStatus]:
+async def get_bank_connections_status(
+    session_repo: SessionRepo,
+) -> list[BankConnectionStatus]:
     """Get status of all bank connections"""
     try:
-        requisitions_data = await gocardless_service.get_requisitions()
-
+        sessions = session_repo.get_sessions()
         connections = []
-        for req in requisitions_data.get("results", []):
-            status = req["status"]
-            status_display = REQUISITION_STATUS.get(status, "UNKNOWN")
+        now = datetime.now()
+
+        for session in sessions:
+            # Determine status based on valid_until
+            status = session.get("status", "active")
+            valid_until_str = session.get("valid_until")
+            if valid_until_str and status == "active":
+                try:
+                    valid_until = datetime.fromisoformat(valid_until_str)
+                    if valid_until < now:
+                        status = "expired"
+                except (ValueError, TypeError):
+                    pass
+
+            accounts = session.get("accounts", []) or []
 
             connections.append(
                 BankConnectionStatus(
-                    bank_id=req["institution_id"],
-                    bank_name=req[
-                        "institution_id"
-                    ],  # Could be enhanced with actual bank names
+                    session_id=session["session_id"],
+                    aspsp_name=session["aspsp_name"],
+                    aspsp_country=session["aspsp_country"],
+                    accounts_count=len(accounts),
+                    created_at=session["created_at"],
+                    valid_until=valid_until_str,
                     status=status,
-                    status_display=status_display,
-                    created_at=req["created"],
-                    requisition_id=req["id"],
-                    accounts_count=len(req.get("accounts", [])),
                 )
             )
 
         return connections
-
     except Exception as e:
         logger.error(f"Failed to get bank connection status: {e}")
         raise HTTPException(
@@ -110,42 +138,16 @@ async def get_bank_connections_status() -> list[BankConnectionStatus]:
         ) from e
 
 
-@router.delete("/banks/connections/{requisition_id}")
-async def delete_bank_connection(requisition_id: str) -> dict:
-    """Delete a bank connection"""
-    try:
-        # Delete the requisition from GoCardless
-        result = await gocardless_service.delete_requisition(requisition_id)
-
-        # GoCardless returns different responses for successful deletes
-        # We should check if the operation was actually successful
-        logger.info(f"GoCardless delete response for {requisition_id}: {result}")
-
-        return {"deleted": requisition_id}
-
-    except httpx.HTTPStatusError as http_err:
-        logger.error(
-            f"HTTP error deleting bank connection {requisition_id}: {http_err}"
-        )
-        if http_err.response.status_code == 404:
-            raise HTTPException(
-                status_code=404, detail=f"Bank connection {requisition_id} not found"
-            ) from http_err
-        elif http_err.response.status_code == 400:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid request to delete connection {requisition_id}",
-            ) from http_err
-        else:
-            raise HTTPException(
-                status_code=http_err.response.status_code,
-                detail=f"GoCardless API error: {http_err}",
-            ) from http_err
-    except Exception as e:
-        logger.error(f"Failed to delete bank connection {requisition_id}: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to delete connection: {str(e)}"
-        ) from e
+@router.delete("/banks/connections/{session_id}")
+async def delete_bank_connection(
+    session_id: str,
+    session_repo: SessionRepo,
+) -> dict:
+    """Delete a bank connection session"""
+    deleted = session_repo.delete_session(session_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+    return {"deleted": session_id}
 
 
 @router.get("/banks/countries")

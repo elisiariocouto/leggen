@@ -1,15 +1,25 @@
+from pathlib import Path
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, FilePath, field_serializer, field_validator
 
 
-class GoCardlessConfig(BaseModel):
-    key: str = Field(..., description="GoCardless API key")
-    secret: str = Field(..., description="GoCardless API secret")
+class EnableBankingConfig(BaseModel):
+    application_id: str = Field(..., description="EnableBanking application ID")
+    key_path: FilePath = Field(..., description="Path to RSA private key PEM file")
     url: str = Field(
-        default="https://bankaccountdata.gocardless.com/api/v2",
-        description="GoCardless API URL",
+        default="https://api.enablebanking.com",
+        description="EnableBanking API URL",
     )
+
+    @field_validator("key_path", mode="before")
+    @classmethod
+    def expand_key_path(cls, v: str | Path) -> Path:
+        return Path(v).expanduser()
+
+    @field_serializer("key_path")
+    def serialize_key_path(self, value: Path) -> str:
+        return str(value)
 
 
 class DatabaseConfig(BaseModel):
@@ -67,7 +77,7 @@ class SchedulerConfig(BaseModel):
 
 
 class Config(BaseModel):
-    gocardless: GoCardlessConfig
+    enablebanking: EnableBankingConfig
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     notifications: Optional[NotificationConfig] = None
     filters: Optional[FilterConfig] = None

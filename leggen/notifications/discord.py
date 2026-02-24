@@ -10,7 +10,7 @@ def send_expire_notification(ctx: click.Context, notification: dict):
 
     embed = DiscordEmbed(
         title="",
-        description=f"Your account {notification['bank']} ({notification['requisition_id']}) is in {notification['status']} status. Days left: {notification['days_left']}",
+        description=f"Your account {notification['bank']} ({notification['session_id']}) is in {notification['status']} status. Days left: {notification['days_left']}",
         color="03b2f8",
     )
     embed.set_author(

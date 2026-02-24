@@ -40,8 +40,7 @@ class TestLeggenAPIClient:
         """Test getting institutions via API client."""
         client = LeggenAPIClient("http://localhost:8000")
 
-        # The API returns processed institutions, not raw GoCardless data
-        processed_institutions = sample_bank_data["results"]
+        processed_institutions = sample_bank_data["aspsps"]
 
         api_response = {
             "success": True,
@@ -54,7 +53,39 @@ class TestLeggenAPIClient:
 
             result = client.get_institutions("PT")
             assert len(result) == 2
-            assert result[0]["id"] == "REVOLUT_REVOLT21"
+            assert result[0]["name"] == "Revolut"
+
+    def test_connect_to_bank_success(self):
+        """Test connecting to a bank via API client."""
+        client = LeggenAPIClient("http://localhost:8000")
+
+        api_response = {
+            "data": {"url": "https://bank.example.com/auth"},
+        }
+
+        with requests_mock.Mocker() as m:
+            m.post("http://localhost:8000/api/v1/banks/connect", json=api_response)
+
+            result = client.connect_to_bank("Revolut", "GB")
+            assert result["url"] == "https://bank.example.com/auth"
+
+    def test_exchange_auth_code_success(self):
+        """Test exchanging auth code via API client."""
+        client = LeggenAPIClient("http://localhost:8000")
+
+        api_response = {
+            "data": {
+                "session_id": "sess-123",
+                "aspsp_name": "Revolut",
+                "aspsp_country": "GB",
+            },
+        }
+
+        with requests_mock.Mocker() as m:
+            m.post("http://localhost:8000/api/v1/banks/callback", json=api_response)
+
+            result = client.exchange_auth_code("test-code")
+            assert result["session_id"] == "sess-123"
 
     def test_get_accounts_success(self, sample_account_data):
         """Test getting accounts via API client."""

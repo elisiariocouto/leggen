@@ -35,7 +35,7 @@ def send_expire_notification(ctx: click.Context, notification: dict):
     info("Sending expiration notification to Telegram")
     message = "*💲 [Leggen](https://github.com/elisiariocouto/leggen)*\n"
     message += escape_markdown(
-        f"Your account {notification['bank']} ({notification['requisition_id']}) is in {notification['status']} status. Days left: {notification['days_left']}\n"
+        f"Your account {notification['bank']} ({notification['session_id']}) is in {notification['status']} status. Days left: {notification['days_left']}\n"
     )
 
     res = requests.post(

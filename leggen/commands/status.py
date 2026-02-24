@@ -22,18 +22,19 @@ def status(ctx: click.Context):
 
     # Get bank connection status
     bank_connections = api_client.get_bank_status()
-    requisitions = []
+    sessions = []
     for conn in bank_connections:
-        requisitions.append(
+        sessions.append(
             {
-                "Bank": conn["bank_id"],
-                "Status": conn["status_display"],
+                "Bank": conn["aspsp_name"],
+                "Country": conn["aspsp_country"],
+                "Status": conn["status"],
                 "Created at": datefmt(conn["created_at"]),
-                "Requisition ID": conn["requisition_id"],
+                "Session ID": conn["session_id"],
             }
         )
     info("Banks")
-    print_table(requisitions)
+    print_table(sessions)
 
     # Get account details
     accounts = api_client.get_accounts()

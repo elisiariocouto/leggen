@@ -40,12 +40,12 @@ export default function AddBankAccountDrawer() {
   });
 
   const connectBankMutation = useMutation({
-    mutationFn: (institutionId: string) =>
-      apiClient.createBankConnection(institutionId),
+    mutationFn: ({ name, country }: { name: string; country: string }) =>
+      apiClient.createBankConnection(name, country),
     onSuccess: (data) => {
-      // Redirect to the bank's authorization link
-      if (data.link) {
-        window.open(data.link, "_blank");
+      // Redirect to the bank's authorization URL
+      if (data.url) {
+        window.open(data.url, "_blank");
         setOpen(false);
       }
     },
@@ -60,8 +60,11 @@ export default function AddBankAccountDrawer() {
   };
 
   const handleConnect = () => {
-    if (selectedBank) {
-      connectBankMutation.mutate(selectedBank);
+    if (selectedBank && selectedCountry) {
+      connectBankMutation.mutate({
+        name: selectedBank,
+        country: selectedCountry,
+      });
     }
   };
 
@@ -127,7 +130,7 @@ export default function AddBankAccountDrawer() {
                   </SelectTrigger>
                   <SelectContent>
                     {banks.map((bank) => (
-                      <SelectItem key={bank.id} value={bank.id}>
+                      <SelectItem key={bank.name} value={bank.name}>
                         <div className="flex items-center space-x-2">
                           {bank.logo ? (
                             <img

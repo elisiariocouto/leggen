@@ -42,7 +42,7 @@ async def get_all_transactions(
         offset = (page - 1) * per_page
         limit = per_page
 
-        # Get transactions from database instead of GoCardless API
+        # Get transactions from database
         db_transactions = transaction_repo.get_transactions(
             account_id=account_id,
             limit=limit,

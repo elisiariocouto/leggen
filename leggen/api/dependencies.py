@@ -8,6 +8,7 @@ from leggen.repositories import (
     AccountRepository,
     BalanceRepository,
     MigrationRepository,
+    SessionRepository,
     SyncRepository,
     TransactionRepository,
 )
@@ -16,6 +17,7 @@ from leggen.services.data_processors import (
     BalanceTransformer,
     TransactionProcessor,
 )
+from leggen.services.enablebanking_service import EnableBankingService
 from leggen.utils.config import config
 
 
@@ -44,6 +46,11 @@ def get_migration_repository() -> MigrationRepository:
     return MigrationRepository()
 
 
+def get_session_repository() -> SessionRepository:
+    """Get session repository instance."""
+    return SessionRepository()
+
+
 def get_transaction_processor() -> TransactionProcessor:
     """Get transaction processor instance."""
     return TransactionProcessor()
@@ -59,6 +66,11 @@ def get_analytics_processor() -> AnalyticsProcessor:
     return AnalyticsProcessor()
 
 
+def get_enablebanking_service() -> EnableBankingService:
+    """Get EnableBanking service instance."""
+    return EnableBankingService()
+
+
 def is_sqlite_enabled() -> bool:
     """Check if SQLite is enabled in configuration."""
     return config.database_config.get("sqlite", True)
@@ -70,6 +82,8 @@ BalanceRepo = Annotated[BalanceRepository, Depends(get_balance_repository)]
 TransactionRepo = Annotated[TransactionRepository, Depends(get_transaction_repository)]
 SyncRepo = Annotated[SyncRepository, Depends(get_sync_repository)]
 MigrationRepo = Annotated[MigrationRepository, Depends(get_migration_repository)]
+SessionRepo = Annotated[SessionRepository, Depends(get_session_repository)]
 TransactionProc = Annotated[TransactionProcessor, Depends(get_transaction_processor)]
 BalanceTransform = Annotated[BalanceTransformer, Depends(get_balance_transformer)]
 AnalyticsProc = Annotated[AnalyticsProcessor, Depends(get_analytics_processor)]
+EnableBanking = Annotated[EnableBankingService, Depends(get_enablebanking_service)]
