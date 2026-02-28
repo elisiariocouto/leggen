@@ -251,6 +251,7 @@ export const apiClient = {
   createBankConnection: async (
     aspspName: string,
     aspspCountry: string,
+    psuType: string = "personal",
     redirectUrl?: string,
   ): Promise<BankAuthResponse> => {
     const finalRedirectUrl =
@@ -260,6 +261,7 @@ export const apiClient = {
       aspsp_name: aspspName,
       aspsp_country: aspspCountry,
       redirect_url: finalRedirectUrl,
+      psu_type: psuType,
     });
     return response.data;
   },

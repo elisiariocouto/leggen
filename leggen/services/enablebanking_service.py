@@ -1,5 +1,6 @@
 import time
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -74,19 +75,32 @@ class EnableBankingService:
         aspsp_name: str,
         aspsp_country: str,
         redirect_url: str,
+        psu_type: str = "personal",
         valid_until: Optional[str] = None,
+        maximum_consent_validity: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Start user authorization flow. Returns a dict with 'url' for redirect."""
+        if not valid_until:
+            if maximum_consent_validity:
+                dt = datetime.now(timezone.utc) + timedelta(
+                    seconds=maximum_consent_validity
+                )
+            else:
+                dt = datetime.now(timezone.utc) + timedelta(days=90)
+            valid_until = dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
         state = str(uuid.uuid4())
         body: Dict[str, Any] = {
             "aspsp": {"name": aspsp_name, "country": aspsp_country},
             "state": state,
             "redirect_url": redirect_url,
-            "psu_type": "personal",
+            "psu_type": psu_type,
+            "access": {
+                "valid_until": valid_until,
+                "balances": True,
+                "transactions": True,
+            },
         }
-
-        if valid_until:
-            body["access"] = {"valid_until": valid_until}
 
         return await self._make_request("POST", "/auth", json=body)
 

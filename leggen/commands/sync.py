@@ -13,7 +13,9 @@ def sync(ctx: click.Context, wait: bool, force: bool):
     """
     Sync all transactions with database
     """
-    api_client = LeggenAPIClient(ctx.obj.get("api_url"))
+    api_client = LeggenAPIClient(
+        ctx.obj.get("api_url"), verify_ssl=ctx.obj.get("verify_ssl", True)
+    )
 
     # Check if leggen server is available
     if not api_client.health_check():

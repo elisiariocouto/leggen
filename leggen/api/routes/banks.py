@@ -23,15 +23,18 @@ async def get_bank_institutions(
     """Get available bank institutions (ASPSPs) for a country"""
     try:
         aspsps = await enablebanking_service.get_aspsps(country)
-        return [
+        institutions = [
             BankInstitution(
                 name=aspsp["name"],
                 country=aspsp.get("country", country),
                 bic=aspsp.get("bic"),
                 logo=aspsp.get("logo"),
+                psu_types=aspsp.get("psu_types", ["personal"]),
+                maximum_consent_validity=aspsp.get("maximum_consent_validity"),
             )
             for aspsp in aspsps
         ]
+        return sorted(institutions, key=lambda institution: institution.name.casefold())
     except Exception as e:
         logger.error(f"Failed to get institutions for {country}: {e}")
         raise HTTPException(
@@ -51,6 +54,7 @@ async def connect_to_bank(
             aspsp_name=request.aspsp_name,
             aspsp_country=request.aspsp_country,
             redirect_url=redirect_url,
+            psu_type=request.psu_type,
         )
         return BankAuthResponse(url=result["url"])
     except Exception as e:

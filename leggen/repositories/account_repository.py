@@ -1,3 +1,4 @@
+import sqlite3
 from typing import Any, Dict, List, Optional
 
 from leggen.repositories.base_repository import BaseRepository
@@ -94,23 +95,26 @@ class AccountRepository(BaseRepository):
         if not self._db_exists():
             return []
 
-        with self._get_db_connection(row_factory=True) as conn:
-            cursor = conn.cursor()
+        try:
+            with self._get_db_connection(row_factory=True) as conn:
+                cursor = conn.cursor()
 
-            query = "SELECT * FROM accounts"
-            params = []
+                query = "SELECT * FROM accounts"
+                params = []
 
-            if account_ids:
-                placeholders = ",".join("?" * len(account_ids))
-                query += f" WHERE id IN ({placeholders})"
-                params.extend(account_ids)
+                if account_ids:
+                    placeholders = ",".join("?" * len(account_ids))
+                    query += f" WHERE id IN ({placeholders})"
+                    params.extend(account_ids)
 
-            query += " ORDER BY created DESC"
+                query += " ORDER BY created DESC"
 
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
 
-            return [dict(row) for row in rows]
+                return [dict(row) for row in rows]
+        except sqlite3.OperationalError:
+            return []
 
     def get_account(self, account_id: str) -> Optional[Dict[str, Any]]:
         """Get specific account details from database"""

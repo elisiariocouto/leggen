@@ -11,6 +11,8 @@ class BankInstitution(BaseModel):
     country: str
     bic: Optional[str] = None
     logo: Optional[str] = None
+    psu_types: list[str] = ["personal"]
+    maximum_consent_validity: Optional[int] = None
 
 
 class BankConnectionRequest(BaseModel):
@@ -19,6 +21,7 @@ class BankConnectionRequest(BaseModel):
     aspsp_name: str
     aspsp_country: str
     redirect_url: Optional[str] = None
+    psu_type: str = "personal"
 
 
 class BankAuthResponse(BaseModel):

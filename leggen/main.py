@@ -120,6 +120,14 @@ class Group(click.Group):
     show_envvar=True,
     help="Set the logging level",
 )
+@click.option(
+    "--no-verify-ssl",
+    is_flag=True,
+    default=False,
+    envvar="LEGGEN_NO_VERIFY_SSL",
+    show_envvar=True,
+    help="Disable SSL certificate verification for API requests",
+)
 @click.group(
     cls=Group,
     context_settings={"help_option_names": ["-h", "--help"]},
@@ -127,7 +135,12 @@ class Group(click.Group):
 @click.version_option(package_name="leggen")
 @click.pass_context
 def cli(
-    ctx: click.Context, config_dir: Path, database: Path, api_url: str, log_level: str
+    ctx: click.Context,
+    config_dir: Path,
+    database: Path,
+    api_url: str,
+    log_level: str,
+    no_verify_ssl: bool,
 ):
     """
     Leggen: An Open Banking CLI
@@ -151,6 +164,7 @@ def cli(
     if database:
         path_manager.set_database_path(database)
 
-    # Store API URL and log level in context for commands to use
+    # Store API URL, SSL verification, and log level in context for commands to use
     ctx.obj["api_url"] = api_url
+    ctx.obj["verify_ssl"] = not no_verify_ssl
     ctx.obj["log_level"] = log_level.lower()

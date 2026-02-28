@@ -1,5 +1,5 @@
-from datetime import datetime
-from typing import List
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 
 from loguru import logger
 
@@ -47,10 +47,10 @@ class SyncService:
         return self._sync_status
 
     async def sync_all_accounts(
-        self, force: bool = False, trigger_type: str = "manual"
+        self, full_sync: bool = False, trigger_type: str = "manual"
     ) -> SyncResult:
         """Sync all connected accounts"""
-        if self._sync_status.is_running and not force:
+        if self._sync_status.is_running:
             raise Exception("Sync is already running")
 
         start_time = datetime.now()
@@ -102,6 +102,15 @@ class SyncService:
             self._sync_status.total_accounts = len(all_account_ids)
             logs.append(f"Found {len(all_account_ids)} accounts to sync")
 
+            date_from: Optional[str] = None
+            if not full_sync:
+                date_from = (datetime.now(timezone.utc) - timedelta(days=30)).strftime(
+                    "%Y-%m-%d"
+                )
+                logs.append(f"Fetching transactions from {date_from}")
+            else:
+                logs.append("Full sync: fetching all transactions")
+
             # Check for expired sessions
             await self._check_session_expiry(sessions)
 
@@ -113,9 +122,12 @@ class SyncService:
                     # Get account details from EnableBanking
                     details = await self.enablebanking.get_account_details(account_id)
 
+                    # Use IBAN as stored ID to prevent duplicates across providers
+                    stored_id = details.get("account_id", {}).get("iban") or account_id
+
                     # Map to internal format
                     account_details = {
-                        "id": details.get("uid", account_id),
+                        "id": stored_id,
                         "institution_id": session["aspsp_name"],
                         "status": "READY",
                         "iban": details.get("account_id", {}).get("iban"),
@@ -144,26 +156,26 @@ class SyncService:
                         )
                         balance_rows = (
                             self.balance_transformer.transform_to_database_format(
-                                account_id, balances_with_account_info
+                                stored_id, balances_with_account_info
                             )
                         )
-                        self.balances.persist(account_id, balance_rows)
+                        self.balances.persist(stored_id, balance_rows)
                         balances_updated += len(balances.get("balances", []))
                     elif account_details:
                         self.accounts.persist(account_details)
 
                     # Get and save transactions
                     transactions = await self.enablebanking.get_account_transactions(
-                        account_id
+                        account_id, date_from=date_from
                     )
                     if transactions:
                         processed_transactions = (
                             self.transaction_processor.process_transactions(
-                                account_id, account_details, transactions
+                                stored_id, account_details, transactions
                             )
                         )
                         new_transactions = self.transactions.persist(
-                            account_id, processed_transactions
+                            stored_id, processed_transactions
                         )
                         transactions_added += len(new_transactions)
 
@@ -307,10 +319,13 @@ class SyncService:
                 continue
 
     async def sync_specific_accounts(
-        self, account_ids: List[str], force: bool = False, trigger_type: str = "manual"
+        self,
+        account_ids: List[str],
+        full_sync: bool = False,
+        trigger_type: str = "manual",
     ) -> SyncResult:
         """Sync specific accounts"""
-        if self._sync_status.is_running and not force:
+        if self._sync_status.is_running:
             raise Exception("Sync is already running")
 
         self._sync_status.is_running = True
@@ -318,7 +333,7 @@ class SyncService:
         try:
             # For now, delegate to sync_all_accounts
             result = await self.sync_all_accounts(
-                force=force, trigger_type=trigger_type
+                full_sync=full_sync, trigger_type=trigger_type
             )
             return result
 

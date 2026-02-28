@@ -20,7 +20,7 @@ class TestLeggenAPIClient:
         with requests_mock.Mocker() as m:
             m.get(
                 "http://localhost:8000/api/v1/health",
-                json={"data": {"status": "healthy"}},
+                json={"status": "healthy"},
             )
 
             result = client.health_check()
@@ -42,11 +42,7 @@ class TestLeggenAPIClient:
 
         processed_institutions = sample_bank_data["aspsps"]
 
-        api_response = {
-            "success": True,
-            "data": processed_institutions,
-            "message": "Found 2 institutions for PT",
-        }
+        api_response = processed_institutions
 
         with requests_mock.Mocker() as m:
             m.get("http://localhost:8000/api/v1/banks/institutions", json=api_response)
@@ -59,9 +55,7 @@ class TestLeggenAPIClient:
         """Test connecting to a bank via API client."""
         client = LeggenAPIClient("http://localhost:8000")
 
-        api_response = {
-            "data": {"url": "https://bank.example.com/auth"},
-        }
+        api_response = {"url": "https://bank.example.com/auth"}
 
         with requests_mock.Mocker() as m:
             m.post("http://localhost:8000/api/v1/banks/connect", json=api_response)
@@ -74,11 +68,9 @@ class TestLeggenAPIClient:
         client = LeggenAPIClient("http://localhost:8000")
 
         api_response = {
-            "data": {
-                "session_id": "sess-123",
-                "aspsp_name": "Revolut",
-                "aspsp_country": "GB",
-            },
+            "session_id": "sess-123",
+            "aspsp_name": "Revolut",
+            "aspsp_country": "GB",
         }
 
         with requests_mock.Mocker() as m:
@@ -91,11 +83,7 @@ class TestLeggenAPIClient:
         """Test getting accounts via API client."""
         client = LeggenAPIClient("http://localhost:8000")
 
-        api_response = {
-            "success": True,
-            "data": [sample_account_data],
-            "message": "Retrieved 1 accounts",
-        }
+        api_response = [sample_account_data]
 
         with requests_mock.Mocker() as m:
             m.get("http://localhost:8000/api/v1/accounts", json=api_response)
@@ -108,11 +96,7 @@ class TestLeggenAPIClient:
         """Test triggering sync via API client."""
         client = LeggenAPIClient("http://localhost:8000")
 
-        api_response = {
-            "success": True,
-            "data": {"sync_started": True, "force": False},
-            "message": "Started sync for all accounts",
-        }
+        api_response = {"sync_started": True, "force": False}
 
         with requests_mock.Mocker() as m:
             m.post("http://localhost:8000/api/v1/sync", json=api_response)
@@ -158,11 +142,7 @@ class TestLeggenAPIClient:
         """Test sync with various options."""
         client = LeggenAPIClient("http://localhost:8000")
 
-        api_response = {
-            "success": True,
-            "data": {"sync_started": True, "force": True},
-            "message": "Started sync for 2 specific accounts",
-        }
+        api_response = {"sync_started": True, "force": True}
 
         with requests_mock.Mocker() as m:
             m.post("http://localhost:8000/api/v1/sync", json=api_response)
@@ -176,13 +156,10 @@ class TestLeggenAPIClient:
         client = LeggenAPIClient("http://localhost:8000")
 
         api_response = {
-            "success": True,
-            "data": {
-                "enabled": True,
-                "hour": 3,
-                "minute": 0,
-                "next_scheduled_sync": "2025-09-03T03:00:00Z",
-            },
+            "enabled": True,
+            "hour": 3,
+            "minute": 0,
+            "next_scheduled_sync": "2025-09-03T03:00:00Z",
         }
 
         with requests_mock.Mocker() as m:

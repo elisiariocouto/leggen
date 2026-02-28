@@ -52,6 +52,8 @@ class TransactionProcessor:
         # Extract amount and currency (EnableBanking uses snake_case)
         transaction_amount = transaction.get("transaction_amount", {})
         amount = float(transaction_amount.get("amount", 0))
+        if transaction.get("credit_debit_indicator") == "DBIT":
+            amount = -abs(amount)
         currency = transaction_amount.get("currency", "")
 
         # Extract description (EnableBanking returns remittance_information as list)
