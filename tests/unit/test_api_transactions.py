@@ -51,8 +51,8 @@ class TestTransactionsAPI:
 
         mock_transaction_repo.get_transactions.return_value = mock_transactions
         mock_transaction_repo.get_count.return_value = len(mock_transactions)
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -99,8 +99,8 @@ class TestTransactionsAPI:
 
         mock_transaction_repo.get_transactions.return_value = mock_transactions
         mock_transaction_repo.get_count.return_value = len(mock_transactions)
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -146,8 +146,8 @@ class TestTransactionsAPI:
         mock_transaction_repo.get_transactions.return_value = mock_transactions
         mock_transaction_repo.get_count.return_value = 1
 
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -190,8 +190,8 @@ class TestTransactionsAPI:
         mock_transaction_repo.get_transactions.return_value = []
         mock_transaction_repo.get_count.return_value = 0
 
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -218,8 +218,8 @@ class TestTransactionsAPI:
             "Database connection failed"
         )
 
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -263,8 +263,8 @@ class TestTransactionsAPI:
         ]
 
         mock_transaction_repo.get_transactions.return_value = mock_transactions
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -308,8 +308,8 @@ class TestTransactionsAPI:
 
         mock_transaction_repo.get_transactions.return_value = mock_transactions
 
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -336,8 +336,8 @@ class TestTransactionsAPI:
         """Test getting stats when no transactions match criteria."""
         mock_transaction_repo.get_transactions.return_value = []
 
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -367,8 +367,8 @@ class TestTransactionsAPI:
             "Database connection failed"
         )
 
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -399,8 +399,8 @@ class TestTransactionsAPI:
 
         mock_transaction_repo.get_transactions.return_value = mock_transactions
 
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):

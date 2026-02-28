@@ -56,11 +56,11 @@ class TestAccountsAPI:
         mock_account_repo.get_accounts.return_value = mock_accounts
         mock_balance_repo.get_balances.return_value = mock_balances
 
-        fastapi_app.dependency_overrides[get_account_repository] = (
-            lambda: mock_account_repo
+        fastapi_app.dependency_overrides[get_account_repository] = lambda: (
+            mock_account_repo
         )
-        fastapi_app.dependency_overrides[get_balance_repository] = (
-            lambda: mock_balance_repo
+        fastapi_app.dependency_overrides[get_balance_repository] = lambda: (
+            mock_balance_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -116,11 +116,11 @@ class TestAccountsAPI:
         mock_account_repo.get_account.return_value = mock_account
         mock_balance_repo.get_balances.return_value = mock_balances
 
-        fastapi_app.dependency_overrides[get_account_repository] = (
-            lambda: mock_account_repo
+        fastapi_app.dependency_overrides[get_account_repository] = lambda: (
+            mock_account_repo
         )
-        fastapi_app.dependency_overrides[get_balance_repository] = (
-            lambda: mock_balance_repo
+        fastapi_app.dependency_overrides[get_balance_repository] = lambda: (
+            mock_balance_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -170,8 +170,8 @@ class TestAccountsAPI:
 
         mock_balance_repo.get_balances.return_value = mock_balances
 
-        fastapi_app.dependency_overrides[get_balance_repository] = (
-            lambda: mock_balance_repo
+        fastapi_app.dependency_overrides[get_balance_repository] = lambda: (
+            mock_balance_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -215,8 +215,8 @@ class TestAccountsAPI:
 
         mock_transaction_repo.get_transactions.return_value = mock_transactions
 
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -265,8 +265,8 @@ class TestAccountsAPI:
 
         mock_transaction_repo.get_transactions.return_value = mock_transactions
 
-        fastapi_app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        fastapi_app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -297,8 +297,8 @@ class TestAccountsAPI:
         """Test handling of non-existent account."""
         mock_account_repo.get_account.return_value = None
 
-        fastapi_app.dependency_overrides[get_account_repository] = (
-            lambda: mock_account_repo
+        fastapi_app.dependency_overrides[get_account_repository] = lambda: (
+            mock_account_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -331,8 +331,8 @@ class TestAccountsAPI:
         mock_account_repo.get_account.return_value = mock_account
         mock_account_repo.persist.return_value = mock_account
 
-        fastapi_app.dependency_overrides[get_account_repository] = (
-            lambda: mock_account_repo
+        fastapi_app.dependency_overrides[get_account_repository] = lambda: (
+            mock_account_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
@@ -359,8 +359,8 @@ class TestAccountsAPI:
         """Test updating non-existent account."""
         mock_account_repo.get_account.return_value = None
 
-        fastapi_app.dependency_overrides[get_account_repository] = (
-            lambda: mock_account_repo
+        fastapi_app.dependency_overrides[get_account_repository] = lambda: (
+            mock_account_repo
         )
 
         with patch("leggen.utils.config.config", mock_config):
