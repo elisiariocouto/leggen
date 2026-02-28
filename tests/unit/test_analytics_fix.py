@@ -45,8 +45,8 @@ class TestAnalyticsFix:
         mock_transaction_repo.get_transactions.return_value = mock_transactions
 
         app = create_app()
-        app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
         client = TestClient(app)
 
@@ -108,8 +108,8 @@ class TestAnalyticsFix:
         mock_transaction_repo.get_transactions.return_value = mock_transactions
 
         app = create_app()
-        app.dependency_overrides[get_transaction_repository] = (
-            lambda: mock_transaction_repo
+        app.dependency_overrides[get_transaction_repository] = lambda: (
+            mock_transaction_repo
         )
         client = TestClient(app)
 

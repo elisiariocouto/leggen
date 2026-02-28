@@ -178,14 +178,24 @@ class SampleDataGenerator:
     def generate_iban(self, country_code: str) -> str:
         """Generate a realistic IBAN for the given country."""
         ibans = {
-            "LT": lambda: f"LT{random.randint(10, 99)}{random.randint(10000, 99999)}{random.randint(10000000, 99999999)}",
-            "PT": lambda: f"PT{random.randint(10, 99)}{random.randint(1000, 9999)}{random.randint(1000, 9999)}{random.randint(10000000000, 99999999999)}",
-            "GB": lambda: f"GB{random.randint(10, 99)}MONZ{random.randint(100000, 999999)}{random.randint(100000, 999999)}",
-            "BR": lambda: f"BR{random.randint(10, 99)}{random.randint(10000000, 99999999)}{random.randint(1000, 9999)}{random.randint(10000000, 99999999)}",
+            "LT": lambda: (
+                f"LT{random.randint(10, 99)}{random.randint(10000, 99999)}{random.randint(10000000, 99999999)}"
+            ),
+            "PT": lambda: (
+                f"PT{random.randint(10, 99)}{random.randint(1000, 9999)}{random.randint(1000, 9999)}{random.randint(10000000000, 99999999999)}"
+            ),
+            "GB": lambda: (
+                f"GB{random.randint(10, 99)}MONZ{random.randint(100000, 999999)}{random.randint(100000, 999999)}"
+            ),
+            "BR": lambda: (
+                f"BR{random.randint(10, 99)}{random.randint(10000000, 99999999)}{random.randint(1000, 9999)}{random.randint(10000000, 99999999)}"
+            ),
         }
         return ibans.get(
             country_code,
-            lambda: f"{country_code}{random.randint(1000000000000000, 9999999999999999)}",
+            lambda: (
+                f"{country_code}{random.randint(1000000000000000, 9999999999999999)}"
+            ),
         )()
 
     def generate_accounts(self, num_accounts: int = 3) -> list[dict[str, Any]]:
