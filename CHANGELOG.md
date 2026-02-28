@@ -1,4 +1,19 @@
 
+## 2026.2.0 (2026/02/28)
+
+### Features
+
+-  Migrate from GoCardless to EnableBanking. ([e998a942](https://github.com/elisiariocouto/leggen/commit/e998a942d1198369cb8163448b525e2e8012d36c))
+-  Improve EnableBanking integration with PSU types, sync refinements, and API cleanup. ([e54e12d6](https://github.com/elisiariocouto/leggen/commit/e54e12d6143ebf7e0cb3c0e4f5b6579be2568d90))
+
+
+### Miscellaneous Tasks
+
+-  Cleanup agent instructions. ([0baf78af](https://github.com/elisiariocouto/leggen/commit/0baf78af80f415b40f9967275dd33db3e548ef63))
+-  Update python dependencies and reformat code. ([3ddbc809](https://github.com/elisiariocouto/leggen/commit/3ddbc8098a88011e5a3b8cec28490407d2cc7ce0))
+
+
+
 ## 2026.1.0 (2026/01/07)
 
 ### Bug Fixes
