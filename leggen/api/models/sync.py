@@ -28,7 +28,7 @@ class SyncRequest(BaseModel):
     """Request to trigger a sync"""
 
     account_ids: Optional[list[str]] = None  # If None, sync all accounts
-    force: bool = False  # Force sync even if recently synced
+    full_sync: bool = False  # If False, only sync last 30 days of transactions
 
 
 class SyncStatus(BaseModel):

@@ -11,7 +11,9 @@ def status(ctx: click.Context):
     """
     List all connected banks and their status
     """
-    api_client = LeggenAPIClient(ctx.obj.get("api_url"))
+    api_client = LeggenAPIClient(
+        ctx.obj.get("api_url"), verify_ssl=ctx.obj.get("verify_ssl", True)
+    )
 
     # Check if leggen server is available
     if not api_client.health_check():

@@ -25,8 +25,9 @@ import { Alert, AlertDescription } from "./ui/alert";
 
 export default function AddBankAccountDrawer() {
   const [open, setOpen] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<string>("");
-  const [selectedBank, setSelectedBank] = useState<string>("");
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedBank, setSelectedBank] = useState("");
+  const [selectedPsuType, setSelectedPsuType] = useState("");
 
   const { data: countries } = useQuery({
     queryKey: ["supportedCountries"],
@@ -40,8 +41,15 @@ export default function AddBankAccountDrawer() {
   });
 
   const connectBankMutation = useMutation({
-    mutationFn: ({ name, country }: { name: string; country: string }) =>
-      apiClient.createBankConnection(name, country),
+    mutationFn: ({
+      name,
+      country,
+      psuType,
+    }: {
+      name: string;
+      country: string;
+      psuType: string;
+    }) => apiClient.createBankConnection(name, country, psuType),
     onSuccess: (data) => {
       // Redirect to the bank's authorization URL
       if (data.url) {
@@ -54,16 +62,30 @@ export default function AddBankAccountDrawer() {
     },
   });
 
+  const selectedBankData = banks?.find((b) => b.name === selectedBank);
+
   const handleCountryChange = (country: string) => {
     setSelectedCountry(country);
     setSelectedBank("");
+    setSelectedPsuType("");
+  };
+
+  const handleBankChange = (bank: string) => {
+    setSelectedBank(bank);
+    const bankData = banks?.find((b) => b.name === bank);
+    if (bankData && bankData.psu_types.length === 1) {
+      setSelectedPsuType(bankData.psu_types[0]);
+    } else {
+      setSelectedPsuType("");
+    }
   };
 
   const handleConnect = () => {
-    if (selectedBank && selectedCountry) {
+    if (selectedBank && selectedCountry && selectedPsuType) {
       connectBankMutation.mutate({
         name: selectedBank,
         country: selectedCountry,
+        psuType: selectedPsuType,
       });
     }
   };
@@ -71,6 +93,7 @@ export default function AddBankAccountDrawer() {
   const resetForm = () => {
     setSelectedCountry("");
     setSelectedBank("");
+    setSelectedPsuType("");
   };
 
   return (
@@ -101,7 +124,7 @@ export default function AddBankAccountDrawer() {
           {/* Country Selection */}
           <div className="space-y-2">
             <Label htmlFor="country">Country</Label>
-            <Select value={selectedCountry} onValueChange={handleCountryChange}>
+            <Select onValueChange={handleCountryChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select your country" />
               </SelectTrigger>
@@ -124,7 +147,10 @@ export default function AddBankAccountDrawer() {
                   Loading banks...
                 </div>
               ) : banks && banks.length > 0 ? (
-                <Select value={selectedBank} onValueChange={setSelectedBank}>
+                <Select
+                  key={`bank-${selectedCountry}`}
+                  onValueChange={handleBankChange}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your bank" />
                   </SelectTrigger>
@@ -157,13 +183,35 @@ export default function AddBankAccountDrawer() {
             </div>
           )}
 
+          {/* PSU Type Selection */}
+          {selectedBankData && selectedBankData.psu_types.length > 1 && (
+            <div className="space-y-2">
+              <Label htmlFor="psuType">Account Type</Label>
+              <Select
+                key={`psu-${selectedBank}`}
+                onValueChange={setSelectedPsuType}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select account type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedBankData.psu_types.map((psuType) => (
+                    <SelectItem key={psuType} value={psuType}>
+                      {psuType.charAt(0).toUpperCase() + psuType.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Instructions */}
-          {selectedBank && (
+          {selectedBank && selectedPsuType && (
             <Alert>
               <AlertDescription>
-                You'll be redirected to your bank's website to authorize the
-                connection. After approval, you'll return to Leggen and your
-                account will start syncing.
+                You&apos;ll be redirected to your bank&apos;s website to
+                authorize the connection. After approval, you&apos;ll return to
+                Leggen and your account will start syncing.
               </AlertDescription>
             </Alert>
           )}
@@ -182,7 +230,11 @@ export default function AddBankAccountDrawer() {
           <div className="flex space-x-2">
             <Button
               onClick={handleConnect}
-              disabled={!selectedBank || connectBankMutation.isPending}
+              disabled={
+                !selectedBank ||
+                !selectedPsuType ||
+                connectBankMutation.isPending
+              }
               className="flex-1"
             >
               <ExternalLink className="h-4 w-4 mr-2" />

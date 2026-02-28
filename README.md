@@ -32,13 +32,10 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 - List all connected banks and their connection statuses
 - View balances of all connected accounts
 - List and filter transactions across all accounts
-- Support for both booked and pending transactions
 
 ### 🔄 Data Management
 - Sync all transactions with SQLite database
 - Background sync scheduling with configurable cron expressions
-- Automatic transaction deduplication and status tracking
-- Real-time sync status monitoring
 
 ### 📡 API & Integration
 - **REST API**: Complete FastAPI backend with comprehensive endpoints
@@ -53,12 +50,15 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 ## 🚀 Quick Start
 
 ### Prerequisites
-1. Create an EnableBanking account at [https://enablebanking.com/](https://enablebanking.com/)
-2. Get your application ID and RSA private key
+1. Create an Enable Banking account at [https://enablebanking.com/](https://enablebanking.com/)
+2. Create an application in the [Enable Banking Customer Portal](https://enablebanking.com/cp/applications) as the image below. The redirect URL must use HTTPS and must end with `/bank-connected`. Enable Banking does not support HTTP.
+3. Set up your bank accounts following the [Enable Banking Setup Guide](docs/enable-banking-setup.md)
+
+![Enable Banking new application](docs/enable-banking-new-application.png)
 
 ### Installation
 
-#### Docker Compose (Recommended)
+#### Docker Compose
 
 ```bash
 # Clone the repository
@@ -71,14 +71,11 @@ mkdir -p data && cp config.example.toml data/config.toml
 
 # Start all services
 docker compose up -d
-
-# Access the web interface at http://localhost:3000
-# API documentation at http://localhost:3000/api/v1/docs
 ```
 
 ### Configuration
 
-Create a configuration file at `./data/config.toml` (for Docker) or `~/.config/leggen/config.toml` (for local development):
+Create a configuration file at `./data/config.toml`:
 
 ```toml
 [enablebanking]
@@ -127,7 +124,7 @@ leggen status              # Check connection status
 leggen bank add            # Connect to a new bank
 leggen balances            # View account balances
 leggen transactions        # List transactions
-leggen sync                # Trigger background sync
+leggen sync                # Trigger accounts sync
 ```
 
 For more options, run `leggen --help` or `leggen <command> --help`.

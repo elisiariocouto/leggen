@@ -27,8 +27,8 @@ class TestBanksAPI:
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2
-        assert data[0]["name"] == "Revolut"
-        assert data[1]["name"] == "Banco BPI"
+        assert data[0]["name"] == "Banco BPI"
+        assert data[1]["name"] == "Revolut"
 
     def test_get_institutions_invalid_country(
         self, fastapi_app, api_client, mock_config

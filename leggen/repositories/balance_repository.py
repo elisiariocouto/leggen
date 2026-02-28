@@ -81,27 +81,30 @@ class BalanceRepository(BaseRepository):
         if not self._db_exists():
             return []
 
-        with self._get_db_connection(row_factory=True) as conn:
-            cursor = conn.cursor()
+        try:
+            with self._get_db_connection(row_factory=True) as conn:
+                cursor = conn.cursor()
 
-            # Get latest balance for each account_id and type combination
-            query = """
-                SELECT * FROM balances b1
-                WHERE b1.timestamp = (
-                    SELECT MAX(b2.timestamp)
-                    FROM balances b2
-                    WHERE b2.account_id = b1.account_id AND b2.type = b1.type
-                )
-            """
-            params = []
+                # Get latest balance for each account_id and type combination
+                query = """
+                    SELECT * FROM balances b1
+                    WHERE b1.timestamp = (
+                        SELECT MAX(b2.timestamp)
+                        FROM balances b2
+                        WHERE b2.account_id = b1.account_id AND b2.type = b1.type
+                    )
+                """
+                params = []
 
-            if account_id:
-                query += " AND b1.account_id = ?"
-                params.append(account_id)
+                if account_id:
+                    query += " AND b1.account_id = ?"
+                    params.append(account_id)
 
-            query += " ORDER BY b1.account_id, b1.type"
+                query += " ORDER BY b1.account_id, b1.type"
 
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
 
-            return [dict(row) for row in rows]
+                return [dict(row) for row in rows]
+        except sqlite3.OperationalError:
+            return []

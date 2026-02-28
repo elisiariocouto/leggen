@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { CheckCircle, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -16,9 +16,11 @@ function BankConnected() {
     search?.code ? "loading" : "success",
   );
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const exchangedRef = useRef(false);
 
   useEffect(() => {
-    if (search?.code) {
+    if (search?.code && !exchangedRef.current) {
+      exchangedRef.current = true;
       apiClient
         .exchangeAuthCode(search.code)
         .then(() => {

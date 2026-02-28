@@ -95,8 +95,6 @@ export default function Settings() {
   // Account queries
   const {
     data: accounts,
-    isLoading: accountsLoading,
-    error: accountsError,
     refetch: refetchAccounts,
   } = useQuery<Account[]>({
     queryKey: ["accounts"],

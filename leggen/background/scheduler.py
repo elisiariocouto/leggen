@@ -104,7 +104,9 @@ class BackgroundScheduler:
         try:
             trigger_type = "retry" if retry_count > 0 else "scheduled"
             logger.info(f"Starting {trigger_type} sync job")
-            await self.sync_service.sync_all_accounts(trigger_type=trigger_type)
+            await self.sync_service.sync_all_accounts(
+                full_sync=False, trigger_type=trigger_type
+            )
             logger.info(f"{trigger_type.capitalize()} sync job completed successfully")
         except Exception as e:
             trigger_type = "retry" if retry_count > 0 else "scheduled"

@@ -237,6 +237,8 @@ export interface BankInstitution {
   country: string;
   bic?: string;
   logo?: string;
+  psu_types: string[];
+  maximum_consent_validity?: number;
 }
 
 export interface BankAuthResponse {

@@ -40,11 +40,13 @@ async def trigger_sync(
     try:
         # Check if sync is already running
         status = await sync_service.get_sync_status()
-        if status.is_running and not (sync_request and sync_request.force):
+        if status.is_running:
             raise HTTPException(
                 status_code=409,
-                detail="Sync is already running. Use 'force: true' to override.",
+                detail="Sync is already running.",
             )
+
+        full_sync = sync_request.full_sync if sync_request else False
 
         # Determine what to sync
         if sync_request and sync_request.account_ids:
@@ -52,20 +54,20 @@ async def trigger_sync(
             background_tasks.add_task(
                 sync_service.sync_specific_accounts,
                 sync_request.account_ids,
-                sync_request.force if sync_request else False,
+                full_sync,
                 "api",  # trigger_type
             )
         else:
             # Sync all accounts in background
             background_tasks.add_task(
                 sync_service.sync_all_accounts,
-                sync_request.force if sync_request else False,
+                full_sync,
                 "api",  # trigger_type
             )
 
         return {
             "sync_started": True,
-            "force": sync_request.force if sync_request else False,
+            "full_sync": full_sync,
         }
 
     except HTTPException:
@@ -81,14 +83,14 @@ async def trigger_sync(
 async def sync_now(sync_request: Optional[SyncRequest] = None) -> SyncResult:
     """Run sync synchronously and return results (slower, for testing)"""
     try:
+        full_sync = sync_request.full_sync if sync_request else False
+
         if sync_request and sync_request.account_ids:
             result = await sync_service.sync_specific_accounts(
-                sync_request.account_ids, sync_request.force, "api"
+                sync_request.account_ids, full_sync, "api"
             )
         else:
-            result = await sync_service.sync_all_accounts(
-                sync_request.force if sync_request else False, "api"
-            )
+            result = await sync_service.sync_all_accounts(full_sync, "api")
 
         return result
 
