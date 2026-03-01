@@ -61,15 +61,3 @@ class SyncResult(BaseModel):
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
-
-
-class SchedulerConfig(BaseModel):
-    """Scheduler configuration model"""
-
-    enabled: bool = True
-    hour: Optional[int] = 3
-    minute: Optional[int] = 0
-    cron: Optional[str] = None  # Custom cron expression
-
-    class Config:
-        extra = "forbid"

@@ -33,20 +33,17 @@ def transactions(ctx: click.Context, account: str, limit: int, full: bool):
 
     try:
         if account:
-            # Get transactions for specific account
-            account_details = api_client.get_account_details(account)
-            transactions_data = api_client.get_account_transactions(
-                account, limit=limit, summary_only=not full
-            )
+            # Get account details for display
+            accounts = api_client.get_accounts()
+            account_details = next((a for a in accounts if a["id"] == account), None)
+            if account_details:
+                info(f"Bank: {account_details['institution_id']}")
+                info(f"IBAN: {account_details.get('iban', 'N/A')}")
 
-            info(f"Bank: {account_details['institution_id']}")
-            info(f"IBAN: {account_details.get('iban', 'N/A')}")
-
-        else:
-            # Get all transactions
-            transactions_data = api_client.get_all_transactions(
-                limit=limit, summary_only=not full, account_id=account
-            )
+        # Get transactions (with optional account filter)
+        transactions_data = api_client.get_all_transactions(
+            limit=limit, summary_only=not full, account_id=account
+        )
 
         # Format transactions for display
         if full:

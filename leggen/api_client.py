@@ -129,27 +129,6 @@ class LeggenAPIClient:
         response = self._make_request("GET", "/accounts")
         return response
 
-    def get_account_details(self, account_id: str) -> Dict[str, Any]:
-        """Get account details"""
-        response = self._make_request("GET", f"/accounts/{account_id}")
-        return response
-
-    def get_account_balances(self, account_id: str) -> List[Dict[str, Any]]:
-        """Get account balances"""
-        response = self._make_request("GET", f"/accounts/{account_id}/balances")
-        return response
-
-    def get_account_transactions(
-        self, account_id: str, limit: int = 100, summary_only: bool = False
-    ) -> List[Dict[str, Any]]:
-        """Get account transactions"""
-        response = self._make_request(
-            "GET",
-            f"/accounts/{account_id}/transactions",
-            params={"limit": limit, "summary_only": summary_only},
-        )
-        return response
-
     # Transaction endpoints
     def get_all_transactions(
         self, limit: int = 100, summary_only: bool = True, **filters
@@ -173,53 +152,13 @@ class LeggenAPIClient:
         return response
 
     # Sync endpoints
-    def get_sync_status(self) -> Dict[str, Any]:
-        """Get sync status"""
-        response = self._make_request("GET", "/sync/status")
-        return response
-
     def trigger_sync(
-        self, account_ids: Optional[List[str]] = None, force: bool = False
+        self, account_ids: Optional[List[str]] = None, full_sync: bool = False
     ) -> Dict[str, Any]:
-        """Trigger a sync"""
-        data: Dict[str, Union[bool, List[str]]] = {"force": force}
+        """Trigger a synchronous sync"""
+        data: Dict[str, Union[bool, List[str]]] = {"full_sync": full_sync}
         if account_ids:
             data["account_ids"] = account_ids
 
         response = self._make_request("POST", "/sync", json=data)
-        return response
-
-    def sync_now(
-        self, account_ids: Optional[List[str]] = None, force: bool = False
-    ) -> Dict[str, Any]:
-        """Run sync synchronously"""
-        data: Dict[str, Union[bool, List[str]]] = {"force": force}
-        if account_ids:
-            data["account_ids"] = account_ids
-
-        response = self._make_request("POST", "/sync/now", json=data)
-        return response
-
-    def get_scheduler_config(self) -> Dict[str, Any]:
-        """Get scheduler configuration"""
-        response = self._make_request("GET", "/sync/scheduler")
-        return response
-
-    def update_scheduler_config(
-        self,
-        enabled: bool = True,
-        hour: int = 3,
-        minute: int = 0,
-        cron: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Update scheduler configuration"""
-        data: Dict[str, Union[bool, int, str]] = {
-            "enabled": enabled,
-            "hour": hour,
-            "minute": minute,
-        }
-        if cron:
-            data["cron"] = cron
-
-        response = self._make_request("PUT", "/sync/scheduler", json=data)
         return response

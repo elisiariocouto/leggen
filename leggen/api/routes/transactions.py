@@ -197,53 +197,6 @@ async def get_transaction_stats(
         ) from e
 
 
-@router.get("/transactions/analytics")
-async def get_transactions_for_analytics(
-    transaction_repo: TransactionRepo,
-    days: int = Query(default=365, description="Number of days to include"),
-    account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
-) -> List[dict]:
-    """Get all transactions for analytics (no pagination) for the last N days"""
-    try:
-        # Date range for analytics
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=days)
-
-        # Format dates for database query
-        date_from = start_date.isoformat()
-        date_to = end_date.isoformat()
-
-        # Get ALL transactions from database (no limit for analytics)
-        transactions = transaction_repo.get_transactions(
-            account_id=account_id,
-            date_from=date_from,
-            date_to=date_to,
-            limit=None,  # No limit - get all transactions
-        )
-
-        # Transform for frontend (summary format)
-        transaction_summaries = [
-            {
-                "transaction_id": txn["transactionId"],
-                "date": txn["transactionDate"],
-                "description": txn["description"],
-                "amount": txn["transactionValue"],
-                "currency": txn["transactionCurrency"],
-                "status": txn["transactionStatus"],
-                "account_id": txn["accountId"],
-            }
-            for txn in transactions
-        ]
-
-        return transaction_summaries
-
-    except Exception as e:
-        logger.error(f"Failed to get transactions for analytics: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get analytics transactions: {str(e)}"
-        ) from e
-
-
 @router.get("/transactions/monthly-stats")
 async def get_monthly_transaction_stats(
     analytics_proc: AnalyticsProc,

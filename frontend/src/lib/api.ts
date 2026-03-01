@@ -2,7 +2,6 @@ import axios from "axios";
 import type {
   Account,
   Transaction,
-  AnalyticsTransaction,
   Balance,
   PaginatedResponse,
   NotificationSettings,
@@ -40,12 +39,6 @@ export const apiClient = {
     return response.data;
   },
 
-  // Get account by ID
-  getAccount: async (id: string): Promise<Account> => {
-    const response = await api.get<Account>(`/accounts/${id}`);
-    return response.data;
-  },
-
   // Update account details
   updateAccount: async (
     id: string,
@@ -75,14 +68,6 @@ export const apiClient = {
 
     const response = await api.get<Balance[]>(
       `/balances/history?${queryParams.toString()}`,
-    );
-    return response.data;
-  },
-
-  // Get balances for specific account
-  getAccountBalances: async (accountId: string): Promise<Balance[]> => {
-    const response = await api.get<Balance[]>(
-      `/accounts/${accountId}/balances`,
     );
     return response.data;
   },
@@ -121,12 +106,6 @@ export const apiClient = {
     const response = await api.get<PaginatedResponse<Transaction>>(
       `/transactions?${queryParams.toString()}`,
     );
-    return response.data;
-  },
-
-  // Get transaction by ID
-  getTransaction: async (id: string): Promise<Transaction> => {
-    const response = await api.get<Transaction>(`/transactions/${id}`);
     return response.data;
   },
 
@@ -182,19 +161,6 @@ export const apiClient = {
 
     const response = await api.get<TransactionStats>(
       `/transactions/stats?${queryParams.toString()}`,
-    );
-    return response.data;
-  },
-
-  // Get all transactions for analytics (no pagination)
-  getTransactionsForAnalytics: async (
-    days?: number,
-  ): Promise<AnalyticsTransaction[]> => {
-    const queryParams = new URLSearchParams();
-    if (days) queryParams.append("days", days.toString());
-
-    const response = await api.get<AnalyticsTransaction[]>(
-      `/transactions/analytics?${queryParams.toString()}`,
     );
     return response.data;
   },

@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
@@ -7,14 +7,11 @@ from leggen.api.dependencies import (
     AccountRepo,
     AnalyticsProc,
     BalanceRepo,
-    TransactionRepo,
 )
 from leggen.api.models.accounts import (
     AccountBalance,
     AccountDetails,
     AccountUpdate,
-    Transaction,
-    TransactionSummary,
 )
 
 router = APIRouter()
@@ -78,94 +75,6 @@ async def get_all_accounts(
         logger.error(f"Failed to get accounts: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get accounts: {str(e)}"
-        ) from e
-
-
-@router.get("/accounts/{account_id}")
-async def get_account_details(
-    account_id: str,
-    account_repo: AccountRepo,
-    balance_repo: BalanceRepo,
-) -> AccountDetails:
-    """Get details for a specific account from database"""
-    try:
-        # Get account details from database
-        db_account = account_repo.get_account(account_id)
-
-        if not db_account:
-            raise HTTPException(
-                status_code=404, detail=f"Account {account_id} not found in database"
-            )
-
-        # Get latest balances from database for this account
-        balances_data = balance_repo.get_balances(account_id)
-
-        # Process balances
-        balances = []
-        for balance in balances_data:
-            balances.append(
-                AccountBalance(
-                    amount=balance["amount"],
-                    currency=balance["currency"],
-                    balance_type=balance["type"],
-                    last_change_date=balance.get("timestamp"),
-                )
-            )
-
-        account = AccountDetails(
-            id=db_account["id"],
-            institution_id=db_account["institution_id"],
-            status=db_account["status"],
-            iban=db_account.get("iban"),
-            name=db_account.get("name"),
-            display_name=db_account.get("display_name"),
-            currency=db_account.get("currency"),
-            logo=db_account.get("logo"),
-            created=db_account["created"],
-            last_accessed=db_account.get("last_accessed"),
-            balances=balances,
-        )
-
-        return account
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to get account details for {account_id}: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get account details: {str(e)}"
-        ) from e
-
-
-@router.get("/accounts/{account_id}/balances")
-async def get_account_balances(
-    account_id: str,
-    balance_repo: BalanceRepo,
-) -> List[AccountBalance]:
-    """Get balances for a specific account from database"""
-    try:
-        # Get balances from database
-        db_balances = balance_repo.get_balances(account_id=account_id)
-
-        balances = []
-        for balance in db_balances:
-            balances.append(
-                AccountBalance(
-                    amount=balance["amount"],
-                    currency=balance["currency"],
-                    balance_type=balance["type"],
-                    last_change_date=balance.get("timestamp"),
-                )
-            )
-
-        return balances
-
-    except Exception as e:
-        logger.error(
-            f"Failed to get balances from database for account {account_id}: {e}"
-        )
-        raise HTTPException(
-            status_code=404, detail=f"Failed to get balances: {str(e)}"
         ) from e
 
 
@@ -242,72 +151,6 @@ async def get_historical_balances(
         logger.error(f"Failed to get historical balances: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get historical balances: {str(e)}"
-        ) from e
-
-
-@router.get("/accounts/{account_id}/transactions")
-async def get_account_transactions(
-    account_id: str,
-    transaction_repo: TransactionRepo,
-    limit: Optional[int] = Query(default=100, le=500),
-    offset: Optional[int] = Query(default=0, ge=0),
-    summary_only: bool = Query(
-        default=False, description="Return transaction summaries only"
-    ),
-) -> Union[List[TransactionSummary], List[Transaction]]:
-    """Get transactions for a specific account from database"""
-    try:
-        # Get transactions from database
-        db_transactions = transaction_repo.get_transactions(
-            account_id=account_id,
-            limit=limit,
-            offset=offset or 0,
-        )
-
-        data: Union[List[TransactionSummary], List[Transaction]]
-
-        if summary_only:
-            # Return simplified transaction summaries
-            data = [
-                TransactionSummary(
-                    transaction_id=txn["transactionId"],  # NEW: stable bank-provided ID
-                    internal_transaction_id=txn.get("internalTransactionId"),
-                    date=txn["transactionDate"],
-                    description=txn["description"],
-                    amount=txn["transactionValue"],
-                    currency=txn["transactionCurrency"],
-                    status=txn["transactionStatus"],
-                    account_id=txn["accountId"],
-                )
-                for txn in db_transactions
-            ]
-        else:
-            # Return full transaction details
-            data = [
-                Transaction(
-                    transaction_id=txn["transactionId"],  # NEW: stable bank-provided ID
-                    internal_transaction_id=txn.get("internalTransactionId"),
-                    institution_id=txn["institutionId"],
-                    iban=txn["iban"],
-                    account_id=txn["accountId"],
-                    transaction_date=txn["transactionDate"],
-                    description=txn["description"],
-                    transaction_value=txn["transactionValue"],
-                    transaction_currency=txn["transactionCurrency"],
-                    transaction_status=txn["transactionStatus"],
-                    raw_transaction=txn["rawTransaction"],
-                )
-                for txn in db_transactions
-            ]
-
-        return data
-
-    except Exception as e:
-        logger.error(
-            f"Failed to get transactions from database for account {account_id}: {e}"
-        )
-        raise HTTPException(
-            status_code=404, detail=f"Failed to get transactions: {str(e)}"
         ) from e
 
 

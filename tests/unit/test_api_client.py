@@ -92,18 +92,6 @@ class TestLeggenAPIClient:
             assert len(result) == 1
             assert result[0]["id"] == "test-account-123"
 
-    def test_trigger_sync_success(self):
-        """Test triggering sync via API client."""
-        client = LeggenAPIClient("http://localhost:8000")
-
-        api_response = {"sync_started": True, "force": False}
-
-        with requests_mock.Mocker() as m:
-            m.post("http://localhost:8000/api/v1/sync", json=api_response)
-
-            result = client.trigger_sync()
-            assert result["sync_started"] is True
-
     def test_connection_error_handling(self):
         """Test handling of connection errors."""
         client = LeggenAPIClient("http://localhost:9999")  # Non-existent service
@@ -138,33 +126,48 @@ class TestLeggenAPIClient:
             client = LeggenAPIClient()
             assert client.base_url == "http://env-host:7000/api/v1"
 
-    def test_sync_with_options(self):
-        """Test sync with various options."""
+    def test_trigger_sync_default(self):
+        """Test triggering sync with default options."""
         client = LeggenAPIClient("http://localhost:8000")
 
-        api_response = {"sync_started": True, "force": True}
+        api_response = {
+            "success": True,
+            "accounts_processed": 2,
+            "transactions_added": 10,
+            "transactions_updated": 0,
+            "balances_updated": 2,
+            "duration_seconds": 5.3,
+            "errors": [],
+            "started_at": "2025-09-01T09:30:00Z",
+            "completed_at": "2025-09-01T09:30:05Z",
+        }
 
         with requests_mock.Mocker() as m:
             m.post("http://localhost:8000/api/v1/sync", json=api_response)
 
-            result = client.trigger_sync(account_ids=["acc1", "acc2"], force=True)
-            assert result["sync_started"] is True
-            assert result["force"] is True
+            result = client.trigger_sync()
+            assert result["success"] is True
+            assert result["accounts_processed"] == 2
 
-    def test_get_scheduler_config(self):
-        """Test getting scheduler configuration."""
+    def test_trigger_sync_full(self):
+        """Test triggering sync with full_sync option."""
         client = LeggenAPIClient("http://localhost:8000")
 
         api_response = {
-            "enabled": True,
-            "hour": 3,
-            "minute": 0,
-            "next_scheduled_sync": "2025-09-03T03:00:00Z",
+            "success": True,
+            "accounts_processed": 2,
+            "transactions_added": 50,
+            "transactions_updated": 5,
+            "balances_updated": 2,
+            "duration_seconds": 12.1,
+            "errors": [],
+            "started_at": "2025-09-01T09:30:00Z",
+            "completed_at": "2025-09-01T09:30:12Z",
         }
 
         with requests_mock.Mocker() as m:
-            m.get("http://localhost:8000/api/v1/sync/scheduler", json=api_response)
+            m.post("http://localhost:8000/api/v1/sync", json=api_response)
 
-            result = client.get_scheduler_config()
-            assert result["enabled"] is True
-            assert result["hour"] == 3
+            result = client.trigger_sync(account_ids=["acc1", "acc2"], full_sync=True)
+            assert result["success"] is True
+            assert result["transactions_added"] == 50
