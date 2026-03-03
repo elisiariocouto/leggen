@@ -1,4 +1,17 @@
 
+## 2026.3.0 (2026/03/03)
+
+### Features
+
+- **frontend:** Improve visual consistency across UI pages. ([0263d04e](https://github.com/elisiariocouto/leggen/commit/0263d04e811f7677dd3970dfb27dc4903f275048))
+
+
+### Refactor
+
+- **api:** Remove unused and duplicated API endpoints. ([71b44bc9](https://github.com/elisiariocouto/leggen/commit/71b44bc94cf55739232ba77feba54aef3d86ded7))
+
+
+
 ## 2026.2.0 (2026/02/28)
 
 ### Features
