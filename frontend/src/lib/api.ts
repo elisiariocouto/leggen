@@ -12,6 +12,7 @@ import type {
   AccountUpdate,
   TransactionStats,
   SyncOperationsResponse,
+  SyncResult,
   BankInstitution,
   BankConnectionStatus,
   BankAuthResponse,
@@ -198,6 +199,15 @@ export const apiClient = {
     const response = await api.get<SyncOperationsResponse>(
       `/sync/operations?limit=${limit}&offset=${offset}`,
     );
+    return response.data;
+  },
+
+  // Trigger sync
+  triggerSync: async (params?: {
+    account_ids?: string[];
+    full_sync?: boolean;
+  }): Promise<SyncResult> => {
+    const response = await api.post<SyncResult>("/sync", params || {});
     return response.data;
   },
 

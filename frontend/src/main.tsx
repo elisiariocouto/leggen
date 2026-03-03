@@ -4,6 +4,7 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { BalanceVisibilityProvider } from "./contexts/BalanceVisibilityContext";
+import { TooltipProvider } from "./components/ui/tooltip";
 import "./index.css";
 import { routeTree } from "./routeTree.gen";
 import { registerSW } from "virtual:pwa-register";
@@ -75,7 +76,9 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BalanceVisibilityProvider>
-          <RouterProvider router={router} />
+          <TooltipProvider>
+            <RouterProvider router={router} />
+          </TooltipProvider>
         </BalanceVisibilityProvider>
       </ThemeProvider>
     </QueryClientProvider>

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   RefreshCw,
   AlertCircle,
@@ -9,6 +9,7 @@ import {
   User,
   FileText,
 } from "lucide-react";
+import { toast } from "sonner";
 import { apiClient } from "../lib/api";
 import {
   Card,
@@ -89,6 +90,8 @@ function LogsDialog({ operation }: { operation: SyncOperation }) {
 }
 
 export default function System() {
+  const queryClient = useQueryClient();
+
   const {
     data: syncOperations,
     isLoading: syncOperationsLoading,
@@ -98,6 +101,34 @@ export default function System() {
     queryKey: ["syncOperations"],
     queryFn: () => apiClient.getSyncOperations(10, 0), // Get latest 10 operations
   });
+
+  const syncMutation = useMutation({
+    mutationFn: () => apiClient.triggerSync(),
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(
+          `Sync completed: ${result.transactions_added} new transactions, ${result.accounts_processed} accounts processed.`,
+        );
+      } else {
+        toast.error(
+          `Sync finished with errors: ${result.errors.join(", ") || "Unknown error"}`,
+        );
+      }
+      queryClient.invalidateQueries({ queryKey: ["syncOperations"] });
+    },
+    onError: () => {
+      toast.error("Failed to trigger sync. Please try again.");
+    },
+  });
+
+  // Compute summary counts
+  const successCount =
+    syncOperations?.operations.filter((op) => op.success).length || 0;
+  const failedCount =
+    syncOperations?.operations.filter((op) => !op.success && op.completed_at)
+      .length || 0;
+  const runningCount =
+    syncOperations?.operations.filter((op) => !op.completed_at).length || 0;
 
   if (syncOperationsLoading) {
     return (
@@ -146,13 +177,49 @@ export default function System() {
       {/* Sync Operations Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Activity className="h-5 w-5 text-primary" />
-            <span>Recent Sync Operations</span>
-          </CardTitle>
-          <CardDescription>
-            Latest synchronization activities and their status
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center space-x-2">
+                <Activity className="h-5 w-5 text-primary" />
+                <span>Recent Sync Operations</span>
+              </CardTitle>
+              <CardDescription className="mt-1.5">
+                <span className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className="gap-1">
+                    <CheckCircle className="h-3 w-3 text-green-600" />
+                    {successCount} successful
+                  </Badge>
+                  <Badge variant="outline" className="gap-1">
+                    <AlertCircle className="h-3 w-3 text-red-600" />
+                    {failedCount} failed
+                  </Badge>
+                  {runningCount > 0 && (
+                    <Badge variant="outline" className="gap-1">
+                      <RefreshCw className="h-3 w-3 text-blue-600 animate-spin" />
+                      {runningCount} running
+                    </Badge>
+                  )}
+                </span>
+              </CardDescription>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending}
+            >
+              {syncMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Sync Now
+                </>
+              )}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {!syncOperations || syncOperations.operations.length === 0 ? (
@@ -186,10 +253,10 @@ export default function System() {
                         <div
                           className={`p-2 rounded-full ${
                             isRunning
-                              ? "bg-blue-100 text-blue-600"
+                              ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600"
                               : operation.success
-                                ? "bg-green-100 text-green-600"
-                                : "bg-red-100 text-red-600"
+                                ? "bg-green-100 dark:bg-green-900/20 text-green-600"
+                                : "bg-red-100 dark:bg-red-900/20 text-red-600"
                           }`}
                         >
                           {isRunning ? (
@@ -250,10 +317,10 @@ export default function System() {
                           <div
                             className={`p-2 rounded-full ${
                               isRunning
-                                ? "bg-blue-100 text-blue-600"
+                                ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600"
                                 : operation.success
-                                  ? "bg-green-100 text-green-600"
-                                  : "bg-red-100 text-red-600"
+                                  ? "bg-green-100 dark:bg-green-900/20 text-green-600"
+                                  : "bg-red-100 dark:bg-red-900/20 text-red-600"
                             }`}
                           >
                             {isRunning ? (
@@ -312,45 +379,6 @@ export default function System() {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* System Health Summary Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            <span>System Health</span>
-          </CardTitle>
-          <CardDescription>
-            Overall system status and performance
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="text-2xl font-bold text-green-700">
-                {syncOperations?.operations.filter((op) => op.success).length ||
-                  0}
-              </div>
-              <div className="text-sm text-green-600">Successful Syncs</div>
-            </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
-              <div className="text-2xl font-bold text-red-700">
-                {syncOperations?.operations.filter(
-                  (op) => !op.success && op.completed_at,
-                ).length || 0}
-              </div>
-              <div className="text-sm text-red-600">Failed Syncs</div>
-            </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="text-2xl font-bold text-blue-700">
-                {syncOperations?.operations.filter((op) => !op.completed_at)
-                  .length || 0}
-              </div>
-              <div className="text-sm text-blue-600">Running Operations</div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

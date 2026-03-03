@@ -8,10 +8,10 @@ import { Separator } from "./ui/separator";
 import { SidebarTrigger } from "./ui/sidebar";
 
 const navigation = [
-  { name: "Overview", to: "/" },
-  { name: "Transactions", to: "/transactions" },
+  { name: "Transactions", to: "/" },
   { name: "Analytics", to: "/analytics" },
-  { name: "System", to: "/system" },
+  { name: "Accounts", to: "/accounts" },
+  { name: "Sync", to: "/system" },
   { name: "Settings", to: "/settings" },
 ];
 

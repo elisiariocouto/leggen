@@ -29,12 +29,12 @@ export default function StatCard({
 }: StatCardProps) {
   return (
     <Card className={cn(className)}>
-      <CardContent className="p-6">
+      <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="text-xs font-medium text-muted-foreground">{title}</p>
             <div className="flex items-baseline">
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-xl font-bold text-foreground">
                 {shouldBlur ? <BlurredValue>{value}</BlurredValue> : value}
               </p>
               {trend && (
@@ -57,7 +57,7 @@ export default function StatCard({
           </div>
           <div
             className={cn(
-              "p-3 rounded-full",
+              "p-2 rounded-full",
               iconColor === "green" && "bg-green-100 dark:bg-green-900/20",
               iconColor === "blue" && "bg-blue-100 dark:bg-blue-900/20",
               iconColor === "red" && "bg-red-100 dark:bg-red-900/20",
@@ -68,7 +68,7 @@ export default function StatCard({
           >
             <Icon
               className={cn(
-                "h-6 w-6",
+                "h-5 w-5",
                 iconColor === "green" && "text-green-600",
                 iconColor === "blue" && "text-blue-600",
                 iconColor === "red" && "text-red-600",

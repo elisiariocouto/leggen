@@ -220,6 +220,18 @@ export interface SyncOperationsResponse {
   count: number;
 }
 
+export interface SyncResult {
+  success: boolean;
+  accounts_processed: number;
+  transactions_added: number;
+  transactions_updated: number;
+  balances_updated: number;
+  duration_seconds: number;
+  errors: string[];
+  started_at: string;
+  completed_at: string;
+}
+
 // Bank-related types
 export interface BankInstitution {
   name: string;

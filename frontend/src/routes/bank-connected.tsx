@@ -71,11 +71,11 @@ function BankConnected() {
             </p>
             <div className="pt-4">
               <Button
-                onClick={() => (window.location.href = "/settings")}
+                onClick={() => (window.location.href = "/accounts")}
                 className="w-full"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Go to Settings
+                Go to Accounts
               </Button>
             </div>
           </CardContent>
@@ -101,11 +101,11 @@ function BankConnected() {
 
           <div className="pt-4">
             <Button
-              onClick={() => (window.location.href = "/settings")}
+              onClick={() => (window.location.href = "/accounts")}
               className="w-full"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Go to Settings
+              Go to Accounts
             </Button>
           </div>
         </CardContent>

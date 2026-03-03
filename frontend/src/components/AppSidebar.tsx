@@ -1,20 +1,16 @@
-import React from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
-  List,
+  ArrowLeftRight,
   BarChart3,
-  Activity,
-  Settings,
   Building2,
+  RefreshCw,
+  Settings,
   TrendingUp,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { Logo } from "./ui/logo";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../lib/api";
 import { formatCurrency } from "../lib/utils";
-import { useState } from "react";
 import type { Account } from "../types/api";
 import { BlurredValue } from "./ui/blurred-value";
 import {
@@ -32,15 +28,15 @@ import {
 } from "./ui/sidebar";
 
 const navigation = [
-  { name: "Overview", icon: List, to: "/" },
+  { name: "Transactions", icon: ArrowLeftRight, to: "/" },
   { name: "Analytics", icon: BarChart3, to: "/analytics" },
-  { name: "System", icon: Activity, to: "/system" },
+  { name: "Accounts", icon: Building2, to: "/accounts" },
+  { name: "Sync", icon: RefreshCw, to: "/system" },
   { name: "Settings", icon: Settings, to: "/settings" },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
-  const [accountsExpanded, setAccountsExpanded] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
 
   const { data: accounts } = useQuery<Account[]>({
@@ -107,30 +103,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        {/* Account Summary Section */}
         <SidebarGroup>
           <SidebarGroupLabel>Account Summary</SidebarGroupLabel>
           <div className="bg-muted rounded-lg p-1">
-            {/* Collapsible Header */}
-            <button
-              onClick={() => setAccountsExpanded(!accountsExpanded)}
-              className="w-full p-3 flex items-center justify-between hover:bg-muted/80 transition-colors rounded-lg"
-            >
+            <div className="p-3">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-muted-foreground">
                   Total Balance
                 </span>
                 <TrendingUp className="h-4 w-4 text-green-500" />
               </div>
-              {accountsExpanded ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              )}
-            </button>
-
-            <div className="px-3 pb-2">
-              <p className="text-xl font-bold text-foreground">
+              <p className="text-xl font-bold text-foreground mt-1">
                 <BlurredValue>{formatCurrency(totalBalance)}</BlurredValue>
               </p>
               <p className="text-sm text-muted-foreground">
@@ -138,9 +121,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </p>
             </div>
 
-            {/* Expanded Account Details */}
-            {accountsExpanded && accounts && accounts.length > 0 && (
-              <div className="border-t border-border/50 max-h-48 overflow-y-auto">
+            {accounts && accounts.length > 0 && (
+              <div className="border-t border-border/50 max-h-120 overflow-y-auto">
                 {accounts.map((account) => {
                   const primaryBalance = account.balances?.[0]?.amount || 0;
                   const currency =

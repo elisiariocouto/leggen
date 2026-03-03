@@ -8,7 +8,7 @@ import {
   Activity,
   Users,
 } from "lucide-react";
-import apiClient from "../lib/api";
+import { apiClient } from "../lib/api";
 import StatCard from "../components/analytics/StatCard";
 import BalanceChart from "../components/analytics/BalanceChart";
 import TransactionDistribution from "../components/analytics/TransactionDistribution";
@@ -47,9 +47,9 @@ function AnalyticsDashboard() {
       <div className="space-y-8">
         <div className="animate-pulse">
           <div className="h-8 bg-muted rounded w-48 mb-6"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-32 bg-muted rounded"></div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-24 bg-muted rounded"></div>
             ))}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -64,17 +64,13 @@ function AnalyticsDashboard() {
   return (
     <div className="space-y-8">
       {/* Time Period Filter */}
-      <Card>
-        <CardContent className="p-4">
-          <TimePeriodFilter
-            selectedPeriod={selectedPeriod}
-            onPeriodChange={setSelectedPeriod}
-          />
-        </CardContent>
-      </Card>
+      <TimePeriodFilter
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+      />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatCard
           title="Total Transactions"
           value={stats?.total_transactions || 0}
@@ -98,10 +94,6 @@ function AnalyticsDashboard() {
           iconColor="red"
           shouldBlur={true}
         />
-      </div>
-
-      {/* Additional Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
           title="Net Change"
           value={`€${(stats?.net_change || 0).toLocaleString()}`}
