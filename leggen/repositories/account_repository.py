@@ -1,15 +1,15 @@
 import sqlite3
 from typing import Any, Dict, List, Optional
 
-from leggen.repositories.base_repository import BaseRepository
+from leggen.repositories.db import db_exists, get_db_connection
 
 
-class AccountRepository(BaseRepository):
+class AccountRepository:
     """Repository for account data operations"""
 
     def create_table(self):
         """Create accounts table with indexes"""
-        with self._get_db_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -41,7 +41,7 @@ class AccountRepository(BaseRepository):
 
     def persist(self, account_data: Dict[str, Any]) -> Dict[str, Any]:
         """Persist account details to database"""
-        with self._get_db_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
 
             # Check if account exists and preserve display_name
@@ -90,11 +90,11 @@ class AccountRepository(BaseRepository):
         self, account_ids: Optional[List[str]] = None
     ) -> List[Dict[str, Any]]:
         """Get account details from database"""
-        if not self._db_exists():
+        if not db_exists():
             return []
 
         try:
-            with self._get_db_connection(row_factory=True) as conn:
+            with get_db_connection(row_factory=True) as conn:
                 cursor = conn.cursor()
 
                 query = "SELECT * FROM accounts"
@@ -116,10 +116,10 @@ class AccountRepository(BaseRepository):
 
     def get_account(self, account_id: str) -> Optional[Dict[str, Any]]:
         """Get specific account details from database"""
-        if not self._db_exists():
+        if not db_exists():
             return None
 
-        with self._get_db_connection(row_factory=True) as conn:
+        with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
 
             cursor.execute("SELECT * FROM accounts WHERE id = ?", (account_id,))

@@ -15,13 +15,7 @@ async def trigger_sync(sync_request: Optional[SyncRequest] = None) -> SyncResult
     """Run sync synchronously and return results"""
     try:
         full_sync = sync_request.full_sync if sync_request else False
-
-        if sync_request and sync_request.account_ids:
-            result = await sync_service.sync_specific_accounts(
-                sync_request.account_ids, full_sync, "api"
-            )
-        else:
-            result = await sync_service.sync_all_accounts(full_sync, "api")
+        result = await sync_service.sync_all_accounts(full_sync, "api")
 
         return result
 

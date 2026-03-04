@@ -8,9 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from leggen.repositories import BalanceRepository
-from leggen.services.data_processors.balance_transformer import (
-    transform_to_database_format,
-)
+from leggen.services.data_processors import transform_to_database_format
 from leggen.utils.paths import path_manager
 
 

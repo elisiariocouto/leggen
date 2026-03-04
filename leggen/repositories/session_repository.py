@@ -4,15 +4,15 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from leggen.repositories.base_repository import BaseRepository
+from leggen.repositories.db import get_db_connection
 
 
-class SessionRepository(BaseRepository):
+class SessionRepository:
     """Repository for EnableBanking session storage."""
 
     def create_table(self):
         """Create the sessions table if it doesn't exist."""
-        with self._get_db_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
@@ -33,7 +33,7 @@ class SessionRepository(BaseRepository):
         accounts = session_data.get("accounts")
         accounts_json = json.dumps(accounts) if accounts is not None else None
 
-        with self._get_db_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 """
@@ -58,7 +58,7 @@ class SessionRepository(BaseRepository):
 
     def get_sessions(self) -> List[Dict[str, Any]]:
         """Get all sessions."""
-        with self._get_db_connection(row_factory=True) as conn:
+        with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM sessions ORDER BY created_at DESC")
             rows = cursor.fetchall()
@@ -74,7 +74,7 @@ class SessionRepository(BaseRepository):
 
     def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Get a single session by ID."""
-        with self._get_db_connection(row_factory=True) as conn:
+        with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,))
             row = cursor.fetchone()
@@ -89,7 +89,7 @@ class SessionRepository(BaseRepository):
 
     def delete_session(self, session_id: str) -> bool:
         """Delete a session. Returns True if a row was deleted."""
-        with self._get_db_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
             conn.commit()

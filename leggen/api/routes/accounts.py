@@ -1,26 +1,23 @@
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
 
-from leggen.api.dependencies import (
-    AccountRepo,
-    AnalyticsProc,
-    BalanceRepo,
-)
 from leggen.api.models.accounts import (
     AccountBalance,
     AccountDetails,
     AccountUpdate,
 )
+from leggen.repositories import AccountRepository, BalanceRepository
+from leggen.services.data_processors import calculate_historical_balances
 
 router = APIRouter()
 
 
 @router.get("/accounts")
 async def get_all_accounts(
-    account_repo: AccountRepo,
-    balance_repo: BalanceRepo,
+    account_repo: Annotated[AccountRepository, Depends()],
+    balance_repo: Annotated[BalanceRepository, Depends()],
 ) -> List[AccountDetails]:
     """Get all connected accounts from database"""
     try:
@@ -80,8 +77,8 @@ async def get_all_accounts(
 
 @router.get("/balances")
 async def get_all_balances(
-    account_repo: AccountRepo,
-    balance_repo: BalanceRepo,
+    account_repo: Annotated[AccountRepository, Depends()],
+    balance_repo: Annotated[BalanceRepository, Depends()],
 ) -> List[dict]:
     """Get all balances from all accounts in database"""
     try:
@@ -127,7 +124,6 @@ async def get_all_balances(
 
 @router.get("/balances/history")
 async def get_historical_balances(
-    analytics_proc: AnalyticsProc,
     days: Optional[int] = Query(
         default=365, le=1095, ge=1, description="Number of days of history to retrieve"
     ),
@@ -141,7 +137,7 @@ async def get_historical_balances(
 
         # Get historical balances from database
         db_path = path_manager.get_database_path()
-        historical_balances = analytics_proc.calculate_historical_balances(
+        historical_balances = calculate_historical_balances(
             db_path, account_id=account_id, days=days or 365
         )
 
@@ -158,7 +154,7 @@ async def get_historical_balances(
 async def update_account_details(
     account_id: str,
     update_data: AccountUpdate,
-    account_repo: AccountRepo,
+    account_repo: Annotated[AccountRepository, Depends()],
 ) -> dict:
     """Update account details (currently only display_name)"""
     try:

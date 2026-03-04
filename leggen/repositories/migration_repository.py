@@ -4,11 +4,10 @@ from datetime import datetime
 
 from loguru import logger
 
-from leggen.repositories.base_repository import BaseRepository
 from leggen.utils.paths import path_manager
 
 
-class MigrationRepository(BaseRepository):
+class MigrationRepository:
     """Repository for database migrations"""
 
     async def run_all_migrations(self):

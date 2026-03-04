@@ -3,15 +3,15 @@ from typing import Any, Dict, List
 
 from loguru import logger
 
-from leggen.repositories.base_repository import BaseRepository
+from leggen.repositories.db import get_db_connection
 
 
-class SyncRepository(BaseRepository):
+class SyncRepository:
     """Repository for sync operation data"""
 
     def create_table(self):
         """Create sync_operations table with indexes"""
-        with self._get_db_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -46,7 +46,7 @@ class SyncRepository(BaseRepository):
     def persist(self, sync_operation: Dict[str, Any]) -> int:
         """Persist sync operation to database and return the ID"""
         try:
-            with self._get_db_connection() as conn:
+            with get_db_connection() as conn:
                 cursor = conn.cursor()
 
                 cursor.execute(
@@ -86,7 +86,7 @@ class SyncRepository(BaseRepository):
     def get_operations(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         """Get sync operations from database"""
         try:
-            with self._get_db_connection() as conn:
+            with get_db_connection() as conn:
                 cursor = conn.cursor()
 
                 cursor.execute(

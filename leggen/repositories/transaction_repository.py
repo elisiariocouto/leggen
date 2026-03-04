@@ -4,15 +4,54 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
-from leggen.repositories.base_repository import BaseRepository
+from leggen.repositories.db import db_exists, get_db_connection
 
 
-class TransactionRepository(BaseRepository):
+class TransactionRepository:
     """Repository for transaction data operations"""
+
+    def _build_filter_clause(
+        self,
+        account_id: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        min_amount: Optional[float] = None,
+        max_amount: Optional[float] = None,
+        search: Optional[str] = None,
+    ) -> tuple[str, List[Union[str, int, float]]]:
+        """Build WHERE clause and params for transaction filtering."""
+        clause = ""
+        params: List[Union[str, int, float]] = []
+
+        if account_id:
+            clause += " AND accountId = ?"
+            params.append(account_id)
+
+        if date_from:
+            clause += " AND transactionDate >= ?"
+            params.append(date_from)
+
+        if date_to:
+            clause += " AND transactionDate <= ?"
+            params.append(date_to)
+
+        if min_amount is not None:
+            clause += " AND transactionValue >= ?"
+            params.append(min_amount)
+
+        if max_amount is not None:
+            clause += " AND transactionValue <= ?"
+            params.append(max_amount)
+
+        if search:
+            clause += " AND description LIKE ?"
+            params.append(f"%{search}%")
+
+        return clause, params
 
     def create_table(self):
         """Create transactions table with indexes"""
-        with self._get_db_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -57,7 +96,7 @@ class TransactionRepository(BaseRepository):
     ) -> List[Dict[str, Any]]:
         """Persist transactions to database, return new ones"""
         try:
-            with self._get_db_connection() as conn:
+            with get_db_connection() as conn:
                 cursor = conn.cursor()
 
                 insert_sql = """INSERT OR REPLACE INTO transactions (
@@ -134,39 +173,22 @@ class TransactionRepository(BaseRepository):
         search: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Get transactions with optional filtering"""
-        if not self._db_exists():
+        if not db_exists():
             return []
 
-        with self._get_db_connection(row_factory=True) as conn:
+        with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
 
-            query = "SELECT * FROM transactions WHERE 1=1"
-            params: List[Union[str, int, float]] = []
+            filter_clause, params = self._build_filter_clause(
+                account_id=account_id,
+                date_from=date_from,
+                date_to=date_to,
+                min_amount=min_amount,
+                max_amount=max_amount,
+                search=search,
+            )
 
-            if account_id:
-                query += " AND accountId = ?"
-                params.append(account_id)
-
-            if date_from:
-                query += " AND transactionDate >= ?"
-                params.append(date_from)
-
-            if date_to:
-                query += " AND transactionDate <= ?"
-                params.append(date_to)
-
-            if min_amount is not None:
-                query += " AND transactionValue >= ?"
-                params.append(min_amount)
-
-            if max_amount is not None:
-                query += " AND transactionValue <= ?"
-                params.append(max_amount)
-
-            if search:
-                query += " AND description LIKE ?"
-                params.append(f"%{search}%")
-
+            query = "SELECT * FROM transactions WHERE 1=1" + filter_clause
             query += " ORDER BY transactionDate DESC"
 
             if limit:
@@ -201,48 +223,31 @@ class TransactionRepository(BaseRepository):
         search: Optional[str] = None,
     ) -> int:
         """Get total count of transactions matching filters"""
-        if not self._db_exists():
+        if not db_exists():
             return 0
 
-        with self._get_db_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
 
-            query = "SELECT COUNT(*) FROM transactions WHERE 1=1"
-            params: List[Union[str, float]] = []
+            filter_clause, params = self._build_filter_clause(
+                account_id=account_id,
+                date_from=date_from,
+                date_to=date_to,
+                min_amount=min_amount,
+                max_amount=max_amount,
+                search=search,
+            )
 
-            if account_id:
-                query += " AND accountId = ?"
-                params.append(account_id)
-
-            if date_from:
-                query += " AND transactionDate >= ?"
-                params.append(date_from)
-
-            if date_to:
-                query += " AND transactionDate <= ?"
-                params.append(date_to)
-
-            if min_amount is not None:
-                query += " AND transactionValue >= ?"
-                params.append(min_amount)
-
-            if max_amount is not None:
-                query += " AND transactionValue <= ?"
-                params.append(max_amount)
-
-            if search:
-                query += " AND description LIKE ?"
-                params.append(f"%{search}%")
-
+            query = "SELECT COUNT(*) FROM transactions WHERE 1=1" + filter_clause
             cursor.execute(query, params)
             return cursor.fetchone()[0]
 
     def get_account_summary(self, account_id: str) -> Optional[Dict[str, Any]]:
         """Get basic account info from transactions table"""
-        if not self._db_exists():
+        if not db_exists():
             return None
 
-        with self._get_db_connection(row_factory=True) as conn:
+        with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
 
             cursor.execute(

@@ -3,15 +3,15 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from leggen.repositories.base_repository import BaseRepository
+from leggen.repositories.db import db_exists, get_db_connection
 
 
-class BalanceRepository(BaseRepository):
+class BalanceRepository:
     """Repository for balance data operations"""
 
     def create_table(self):
         """Create balances table with indexes"""
-        with self._get_db_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -46,7 +46,7 @@ class BalanceRepository(BaseRepository):
     def persist(self, account_id: str, balance_rows: List[tuple]) -> None:
         """Persist balance rows to database"""
         try:
-            with self._get_db_connection() as conn:
+            with get_db_connection() as conn:
                 cursor = conn.cursor()
 
                 for row in balance_rows:
@@ -76,11 +76,11 @@ class BalanceRepository(BaseRepository):
 
     def get_balances(self, account_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get latest balances from database"""
-        if not self._db_exists():
+        if not db_exists():
             return []
 
         try:
-            with self._get_db_connection(row_factory=True) as conn:
+            with get_db_connection(row_factory=True) as conn:
                 cursor = conn.cursor()
 
                 # Get latest balance for each account_id and type combination

@@ -190,3 +190,8 @@ def load_config(ctx: click.Context, _, filename):
 
 # Global singleton instance
 config = Config()
+
+
+def is_sqlite_enabled() -> bool:
+    """Check if SQLite is enabled in configuration."""
+    return config.database_config.get("sqlite", True)

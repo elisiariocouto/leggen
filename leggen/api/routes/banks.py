@@ -1,9 +1,9 @@
 from datetime import datetime
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
 
-from leggen.api.dependencies import EnableBanking, SessionRepo
 from leggen.api.models.banks import (
     BankAuthResponse,
     BankCallbackRequest,
@@ -11,13 +11,15 @@ from leggen.api.models.banks import (
     BankConnectionStatus,
     BankInstitution,
 )
+from leggen.repositories import SessionRepository
+from leggen.services.enablebanking_service import EnableBankingService
 
 router = APIRouter()
 
 
 @router.get("/banks/institutions")
 async def get_bank_institutions(
-    enablebanking_service: EnableBanking,
+    enablebanking_service: Annotated[EnableBankingService, Depends()],
     country: str = Query(default="PT", description="Country code (e.g., PT, ES, FR)"),
 ) -> list[BankInstitution]:
     """Get available bank institutions (ASPSPs) for a country"""
@@ -45,7 +47,7 @@ async def get_bank_institutions(
 @router.post("/banks/connect")
 async def connect_to_bank(
     request: BankConnectionRequest,
-    enablebanking_service: EnableBanking,
+    enablebanking_service: Annotated[EnableBankingService, Depends()],
 ) -> BankAuthResponse:
     """Start bank authorization flow"""
     try:
@@ -69,8 +71,8 @@ async def connect_to_bank(
 @router.post("/banks/callback")
 async def bank_auth_callback(
     request: BankCallbackRequest,
-    enablebanking_service: EnableBanking,
-    session_repo: SessionRepo,
+    enablebanking_service: Annotated[EnableBankingService, Depends()],
+    session_repo: Annotated[SessionRepository, Depends()],
 ) -> dict:
     """Exchange authorization code for a session"""
     try:
@@ -100,7 +102,7 @@ async def bank_auth_callback(
 
 @router.get("/banks/status")
 async def get_bank_connections_status(
-    session_repo: SessionRepo,
+    session_repo: Annotated[SessionRepository, Depends()],
 ) -> list[BankConnectionStatus]:
     """Get status of all bank connections"""
     try:
@@ -145,7 +147,7 @@ async def get_bank_connections_status(
 @router.delete("/banks/connections/{session_id}")
 async def delete_bank_connection(
     session_id: str,
-    session_repo: SessionRepo,
+    session_repo: Annotated[SessionRepository, Depends()],
 ) -> dict:
     """Delete a bank connection session"""
     deleted = session_repo.delete_session(session_id)

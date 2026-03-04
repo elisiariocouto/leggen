@@ -13,7 +13,7 @@ from leggen.repositories import (
     ensure_tables,
 )
 from leggen.services.data_processors import (
-    AccountEnricher,
+    enrich_account_details,
     merge_account_metadata_into_balances,
     process_transactions,
     transform_to_database_format,
@@ -39,9 +39,6 @@ class SyncService:
         self.transactions = TransactionRepository()
         self.sync = SyncRepository()
         self.session_repo = SessionRepository()
-
-        # Data processors
-        self.account_enricher = AccountEnricher()
 
         self._sync_status = SyncStatus(is_running=False)
 
@@ -144,12 +141,11 @@ class SyncService:
 
                     # Enrich and persist account details
                     if account_details and balances:
-                        enriched_account_details = (
-                            await self.account_enricher.enrich_account_details(
-                                account_details,
-                                balances,
-                                aspsp_country=session.get("aspsp_country"),
-                            )
+                        enriched_account_details = await enrich_account_details(
+                            account_details,
+                            balances,
+                            aspsp_country=session.get("aspsp_country"),
+                            enablebanking_service=self.enablebanking,
                         )
 
                         self.accounts.persist(enriched_account_details)
@@ -323,25 +319,3 @@ class SyncService:
                     )
             except (ValueError, TypeError):
                 continue
-
-    async def sync_specific_accounts(
-        self,
-        account_ids: List[str],
-        full_sync: bool = False,
-        trigger_type: str = "manual",
-    ) -> SyncResult:
-        """Sync specific accounts"""
-        if self._sync_status.is_running:
-            raise Exception("Sync is already running")
-
-        self._sync_status.is_running = True
-
-        try:
-            # For now, delegate to sync_all_accounts
-            result = await self.sync_all_accounts(
-                full_sync=full_sync, trigger_type=trigger_type
-            )
-            return result
-
-        finally:
-            self._sync_status.is_running = False

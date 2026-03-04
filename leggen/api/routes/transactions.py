@@ -1,19 +1,20 @@
 from datetime import datetime, timedelta
-from typing import List, Optional, Union
+from typing import Annotated, List, Optional, Union
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
 
-from leggen.api.dependencies import AnalyticsProc, TransactionRepo
 from leggen.api.models.accounts import Transaction, TransactionSummary
 from leggen.api.models.common import PaginatedResponse
+from leggen.repositories import TransactionRepository
+from leggen.services.data_processors import calculate_monthly_stats
 
 router = APIRouter()
 
 
 @router.get("/transactions")
 async def get_all_transactions(
-    transaction_repo: TransactionRepo,
+    transaction_repo: Annotated[TransactionRepository, Depends()],
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     per_page: int = Query(default=50, le=500, description="Items per page"),
     summary_only: bool = Query(
@@ -119,7 +120,7 @@ async def get_all_transactions(
 
 @router.get("/transactions/stats")
 async def get_transaction_stats(
-    transaction_repo: TransactionRepo,
+    transaction_repo: Annotated[TransactionRepository, Depends()],
     days: int = Query(default=30, description="Number of days to include in stats"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
 ) -> dict:
@@ -199,7 +200,6 @@ async def get_transaction_stats(
 
 @router.get("/transactions/monthly-stats")
 async def get_monthly_transaction_stats(
-    analytics_proc: AnalyticsProc,
     days: int = Query(default=365, description="Number of days to include"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
 ) -> List[dict]:
@@ -217,7 +217,7 @@ async def get_monthly_transaction_stats(
 
         # Get monthly aggregated stats from database
         db_path = path_manager.get_database_path()
-        monthly_stats = analytics_proc.calculate_monthly_stats(
+        monthly_stats = calculate_monthly_stats(
             db_path, account_id=account_id, date_from=date_from, date_to=date_to
         )
 
