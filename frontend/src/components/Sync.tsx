@@ -8,6 +8,7 @@ import {
   TrendingUp,
   User,
   FileText,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../lib/api";
@@ -30,6 +31,12 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { ScrollArea } from "./ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import type { SyncOperationsResponse, SyncOperation } from "../types/api";
 
 // Component for viewing sync operation logs
@@ -89,7 +96,7 @@ function LogsDialog({ operation }: { operation: SyncOperation }) {
   );
 }
 
-export default function System() {
+export default function Sync() {
   const queryClient = useQueryClient();
 
   const {
@@ -103,7 +110,8 @@ export default function System() {
   });
 
   const syncMutation = useMutation({
-    mutationFn: () => apiClient.triggerSync(),
+    mutationFn: (params?: { full_sync?: boolean }) =>
+      apiClient.triggerSync(params),
     onSuccess: (result) => {
       if (result.success) {
         toast.success(
@@ -202,23 +210,51 @@ export default function System() {
                 </span>
               </CardDescription>
             </div>
-            <Button
-              size="sm"
-              onClick={() => syncMutation.mutate()}
-              disabled={syncMutation.isPending}
-            >
-              {syncMutation.isPending ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Sync Now
-                </>
-              )}
-            </Button>
+            <div className="flex">
+              <Button
+                size="sm"
+                onClick={() => syncMutation.mutate({})}
+                disabled={syncMutation.isPending}
+                className="rounded-r-none"
+              >
+                {syncMutation.isPending ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Syncing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Sync Now
+                  </>
+                )}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    disabled={syncMutation.isPending}
+                    className="rounded-l-none border-l-0 px-2"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => syncMutation.mutate({})}
+                  >
+                    Last 30 days
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      syncMutation.mutate({ full_sync: true })
+                    }
+                  >
+                    Full history
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

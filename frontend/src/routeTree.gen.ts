@@ -9,7 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SystemRouteImport } from './routes/system'
+import { Route as SyncRouteImport } from './routes/sync'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as BankConnectedRouteImport } from './routes/bank-connected'
@@ -17,9 +17,9 @@ import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
 
-const SystemRoute = SystemRouteImport.update({
-  id: '/system',
-  path: '/system',
+const SyncRoute = SyncRouteImport.update({
+  id: '/sync',
+  path: '/sync',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -60,7 +60,7 @@ export interface FileRoutesByFullPath {
   '/bank-connected': typeof BankConnectedRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
-  '/system': typeof SystemRoute
+  '/sync': typeof SyncRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,7 +69,7 @@ export interface FileRoutesByTo {
   '/bank-connected': typeof BankConnectedRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
-  '/system': typeof SystemRoute
+  '/sync': typeof SyncRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,7 +79,7 @@ export interface FileRoutesById {
   '/bank-connected': typeof BankConnectedRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
-  '/system': typeof SystemRoute
+  '/sync': typeof SyncRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,7 +90,7 @@ export interface FileRouteTypes {
     | '/bank-connected'
     | '/notifications'
     | '/settings'
-    | '/system'
+    | '/sync'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -99,7 +99,7 @@ export interface FileRouteTypes {
     | '/bank-connected'
     | '/notifications'
     | '/settings'
-    | '/system'
+    | '/sync'
   id:
     | '__root__'
     | '/'
@@ -108,7 +108,7 @@ export interface FileRouteTypes {
     | '/bank-connected'
     | '/notifications'
     | '/settings'
-    | '/system'
+    | '/sync'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,16 +118,16 @@ export interface RootRouteChildren {
   BankConnectedRoute: typeof BankConnectedRoute
   NotificationsRoute: typeof NotificationsRoute
   SettingsRoute: typeof SettingsRoute
-  SystemRoute: typeof SystemRoute
+  SyncRoute: typeof SyncRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/system': {
-      id: '/system'
-      path: '/system'
-      fullPath: '/system'
-      preLoaderRoute: typeof SystemRouteImport
+    '/sync': {
+      id: '/sync'
+      path: '/sync'
+      fullPath: '/sync'
+      preLoaderRoute: typeof SyncRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -182,7 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   BankConnectedRoute: BankConnectedRoute,
   NotificationsRoute: NotificationsRoute,
   SettingsRoute: SettingsRoute,
-  SystemRoute: SystemRoute,
+  SyncRoute: SyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -31,7 +31,7 @@ const navigation = [
   { name: "Transactions", icon: ArrowLeftRight, to: "/" },
   { name: "Analytics", icon: BarChart3, to: "/analytics" },
   { name: "Accounts", icon: Building2, to: "/accounts" },
-  { name: "Sync", icon: RefreshCw, to: "/system" },
+  { name: "Sync", icon: RefreshCw, to: "/sync" },
   { name: "Settings", icon: Settings, to: "/settings" },
 ];
 
