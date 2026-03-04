@@ -46,6 +46,28 @@ class SyncStatus(BaseModel):
         json_encoders = {datetime: lambda v: v.isoformat() if v else None}
 
 
+class SyncScheduleRequest(BaseModel):
+    """Request to update sync schedule"""
+
+    enabled: bool = True
+    hour: int = 3
+    minute: int = 0
+    cron: Optional[str] = None
+
+
+class SyncScheduleResponse(BaseModel):
+    """Response with current sync schedule"""
+
+    enabled: bool
+    hour: int
+    minute: int
+    cron: Optional[str] = None
+    next_sync_time: Optional[str] = None
+
+    class Config:
+        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
+
+
 class SyncResult(BaseModel):
     """Result of a sync operation"""
 

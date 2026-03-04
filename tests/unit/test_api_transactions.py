@@ -268,14 +268,17 @@ class TestTransactionsAPI:
         )
 
         with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions/stats?days=30")
+            response = api_client.get(
+                "/api/v1/transactions/stats?date_from=2025-08-01&date_to=2025-10-01"
+            )
 
         fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
 
-        assert data["period_days"] == 30
+        assert data["date_from"] == "2025-08-01"
+        assert data["date_to"] == "2025-10-01"
         assert data["total_transactions"] == 3
         assert data["booked_transactions"] == 2
         assert data["pending_transactions"] == 1
@@ -314,7 +317,7 @@ class TestTransactionsAPI:
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.get(
-                "/api/v1/transactions/stats?account_id=test-account-123"
+                "/api/v1/transactions/stats?date_from=2025-08-01&date_to=2025-10-01&account_id=test-account-123"
             )
 
         fastapi_app.dependency_overrides.clear()
@@ -341,7 +344,9 @@ class TestTransactionsAPI:
         )
 
         with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions/stats")
+            response = api_client.get(
+                "/api/v1/transactions/stats?date_from=2025-01-01&date_to=2025-12-31"
+            )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -372,21 +377,23 @@ class TestTransactionsAPI:
         )
 
         with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions/stats")
+            response = api_client.get(
+                "/api/v1/transactions/stats?date_from=2025-01-01&date_to=2025-12-31"
+            )
 
         fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 500
         assert "Failed to get transaction stats" in response.json()["detail"]
 
-    def test_get_transaction_stats_custom_period(
+    def test_get_transaction_stats_custom_date_range(
         self,
         fastapi_app,
         api_client,
         mock_config,
         mock_transaction_repo,
     ):
-        """Test getting transaction stats for custom time period."""
+        """Test getting transaction stats for a custom date range."""
         mock_transactions = [
             {
                 "internalTransactionId": "txn-001",
@@ -404,16 +411,19 @@ class TestTransactionsAPI:
         )
 
         with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions/stats?days=7")
+            response = api_client.get(
+                "/api/v1/transactions/stats?date_from=2025-08-28&date_to=2025-09-04"
+            )
 
         fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
-        assert data["period_days"] == 7
+        assert data["date_from"] == "2025-08-28"
+        assert data["date_to"] == "2025-09-04"
 
-        # Verify the date range was calculated correctly for 7 days
+        # Verify the repository was called with the date range
         mock_transaction_repo.get_transactions.assert_called_once()
         call_kwargs = mock_transaction_repo.get_transactions.call_args.kwargs
-        assert "date_from" in call_kwargs
-        assert "date_to" in call_kwargs
+        assert call_kwargs["date_from"] == "2025-08-28"
+        assert call_kwargs["date_to"] == "2025-09-04"

@@ -84,7 +84,8 @@ async def _fetch_institution_logo(
 def calculate_historical_balances(
     db_path: Path,
     account_id: Optional[str] = None,
-    days: int = 365,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Generate historical balance progression based on transaction history.
@@ -95,7 +96,8 @@ def calculate_historical_balances(
     Args:
         db_path: Path to SQLite database
         account_id: Optional account ID to filter by
-        days: Number of days to look back (default 365)
+        date_from: Start date (YYYY-MM-DD)
+        date_to: End date (YYYY-MM-DD)
 
     Returns:
         List of historical balance data points
@@ -108,8 +110,10 @@ def calculate_historical_balances(
     cursor = conn.cursor()
 
     try:
-        cutoff_date = (datetime.now() - timedelta(days=days)).date().isoformat()
-        today_date = datetime.now().date().isoformat()
+        cutoff_date = (
+            date_from or (datetime.now() - timedelta(days=365)).date().isoformat()
+        )
+        today_date = date_to or datetime.now().date().isoformat()
 
         # Single SQL query to generate historical balances using window functions
         query = """
@@ -121,17 +125,34 @@ def calculate_historical_balances(
             FROM date_series
             WHERE ref_date < date(?)
         ),
+        preferred_type AS (
+            -- Pick best available balance type per account:
+            -- closingBooked/CLBD first, then interimAvailable/ITAV as fallback
+            SELECT account_id,
+                CASE
+                    WHEN MAX(CASE WHEN type IN ('closingBooked', 'CLBD') THEN 1 ELSE 0 END) = 1
+                    THEN CASE WHEN MAX(CASE WHEN type = 'closingBooked' THEN 1 ELSE 0 END) = 1
+                         THEN 'closingBooked' ELSE 'CLBD' END
+                    WHEN MAX(CASE WHEN type IN ('interimAvailable', 'ITAV') THEN 1 ELSE 0 END) = 1
+                    THEN CASE WHEN MAX(CASE WHEN type = 'interimAvailable' THEN 1 ELSE 0 END) = 1
+                         THEN 'interimAvailable' ELSE 'ITAV' END
+                    ELSE NULL
+                END as best_type
+            FROM balances
+            GROUP BY account_id
+            HAVING best_type IS NOT NULL
+        ),
         current_balances AS (
-            -- Get current balance for each account/type
-            SELECT account_id, type, amount, currency
+            -- Get current balance for each account using preferred type
+            SELECT b1.account_id, b1.type, b1.amount, b1.currency
             FROM balances b1
+            JOIN preferred_type pt ON b1.account_id = pt.account_id AND b1.type = pt.best_type
             WHERE b1.timestamp = (
                 SELECT MAX(b2.timestamp)
                 FROM balances b2
                 WHERE b2.account_id = b1.account_id AND b2.type = b1.type
             )
             {account_filter}
-            AND b1.type = 'closingBooked'  -- Focus on closingBooked for charts
         ),
         historical_points AS (
             -- Calculate balance at each weekly point by subtracting future transactions

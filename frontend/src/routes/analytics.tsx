@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { format } from "date-fns";
 import {
   CreditCard,
   TrendingUp,
@@ -13,21 +14,41 @@ import StatCard from "../components/analytics/StatCard";
 import BalanceChart from "../components/analytics/BalanceChart";
 import TransactionDistribution from "../components/analytics/TransactionDistribution";
 import MonthlyTrends from "../components/analytics/MonthlyTrends";
-import TimePeriodFilter from "../components/analytics/TimePeriodFilter";
+import { DateRangePicker } from "../components/filters/DateRangePicker";
+import type { DatePreset } from "../components/filters/DateRangePicker";
+import { AccountCombobox } from "../components/filters/AccountCombobox";
 import { Card, CardContent } from "../components/ui/card";
-import type { TimePeriod } from "../lib/timePeriods";
 import { TIME_PERIODS } from "../lib/timePeriods";
 
+const analyticsPresets: DatePreset[] = TIME_PERIODS.map((p) => ({
+  label: p.label,
+  getValue: p.getDateRange,
+}));
+
 function AnalyticsDashboard() {
-  // Default to Last 365 days
-  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>(
-    TIME_PERIODS.find((p) => p.value === "365d") || TIME_PERIODS[3],
-  );
+  // Default date range: last 365 days
+  const defaultRange = TIME_PERIODS.find((p) => p.value === "365d")!.getDateRange();
+  const [startDate, setStartDate] = useState(defaultRange.startDate);
+  const [endDate, setEndDate] = useState(defaultRange.endDate);
+  const [selectedAccount, setSelectedAccount] = useState("");
+
+  const accountId = selectedAccount || undefined;
+
+  const handleDateRangeChange = (start: string, end: string) => {
+    setStartDate(start);
+    setEndDate(end);
+  };
+
+  const subtitle = useMemo(() => {
+    const from = new Date(startDate);
+    const to = new Date(endDate);
+    return `${format(from, "MMM d, yyyy")} – ${format(to, "MMM d, yyyy")}`;
+  }, [startDate, endDate]);
 
   // Fetch analytics data
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["transaction-stats", selectedPeriod.days],
-    queryFn: () => apiClient.getTransactionStats(selectedPeriod.days),
+    queryKey: ["transaction-stats", startDate, endDate, accountId],
+    queryFn: () => apiClient.getTransactionStats(startDate, endDate, accountId),
   });
 
   const { data: accounts, isLoading: accountsLoading } = useQuery({
@@ -36,8 +57,9 @@ function AnalyticsDashboard() {
   });
 
   const { data: balances, isLoading: balancesLoading } = useQuery({
-    queryKey: ["historical-balances", selectedPeriod.days],
-    queryFn: () => apiClient.getHistoricalBalances(selectedPeriod.days),
+    queryKey: ["historical-balances", startDate, endDate, accountId],
+    queryFn: () =>
+      apiClient.getHistoricalBalances(startDate, endDate, accountId),
   });
 
   const isLoading = statsLoading || accountsLoading || balancesLoading;
@@ -63,18 +85,28 @@ function AnalyticsDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Time Period Filter */}
-      <TimePeriodFilter
-        selectedPeriod={selectedPeriod}
-        onPeriodChange={setSelectedPeriod}
-      />
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <DateRangePicker
+          startDate={startDate}
+          endDate={endDate}
+          onDateRangeChange={handleDateRangeChange}
+          presets={analyticsPresets}
+        />
+        <AccountCombobox
+          accounts={accounts}
+          selectedAccount={selectedAccount}
+          onAccountChange={setSelectedAccount}
+          className="w-[260px]"
+        />
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatCard
           title="Total Transactions"
           value={stats?.total_transactions || 0}
-          subtitle={`Last ${stats?.period_days || 0} days`}
+          subtitle={subtitle}
           icon={Activity}
           iconColor="blue"
         />
@@ -136,7 +168,11 @@ function AnalyticsDashboard() {
       {/* Monthly Trends */}
       <Card>
         <CardContent className="p-6">
-          <MonthlyTrends days={selectedPeriod.days} />
+          <MonthlyTrends
+            dateFrom={startDate}
+            dateTo={endDate}
+            accountId={accountId}
+          />
         </CardContent>
       </Card>
     </div>

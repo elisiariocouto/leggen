@@ -14,7 +14,9 @@ import apiClient from "../../lib/api";
 
 interface MonthlyTrendsProps {
   className?: string;
-  days?: number;
+  dateFrom: string;
+  dateTo: string;
+  accountId?: string;
 }
 
 interface TooltipProps {
@@ -29,28 +31,17 @@ interface TooltipProps {
 
 export default function MonthlyTrends({
   className,
-  days = 365,
+  dateFrom,
+  dateTo,
+  accountId,
 }: MonthlyTrendsProps) {
   const { isBalanceVisible } = useBalanceVisibility();
 
-  // Get pre-calculated monthly stats from the new endpoint
   const { data: monthlyData, isLoading } = useQuery({
-    queryKey: ["monthly-stats", days],
-    queryFn: async () => {
-      return await apiClient.getMonthlyTransactionStats(days);
-    },
+    queryKey: ["monthly-stats", dateFrom, dateTo, accountId],
+    queryFn: () =>
+      apiClient.getTransactionStatsByMonth(dateFrom, dateTo, accountId),
   });
-
-  // Calculate number of months to display based on days filter
-  const getMonthsToDisplay = (days: number): number => {
-    if (days <= 30) return 1;
-    if (days <= 180) return 6;
-    if (days <= 365) return 12;
-    return Math.ceil(days / 30);
-  };
-
-  const monthsToDisplay = getMonthsToDisplay(days);
-  const displayData = monthlyData ? monthlyData.slice(-monthsToDisplay) : [];
 
   if (isLoading) {
     return (
@@ -65,7 +56,7 @@ export default function MonthlyTrends({
     );
   }
 
-  if (displayData.length === 0) {
+  if (!monthlyData || monthlyData.length === 0) {
     return (
       <div className={className}>
         <h3 className="text-lg font-medium text-foreground mb-4">
@@ -94,23 +85,15 @@ export default function MonthlyTrends({
     return null;
   };
 
-  // Generate dynamic title based on time period
-  const getTitle = (days: number): string => {
-    if (days <= 30) return "Monthly Spending Trends (Last 30 Days)";
-    if (days <= 180) return "Monthly Spending Trends (Last 6 Months)";
-    if (days <= 365) return "Monthly Spending Trends (Last 12 Months)";
-    return `Monthly Spending Trends (Last ${Math.ceil(days / 30)} Months)`;
-  };
-
   return (
     <div className={className}>
       <h3 className="text-lg font-medium text-foreground mb-4">
-        {getTitle(days)}
+        Monthly Spending Trends
       </h3>
       <div className={cn("h-80", !isBalanceVisible && "blur-md select-none")}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={displayData}
+            data={monthlyData}
             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />

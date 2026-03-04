@@ -188,7 +188,8 @@ export interface VersionData {
 
 // Analytics data types
 export interface TransactionStats {
-  period_days: number;
+  date_from: string;
+  date_to: string;
   total_transactions: number;
   booked_transactions: number;
   pending_transactions: number;
@@ -197,6 +198,13 @@ export interface TransactionStats {
   net_change: number;
   average_transaction: number;
   accounts_included: number;
+}
+
+export interface MonthlyStats {
+  month: string;
+  income: number;
+  expenses: number;
+  net: number;
 }
 
 // Sync operations types
@@ -290,4 +298,13 @@ export interface BackupInfo {
 export interface BackupOperation {
   operation: string;
   backup_key?: string;
+}
+
+// Sync schedule types
+export interface ScheduleSettings {
+  enabled: boolean;
+  hour: number;
+  minute: number;
+  cron?: string | null;
+  next_sync_time?: string | null;
 }

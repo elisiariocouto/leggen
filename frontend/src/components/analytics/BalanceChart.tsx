@@ -77,8 +77,8 @@ export default function BalanceChart({
     return `Account ${accountId.split("-")[1]}`;
   };
   // Process balance data for the chart
+  // Backend already picks the best balance type per account, so no client-side type filtering needed
   const chartData = data
-    .filter((balance) => balance.balance_type === "closingBooked")
     .map((balance) => ({
       date: new Date(balance.reference_date).toLocaleDateString("en-GB"), // DD/MM/YYYY format
       balance: balance.balance_amount,

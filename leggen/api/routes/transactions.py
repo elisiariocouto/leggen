@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
@@ -121,28 +120,38 @@ async def get_all_transactions(
 @router.get("/transactions/stats")
 async def get_transaction_stats(
     transaction_repo: Annotated[TransactionRepository, Depends()],
-    days: int = Query(default=30, description="Number of days to include in stats"),
+    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
+    date_to: str = Query(description="End date (YYYY-MM-DD)"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
-) -> dict:
-    """Get transaction statistics for the last N days from database"""
+    group_by: Optional[Literal["month"]] = Query(
+        default=None, description="Group results by month"
+    ),
+) -> Union[dict, List[dict]]:
+    """Get transaction statistics for a date range.
+
+    Without group_by: returns totals (transactions, income, expenses, etc.)
+    With group_by=month: returns array of monthly stats.
+    """
     try:
-        # Date range for stats
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=days)
+        if group_by == "month":
+            from leggen.utils.paths import path_manager
 
-        # Format dates for database query
-        date_from = start_date.isoformat()
-        date_to = end_date.isoformat()
+            db_path = path_manager.get_database_path()
+            return calculate_monthly_stats(
+                db_path,
+                account_id=account_id,
+                date_from=date_from,
+                date_to=date_to,
+            )
 
-        # Get transactions from database
+        # Default: return totals
         recent_transactions = transaction_repo.get_transactions(
             account_id=account_id,
             date_from=date_from,
             date_to=date_to,
-            limit=None,  # Get all matching transactions for stats
+            limit=None,
         )
 
-        # Calculate stats
         total_transactions = len(recent_transactions)
         total_income = sum(
             txn["transactionValue"]
@@ -156,7 +165,6 @@ async def get_transaction_stats(
         )
         net_change = total_income - total_expenses
 
-        # Count by status
         booked_count = len(
             [txn for txn in recent_transactions if txn["transactionStatus"] == "booked"]
         )
@@ -168,11 +176,11 @@ async def get_transaction_stats(
             ]
         )
 
-        # Count unique accounts
         unique_accounts = len({txn["accountId"] for txn in recent_transactions})
 
-        stats = {
-            "period_days": days,
+        return {
+            "date_from": date_from,
+            "date_to": date_to,
             "total_transactions": total_transactions,
             "booked_transactions": booked_count,
             "pending_transactions": pending_count,
@@ -189,42 +197,8 @@ async def get_transaction_stats(
             "accounts_included": unique_accounts,
         }
 
-        return stats
-
     except Exception as e:
         logger.error(f"Failed to get transaction stats from database: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get transaction stats: {str(e)}"
-        ) from e
-
-
-@router.get("/transactions/monthly-stats")
-async def get_monthly_transaction_stats(
-    days: int = Query(default=365, description="Number of days to include"),
-    account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
-) -> List[dict]:
-    """Get monthly transaction statistics aggregated by the database"""
-    try:
-        from leggen.utils.paths import path_manager
-
-        # Date range for monthly stats
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=days)
-
-        # Format dates for database query
-        date_from = start_date.isoformat()
-        date_to = end_date.isoformat()
-
-        # Get monthly aggregated stats from database
-        db_path = path_manager.get_database_path()
-        monthly_stats = calculate_monthly_stats(
-            db_path, account_id=account_id, date_from=date_from, date_to=date_to
-        )
-
-        return monthly_stats
-
-    except Exception as e:
-        logger.error(f"Failed to get monthly transaction stats: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get monthly stats: {str(e)}"
         ) from e

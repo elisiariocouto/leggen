@@ -124,9 +124,8 @@ async def get_all_balances(
 
 @router.get("/balances/history")
 async def get_historical_balances(
-    days: Optional[int] = Query(
-        default=365, le=1095, ge=1, description="Number of days of history to retrieve"
-    ),
+    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
+    date_to: str = Query(description="End date (YYYY-MM-DD)"),
     account_id: Optional[str] = Query(
         default=None, description="Filter by specific account ID"
     ),
@@ -135,10 +134,9 @@ async def get_historical_balances(
     try:
         from leggen.utils.paths import path_manager
 
-        # Get historical balances from database
         db_path = path_manager.get_database_path()
         historical_balances = calculate_historical_balances(
-            db_path, account_id=account_id, days=days or 365
+            db_path, account_id=account_id, date_from=date_from, date_to=date_to
         )
 
         return historical_balances

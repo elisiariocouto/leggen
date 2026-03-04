@@ -12,6 +12,7 @@ import {
   Cloud,
   Archive,
   Eye,
+  Clock,
 } from "lucide-react";
 import {
   Tooltip,
@@ -31,17 +32,19 @@ import {
 import { Button } from "./ui/button";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Label } from "./ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+
 import AccountsSkeleton from "./AccountsSkeleton";
 import NotificationFiltersDrawer from "./NotificationFiltersDrawer";
 import DiscordConfigDrawer from "./DiscordConfigDrawer";
 import TelegramConfigDrawer from "./TelegramConfigDrawer";
 import S3BackupConfigDrawer from "./S3BackupConfigDrawer";
+import SyncScheduleDrawer from "./SyncScheduleDrawer";
 import type {
   NotificationSettings,
   NotificationService,
   BackupSettings,
   BackupInfo,
+  ScheduleSettings,
 } from "../types/api";
 
 export default function Settings() {
@@ -68,6 +71,17 @@ export default function Settings() {
   } = useQuery<NotificationService[]>({
     queryKey: ["notificationServices"],
     queryFn: apiClient.getNotificationServices,
+  });
+
+  // Schedule query
+  const {
+    data: scheduleSettings,
+    isLoading: scheduleLoading,
+    error: scheduleError,
+    refetch: refetchSchedule,
+  } = useQuery<ScheduleSettings>({
+    queryKey: ["scheduleSettings"],
+    queryFn: apiClient.getScheduleSettings,
   });
 
   // Backup queries
@@ -151,8 +165,8 @@ export default function Settings() {
     setShowBackups(true);
   };
 
-  const isLoading = settingsLoading || servicesLoading || backupLoading;
-  const hasError = settingsError || servicesError || backupError;
+  const isLoading = settingsLoading || servicesLoading || backupLoading || scheduleLoading;
+  const hasError = settingsError || servicesError || backupError || scheduleError;
 
   if (isLoading) {
     return <AccountsSkeleton />;
@@ -173,6 +187,7 @@ export default function Settings() {
               refetchSettings();
               refetchServices();
               refetchBackup();
+              refetchSchedule();
             }}
             variant="outline"
             size="sm"
@@ -187,22 +202,52 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="notifications" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger
-            value="notifications"
-            className="flex items-center space-x-2"
-          >
-            <Bell className="h-4 w-4" />
-            <span>Notifications</span>
-          </TabsTrigger>
-          <TabsTrigger value="backup" className="flex items-center space-x-2">
-            <Cloud className="h-4 w-4" />
-            <span>Backup</span>
-          </TabsTrigger>
-        </TabsList>
+          {/* Sync Schedule */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center space-x-2">
+                  <Clock className="h-5 w-5 text-primary" />
+                  <span>Sync Schedule</span>
+                </CardTitle>
+                <SyncScheduleDrawer settings={scheduleSettings} />
+              </div>
+              <CardDescription>
+                Configure automatic sync scheduling
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-muted rounded-md p-4">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      scheduleSettings?.enabled
+                        ? "bg-green-500"
+                        : "bg-muted-foreground"
+                    }`}
+                  />
+                  <span className="text-sm font-medium">
+                    {scheduleSettings?.enabled ? "Enabled" : "Disabled"}
+                  </span>
+                </div>
+                {scheduleSettings?.enabled && (
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <p>
+                      {scheduleSettings.cron
+                        ? `Custom schedule: ${scheduleSettings.cron}`
+                        : `Daily at ${String(scheduleSettings.hour).padStart(2, "0")}:${String(scheduleSettings.minute).padStart(2, "0")}`}
+                    </p>
+                    {scheduleSettings.next_sync_time && (
+                      <p>
+                        Next sync: {formatDate(scheduleSettings.next_sync_time)}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-        <TabsContent value="notifications" className="space-y-6">
           {/* Notification Services */}
           <Card>
             <CardHeader>
@@ -398,9 +443,6 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="backup" className="space-y-6">
           {/* S3 Backup Configuration */}
           <Card>
             <CardHeader>
@@ -547,8 +589,6 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }

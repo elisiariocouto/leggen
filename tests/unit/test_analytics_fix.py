@@ -48,7 +48,9 @@ class TestAnalyticsFix:
         app.dependency_overrides[TransactionRepository] = lambda: mock_transaction_repo
         client = TestClient(app)
 
-        response = client.get("/api/v1/transactions/stats?days=365")
+        response = client.get(
+            "/api/v1/transactions/stats?date_from=2024-01-01&date_to=2025-01-01"
+        )
 
         assert response.status_code == 200
         data = response.json()

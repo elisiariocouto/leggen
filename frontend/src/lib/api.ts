@@ -11,6 +11,7 @@ import type {
   HealthData,
   AccountUpdate,
   TransactionStats,
+  MonthlyStats,
   SyncOperationsResponse,
   SyncResult,
   BankInstitution,
@@ -21,6 +22,7 @@ import type {
   BackupTest,
   BackupInfo,
   BackupOperation,
+  ScheduleSettings,
 } from "../types/api";
 
 // Use VITE_API_URL for development, relative URLs for production
@@ -60,11 +62,13 @@ export const apiClient = {
 
   // Get historical balances for balance progression chart
   getHistoricalBalances: async (
-    days?: number,
+    dateFrom: string,
+    dateTo: string,
     accountId?: string,
   ): Promise<Balance[]> => {
     const queryParams = new URLSearchParams();
-    if (days) queryParams.append("days", days.toString());
+    queryParams.append("date_from", dateFrom);
+    queryParams.append("date_to", dateTo);
     if (accountId) queryParams.append("account_id", accountId);
 
     const response = await api.get<Balance[]>(
@@ -156,9 +160,15 @@ export const apiClient = {
   },
 
   // Analytics endpoints
-  getTransactionStats: async (days?: number): Promise<TransactionStats> => {
+  getTransactionStats: async (
+    dateFrom: string,
+    dateTo: string,
+    accountId?: string,
+  ): Promise<TransactionStats> => {
     const queryParams = new URLSearchParams();
-    if (days) queryParams.append("days", days.toString());
+    queryParams.append("date_from", dateFrom);
+    queryParams.append("date_to", dateTo);
+    if (accountId) queryParams.append("account_id", accountId);
 
     const response = await api.get<TransactionStats>(
       `/transactions/stats?${queryParams.toString()}`,
@@ -166,28 +176,21 @@ export const apiClient = {
     return response.data;
   },
 
-  // Get monthly transaction statistics (pre-calculated)
-  getMonthlyTransactionStats: async (
-    days?: number,
-  ): Promise<
-    Array<{
-      month: string;
-      income: number;
-      expenses: number;
-      net: number;
-    }>
-  > => {
+  // Get monthly transaction statistics (group_by=month)
+  getTransactionStatsByMonth: async (
+    dateFrom: string,
+    dateTo: string,
+    accountId?: string,
+  ): Promise<MonthlyStats[]> => {
     const queryParams = new URLSearchParams();
-    if (days) queryParams.append("days", days.toString());
+    queryParams.append("date_from", dateFrom);
+    queryParams.append("date_to", dateTo);
+    queryParams.append("group_by", "month");
+    if (accountId) queryParams.append("account_id", accountId);
 
-    const response = await api.get<
-      Array<{
-        month: string;
-        income: number;
-        expenses: number;
-        net: number;
-      }>
-    >(`/transactions/monthly-stats?${queryParams.toString()}`);
+    const response = await api.get<MonthlyStats[]>(
+      `/transactions/stats?${queryParams.toString()}`,
+    );
     return response.data;
   },
 
@@ -307,6 +310,22 @@ export const apiClient = {
       success?: boolean;
       message?: string;
     }>("/backup/operation", operation);
+    return response.data;
+  },
+
+  // Sync schedule endpoints
+  getScheduleSettings: async (): Promise<ScheduleSettings> => {
+    const response = await api.get<ScheduleSettings>("/sync/schedule");
+    return response.data;
+  },
+
+  updateScheduleSettings: async (
+    settings: Omit<ScheduleSettings, "next_sync_time">,
+  ): Promise<ScheduleSettings> => {
+    const response = await api.put<ScheduleSettings>(
+      "/sync/schedule",
+      settings,
+    );
     return response.data;
   },
 };

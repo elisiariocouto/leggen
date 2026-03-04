@@ -12,84 +12,33 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+export interface DatePreset {
+  label: string;
+  getValue: () => { startDate: string; endDate: string };
+}
 
 export interface DateRangePickerProps {
   startDate: string;
   endDate: string;
   onDateRangeChange: (startDate: string, endDate: string) => void;
+  /** Presets shown as a dropdown below the calendar. If omitted, no presets are shown. */
+  presets?: DatePreset[];
   className?: string;
 }
-
-interface DatePreset {
-  label: string;
-  getValue: () => { startDate: string; endDate: string };
-}
-
-const datePresets: DatePreset[] = [
-  {
-    label: "Today",
-    getValue: () => {
-      const today = new Date();
-      return {
-        startDate: today.toISOString().split("T")[0],
-        endDate: today.toISOString().split("T")[0],
-      };
-    },
-  },
-  {
-    label: "Yesterday",
-    getValue: () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      return {
-        startDate: yesterday.toISOString().split("T")[0],
-        endDate: yesterday.toISOString().split("T")[0],
-      };
-    },
-  },
-  {
-    label: "Last 7 days",
-    getValue: () => {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(endDate.getDate() - 6);
-      return {
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
-      };
-    },
-  },
-  {
-    label: "Last 30 days",
-    getValue: () => {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(endDate.getDate() - 29);
-      return {
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
-      };
-    },
-  },
-  {
-    label: "This month",
-    getValue: () => {
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-      return {
-        startDate: startOfMonth.toISOString().split("T")[0],
-        endDate: endOfMonth.toISOString().split("T")[0],
-      };
-    },
-  },
-];
 
 export function DateRangePicker({
   startDate,
   endDate,
   onDateRangeChange,
+  presets,
   className,
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
@@ -117,31 +66,32 @@ export function DateRangePicker({
     }
   };
 
-  const handlePresetClick = (preset: DatePreset) => {
-    const { startDate: presetStart, endDate: presetEnd } = preset.getValue();
-    onDateRangeChange(presetStart, presetEnd);
-    setOpen(false);
+  const handlePresetChange = (value: string) => {
+    const preset = presets?.find((p) => p.label === value);
+    if (preset) {
+      const { startDate: presetStart, endDate: presetEnd } = preset.getValue();
+      onDateRangeChange(presetStart, presetEnd);
+      setOpen(false);
+    }
   };
+
+  const matchingPresetLabel = presets?.find((preset) => {
+    const { startDate: presetStart, endDate: presetEnd } = preset.getValue();
+    return presetStart === startDate && presetEnd === endDate;
+  })?.label;
 
   const formatDateRange = () => {
     if (!startDate || !endDate) {
       return "Select date range";
     }
 
+    if (matchingPresetLabel) {
+      return matchingPresetLabel;
+    }
+
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    // Check if it matches a preset
-    const matchingPreset = datePresets.find((preset) => {
-      const { startDate: presetStart, endDate: presetEnd } = preset.getValue();
-      return presetStart === startDate && presetEnd === endDate;
-    });
-
-    if (matchingPreset) {
-      return matchingPreset.label;
-    }
-
-    // Format custom range
     if (startDate === endDate) {
       return format(start, "MMM d, yyyy");
     }
@@ -178,19 +128,25 @@ export function DateRangePicker({
                 className="bg-transparent p-0"
               />
             </CardContent>
-            <CardFooter className="grid grid-cols-2 gap-1 border-t px-4 !pt-4">
-              {datePresets.map((preset) => (
-                <Button
-                  key={preset.label}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs px-2 h-7"
-                  onClick={() => handlePresetClick(preset)}
+            {presets && presets.length > 0 && (
+              <CardFooter className="border-t px-4 !pt-4">
+                <Select
+                  value={matchingPresetLabel ?? ""}
+                  onValueChange={handlePresetChange}
                 >
-                  {preset.label}
-                </Button>
-              ))}
-            </CardFooter>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Quick select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {presets.map((preset) => (
+                      <SelectItem key={preset.label} value={preset.label}>
+                        {preset.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardFooter>
+            )}
           </Card>
         </PopoverContent>
       </Popover>
