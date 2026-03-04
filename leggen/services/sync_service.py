@@ -10,11 +10,13 @@ from leggen.repositories import (
     SessionRepository,
     SyncRepository,
     TransactionRepository,
+    ensure_tables,
 )
 from leggen.services.data_processors import (
     AccountEnricher,
-    BalanceTransformer,
-    TransactionProcessor,
+    merge_account_metadata_into_balances,
+    process_transactions,
+    transform_to_database_format,
 )
 from leggen.services.enablebanking_service import EnableBankingService
 from leggen.services.notification_service import NotificationService
@@ -28,6 +30,9 @@ class SyncService:
         self.enablebanking = EnableBankingService()
         self.notifications = NotificationService()
 
+        # Ensure all tables exist (for CLI usage outside FastAPI lifespan)
+        ensure_tables()
+
         # Repositories
         self.accounts = AccountRepository()
         self.balances = BalanceRepository()
@@ -37,8 +42,6 @@ class SyncService:
 
         # Data processors
         self.account_enricher = AccountEnricher()
-        self.balance_transformer = BalanceTransformer()
-        self.transaction_processor = TransactionProcessor()
 
         self._sync_status = SyncStatus(is_running=False)
 
@@ -151,13 +154,13 @@ class SyncService:
 
                         self.accounts.persist(enriched_account_details)
 
-                        balances_with_account_info = self.balance_transformer.merge_account_metadata_into_balances(
-                            balances, enriched_account_details
-                        )
-                        balance_rows = (
-                            self.balance_transformer.transform_to_database_format(
-                                stored_id, balances_with_account_info
+                        balances_with_account_info = (
+                            merge_account_metadata_into_balances(
+                                balances, enriched_account_details
                             )
+                        )
+                        balance_rows = transform_to_database_format(
+                            stored_id, balances_with_account_info
                         )
                         self.balances.persist(stored_id, balance_rows)
                         balances_updated += len(balances.get("balances", []))
@@ -169,10 +172,8 @@ class SyncService:
                         account_id, date_from=date_from
                     )
                     if transactions:
-                        processed_transactions = (
-                            self.transaction_processor.process_transactions(
-                                stored_id, account_details, transactions
-                            )
+                        processed_transactions = process_transactions(
+                            stored_id, account_details, transactions
                         )
                         new_transactions = self.transactions.persist(
                             stored_id, processed_transactions
@@ -198,13 +199,18 @@ class SyncService:
                     logs.append(error_msg)
 
                     # Send notification for account sync failure
-                    await self.notifications.send_sync_failure_notification(
-                        {
-                            "account_id": account_id,
-                            "error": error_msg,
-                            "type": "account_sync_failure",
-                        }
-                    )
+                    try:
+                        await self.notifications.send_sync_failure_notification(
+                            {
+                                "account_id": account_id,
+                                "error": error_msg,
+                                "type": "account_sync_failure",
+                            }
+                        )
+                    except Exception as notify_err:
+                        logger.error(
+                            f"Failed to send sync failure notification: {notify_err}"
+                        )
 
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()

@@ -57,8 +57,6 @@ class TransactionRepository(BaseRepository):
     ) -> List[Dict[str, Any]]:
         """Persist transactions to database, return new ones"""
         try:
-            self.create_table()
-
             with self._get_db_connection() as conn:
                 cursor = conn.cursor()
 

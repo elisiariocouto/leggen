@@ -181,11 +181,10 @@ def mock_db_path(temp_db_path):
     original_database_path = path_manager._database_path
     path_manager.set_database_path(temp_db_path)
 
-    # Create the sessions table so bank tests can use it
-    from leggen.repositories import SessionRepository
+    # Create all tables so tests can use them
+    from leggen.repositories import ensure_tables
 
-    session_repo = SessionRepository()
-    session_repo.create_table()
+    ensure_tables()
 
     try:
         yield temp_db_path

@@ -41,8 +41,6 @@ class AccountRepository(BaseRepository):
 
     def persist(self, account_data: Dict[str, Any]) -> Dict[str, Any]:
         """Persist account details to database"""
-        self.create_table()
-
         with self._get_db_connection() as conn:
             cursor = conn.cursor()
 

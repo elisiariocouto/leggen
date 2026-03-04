@@ -46,8 +46,6 @@ class BalanceRepository(BaseRepository):
     def persist(self, account_id: str, balance_rows: List[tuple]) -> None:
         """Persist balance rows to database"""
         try:
-            self.create_table()
-
             with self._get_db_connection() as conn:
                 cursor = conn.cursor()
 

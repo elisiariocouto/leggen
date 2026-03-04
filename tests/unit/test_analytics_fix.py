@@ -6,8 +6,8 @@ from unittest.mock import Mock
 import pytest
 from fastapi.testclient import TestClient
 
-from leggen.api.dependencies import get_transaction_repository
 from leggen.commands.server import create_app
+from leggen.repositories import TransactionRepository
 
 
 class TestAnalyticsFix:
@@ -45,9 +45,7 @@ class TestAnalyticsFix:
         mock_transaction_repo.get_transactions.return_value = mock_transactions
 
         app = create_app()
-        app.dependency_overrides[get_transaction_repository] = lambda: (
-            mock_transaction_repo
-        )
+        app.dependency_overrides[TransactionRepository] = lambda: mock_transaction_repo
         client = TestClient(app)
 
         response = client.get("/api/v1/transactions/stats?days=365")

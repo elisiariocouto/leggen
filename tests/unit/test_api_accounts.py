@@ -4,10 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from leggen.api.dependencies import (
-    get_account_repository,
-    get_balance_repository,
-)
+from leggen.repositories import AccountRepository, BalanceRepository
 
 
 @pytest.mark.api
@@ -55,12 +52,8 @@ class TestAccountsAPI:
         mock_account_repo.get_accounts.return_value = mock_accounts
         mock_balance_repo.get_balances.return_value = mock_balances
 
-        fastapi_app.dependency_overrides[get_account_repository] = lambda: (
-            mock_account_repo
-        )
-        fastapi_app.dependency_overrides[get_balance_repository] = lambda: (
-            mock_balance_repo
-        )
+        fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
+        fastapi_app.dependency_overrides[BalanceRepository] = lambda: mock_balance_repo
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/accounts")
@@ -99,9 +92,7 @@ class TestAccountsAPI:
         mock_account_repo.get_account.return_value = mock_account
         mock_account_repo.persist.return_value = mock_account
 
-        fastapi_app.dependency_overrides[get_account_repository] = lambda: (
-            mock_account_repo
-        )
+        fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.put(
@@ -127,9 +118,7 @@ class TestAccountsAPI:
         """Test updating non-existent account."""
         mock_account_repo.get_account.return_value = None
 
-        fastapi_app.dependency_overrides[get_account_repository] = lambda: (
-            mock_account_repo
-        )
+        fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.put(

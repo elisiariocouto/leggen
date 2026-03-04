@@ -1,11 +1,9 @@
 import json
-import sqlite3
 from typing import Any, Dict, List
 
 from loguru import logger
 
 from leggen.repositories.base_repository import BaseRepository
-from leggen.utils.paths import path_manager
 
 
 class SyncRepository(BaseRepository):
@@ -48,42 +46,38 @@ class SyncRepository(BaseRepository):
     def persist(self, sync_operation: Dict[str, Any]) -> int:
         """Persist sync operation to database and return the ID"""
         try:
-            self.create_table()
+            with self._get_db_connection() as conn:
+                cursor = conn.cursor()
 
-            db_path = path_manager.get_database_path()
-            conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
+                cursor.execute(
+                    """INSERT INTO sync_operations (
+                        started_at, completed_at, success, accounts_processed,
+                        transactions_added, transactions_updated, balances_updated,
+                        duration_seconds, errors, logs, trigger_type
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        sync_operation.get("started_at"),
+                        sync_operation.get("completed_at"),
+                        sync_operation.get("success"),
+                        sync_operation.get("accounts_processed", 0),
+                        sync_operation.get("transactions_added", 0),
+                        sync_operation.get("transactions_updated", 0),
+                        sync_operation.get("balances_updated", 0),
+                        sync_operation.get("duration_seconds"),
+                        json.dumps(sync_operation.get("errors", [])),
+                        json.dumps(sync_operation.get("logs", [])),
+                        sync_operation.get("trigger_type", "manual"),
+                    ),
+                )
 
-            cursor.execute(
-                """INSERT INTO sync_operations (
-                    started_at, completed_at, success, accounts_processed,
-                    transactions_added, transactions_updated, balances_updated,
-                    duration_seconds, errors, logs, trigger_type
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    sync_operation.get("started_at"),
-                    sync_operation.get("completed_at"),
-                    sync_operation.get("success"),
-                    sync_operation.get("accounts_processed", 0),
-                    sync_operation.get("transactions_added", 0),
-                    sync_operation.get("transactions_updated", 0),
-                    sync_operation.get("balances_updated", 0),
-                    sync_operation.get("duration_seconds"),
-                    json.dumps(sync_operation.get("errors", [])),
-                    json.dumps(sync_operation.get("logs", [])),
-                    sync_operation.get("trigger_type", "manual"),
-                ),
-            )
+                operation_id = cursor.lastrowid
+                if operation_id is None:
+                    raise ValueError("Failed to get operation ID after insert")
 
-            operation_id = cursor.lastrowid
-            if operation_id is None:
-                raise ValueError("Failed to get operation ID after insert")
+                conn.commit()
 
-            conn.commit()
-            conn.close()
-
-            logger.debug(f"Persisted sync operation with ID: {operation_id}")
-            return operation_id
+                logger.debug(f"Persisted sync operation with ID: {operation_id}")
+                return operation_id
 
         except Exception as e:
             logger.error(f"Failed to persist sync operation: {e}")
@@ -92,40 +86,38 @@ class SyncRepository(BaseRepository):
     def get_operations(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         """Get sync operations from database"""
         try:
-            db_path = path_manager.get_database_path()
-            conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
+            with self._get_db_connection() as conn:
+                cursor = conn.cursor()
 
-            cursor.execute(
-                """SELECT id, started_at, completed_at, success, accounts_processed,
-                          transactions_added, transactions_updated, balances_updated,
-                          duration_seconds, errors, logs, trigger_type
-                   FROM sync_operations
-                   ORDER BY started_at DESC
-                   LIMIT ? OFFSET ?""",
-                (limit, offset),
-            )
+                cursor.execute(
+                    """SELECT id, started_at, completed_at, success, accounts_processed,
+                              transactions_added, transactions_updated, balances_updated,
+                              duration_seconds, errors, logs, trigger_type
+                       FROM sync_operations
+                       ORDER BY started_at DESC
+                       LIMIT ? OFFSET ?""",
+                    (limit, offset),
+                )
 
-            operations = []
-            for row in cursor.fetchall():
-                operation = {
-                    "id": row[0],
-                    "started_at": row[1],
-                    "completed_at": row[2],
-                    "success": bool(row[3]) if row[3] is not None else None,
-                    "accounts_processed": row[4],
-                    "transactions_added": row[5],
-                    "transactions_updated": row[6],
-                    "balances_updated": row[7],
-                    "duration_seconds": row[8],
-                    "errors": json.loads(row[9]) if row[9] else [],
-                    "logs": json.loads(row[10]) if row[10] else [],
-                    "trigger_type": row[11],
-                }
-                operations.append(operation)
+                operations = []
+                for row in cursor.fetchall():
+                    operation = {
+                        "id": row[0],
+                        "started_at": row[1],
+                        "completed_at": row[2],
+                        "success": bool(row[3]) if row[3] is not None else None,
+                        "accounts_processed": row[4],
+                        "transactions_added": row[5],
+                        "transactions_updated": row[6],
+                        "balances_updated": row[7],
+                        "duration_seconds": row[8],
+                        "errors": json.loads(row[9]) if row[9] else [],
+                        "logs": json.loads(row[10]) if row[10] else [],
+                        "trigger_type": row[11],
+                    }
+                    operations.append(operation)
 
-            conn.close()
-            return operations
+                return operations
 
         except Exception as e:
             logger.error(f"Failed to get sync operations: {e}")

@@ -9,6 +9,7 @@ from loguru import logger
 
 from leggen.api.routes import accounts, backup, banks, notifications, sync, transactions
 from leggen.background.scheduler import scheduler
+from leggen.repositories import MigrationRepository, ensure_tables
 from leggen.utils.config import config
 from leggen.utils.paths import path_manager
 
@@ -26,12 +27,11 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to load configuration: {e}")
         raise
 
-    # Run database migrations
+    # Run database migrations and ensure tables exist
     try:
-        from leggen.api.dependencies import get_migration_repository
-
-        migrations = get_migration_repository()
+        migrations = MigrationRepository()
         await migrations.run_all_migrations()
+        ensure_tables()
         logger.info("Database migrations completed")
     except Exception as e:
         logger.error(f"Database migration failed: {e}")

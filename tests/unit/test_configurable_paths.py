@@ -7,7 +7,10 @@ from unittest.mock import patch
 
 import pytest
 
-from leggen.services.database_service import DatabaseService
+from leggen.repositories import BalanceRepository
+from leggen.services.data_processors.balance_transformer import (
+    transform_to_database_format,
+)
 from leggen.utils.paths import path_manager
 
 
@@ -106,8 +109,10 @@ class TestConfigurablePaths:
             # Set custom database path
             path_manager.set_database_path(test_db_path)
 
-            # Test database operations using DatabaseService
-            database_service = DatabaseService()
+            # Test database operations using repositories directly
+            balance_repo = BalanceRepository()
+            balance_repo.create_table()
+
             balance_data = {
                 "balances": [
                     {
@@ -120,15 +125,11 @@ class TestConfigurablePaths:
                 "iban": "TEST_IBAN",
             }
 
-            # Use the public balance persistence method
-            import asyncio
-
-            asyncio.run(database_service.persist_balance("test-account", balance_data))
+            balance_rows = transform_to_database_format("test-account", balance_data)
+            balance_repo.persist("test-account", balance_rows)
 
             # Retrieve balances
-            balances = asyncio.run(
-                database_service.get_balances_from_db("test-account")
-            )
+            balances = balance_repo.get_balances("test-account")
 
             assert len(balances) == 1
             assert balances[0]["account_id"] == "test-account"

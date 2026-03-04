@@ -154,9 +154,8 @@ class TestSyncNotifications:
             patch.object(sync_service.notifications, "send_transaction_notifications"),
             patch.object(sync_service.accounts, "persist"),
             patch.object(sync_service.balances, "persist"),
-            patch.object(
-                sync_service.transaction_processor,
-                "process_transactions",
+            patch(
+                "leggen.services.sync_service.process_transactions",
                 return_value=[],
             ),
             patch.object(sync_service.transactions, "persist", return_value=[]),
@@ -207,11 +206,8 @@ class TestSyncNotifications:
                 sync_service.enablebanking, "get_account_details"
             ) as mock_get_details,
             patch.object(
-                sync_service.notifications, "_send_discord_sync_failure"
-            ) as mock_discord_notification,
-            patch.object(
-                sync_service.notifications, "_send_telegram_sync_failure"
-            ) as mock_telegram_notification,
+                sync_service.notifications, "send_sync_failure_notification"
+            ) as mock_send_notification,
             patch.object(sync_service.sync, "persist", return_value=1),
         ):
             # Setup: One session with one account that will fail
@@ -228,9 +224,8 @@ class TestSyncNotifications:
             # Make account details fail
             mock_get_details.side_effect = Exception("API Error")
 
-            # Make both notification methods fail
-            mock_discord_notification.side_effect = Exception("Discord Error")
-            mock_telegram_notification.side_effect = Exception("Telegram Error")
+            # Make notification method fail
+            mock_send_notification.side_effect = Exception("Notification Error")
 
             # Execute: Run sync - should not raise exception from notification
             result = await sync_service.sync_all_accounts()

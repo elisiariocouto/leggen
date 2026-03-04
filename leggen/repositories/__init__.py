@@ -12,4 +12,14 @@ __all__ = [
     "SessionRepository",
     "SyncRepository",
     "TransactionRepository",
+    "ensure_tables",
 ]
+
+
+def ensure_tables() -> None:
+    """Create all database tables. Call once at startup."""
+    AccountRepository().create_table()
+    BalanceRepository().create_table()
+    TransactionRepository().create_table()
+    SyncRepository().create_table()
+    SessionRepository().create_table()

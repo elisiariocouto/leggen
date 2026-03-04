@@ -1,12 +1,11 @@
-import click
 from discord_webhook import DiscordEmbed, DiscordWebhook
 
 from leggen.utils.text import info
 
 
-def send_expire_notification(ctx: click.Context, notification: dict):
+def send_expire_notification(webhook_url: str, notification: dict):
     info("Sending expiration notification to Discord")
-    webhook = DiscordWebhook(url=ctx.obj["notifications"]["discord"]["webhook"])
+    webhook = DiscordWebhook(url=webhook_url)
 
     embed = DiscordEmbed(
         title="",
@@ -28,9 +27,9 @@ def send_expire_notification(ctx: click.Context, notification: dict):
         raise Exception(f"Discord notification failed: {e}\n{response.text}") from e
 
 
-def send_transactions_message(ctx: click.Context, transactions: list):
+def send_transactions_message(webhook_url: str, transactions: list):
     info(f"Got {len(transactions)} new transactions, sending message to Discord")
-    webhook = DiscordWebhook(url=ctx.obj["notifications"]["discord"]["webhook"])
+    webhook = DiscordWebhook(url=webhook_url)
 
     embed = DiscordEmbed(
         title="",
@@ -57,9 +56,9 @@ def send_transactions_message(ctx: click.Context, transactions: list):
         raise Exception(f"Discord notification failed: {e}\n{response.text}") from e
 
 
-def send_sync_failure_notification(ctx: click.Context, notification: dict):
+def send_sync_failure_notification(webhook_url: str, notification: dict):
     info("Sending sync failure notification to Discord")
-    webhook = DiscordWebhook(url=ctx.obj["notifications"]["discord"]["webhook"])
+    webhook = DiscordWebhook(url=webhook_url)
 
     color = "ffaa00"  # Orange for sync failure
     title = "⚠️ Sync Failure"
