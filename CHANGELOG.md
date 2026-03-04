@@ -1,4 +1,24 @@
 
+## 2026.3.1 (2026/03/04)
+
+### Features
+
+- **frontend:** Add split sync button with full history option and rename route to /sync. ([4e63ccae](https://github.com/elisiariocouto/leggen/commit/4e63ccae9df182725e2856dae25537be1b12643d))
+-  Add sync schedule configuration to settings UI and API. ([0ea2a6b3](https://github.com/elisiariocouto/leggen/commit/0ea2a6b31c8a95ccaa7f2b855b54ad26f15a6986))
+
+
+### Miscellaneous Tasks
+
+-  Update dependencies. ([322123fc](https://github.com/elisiariocouto/leggen/commit/322123fcb85c48a3387c84631afa940b3586cdee))
+
+
+### Refactor
+
+- **api:** Remove unnecessary abstractions and simplify backend. ([d1cffbdd](https://github.com/elisiariocouto/leggen/commit/d1cffbddc9de5a276afab9a5f4837d846142f54d))
+- **api:** Simplify backend abstractions and flatten modules. ([d64f1bc8](https://github.com/elisiariocouto/leggen/commit/d64f1bc82e5a1dc5a7600434246cf87253acf84d))
+
+
+
 ## 2026.3.0 (2026/03/03)
 
 ### Features
