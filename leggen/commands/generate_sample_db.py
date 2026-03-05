@@ -18,6 +18,18 @@ class TransactionType(TypedDict):
     frequency: float
 
 
+DESCRIPTION_TO_CATEGORY = {
+    "Grocery Store": "Groceries",
+    "Coffee Shop": "Dining",
+    "Gas Station": "Transport",
+    "Online Shopping": "Shopping",
+    "Restaurant": "Dining",
+    "Salary": "Salary",
+    "ATM Withdrawal": "Cash",
+    "Transfer to Savings": "Transfer",
+}
+
+
 class SampleDataGenerator:
     """Generates realistic sample data for testing Leggen."""
 
@@ -170,6 +182,47 @@ class SampleDataGenerator:
         )
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_accounts_status ON accounts(status)"
+        )
+
+        # Create category tables
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                color TEXT DEFAULT '#6b7280',
+                icon TEXT,
+                is_default BOOLEAN DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS transaction_categories (
+                accountId TEXT NOT NULL,
+                transactionId TEXT NOT NULL,
+                categoryId INTEGER NOT NULL,
+                assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (accountId, transactionId),
+                FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_tc_category ON transaction_categories(categoryId)"
+        )
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS category_keywords (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                keyword TEXT NOT NULL,
+                categoryId INTEGER NOT NULL,
+                frequency INTEGER DEFAULT 1,
+                UNIQUE(keyword, categoryId),
+                FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_ck_keyword ON category_keywords(keyword)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_ck_category ON category_keywords(categoryId)"
         )
 
         conn.commit()
@@ -446,6 +499,57 @@ class SampleDataGenerator:
                     balance["timestamp"],
                 ),
             )
+
+        # Seed default categories
+        from leggen.repositories.category_repository import DEFAULT_CATEGORIES
+
+        for cat in DEFAULT_CATEGORIES:
+            cursor.execute(
+                "INSERT OR IGNORE INTO categories (name, color, icon, is_default) VALUES (?, ?, ?, 1)",
+                (cat["name"], cat["color"], cat["icon"]),
+            )
+
+        # Build category name -> id mapping
+        cursor.execute("SELECT id, name FROM categories")
+        category_map = {row[1]: row[0] for row in cursor.fetchall()}
+
+        # Assign categories to ~60% of transactions and learn keywords
+        from leggen.services.categorizer import extract_keywords
+
+        for transaction in transactions:
+            if random.random() > 0.6:
+                continue
+
+            description = transaction["description"]
+            # Find matching category from the description-to-category mapping
+            category_name = None
+            for desc_key, cat_name in DESCRIPTION_TO_CATEGORY.items():
+                if (
+                    desc_key.lower() in description.lower()
+                    or description.lower() in desc_key.lower()
+                ):
+                    category_name = cat_name
+                    break
+
+            if not category_name or category_name not in category_map:
+                continue
+
+            category_id = category_map[category_name]
+
+            cursor.execute(
+                "INSERT OR IGNORE INTO transaction_categories (accountId, transactionId, categoryId) VALUES (?, ?, ?)",
+                (transaction["accountId"], transaction["transactionId"], category_id),
+            )
+
+            # Learn keywords
+            keywords = extract_keywords(description)
+            for keyword in keywords:
+                cursor.execute(
+                    """INSERT INTO category_keywords (keyword, categoryId, frequency)
+                       VALUES (?, ?, 1)
+                       ON CONFLICT(keyword, categoryId) DO UPDATE SET frequency = frequency + 1""",
+                    (keyword, category_id),
+                )
 
         conn.commit()
         conn.close()

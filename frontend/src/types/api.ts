@@ -61,6 +61,32 @@ export interface RawTransactionData {
   [key: string]: unknown; // Allow additional fields
 }
 
+export interface Category {
+  id: number;
+  name: string;
+  color: string;
+  icon?: string;
+  is_default: boolean;
+}
+
+export interface CategoryCreate {
+  name: string;
+  color?: string;
+  icon?: string;
+}
+
+export interface CategoryUpdate {
+  name?: string;
+  color?: string;
+  icon?: string;
+}
+
+export interface CategorySuggestion {
+  category: Category;
+  score: number;
+  confidence: "high" | "medium" | "low";
+}
+
 export interface Transaction {
   transaction_id: string; // NEW: stable bank-provided transaction ID
   internal_transaction_id: string | null;
@@ -78,7 +104,9 @@ export interface Transaction {
   creditor_name?: string;
   debtor_name?: string;
   reference?: string;
-  category?: string;
+  category_id?: number;
+  category_name?: string;
+  category_color?: string;
   created_at?: string;
   updated_at?: string;
   // Raw transaction data (only present when summary_only=false)
@@ -99,7 +127,6 @@ export interface RawTransaction {
   creditor_name?: string;
   debtor_name?: string;
   reference?: string;
-  category?: string;
   created_at?: string;
   updated_at?: string;
 }

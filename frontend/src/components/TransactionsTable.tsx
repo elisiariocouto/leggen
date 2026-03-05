@@ -32,6 +32,7 @@ import { Card } from "./ui/card";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Button } from "./ui/button";
 import { BlurredValue } from "./ui/blurred-value";
+import CategoryBadge from "./CategoryBadge";
 import type { Account, Transaction, PaginatedResponse } from "../types/api";
 
 export default function TransactionsTable() {
@@ -250,6 +251,23 @@ export default function TransactionsTable() {
           </div>
         );
       },
+    },
+    {
+      id: "category",
+      header: "Category",
+      cell: ({ row }) => {
+        const transaction = row.original;
+        return (
+          <CategoryBadge
+            accountId={transaction.account_id}
+            transactionId={transaction.transaction_id}
+            categoryId={transaction.category_id}
+            categoryName={transaction.category_name}
+            categoryColor={transaction.category_color}
+          />
+        );
+      },
+      enableSorting: false,
     },
     {
       accessorKey: "transaction_value",
@@ -632,6 +650,15 @@ export default function TransactionsTable() {
                                     </span>
                                   )}
                               </p>
+                              <div className="mt-1">
+                                <CategoryBadge
+                                  accountId={transaction.account_id}
+                                  transactionId={transaction.transaction_id}
+                                  categoryId={transaction.category_id}
+                                  categoryName={transaction.category_name}
+                                  categoryColor={transaction.category_color}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
