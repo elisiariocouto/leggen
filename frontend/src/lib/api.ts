@@ -23,6 +23,10 @@ import type {
   BackupInfo,
   BackupOperation,
   ScheduleSettings,
+  Category,
+  CategoryCreate,
+  CategoryUpdate,
+  CategorySuggestion,
 } from "../types/api";
 
 // Use VITE_API_URL for development, relative URLs for production
@@ -335,6 +339,56 @@ export const apiClient = {
     const response = await api.put<ScheduleSettings>(
       "/sync/schedule",
       settings,
+    );
+    return response.data;
+  },
+
+  // Category endpoints
+  getCategories: async (): Promise<Category[]> => {
+    const response = await api.get<Category[]>("/categories");
+    return response.data;
+  },
+
+  createCategory: async (data: CategoryCreate): Promise<Category> => {
+    const response = await api.post<Category>("/categories", data);
+    return response.data;
+  },
+
+  updateCategory: async (
+    id: number,
+    data: CategoryUpdate,
+  ): Promise<Category> => {
+    const response = await api.put<Category>(`/categories/${id}`, data);
+    return response.data;
+  },
+
+  deleteCategory: async (id: number): Promise<void> => {
+    await api.delete(`/categories/${id}`);
+  },
+
+  assignCategory: async (
+    accountId: string,
+    transactionId: string,
+    categoryId: number,
+  ): Promise<void> => {
+    await api.put(`/transactions/${accountId}/${transactionId}/category`, {
+      category_id: categoryId,
+    });
+  },
+
+  removeCategory: async (
+    accountId: string,
+    transactionId: string,
+  ): Promise<void> => {
+    await api.delete(`/transactions/${accountId}/${transactionId}/category`);
+  },
+
+  getCategorySuggestions: async (
+    accountId: string,
+    transactionId: string,
+  ): Promise<CategorySuggestion[]> => {
+    const response = await api.get<CategorySuggestion[]>(
+      `/transactions/${accountId}/${transactionId}/suggest-category`,
     );
     return response.data;
   },

@@ -76,6 +76,9 @@ async def get_all_transactions(
                     currency=txn["transactionCurrency"],
                     status=txn["transactionStatus"],
                     account_id=txn["accountId"],
+                    category_id=txn.get("categoryId"),
+                    category_name=txn.get("categoryName"),
+                    category_color=txn.get("categoryColor"),
                 )
                 for txn in db_transactions
             ]
@@ -94,6 +97,9 @@ async def get_all_transactions(
                     transaction_currency=txn["transactionCurrency"],
                     transaction_status=txn["transactionStatus"],
                     raw_transaction=txn["rawTransaction"],
+                    category_id=txn.get("categoryId"),
+                    category_name=txn.get("categoryName"),
+                    category_color=txn.get("categoryColor"),
                 )
                 for txn in db_transactions
             ]

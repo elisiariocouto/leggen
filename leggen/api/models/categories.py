@@ -1,0 +1,45 @@
+"""Pydantic models for category endpoints."""
+
+from typing import Optional
+
+from pydantic import BaseModel
+
+
+class Category(BaseModel):
+    """Category model."""
+
+    id: int
+    name: str
+    color: str = "#6b7280"
+    icon: Optional[str] = None
+    is_default: bool = False
+
+
+class CategoryCreate(BaseModel):
+    """Model for creating a category."""
+
+    name: str
+    color: str = "#6b7280"
+    icon: Optional[str] = None
+
+
+class CategoryUpdate(BaseModel):
+    """Model for updating a category."""
+
+    name: Optional[str] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
+
+
+class CategoryAssignment(BaseModel):
+    """Model for assigning a category to a transaction."""
+
+    category_id: int
+
+
+class CategorySuggestion(BaseModel):
+    """Model for a category suggestion."""
+
+    category: Category
+    score: float
+    confidence: str  # "high", "medium", "low"

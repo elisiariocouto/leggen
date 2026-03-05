@@ -58,6 +58,9 @@ class Transaction(BaseModel):
     transaction_currency: str
     transaction_status: str  # "booked" or "pending"
     raw_transaction: Dict[str, Any]
+    category_id: Optional[int] = None
+    category_name: Optional[str] = None
+    category_color: Optional[str] = None
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
@@ -74,6 +77,9 @@ class TransactionSummary(BaseModel):
     currency: str
     status: str
     account_id: str
+    category_id: Optional[int] = None
+    category_name: Optional[str] = None
+    category_color: Optional[str] = None
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
