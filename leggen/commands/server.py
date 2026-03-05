@@ -7,7 +7,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-from leggen.api.routes import accounts, backup, banks, notifications, sync, transactions
+from leggen.api.routes import (
+    accounts,
+    backup,
+    banks,
+    categories,
+    notifications,
+    sync,
+    transactions,
+)
 from leggen.background.scheduler import scheduler
 from leggen.repositories import MigrationRepository, ensure_tables
 from leggen.utils.config import config
@@ -81,6 +89,7 @@ def create_app() -> FastAPI:
     app.include_router(banks.router, prefix="/api/v1", tags=["banks"])
     app.include_router(accounts.router, prefix="/api/v1", tags=["accounts"])
     app.include_router(transactions.router, prefix="/api/v1", tags=["transactions"])
+    app.include_router(categories.router, prefix="/api/v1", tags=["categories"])
     app.include_router(sync.router, prefix="/api/v1", tags=["sync"])
     app.include_router(notifications.router, prefix="/api/v1", tags=["notifications"])
     app.include_router(backup.router, prefix="/api/v1", tags=["backup"])
