@@ -188,8 +188,15 @@ class TransactionRepository:
                 search=search,
             )
 
-            query = "SELECT * FROM transactions WHERE 1=1" + filter_clause
-            query += " ORDER BY transactionDate DESC"
+            query = (
+                """SELECT t.*, tc.categoryId, c.name as categoryName, c.color as categoryColor
+                FROM transactions t
+                LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
+                LEFT JOIN categories c ON tc.categoryId = c.id
+                WHERE 1=1"""
+                + filter_clause
+            )
+            query += " ORDER BY t.transactionDate DESC"
 
             if limit:
                 query += " LIMIT ?"

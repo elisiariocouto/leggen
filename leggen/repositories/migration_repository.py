@@ -19,6 +19,7 @@ class MigrationRepository:
         await self.migrate_add_sync_operations_if_needed()
         await self.migrate_add_logo_if_needed()
         await self.migrate_add_sessions_table_if_needed()
+        await self.migrate_add_categories_tables_if_needed()
 
     # Balance timestamp migration methods
     async def migrate_balance_timestamps_if_needed(self):
@@ -693,4 +694,59 @@ class MigrationRepository:
 
         except Exception as e:
             logger.error(f"Sessions table migration failed: {e}")
+            raise
+
+    # Categories tables migration methods
+    async def migrate_add_categories_tables_if_needed(self):
+        """Check and add categories tables if needed"""
+        try:
+            if await self._check_categories_tables_migration_needed():
+                logger.info("Categories tables migration needed, starting...")
+                await self._migrate_add_categories_tables()
+                logger.info("Categories tables migration completed")
+            else:
+                logger.info("Categories tables already exist")
+        except Exception as e:
+            logger.error(f"Categories tables migration failed: {e}")
+            raise
+
+    async def _check_categories_tables_migration_needed(self) -> bool:
+        """Check if categories tables need to be created"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return False
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='categories'"
+            )
+            table_exists = cursor.fetchone() is not None
+
+            conn.close()
+            return not table_exists
+
+        except Exception as e:
+            logger.error(f"Failed to check categories tables migration status: {e}")
+            return False
+
+    async def _migrate_add_categories_tables(self):
+        """Create categories, transaction_categories, and category_keywords tables"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            logger.warning("Database file not found, skipping migration")
+            return
+
+        try:
+            from leggen.repositories.category_repository import CategoryRepository
+
+            # Use the repository's create_table method which handles table creation and seeding
+            CategoryRepository().create_table()
+
+            logger.info("Categories tables migration completed successfully")
+
+        except Exception as e:
+            logger.error(f"Categories tables migration failed: {e}")
             raise
