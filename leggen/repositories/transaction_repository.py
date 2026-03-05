@@ -24,27 +24,27 @@ class TransactionRepository:
         params: List[Union[str, int, float]] = []
 
         if account_id:
-            clause += " AND accountId = ?"
+            clause += " AND t.accountId = ?"
             params.append(account_id)
 
         if date_from:
-            clause += " AND transactionDate >= ?"
+            clause += " AND t.transactionDate >= ?"
             params.append(date_from)
 
         if date_to:
-            clause += " AND transactionDate <= ?"
+            clause += " AND t.transactionDate <= ?"
             params.append(date_to)
 
         if min_amount is not None:
-            clause += " AND transactionValue >= ?"
+            clause += " AND t.transactionValue >= ?"
             params.append(min_amount)
 
         if max_amount is not None:
-            clause += " AND transactionValue <= ?"
+            clause += " AND t.transactionValue <= ?"
             params.append(max_amount)
 
         if search:
-            clause += " AND description LIKE ?"
+            clause += " AND t.description LIKE ?"
             params.append(f"%{search}%")
 
         return clause, params
@@ -245,7 +245,7 @@ class TransactionRepository:
                 search=search,
             )
 
-            query = "SELECT COUNT(*) FROM transactions WHERE 1=1" + filter_clause
+            query = "SELECT COUNT(*) FROM transactions t WHERE 1=1" + filter_clause
             cursor.execute(query, params)
             return cursor.fetchone()[0]
 
