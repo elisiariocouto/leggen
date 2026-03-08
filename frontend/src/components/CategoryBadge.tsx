@@ -16,6 +16,8 @@ import {
   CommandList,
   CommandSeparator,
 } from "./ui/command";
+import { Checkbox } from "./ui/checkbox";
+import { toast } from "sonner";
 import type { Category, CategorySuggestion } from "../types/api";
 
 interface CategoryBadgeProps {
@@ -24,6 +26,7 @@ interface CategoryBadgeProps {
   categoryId?: number;
   categoryName?: string;
   categoryColor?: string;
+  description?: string;
 }
 
 export default function CategoryBadge({
@@ -32,8 +35,10 @@ export default function CategoryBadge({
   categoryId,
   categoryName,
   categoryColor,
+  description,
 }: CategoryBadgeProps) {
   const [open, setOpen] = useState(false);
+  const [applyToAll, setApplyToAll] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: categories } = useQuery<Category[]>({
@@ -59,6 +64,18 @@ export default function CategoryBadge({
     },
   });
 
+  const bulkAssignMutation = useMutation({
+    mutationFn: (catId: number) =>
+      apiClient.bulkAssignCategoryByDescription(catId, description || ""),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success(
+        `Category applied to ${data.updated_count} transaction${data.updated_count !== 1 ? "s" : ""}.`,
+      );
+      setOpen(false);
+    },
+  });
+
   const removeMutation = useMutation({
     mutationFn: () => apiClient.removeCategory(accountId, transactionId),
     onSuccess: () => {
@@ -66,6 +83,41 @@ export default function CategoryBadge({
       setOpen(false);
     },
   });
+
+  const bulkRemoveMutation = useMutation({
+    mutationFn: () =>
+      apiClient.bulkRemoveCategoryByDescription(description || ""),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success(
+        `Category removed from ${data.removed_count} transaction${data.removed_count !== 1 ? "s" : ""}.`,
+      );
+      setOpen(false);
+    },
+  });
+
+  const handleAssign = (catId: number) => {
+    if (applyToAll && description) {
+      bulkAssignMutation.mutate(catId);
+    } else {
+      assignMutation.mutate(catId);
+    }
+  };
+
+  const handleRemove = () => {
+    if (applyToAll && description) {
+      bulkRemoveMutation.mutate();
+    } else {
+      removeMutation.mutate();
+    }
+  };
+
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      setApplyToAll(false);
+    }
+  };
 
   const confidenceBadge = (confidence: string) => {
     const colors: Record<string, string> = {
@@ -76,10 +128,20 @@ export default function CategoryBadge({
     return <span className={`text-[10px] ${colors[confidence] || ""}`}>{confidence}</span>;
   };
 
+  const truncatedDescription =
+    description && description.length > 30
+      ? description.slice(0, 30) + "..."
+      : description;
+
   const color = categoryColor || "#6b7280";
+  const isPending =
+    assignMutation.isPending ||
+    bulkAssignMutation.isPending ||
+    removeMutation.isPending ||
+    bulkRemoveMutation.isPending;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         {categoryName ? (
           <button
@@ -105,6 +167,25 @@ export default function CategoryBadge({
       <PopoverContent className="w-56 p-0" align="start">
         <Command>
           <CommandInput placeholder="Search categories..." />
+
+          {/* Apply to all checkbox */}
+          {description && (
+            <div className="flex items-center gap-2 px-3 py-2 border-b">
+              <Checkbox
+                id={`apply-all-${transactionId}`}
+                checked={applyToAll}
+                onCheckedChange={(checked) => setApplyToAll(checked === true)}
+              />
+              <label
+                htmlFor={`apply-all-${transactionId}`}
+                className="text-xs text-muted-foreground cursor-pointer select-none"
+                title={description}
+              >
+                Apply to all &ldquo;{truncatedDescription}&rdquo; transactions
+              </label>
+            </div>
+          )}
+
           <CommandList>
             <CommandEmpty>No categories found.</CommandEmpty>
 
@@ -116,7 +197,8 @@ export default function CategoryBadge({
                     <CommandItem
                       key={`suggestion-${s.category.id}`}
                       value={`suggestion-${s.category.name}`}
-                      onSelect={() => assignMutation.mutate(s.category.id)}
+                      onSelect={() => handleAssign(s.category.id)}
+                      disabled={isPending}
                       className="cursor-pointer"
                     >
                       <div className="flex items-center gap-2 flex-1">
@@ -141,7 +223,8 @@ export default function CategoryBadge({
                 <CommandItem
                   key={cat.id}
                   value={cat.name}
-                  onSelect={() => assignMutation.mutate(cat.id)}
+                  onSelect={() => handleAssign(cat.id)}
+                  disabled={isPending}
                   className="cursor-pointer"
                 >
                   <div className="flex items-center gap-2 flex-1">
@@ -164,7 +247,8 @@ export default function CategoryBadge({
                 <CommandSeparator />
                 <CommandGroup>
                   <CommandItem
-                    onSelect={() => removeMutation.mutate()}
+                    onSelect={() => handleRemove()}
+                    disabled={isPending}
                     className="cursor-pointer text-destructive"
                     value="remove-category"
                   >

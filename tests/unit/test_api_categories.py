@@ -338,3 +338,166 @@ class TestCategoriesAPI:
         assert len(data) == 1
         assert data[0]["category"]["name"] == "Groceries"
         assert data[0]["confidence"] == "high"
+
+    def test_bulk_categorize_success(
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_category_repo,
+    ):
+        """Test bulk categorizing transactions by description."""
+        mock_category_repo.get_category_by_id.return_value = {
+            "id": 1,
+            "name": "Transfer",
+            "color": "#06b6d4",
+            "icon": "arrow-right-left",
+            "is_default": True,
+        }
+        mock_category_repo.bulk_assign_by_description.return_value = 5
+
+        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
+            mock_category_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.put(
+                "/api/v1/transactions/bulk-categorize",
+                json={
+                    "category_id": 1,
+                    "description": "To Flexible Cash Funds",
+                },
+            )
+
+        fastapi_app.dependency_overrides.clear()
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "ok"
+        assert data["updated_count"] == 5
+        mock_category_repo.bulk_assign_by_description.assert_called_once_with(
+            category_id=1,
+            description="To Flexible Cash Funds",
+        )
+
+    def test_bulk_categorize_category_not_found(
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_category_repo,
+    ):
+        """Test bulk categorize with non-existent category returns 404."""
+        mock_category_repo.get_category_by_id.return_value = None
+
+        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
+            mock_category_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.put(
+                "/api/v1/transactions/bulk-categorize",
+                json={
+                    "category_id": 999,
+                    "description": "Some description",
+                },
+            )
+
+        fastapi_app.dependency_overrides.clear()
+        assert response.status_code == 404
+
+    def test_bulk_categorize_no_matching_transactions(
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_category_repo,
+    ):
+        """Test bulk categorize with no matching transactions returns count 0."""
+        mock_category_repo.get_category_by_id.return_value = {
+            "id": 1,
+            "name": "Transfer",
+            "color": "#06b6d4",
+            "icon": "arrow-right-left",
+            "is_default": True,
+        }
+        mock_category_repo.bulk_assign_by_description.return_value = 0
+
+        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
+            mock_category_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.put(
+                "/api/v1/transactions/bulk-categorize",
+                json={
+                    "category_id": 1,
+                    "description": "Nonexistent description",
+                },
+            )
+
+        fastapi_app.dependency_overrides.clear()
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "ok"
+        assert data["updated_count"] == 0
+
+    def test_bulk_remove_category_success(
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_category_repo,
+    ):
+        """Test bulk removing categories by description."""
+        mock_category_repo.bulk_remove_by_description.return_value = 3
+
+        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
+            mock_category_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.request(
+                "DELETE",
+                "/api/v1/transactions/bulk-categorize",
+                json={"description": "To Flexible Cash Funds"},
+            )
+
+        fastapi_app.dependency_overrides.clear()
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "ok"
+        assert data["removed_count"] == 3
+        mock_category_repo.bulk_remove_by_description.assert_called_once_with(
+            description="To Flexible Cash Funds",
+        )
+
+    def test_bulk_remove_category_no_matches(
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_category_repo,
+    ):
+        """Test bulk remove with no matching categorized transactions."""
+        mock_category_repo.bulk_remove_by_description.return_value = 0
+
+        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
+            mock_category_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.request(
+                "DELETE",
+                "/api/v1/transactions/bulk-categorize",
+                json={"description": "Nonexistent"},
+            )
+
+        fastapi_app.dependency_overrides.clear()
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "ok"
+        assert data["removed_count"] == 0

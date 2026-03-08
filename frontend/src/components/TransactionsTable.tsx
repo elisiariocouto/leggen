@@ -264,6 +264,7 @@ export default function TransactionsTable() {
             categoryId={transaction.category_id}
             categoryName={transaction.category_name}
             categoryColor={transaction.category_color}
+            description={transaction.description}
           />
         );
       },
@@ -657,6 +658,7 @@ export default function TransactionsTable() {
                                   categoryId={transaction.category_id}
                                   categoryName={transaction.category_name}
                                   categoryColor={transaction.category_color}
+                                  description={transaction.description}
                                 />
                               </div>
                             </div>
