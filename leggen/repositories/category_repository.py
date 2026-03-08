@@ -280,6 +280,95 @@ class CategoryRepository:
             row = cursor.fetchone()
             return dict(row) if row else None
 
+    def bulk_assign_by_description(
+        self,
+        category_id: int,
+        description: str,
+    ) -> int:
+        """Assign a category to all transactions matching the given description.
+
+        Unlearns keywords for transactions that had a different category,
+        learns keywords once for the new assignment, and returns the count
+        of affected transactions.
+        """
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            # Find all transactions with this exact description
+            cursor.execute(
+                "SELECT accountId, transactionId FROM transactions WHERE description = ?",
+                (description,),
+            )
+            matching = cursor.fetchall()
+            if not matching:
+                return 0
+
+            # Find distinct old categories that will be replaced
+            placeholders = ",".join(["(?, ?)" for _ in matching])
+            params_pairs = [val for row in matching for val in (row[0], row[1])]
+            cursor.execute(
+                f"""SELECT DISTINCT categoryId FROM transaction_categories
+                    WHERE (accountId, transactionId) IN ({placeholders})
+                    AND categoryId != ?""",
+                [*params_pairs, category_id],
+            )
+            old_category_ids = [row[0] for row in cursor.fetchall()]
+
+            # Unlearn keywords once per distinct old category
+            for old_cat_id in old_category_ids:
+                self._unlearn_keywords_conn(cursor, old_cat_id, description, "", "")
+
+            # Batch insert/replace all assignments
+            cursor.executemany(
+                """INSERT OR REPLACE INTO transaction_categories (accountId, transactionId, categoryId)
+                   VALUES (?, ?, ?)""",
+                [(row[0], row[1], category_id) for row in matching],
+            )
+
+            # Learn keywords once for this bulk action
+            self._learn_keywords_conn(cursor, category_id, description, "", "")
+
+            conn.commit()
+            return len(matching)
+
+    def bulk_remove_by_description(self, description: str) -> int:
+        """Remove category from all transactions matching the given description.
+
+        Unlearns keywords once per distinct category being removed and
+        returns the count of affected transactions.
+        """
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            # Find all categorized transactions with this exact description
+            cursor.execute(
+                """SELECT tc.accountId, tc.transactionId, tc.categoryId
+                   FROM transaction_categories tc
+                   JOIN transactions t ON tc.accountId = t.accountId AND tc.transactionId = t.transactionId
+                   WHERE t.description = ?""",
+                (description,),
+            )
+            matching = cursor.fetchall()
+            if not matching:
+                return 0
+
+            # Unlearn keywords once per distinct old category
+            old_category_ids = {row[2] for row in matching}
+            for old_cat_id in old_category_ids:
+                self._unlearn_keywords_conn(cursor, old_cat_id, description, "", "")
+
+            # Delete all assignments
+            placeholders = ",".join(["(?, ?)" for _ in matching])
+            params_pairs = [val for row in matching for val in (row[0], row[1])]
+            cursor.execute(
+                f"""DELETE FROM transaction_categories
+                    WHERE (accountId, transactionId) IN ({placeholders})""",
+                params_pairs,
+            )
+
+            conn.commit()
+            return len(matching)
+
     # --- Keyword learning ---
 
     def _learn_keywords_conn(

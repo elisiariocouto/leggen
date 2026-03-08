@@ -366,6 +366,27 @@ export const apiClient = {
     await api.delete(`/categories/${id}`);
   },
 
+  bulkAssignCategoryByDescription: async (
+    categoryId: number,
+    description: string,
+  ): Promise<{ status: string; updated_count: number }> => {
+    const response = await api.put<{ status: string; updated_count: number }>(
+      "/transactions/bulk-categorize",
+      { category_id: categoryId, description },
+    );
+    return response.data;
+  },
+
+  bulkRemoveCategoryByDescription: async (
+    description: string,
+  ): Promise<{ status: string; removed_count: number }> => {
+    const response = await api.delete<{
+      status: string;
+      removed_count: number;
+    }>("/transactions/bulk-categorize", { data: { description } });
+    return response.data;
+  },
+
   assignCategory: async (
     accountId: string,
     transactionId: string,

@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 
 from leggen.api.models.categories import (
+    BulkCategoryAssignment,
+    BulkCategoryRemoval,
     Category,
     CategoryAssignment,
     CategoryCreate,
@@ -115,6 +117,49 @@ async def delete_category(
 
 
 # --- Transaction category assignment ---
+
+
+@router.put("/transactions/bulk-categorize")
+async def bulk_categorize_transactions(
+    body: BulkCategoryAssignment,
+    category_repo: Annotated[CategoryRepository, Depends()],
+) -> dict[str, Any]:
+    """Assign a category to all transactions matching a description."""
+    try:
+        cat = category_repo.get_category_by_id(body.category_id)
+        if not cat:
+            raise HTTPException(status_code=404, detail="Category not found.")
+
+        updated_count = category_repo.bulk_assign_by_description(
+            category_id=body.category_id,
+            description=body.description,
+        )
+        return {"status": "ok", "updated_count": updated_count}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to bulk categorize transactions: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to bulk categorize transactions."
+        ) from e
+
+
+@router.delete("/transactions/bulk-categorize")
+async def bulk_remove_transaction_categories(
+    body: BulkCategoryRemoval,
+    category_repo: Annotated[CategoryRepository, Depends()],
+) -> dict[str, Any]:
+    """Remove category from all transactions matching a description."""
+    try:
+        removed_count = category_repo.bulk_remove_by_description(
+            description=body.description,
+        )
+        return {"status": "ok", "removed_count": removed_count}
+    except Exception as e:
+        logger.error(f"Failed to bulk remove categories: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to bulk remove categories."
+        ) from e
 
 
 @router.put("/transactions/{account_id}/{transaction_id}/category")

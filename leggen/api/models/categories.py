@@ -37,6 +37,19 @@ class CategoryAssignment(BaseModel):
     category_id: int
 
 
+class BulkCategoryAssignment(BaseModel):
+    """Model for bulk-assigning a category by transaction description."""
+
+    category_id: int
+    description: str
+
+
+class BulkCategoryRemoval(BaseModel):
+    """Model for bulk-removing categories by transaction description."""
+
+    description: str
+
+
 class CategorySuggestion(BaseModel):
     """Model for a category suggestion."""
 
