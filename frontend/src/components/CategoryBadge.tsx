@@ -76,6 +76,8 @@ export default function CategoryBadge({
     return <span className={`text-[10px] ${colors[confidence] || ""}`}>{confidence}</span>;
   };
 
+  const color = categoryColor || "#6b7280";
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -83,13 +85,13 @@ export default function CategoryBadge({
           <button
             className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors hover:opacity-80 cursor-pointer border-0"
             style={{
-              backgroundColor: `${categoryColor}20`,
-              color: categoryColor,
+              backgroundColor: `${color}20`,
+              color: color,
             }}
           >
             <span
               className="h-2 w-2 rounded-full flex-shrink-0"
-              style={{ backgroundColor: categoryColor }}
+              style={{ backgroundColor: color }}
             />
             {categoryName}
           </button>

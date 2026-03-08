@@ -249,6 +249,33 @@ class TransactionRepository:
             cursor.execute(query, params)
             return cursor.fetchone()[0]
 
+    def get_transaction_by_id(
+        self, account_id: str, transaction_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get a single transaction by its primary key."""
+        if not db_exists():
+            return None
+
+        with get_db_connection(row_factory=True) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT t.*, tc.categoryId, c.name as categoryName, c.color as categoryColor
+                FROM transactions t
+                LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
+                LEFT JOIN categories c ON tc.categoryId = c.id
+                WHERE t.accountId = ? AND t.transactionId = ?""",
+                (account_id, transaction_id),
+            )
+            row = cursor.fetchone()
+            if row:
+                transaction = dict(row)
+                if transaction["rawTransaction"]:
+                    transaction["rawTransaction"] = json.loads(
+                        transaction["rawTransaction"]
+                    )
+                return transaction
+            return None
+
     def get_account_summary(self, account_id: str) -> Optional[Dict[str, Any]]:
         """Get basic account info from transactions table"""
         if not db_exists():
