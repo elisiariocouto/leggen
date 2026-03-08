@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -108,17 +108,20 @@ async def get_bank_connections_status(
     try:
         sessions = session_repo.get_sessions()
         connections = []
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
 
         for session in sessions:
             # Determine status based on valid_until
             status = session.get("status", "active")
             valid_until_str = session.get("valid_until")
+            days_until_expiry = None
             if valid_until_str and status == "active":
                 try:
                     valid_until = datetime.fromisoformat(valid_until_str)
+                    days_until_expiry = (valid_until - now).days
                     if valid_until < now:
                         status = "expired"
+                        days_until_expiry = None
                 except (ValueError, TypeError):
                     pass
 
@@ -133,6 +136,7 @@ async def get_bank_connections_status(
                     created_at=session["created_at"],
                     valid_until=valid_until_str,
                     status=status,
+                    days_until_expiry=days_until_expiry,
                 )
             )
 

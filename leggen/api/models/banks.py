@@ -46,3 +46,4 @@ class BankConnectionStatus(BaseModel):
     created_at: datetime
     valid_until: Optional[datetime] = None
     status: str
+    days_until_expiry: Optional[int] = None

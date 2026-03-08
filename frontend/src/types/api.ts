@@ -262,6 +262,7 @@ export interface BankConnectionStatus {
   created_at: string;
   valid_until?: string;
   status: string;
+  days_until_expiry?: number | null;
 }
 
 export interface Country {

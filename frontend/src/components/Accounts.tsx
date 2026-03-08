@@ -7,6 +7,7 @@ import {
   Building2,
   RefreshCw,
   AlertCircle,
+  AlertTriangle,
   Edit2,
   Check,
   X,
@@ -548,8 +549,13 @@ export default function Accounts() {
           <CardContent className="p-0">
             <div className="divide-y divide-border">
               {bankConnections.map((connection) => {
-                const statusColor =
-                  connection.status === "active"
+                const isExpiring =
+                  connection.status === "active" &&
+                  connection.days_until_expiry != null &&
+                  connection.days_until_expiry <= 7;
+                const statusColor = isExpiring
+                  ? "bg-amber-500"
+                  : connection.status === "active"
                     ? "bg-green-500"
                     : connection.status === "expired"
                       ? "bg-red-500"
@@ -574,6 +580,27 @@ export default function Accounts() {
                               className={`w-3 h-3 rounded-full ${statusColor}`}
                               title={connection.status}
                             />
+                            {connection.status === "expired" && (
+                              <Badge
+                                variant="outline"
+                                className="flex-shrink-0 text-xs border-red-500 text-red-600"
+                              >
+                                Expired
+                              </Badge>
+                            )}
+                            {connection.days_until_expiry != null && (
+                              <Badge
+                                variant="outline"
+                                className={`flex-shrink-0 text-xs ${isExpiring ? "border-amber-500 text-amber-600" : "border-border text-muted-foreground"}`}
+                              >
+                                {isExpiring && (
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                )}
+                                {connection.days_until_expiry} day
+                                {connection.days_until_expiry !== 1 ? "s" : ""}{" "}
+                                left
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {connection.aspsp_country} •{" "}

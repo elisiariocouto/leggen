@@ -23,6 +23,7 @@ from leggen.services.notification_service import NotificationService
 
 # Constants for notification
 EXPIRED_DAYS_LEFT = 0
+EXPIRY_WARNING_THRESHOLDS = [7, 3, 1]
 
 
 class SyncService:
@@ -301,10 +302,13 @@ class SyncService:
     async def _check_session_expiry(self, sessions: List[dict]) -> None:
         """Check sessions for expiry and send notifications.
 
+        Sends notifications when sessions have expired or are about to expire
+        (at 7, 3, and 1 day thresholds).
+
         Args:
             sessions: List of session dictionaries to check
         """
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         for session in sessions:
             session_id = session.get("session_id", "unknown")
             aspsp_name = session.get("aspsp_name", "unknown")
@@ -315,6 +319,8 @@ class SyncService:
 
             try:
                 valid_until = datetime.fromisoformat(valid_until_str)
+                days_left = (valid_until - now).days
+
                 if valid_until < now:
                     logger.warning(f"Session {session_id} for {aspsp_name} has expired")
                     await self.notifications.send_expiry_notification(
@@ -323,6 +329,18 @@ class SyncService:
                             "session_id": session_id,
                             "status": "expired",
                             "days_left": EXPIRED_DAYS_LEFT,
+                        }
+                    )
+                elif days_left in EXPIRY_WARNING_THRESHOLDS:
+                    logger.info(
+                        f"Session {session_id} for {aspsp_name} expires in {days_left} day(s)"
+                    )
+                    await self.notifications.send_expiry_notification(
+                        {
+                            "bank": aspsp_name,
+                            "session_id": session_id,
+                            "status": "expiring",
+                            "days_left": days_left,
                         }
                     )
             except (ValueError, TypeError):
