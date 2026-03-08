@@ -24,6 +24,9 @@ import {
 } from "./ui/card";
 import { Button } from "./ui/button";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Badge } from "./ui/badge";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 import { BlurredValue } from "./ui/blurred-value";
 import AccountsSkeleton from "./AccountsSkeleton";
 import AddBankAccountDrawer from "./AddBankAccountDrawer";
@@ -32,6 +35,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "./ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
+import { Checkbox } from "./ui/checkbox";
 import type { Account, Balance } from "../types/api";
 
 const getStatusIndicator = (status: string) => {
@@ -47,6 +61,8 @@ const getStatusIndicator = (status: string) => {
       return { color: "bg-destructive", tooltip: "Error" };
     case "inactive":
       return { color: "bg-muted-foreground", tooltip: "Inactive" };
+    case "deleted":
+      return { color: "bg-muted-foreground/50", tooltip: "Deleted" };
     default:
       return { color: "bg-primary", tooltip: status };
   }
@@ -56,6 +72,10 @@ export default function Accounts() {
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [deleteDialogAccount, setDeleteDialogAccount] =
+    useState<Account | null>(null);
+  const [deleteData, setDeleteData] = useState(true);
+  const [hideDeleted, setHideDeleted] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -90,6 +110,27 @@ export default function Accounts() {
     },
     onError: () => {
       toast.error("Failed to update account name.");
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: ({
+      accountId,
+      deleteData,
+    }: {
+      accountId: string;
+      deleteData: boolean;
+    }) => apiClient.deleteAccount(accountId, deleteData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["balances"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      setDeleteDialogAccount(null);
+      setDeleteData(true);
+      toast.success("Account deleted successfully.");
+    },
+    onError: () => {
+      toast.error("Failed to delete account.");
     },
   });
 
@@ -130,6 +171,21 @@ export default function Accounts() {
     return <AccountsSkeleton />;
   }
 
+  const hasDeletedAccounts = accounts?.some(
+    (a) => a.status.toLowerCase() === "deleted",
+  );
+  const displayedAccounts = (
+    hideDeleted
+      ? accounts?.filter((a) => a.status.toLowerCase() !== "deleted")
+      : accounts
+  )
+    ?.slice()
+    .sort((a, b) => {
+      const aDeleted = a.status.toLowerCase() === "deleted" ? 1 : 0;
+      const bDeleted = b.status.toLowerCase() === "deleted" ? 1 : 0;
+      return aDeleted - bDeleted;
+    });
+
   if (accountsError) {
     return (
       <Alert variant="destructive">
@@ -158,14 +214,33 @@ export default function Accounts() {
       {/* Account Management Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Account Management</CardTitle>
-          <CardDescription>
-            Manage your connected bank accounts and customize their display
-            names
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Account Management</CardTitle>
+              <CardDescription>
+                Manage your connected bank accounts and customize their display
+                names
+              </CardDescription>
+            </div>
+            {hasDeletedAccounts && (
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="hide-deleted"
+                  checked={hideDeleted}
+                  onCheckedChange={setHideDeleted}
+                />
+                <Label
+                  htmlFor="hide-deleted"
+                  className="text-sm text-muted-foreground whitespace-nowrap"
+                >
+                  Hide deleted
+                </Label>
+              </div>
+            )}
+          </div>
         </CardHeader>
 
-        {!accounts || accounts.length === 0 ? (
+        {!displayedAccounts || displayedAccounts.length === 0 ? (
           <CardContent className="p-6 text-center">
             <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">
@@ -178,7 +253,7 @@ export default function Accounts() {
         ) : (
           <CardContent className="p-0">
             <div className="divide-y divide-border">
-              {accounts.map((account) => {
+              {displayedAccounts.map((account) => {
                 const accountBalance = account.balances?.[0];
                 const fallbackBalance = balances?.find(
                   (b) => b.account_id === account.id,
@@ -193,11 +268,13 @@ export default function Accounts() {
                   account.currency ||
                   "EUR";
                 const isPositive = balance >= 0;
+                const isDeleted =
+                  account.status.toLowerCase() === "deleted";
 
                 return (
                   <div
                     key={account.id}
-                    className="p-4 sm:p-6 hover:bg-accent transition-colors"
+                    className={`p-4 sm:p-6 hover:bg-accent transition-colors ${isDeleted ? "opacity-60" : ""}`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                       <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
@@ -281,6 +358,14 @@ export default function Accounts() {
                                     account.name ||
                                     "Unnamed Account"}
                                 </h4>
+                                {isDeleted && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="flex-shrink-0 text-xs"
+                                  >
+                                    Deleted
+                                  </Badge>
+                                )}
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
@@ -294,6 +379,29 @@ export default function Accounts() {
                                   </TooltipTrigger>
                                   <TooltipContent>Edit account name</TooltipContent>
                                 </Tooltip>
+                                {!isDeleted && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        onClick={() => {
+                                          setDeleteDialogAccount(account);
+                                          setDeleteData(true);
+                                        }}
+                                        disabled={
+                                          deleteAccountMutation.isPending
+                                        }
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      Delete account
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
                               </div>
                               <p className="text-sm text-muted-foreground truncate">
                                 {account.institution_id}
@@ -353,6 +461,62 @@ export default function Accounts() {
           </CardContent>
         )}
       </Card>
+
+      {/* Delete Account Dialog */}
+      <AlertDialog
+        open={!!deleteDialogAccount}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteDialogAccount(null);
+            setDeleteData(true);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-foreground">
+                {deleteDialogAccount?.display_name ||
+                  deleteDialogAccount?.name ||
+                  "this account"}
+              </span>
+              ? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-2">
+            <Checkbox
+              id="delete-data"
+              checked={deleteData}
+              onCheckedChange={(checked) => setDeleteData(checked === true)}
+            />
+            <label
+              htmlFor="delete-data"
+              className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Also delete all transactions and balance history
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteDialogAccount) {
+                  deleteAccountMutation.mutate({
+                    accountId: deleteDialogAccount.id,
+                    deleteData,
+                  });
+                }
+              }}
+              disabled={deleteAccountMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Bank Connections Status */}
       <Card>

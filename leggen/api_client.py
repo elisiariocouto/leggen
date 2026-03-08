@@ -129,6 +129,16 @@ class LeggenAPIClient:
         response = self._make_request("GET", "/accounts")
         return response
 
+    def delete_account(
+        self, account_id: str, delete_data: bool = True
+    ) -> Dict[str, Any]:
+        """Delete a bank account and optionally its associated data"""
+        return self._make_request(
+            "DELETE",
+            f"/accounts/{account_id}",
+            params={"delete_data": str(delete_data).lower()},
+        )
+
     # Transaction endpoints
     def get_all_transactions(
         self, limit: int = 100, summary_only: bool = True, **filters

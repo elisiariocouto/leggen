@@ -99,6 +99,14 @@ class SyncService:
                         all_account_ids.add(uid)
                         account_session_map[uid] = session
 
+            # Skip deleted accounts
+            deleted_ids = {
+                a["id"]
+                for a in self.accounts.get_accounts(include_deleted=True)
+                if a.get("status") == "DELETED"
+            }
+            all_account_ids -= deleted_ids
+
             self._sync_status.total_accounts = len(all_account_ids)
             logs.append(f"Found {len(all_account_ids)} accounts to sync")
 

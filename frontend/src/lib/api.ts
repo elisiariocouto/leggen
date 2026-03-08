@@ -54,6 +54,16 @@ export const apiClient = {
     return response.data;
   },
 
+  // Delete account
+  deleteAccount: async (
+    accountId: string,
+    deleteData: boolean = true,
+  ): Promise<void> => {
+    await api.delete(`/accounts/${accountId}`, {
+      params: { delete_data: deleteData },
+    });
+  },
+
   // Get all balances
   getBalances: async (): Promise<Balance[]> => {
     const response = await api.get<Balance[]>("/balances");

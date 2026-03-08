@@ -46,7 +46,8 @@ class AccountRepository:
 
             # Check if account exists and preserve display_name
             cursor.execute(
-                "SELECT display_name FROM accounts WHERE id = ?", (account_data["id"],)
+                "SELECT display_name FROM accounts WHERE id = ?",
+                (account_data["id"],),
             )
             existing_row = cursor.fetchone()
             existing_display_name = existing_row[0] if existing_row else None
@@ -87,7 +88,9 @@ class AccountRepository:
         return account_data
 
     def get_accounts(
-        self, account_ids: Optional[List[str]] = None
+        self,
+        account_ids: Optional[List[str]] = None,
+        include_deleted: bool = True,
     ) -> List[Dict[str, Any]]:
         """Get account details from database"""
         if not db_exists():
@@ -98,12 +101,19 @@ class AccountRepository:
                 cursor = conn.cursor()
 
                 query = "SELECT * FROM accounts"
-                params = []
+                params: list = []
+                conditions = []
 
                 if account_ids:
                     placeholders = ",".join("?" * len(account_ids))
-                    query += f" WHERE id IN ({placeholders})"
+                    conditions.append(f"id IN ({placeholders})")
                     params.extend(account_ids)
+
+                if not include_deleted:
+                    conditions.append("status != 'DELETED'")
+
+                if conditions:
+                    query += " WHERE " + " AND ".join(conditions)
 
                 query += " ORDER BY created DESC"
 
@@ -128,3 +138,33 @@ class AccountRepository:
             if row:
                 return dict(row)
             return None
+
+    def delete_account(self, account_id: str, delete_data: bool = True) -> bool:
+        """Soft-delete an account and optionally delete its associated data.
+
+        Sets the account status to 'DELETED' instead of removing the row,
+        so account metadata remains available for display purposes.
+
+        Returns True if the account existed and was soft-deleted.
+        """
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            # Check if account exists
+            cursor.execute("SELECT id FROM accounts WHERE id = ?", (account_id,))
+            if not cursor.fetchone():
+                return False
+
+            if delete_data:
+                cursor.execute(
+                    "DELETE FROM transactions WHERE accountId = ?", (account_id,)
+                )
+                cursor.execute(
+                    "DELETE FROM balances WHERE account_id = ?", (account_id,)
+                )
+
+            cursor.execute(
+                "UPDATE accounts SET status = 'DELETED' WHERE id = ?", (account_id,)
+            )
+            conn.commit()
+            return True

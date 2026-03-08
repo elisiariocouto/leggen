@@ -44,8 +44,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     queryFn: apiClient.getAccounts,
   });
 
+  const activeAccounts = accounts?.filter(
+    (a) => a.status.toLowerCase() !== "deleted",
+  );
+
   const totalBalance =
-    accounts?.reduce((sum, account) => {
+    activeAccounts?.reduce((sum, account) => {
       const primaryBalance = account.balances?.[0]?.amount || 0;
       return sum + primaryBalance;
     }, 0) || 0;
@@ -117,13 +121,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <BlurredValue>{formatCurrency(totalBalance)}</BlurredValue>
               </p>
               <p className="text-sm text-muted-foreground">
-                {accounts?.length || 0} accounts
+                {activeAccounts?.length || 0} accounts
               </p>
             </div>
 
-            {accounts && accounts.length > 0 && (
+            {activeAccounts && activeAccounts.length > 0 && (
               <div className="border-t border-border/50 max-h-120 overflow-y-auto">
-                {accounts.map((account) => {
+                {activeAccounts.map((account) => {
                   const primaryBalance = account.balances?.[0]?.amount || 0;
                   const currency =
                     account.balances?.[0]?.currency ||

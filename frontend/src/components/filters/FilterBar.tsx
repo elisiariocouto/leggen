@@ -101,7 +101,9 @@ export function FilterBar({
 
               {/* Account Selection */}
               <AccountCombobox
-                accounts={accounts}
+                accounts={accounts?.filter(
+                  (a) => a.status.toLowerCase() !== "deleted",
+                )}
                 selectedAccount={filterState.selectedAccount}
                 onAccountChange={(accountId) =>
                   onFilterChange("selectedAccount", accountId)
@@ -149,7 +151,9 @@ export function FilterBar({
 
             {/* Second Row: Account Selection (Full Width) */}
             <AccountCombobox
-              accounts={accounts}
+              accounts={accounts?.filter(
+                (a) => a.status.toLowerCase() !== "deleted",
+              )}
               selectedAccount={filterState.selectedAccount}
               onAccountChange={(accountId) =>
                 onFilterChange("selectedAccount", accountId)
