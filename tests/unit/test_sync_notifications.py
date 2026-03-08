@@ -75,7 +75,7 @@ class TestSyncNotifications:
                     "aspsp_name": "EXPIRED_BANK",
                     "aspsp_country": "PT",
                     "status": "active",
-                    "valid_until": "2020-01-01T00:00:00",
+                    "valid_until": "2020-01-01T00:00:00+00:00",
                     "accounts": [],
                 }
             ]
