@@ -1,4 +1,23 @@
 
+## 2026.3.2 (2026/03/08)
+
+### Bug Fixes
+
+-  Use timezone-aware datetime in expiry notification test. ([9814e494](https://github.com/elisiariocouto/leggen/commit/9814e4949f7c5d10981d720134cdb32c412b2283))
+
+
+### Features
+
+-  Add account deletion with soft-delete and UI management. ([5f6b6636](https://github.com/elisiariocouto/leggen/commit/5f6b66364b1a1e779ec8724677e8208b05038037))
+-  Add pre-expiry warnings for bank connections. ([0a337f81](https://github.com/elisiariocouto/leggen/commit/0a337f8141fadde51a4effe9b335386ddff64d85))
+
+
+### Refactor
+
+- **frontend:** Remove unused dependency and split build chunks. ([6d6c8fc2](https://github.com/elisiariocouto/leggen/commit/6d6c8fc25e7c02a581277876742e358d34806b39))
+
+
+
 ## 2026.3.1 (2026/03/04)
 
 ### Features
