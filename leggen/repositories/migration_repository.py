@@ -721,12 +721,17 @@ class MigrationRepository:
             cursor = conn.cursor()
 
             cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='categories'"
+                "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('categories', 'transaction_categories', 'category_keywords')"
             )
-            table_exists = cursor.fetchone() is not None
+            existing_tables = {row[0] for row in cursor.fetchall()}
+            required_tables = {
+                "categories",
+                "transaction_categories",
+                "category_keywords",
+            }
 
             conn.close()
-            return not table_exists
+            return not required_tables.issubset(existing_tables)
 
         except Exception as e:
             logger.error(f"Failed to check categories tables migration status: {e}")

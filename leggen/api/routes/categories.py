@@ -1,6 +1,6 @@
 """API routes for transaction categorization."""
 
-from typing import Annotated
+from typing import Annotated, Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
@@ -18,6 +18,22 @@ from leggen.repositories.transaction_repository import TransactionRepository
 router = APIRouter()
 
 
+def _get_transaction_text_fields(
+    transaction_repo: TransactionRepository,
+    account_id: str,
+    transaction_id: str,
+) -> tuple[str, str, str]:
+    """Extract description, creditor_name, and debtor_name from a transaction."""
+    txn = transaction_repo.get_transaction_by_id(account_id, transaction_id)
+    if not txn:
+        return "", "", ""
+    description = txn.get("description", "") or ""
+    raw: Dict[str, Any] = txn.get("rawTransaction", {}) or {}
+    creditor_name = raw.get("creditorName", "") or ""
+    debtor_name = raw.get("debtorName", "") or ""
+    return description, creditor_name, debtor_name
+
+
 # --- Category CRUD ---
 
 
@@ -31,9 +47,7 @@ async def get_categories(
         return [Category(**cat) for cat in categories]
     except Exception as e:
         logger.error(f"Failed to get categories: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get categories: {e}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to get categories.") from e
 
 
 @router.post("/categories", response_model=Category, status_code=201)
@@ -53,9 +67,7 @@ async def create_category(
             raise HTTPException(
                 status_code=409, detail=f"Category '{body.name}' already exists."
             ) from e
-        raise HTTPException(
-            status_code=500, detail=f"Failed to create category: {e}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to create category.") from e
 
 
 @router.put("/categories/{category_id}", response_model=Category)
@@ -79,9 +91,7 @@ async def update_category(
         raise
     except Exception as e:
         logger.error(f"Failed to update category: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to update category: {e}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to update category.") from e
 
 
 @router.delete("/categories/{category_id}", status_code=204)
@@ -101,9 +111,7 @@ async def delete_category(
         raise
     except Exception as e:
         logger.error(f"Failed to delete category: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to delete category: {e}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to delete category.") from e
 
 
 # --- Transaction category assignment ---
@@ -125,19 +133,9 @@ async def assign_transaction_category(
             raise HTTPException(status_code=404, detail="Category not found.")
 
         # Get transaction text fields for keyword learning
-        transactions = transaction_repo.get_transactions(
-            account_id=account_id, limit=1, offset=0
+        description, creditor_name, debtor_name = _get_transaction_text_fields(
+            transaction_repo, account_id, transaction_id
         )
-        description = ""
-        creditor_name = ""
-        debtor_name = ""
-        for txn in transactions:
-            if txn["transactionId"] == transaction_id:
-                description = txn.get("description", "")
-                raw = txn.get("rawTransaction", {})
-                creditor_name = raw.get("creditorName", "")
-                debtor_name = raw.get("debtorName", "")
-                break
 
         category_repo.assign_category(
             account_id=account_id,
@@ -152,9 +150,7 @@ async def assign_transaction_category(
         raise
     except Exception as e:
         logger.error(f"Failed to assign category: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to assign category: {e}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to assign category.") from e
 
 
 @router.delete("/transactions/{account_id}/{transaction_id}/category")
@@ -167,19 +163,9 @@ async def remove_transaction_category(
     """Remove category from a transaction."""
     try:
         # Get transaction text fields for keyword unlearning
-        transactions = transaction_repo.get_transactions(
-            account_id=account_id, limit=1, offset=0
+        description, creditor_name, debtor_name = _get_transaction_text_fields(
+            transaction_repo, account_id, transaction_id
         )
-        description = ""
-        creditor_name = ""
-        debtor_name = ""
-        for txn in transactions:
-            if txn["transactionId"] == transaction_id:
-                description = txn.get("description", "")
-                raw = txn.get("rawTransaction", {})
-                creditor_name = raw.get("creditorName", "")
-                debtor_name = raw.get("debtorName", "")
-                break
 
         removed = category_repo.remove_category(
             account_id=account_id,
@@ -195,9 +181,7 @@ async def remove_transaction_category(
         raise
     except Exception as e:
         logger.error(f"Failed to remove category: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to remove category: {e}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to remove category.") from e
 
 
 @router.get(
@@ -213,19 +197,9 @@ async def suggest_transaction_category(
     """Get category suggestions for a transaction."""
     try:
         # Get transaction text fields
-        transactions = transaction_repo.get_transactions(
-            account_id=account_id, limit=1, offset=0
+        description, creditor_name, debtor_name = _get_transaction_text_fields(
+            transaction_repo, account_id, transaction_id
         )
-        description = ""
-        creditor_name = ""
-        debtor_name = ""
-        for txn in transactions:
-            if txn["transactionId"] == transaction_id:
-                description = txn.get("description", "")
-                raw = txn.get("rawTransaction", {})
-                creditor_name = raw.get("creditorName", "")
-                debtor_name = raw.get("debtorName", "")
-                break
 
         suggestions = category_repo.suggest_category(
             description=description,
@@ -243,5 +217,5 @@ async def suggest_transaction_category(
     except Exception as e:
         logger.error(f"Failed to get category suggestions: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get category suggestions: {e}"
+            status_code=500, detail="Failed to get category suggestions."
         ) from e

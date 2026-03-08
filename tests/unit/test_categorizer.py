@@ -1,6 +1,5 @@
 """Tests for the keyword extraction utility."""
 
-
 from leggen.services.categorizer import extract_keywords
 
 
@@ -46,8 +45,8 @@ class TestExtractKeywords:
         assert extract_keywords("") == []
 
     def test_none_input(self):
-        """Test None-like empty input returns empty list."""
-        assert extract_keywords("") == []
+        """Test None input returns empty list."""
+        assert extract_keywords(None) == []
 
     def test_numbers_preserved(self):
         """Test that numeric tokens are preserved if long enough."""
