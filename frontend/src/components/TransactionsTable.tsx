@@ -158,13 +158,23 @@ export default function TransactionsTable() {
       filterState.endDate,
       debouncedSearchTerm,
     ],
-    queryFn: () =>
-      apiClient.getTransactionStats(
-        filterState.startDate || "2000-01-01",
-        filterState.endDate || new Date().toISOString().split("T")[0],
+    queryFn: () => {
+      const hasDateFilter =
+        Boolean(filterState.startDate) || Boolean(filterState.endDate);
+      const startDateParam = hasDateFilter
+        ? filterState.startDate || "2000-01-01"
+        : undefined;
+      const endDateParam = hasDateFilter
+        ? filterState.endDate || new Date().toISOString().split("T")[0]
+        : undefined;
+
+      return apiClient.getTransactionStats(
+        startDateParam,
+        endDateParam,
         filterState.selectedAccount || undefined,
         debouncedSearchTerm || undefined,
-      ),
+      );
+    },
     placeholderData: (previousData) => previousData,
   });
 
