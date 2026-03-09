@@ -175,16 +175,16 @@ export const apiClient = {
 
   // Analytics endpoints
   getTransactionStats: async (
-    dateFrom: string,
-    dateTo: string,
+    dateFrom?: string,
+    dateTo?: string,
     accountId?: string,
     search?: string,
     minAmount?: number,
     maxAmount?: number,
   ): Promise<TransactionStats> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("date_from", dateFrom);
-    queryParams.append("date_to", dateTo);
+    if (dateFrom) queryParams.append("date_from", dateFrom);
+    if (dateTo) queryParams.append("date_to", dateTo);
     if (accountId) queryParams.append("account_id", accountId);
     if (search) queryParams.append("search", search);
     if (minAmount !== undefined)
