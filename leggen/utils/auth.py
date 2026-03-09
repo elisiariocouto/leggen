@@ -5,11 +5,18 @@ from typing import Optional
 
 import bcrypt
 import jwt
+from loguru import logger
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
     """Verify a plain password against a bcrypt hash."""
-    return bcrypt.checkpw(plain_password.encode("utf-8"), password_hash.encode("utf-8"))
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"), password_hash.encode("utf-8")
+        )
+    except ValueError:
+        logger.warning("Malformed password hash in configuration")
+        return False
 
 
 def hash_password(password: str) -> str:
