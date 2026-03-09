@@ -11,38 +11,52 @@ import { apiClient } from "../lib/api";
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
+  username: string | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function decodeTokenUsername(token: string): string | null {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.sub || null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("leggen_token");
     if (token) {
       setIsAuthenticated(true);
+      setUsername(decodeTokenUsername(token));
     }
     setIsLoading(false);
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
-    const response = await apiClient.login(username, password);
+  const login = useCallback(async (user: string, password: string) => {
+    const response = await apiClient.login(user, password);
     localStorage.setItem("leggen_token", response.access_token);
     setIsAuthenticated(true);
+    setUsername(user);
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem("leggen_token");
     setIsAuthenticated(false);
+    setUsername(null);
   }, []);
 
   const value = useMemo(
-    () => ({ isAuthenticated, isLoading, login, logout }),
-    [isAuthenticated, isLoading, login, logout],
+    () => ({ isAuthenticated, isLoading, username, login, logout }),
+    [isAuthenticated, isLoading, username, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
