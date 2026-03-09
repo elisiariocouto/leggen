@@ -60,7 +60,10 @@ async def create_category(
     """Create a new custom category."""
     try:
         cat = category_repo.create_category(
-            name=body.name, color=body.color, icon=body.icon
+            name=body.name,
+            color=body.color,
+            icon=body.icon,
+            exclude_from_stats=body.exclude_from_stats,
         )
         return Category(**cat)
     except Exception as e:
@@ -85,6 +88,7 @@ async def update_category(
             name=body.name,
             color=body.color,
             icon=body.icon,
+            exclude_from_stats=body.exclude_from_stats,
         )
         if not cat:
             raise HTTPException(status_code=404, detail="Category not found.")

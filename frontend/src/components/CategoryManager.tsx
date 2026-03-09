@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../lib/api";
 import {
@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
+import { Switch } from "./ui/switch";
 import type { Category } from "../types/api";
 
 const PRESET_COLORS = [
@@ -37,12 +38,15 @@ function CategoryForm({
   isSaving,
 }: {
   category?: Category;
-  onSave: (name: string, color: string) => void;
+  onSave: (name: string, color: string, excludeFromStats: boolean) => void;
   onCancel: () => void;
   isSaving: boolean;
 }) {
   const [name, setName] = useState(category?.name ?? "");
   const [color, setColor] = useState(category?.color ?? "#6b7280");
+  const [excludeFromStats, setExcludeFromStats] = useState(
+    category?.exclude_from_stats ?? false
+  );
 
   return (
     <div className="space-y-4">
@@ -80,13 +84,26 @@ function CategoryForm({
           <span className="text-xs text-muted-foreground">{color}</span>
         </div>
       </div>
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label htmlFor="exclude-from-stats">Exclude from statistics</Label>
+          <p className="text-xs text-muted-foreground">
+            Transactions in this category won&apos;t count toward income/expense totals.
+          </p>
+        </div>
+        <Switch
+          id="exclude-from-stats"
+          checked={excludeFromStats}
+          onCheckedChange={setExcludeFromStats}
+        />
+      </div>
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={onCancel}>
           Cancel
         </Button>
         <Button
           size="sm"
-          onClick={() => onSave(name, color)}
+          onClick={() => onSave(name, color, excludeFromStats)}
           disabled={!name.trim() || isSaving}
         >
           {isSaving ? "Saving..." : category ? "Update" : "Create"}
@@ -108,7 +125,7 @@ export default function CategoryManager() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string; color: string }) =>
+    mutationFn: (data: { name: string; color: string; exclude_from_stats: boolean }) =>
       apiClient.createCategory(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
@@ -121,8 +138,13 @@ export default function CategoryManager() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { name: string; color: string } }) =>
-      apiClient.updateCategory(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: { name: string; color: string; exclude_from_stats: boolean };
+    }) => apiClient.updateCategory(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -170,7 +192,13 @@ export default function CategoryManager() {
                 </DialogDescription>
               </DialogHeader>
               <CategoryForm
-                onSave={(name, color) => createMutation.mutate({ name, color })}
+                onSave={(name, color, excludeFromStats) =>
+                  createMutation.mutate({
+                    name,
+                    color,
+                    exclude_from_stats: excludeFromStats,
+                  })
+                }
                 onCancel={() => setShowCreate(false)}
                 isSaving={createMutation.isPending}
               />
@@ -202,6 +230,12 @@ export default function CategoryManager() {
                       default
                     </span>
                   )}
+                  {cat.exclude_from_stats && (
+                    <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                      <EyeOff className="h-2.5 w-2.5" />
+                      excluded from stats
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <Dialog
@@ -228,10 +262,14 @@ export default function CategoryManager() {
                       {editingCategory && (
                         <CategoryForm
                           category={editingCategory}
-                          onSave={(name, color) =>
+                          onSave={(name, color, excludeFromStats) =>
                             updateMutation.mutate({
                               id: editingCategory.id,
-                              data: { name, color },
+                              data: {
+                                name,
+                                color,
+                                exclude_from_stats: excludeFromStats,
+                              },
                             })
                           }
                           onCancel={() => setEditingCategory(null)}

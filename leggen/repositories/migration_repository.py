@@ -20,6 +20,7 @@ class MigrationRepository:
         await self.migrate_add_logo_if_needed()
         await self.migrate_add_sessions_table_if_needed()
         await self.migrate_add_categories_tables_if_needed()
+        await self.migrate_add_exclude_from_stats_if_needed()
 
     # Balance timestamp migration methods
     async def migrate_balance_timestamps_if_needed(self):
@@ -694,6 +695,88 @@ class MigrationRepository:
 
         except Exception as e:
             logger.error(f"Sessions table migration failed: {e}")
+            raise
+
+    # Exclude from stats migration methods
+    async def migrate_add_exclude_from_stats_if_needed(self):
+        """Check and add exclude_from_stats column to categories table if needed"""
+        try:
+            if await self._check_exclude_from_stats_migration_needed():
+                logger.info("Exclude from stats column migration needed, starting...")
+                await self._migrate_add_exclude_from_stats()
+                logger.info("Exclude from stats column migration completed")
+            else:
+                logger.info("Exclude from stats column already exists")
+        except Exception as e:
+            logger.error(f"Exclude from stats column migration failed: {e}")
+            raise
+
+    async def _check_exclude_from_stats_migration_needed(self) -> bool:
+        """Check if exclude_from_stats column needs to be added"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return False
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='categories'"
+            )
+            if not cursor.fetchone():
+                conn.close()
+                return False
+
+            cursor.execute("PRAGMA table_info(categories)")
+            columns = cursor.fetchall()
+
+            has_column = any(col[1] == "exclude_from_stats" for col in columns)
+
+            conn.close()
+            return not has_column
+
+        except Exception as e:
+            logger.error(f"Failed to check exclude_from_stats migration status: {e}")
+            return False
+
+    async def _migrate_add_exclude_from_stats(self):
+        """Add exclude_from_stats column to categories table and insert Inter-account category"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            logger.warning("Database file not found, skipping migration")
+            return
+
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            logger.info("Adding exclude_from_stats column to categories table...")
+
+            cursor.execute("""
+                ALTER TABLE categories
+                ADD COLUMN exclude_from_stats BOOLEAN DEFAULT 0
+            """)
+
+            # Insert the new Inter-account default category if it doesn't exist
+            cursor.execute(
+                "SELECT COUNT(*) FROM categories WHERE name = ?",
+                ("Inter-account",),
+            )
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(
+                    "INSERT INTO categories (name, color, icon, is_default, exclude_from_stats) VALUES (?, ?, ?, 1, 1)",
+                    ("Inter-account", "#14b8a6", "arrow-left-right"),
+                )
+                logger.info("Inserted 'Inter-account' default category")
+
+            conn.commit()
+            conn.close()
+
+            logger.info("Exclude from stats column migration completed successfully")
+
+        except Exception as e:
+            logger.error(f"Exclude from stats column migration failed: {e}")
             raise
 
     # Categories tables migration methods

@@ -170,6 +170,22 @@ async def get_transaction_stats(
             limit=None,
         )
 
+        # Filter out transactions with categories that have exclude_from_stats=True
+        from leggen.repositories.category_repository import CategoryRepository
+
+        category_repo = CategoryRepository()
+        excluded_category_ids: set[int] = set()
+        for cat in category_repo.get_all_categories():
+            if cat.get("exclude_from_stats"):
+                excluded_category_ids.add(cat["id"])
+
+        if excluded_category_ids:
+            recent_transactions = [
+                txn
+                for txn in recent_transactions
+                if txn.get("categoryId") not in excluded_category_ids
+            ]
+
         total_transactions = len(recent_transactions)
         total_income = sum(
             txn["transactionValue"]

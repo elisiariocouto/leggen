@@ -6,18 +6,74 @@ from leggen.repositories.db import db_exists, get_db_connection
 from leggen.services.categorizer import extract_keywords
 
 DEFAULT_CATEGORIES = [
-    {"name": "Groceries", "color": "#22c55e", "icon": "shopping-cart"},
-    {"name": "Transport", "color": "#3b82f6", "icon": "car"},
-    {"name": "Salary", "color": "#a855f7", "icon": "banknote"},
-    {"name": "Dining", "color": "#f97316", "icon": "utensils"},
-    {"name": "Shopping", "color": "#ec4899", "icon": "shopping-bag"},
-    {"name": "Utilities", "color": "#64748b", "icon": "zap"},
-    {"name": "Entertainment", "color": "#eab308", "icon": "film"},
-    {"name": "Healthcare", "color": "#ef4444", "icon": "heart-pulse"},
-    {"name": "Transfer", "color": "#06b6d4", "icon": "arrow-right-left"},
-    {"name": "Cash", "color": "#84cc16", "icon": "wallet"},
-    {"name": "Subscriptions", "color": "#8b5cf6", "icon": "repeat"},
-    {"name": "Other", "color": "#6b7280", "icon": "tag"},
+    {
+        "name": "Groceries",
+        "color": "#22c55e",
+        "icon": "shopping-cart",
+        "exclude_from_stats": False,
+    },
+    {
+        "name": "Transport",
+        "color": "#3b82f6",
+        "icon": "car",
+        "exclude_from_stats": False,
+    },
+    {
+        "name": "Salary",
+        "color": "#a855f7",
+        "icon": "banknote",
+        "exclude_from_stats": False,
+    },
+    {
+        "name": "Dining",
+        "color": "#f97316",
+        "icon": "utensils",
+        "exclude_from_stats": False,
+    },
+    {
+        "name": "Shopping",
+        "color": "#ec4899",
+        "icon": "shopping-bag",
+        "exclude_from_stats": False,
+    },
+    {
+        "name": "Utilities",
+        "color": "#64748b",
+        "icon": "zap",
+        "exclude_from_stats": False,
+    },
+    {
+        "name": "Entertainment",
+        "color": "#eab308",
+        "icon": "film",
+        "exclude_from_stats": False,
+    },
+    {
+        "name": "Healthcare",
+        "color": "#ef4444",
+        "icon": "heart-pulse",
+        "exclude_from_stats": False,
+    },
+    {
+        "name": "Transfer",
+        "color": "#06b6d4",
+        "icon": "arrow-right-left",
+        "exclude_from_stats": False,
+    },
+    {
+        "name": "Inter-account",
+        "color": "#14b8a6",
+        "icon": "arrow-left-right",
+        "exclude_from_stats": True,
+    },
+    {"name": "Cash", "color": "#84cc16", "icon": "wallet", "exclude_from_stats": False},
+    {
+        "name": "Subscriptions",
+        "color": "#8b5cf6",
+        "icon": "repeat",
+        "exclude_from_stats": False,
+    },
+    {"name": "Other", "color": "#6b7280", "icon": "tag", "exclude_from_stats": False},
 ]
 
 
@@ -36,6 +92,7 @@ class CategoryRepository:
                     color TEXT DEFAULT '#6b7280',
                     icon TEXT,
                     is_default BOOLEAN DEFAULT 0,
+                    exclude_from_stats BOOLEAN DEFAULT 0,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -82,8 +139,13 @@ class CategoryRepository:
             if cursor.fetchone()[0] == 0:
                 for cat in DEFAULT_CATEGORIES:
                     cursor.execute(
-                        "INSERT INTO categories (name, color, icon, is_default) VALUES (?, ?, ?, 1)",
-                        (cat["name"], cat["color"], cat["icon"]),
+                        "INSERT INTO categories (name, color, icon, is_default, exclude_from_stats) VALUES (?, ?, ?, 1, ?)",
+                        (
+                            cat["name"],
+                            cat["color"],
+                            cat["icon"],
+                            cat["exclude_from_stats"],
+                        ),
                     )
 
             conn.commit()
@@ -98,7 +160,7 @@ class CategoryRepository:
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT id, name, color, icon, is_default, created_at FROM categories ORDER BY is_default DESC, name"
+                "SELECT id, name, color, icon, is_default, exclude_from_stats, created_at FROM categories ORDER BY is_default DESC, name"
             )
             return [dict(row) for row in cursor.fetchall()]
 
@@ -110,21 +172,25 @@ class CategoryRepository:
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT id, name, color, icon, is_default, created_at FROM categories WHERE id = ?",
+                "SELECT id, name, color, icon, is_default, exclude_from_stats, created_at FROM categories WHERE id = ?",
                 (category_id,),
             )
             row = cursor.fetchone()
             return dict(row) if row else None
 
     def create_category(
-        self, name: str, color: str = "#6b7280", icon: Optional[str] = None
+        self,
+        name: str,
+        color: str = "#6b7280",
+        icon: Optional[str] = None,
+        exclude_from_stats: bool = False,
     ) -> dict[str, Any]:
         """Create a new custom category."""
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "INSERT INTO categories (name, color, icon, is_default) VALUES (?, ?, ?, 0)",
-                (name, color, icon),
+                "INSERT INTO categories (name, color, icon, is_default, exclude_from_stats) VALUES (?, ?, ?, 0, ?)",
+                (name, color, icon, exclude_from_stats),
             )
             conn.commit()
             category_id = cursor.lastrowid
@@ -137,6 +203,7 @@ class CategoryRepository:
         name: Optional[str] = None,
         color: Optional[str] = None,
         icon: Optional[str] = None,
+        exclude_from_stats: Optional[bool] = None,
     ) -> Optional[dict[str, Any]]:
         """Update a category."""
         with get_db_connection(row_factory=True) as conn:
@@ -153,6 +220,9 @@ class CategoryRepository:
             if icon is not None:
                 updates.append("icon = ?")
                 params.append(icon)
+            if exclude_from_stats is not None:
+                updates.append("exclude_from_stats = ?")
+                params.append(exclude_from_stats)
 
             if not updates:
                 return self.get_category_by_id(category_id)
@@ -271,7 +341,7 @@ class CategoryRepository:
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """SELECT c.id, c.name, c.color, c.icon, c.is_default
+                """SELECT c.id, c.name, c.color, c.icon, c.is_default, c.exclude_from_stats
                    FROM transaction_categories tc
                    JOIN categories c ON tc.categoryId = c.id
                    WHERE tc.accountId = ? AND tc.transactionId = ?""",
@@ -439,7 +509,7 @@ class CategoryRepository:
 
             placeholders = ",".join("?" * len(keywords))
             cursor.execute(
-                f"""SELECT c.id, c.name, c.color, c.icon, c.is_default,
+                f"""SELECT c.id, c.name, c.color, c.icon, c.is_default, c.exclude_from_stats,
                            SUM(ck.frequency) as score
                     FROM category_keywords ck
                     JOIN categories c ON ck.categoryId = c.id
