@@ -178,11 +178,19 @@ export const apiClient = {
     dateFrom: string,
     dateTo: string,
     accountId?: string,
+    search?: string,
+    minAmount?: number,
+    maxAmount?: number,
   ): Promise<TransactionStats> => {
     const queryParams = new URLSearchParams();
     queryParams.append("date_from", dateFrom);
     queryParams.append("date_to", dateTo);
     if (accountId) queryParams.append("account_id", accountId);
+    if (search) queryParams.append("search", search);
+    if (minAmount !== undefined)
+      queryParams.append("min_amount", minAmount.toString());
+    if (maxAmount !== undefined)
+      queryParams.append("max_amount", maxAmount.toString());
 
     const response = await api.get<TransactionStats>(
       `/transactions/stats?${queryParams.toString()}`,
