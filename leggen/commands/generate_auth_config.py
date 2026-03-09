@@ -6,6 +6,7 @@ from leggen.utils.auth import generate_api_key, generate_jwt_secret, hash_passwo
 @click.command()
 @click.option(
     "--username",
+    prompt="Username",
     default="admin",
     show_default=True,
     help="Username for authentication",
