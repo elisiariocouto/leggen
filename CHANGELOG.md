@@ -1,4 +1,27 @@
 
+## 2026.3.3 (2026/03/09)
+
+### Bug Fixes
+
+- **api:** Resolve ambiguous column name in transaction filter clause. ([e6f08e42](https://github.com/elisiariocouto/leggen/commit/e6f08e429eb9ef9defa671189c99d5d9b8fd5bde))
+- **frontend:** Fix type error in transaction stats query parameters. ([bc26f804](https://github.com/elisiariocouto/leggen/commit/bc26f804d4655ba9bf54d48de1e4ce2d0807fa3d))
+-  Address PR review comments for transaction categorization. ([9840a05a](https://github.com/elisiariocouto/leggen/commit/9840a05aa5d912cfefc0dc5f166277207d6051a3))
+-  Use API stats endpoint for transaction page totals instead of client-side calculation. ([d2878352](https://github.com/elisiariocouto/leggen/commit/d28783525dfcfb67a5cf1000594915fd2d83d3ad))
+
+
+### Features
+
+-  Add transaction categorization with keyword-based learning. ([1739ad08](https://github.com/elisiariocouto/leggen/commit/1739ad08d3e8a77206a02b4e0714c79273d4e45b))
+-  Add bulk categorization and removal by transaction description. ([812e30e0](https://github.com/elisiariocouto/leggen/commit/812e30e0b7cbced88847b13b44d9a94da5a42588))
+-  Add `exclude_from_stats` flag to categories with "Inter-account" default. ([0e6f8ebd](https://github.com/elisiariocouto/leggen/commit/0e6f8ebd5b7b17a17532e02f393daf32b04e9885))
+
+
+### Refactor
+
+- **frontend:** Consolidate transactions page into single-card layout. ([5aeee70f](https://github.com/elisiariocouto/leggen/commit/5aeee70fb9a613fe41201a57d85464b9b14c886c))
+
+
+
 ## 2026.3.2 (2026/03/08)
 
 ### Bug Fixes
