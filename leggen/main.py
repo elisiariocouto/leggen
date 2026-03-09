@@ -67,6 +67,7 @@ class Group(click.Group):
         return groups + commands
 
     def get_command(self, ctx, name):
+        name = name.replace("-", "_")
         try:
             mod = __import__(f"leggen.commands.{name}", None, None, [name])
         except ImportError as e:
@@ -130,7 +131,10 @@ class Group(click.Group):
 )
 @click.group(
     cls=Group,
-    context_settings={"help_option_names": ["-h", "--help"]},
+    context_settings={
+        "help_option_names": ["-h", "--help"],
+        "token_normalize_func": lambda x: x.replace("-", "_"),
+    },
 )
 @click.version_option(package_name="leggen")
 @click.pass_context
