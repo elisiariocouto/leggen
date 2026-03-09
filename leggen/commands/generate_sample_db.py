@@ -27,6 +27,7 @@ DESCRIPTION_TO_CATEGORY = {
     "Salary": "Salary",
     "ATM Withdrawal": "Cash",
     "Transfer to Savings": "Transfer",
+    "Inter-account Transfer": "Inter-account",
 }
 
 
@@ -94,6 +95,11 @@ class SampleDataGenerator:
                 "description": "Transfer to Savings",
                 "amount_range": (-1000, -100),
                 "frequency": 0.03,
+            },
+            {
+                "description": "Inter-account Transfer",
+                "amount_range": (-500, 500),
+                "frequency": 0.02,
             },
         ]
 
@@ -192,6 +198,7 @@ class SampleDataGenerator:
                 color TEXT DEFAULT '#6b7280',
                 icon TEXT,
                 is_default BOOLEAN DEFAULT 0,
+                exclude_from_stats BOOLEAN DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -344,6 +351,11 @@ class SampleDataGenerator:
                     "Salary": ["MONTHLY SALARY", "PAYROLL DEPOSIT", "SALARY PAYMENT"],
                     "ATM Withdrawal": ["ATM WITHDRAWAL", "CASH WITHDRAWAL"],
                     "Transfer to Savings": ["SAVINGS TRANSFER", "INVESTMENT TRANSFER"],
+                    "Inter-account Transfer": [
+                        "TRANSFER TO CHECKING",
+                        "TRANSFER FROM SAVINGS",
+                        "INTERNAL TRANSFER",
+                    ],
                 }
 
                 specific_descriptions: list[str] = descriptions.get(
@@ -505,8 +517,8 @@ class SampleDataGenerator:
 
         for cat in DEFAULT_CATEGORIES:
             cursor.execute(
-                "INSERT OR IGNORE INTO categories (name, color, icon, is_default) VALUES (?, ?, ?, 1)",
-                (cat["name"], cat["color"], cat["icon"]),
+                "INSERT OR IGNORE INTO categories (name, color, icon, is_default, exclude_from_stats) VALUES (?, ?, ?, 1, ?)",
+                (cat["name"], cat["color"], cat["icon"], cat["exclude_from_stats"]),
             )
 
         # Build category name -> id mapping

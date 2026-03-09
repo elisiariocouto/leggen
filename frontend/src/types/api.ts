@@ -67,18 +67,21 @@ export interface Category {
   color: string;
   icon?: string;
   is_default: boolean;
+  exclude_from_stats: boolean;
 }
 
 export interface CategoryCreate {
   name: string;
   color?: string;
   icon?: string;
+  exclude_from_stats?: boolean;
 }
 
 export interface CategoryUpdate {
   name?: string;
   color?: string;
   icon?: string;
+  exclude_from_stats?: boolean;
 }
 
 export interface CategorySuggestion {

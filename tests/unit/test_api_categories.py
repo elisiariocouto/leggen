@@ -33,6 +33,7 @@ class TestCategoriesAPI:
                 "color": "#22c55e",
                 "icon": "shopping-cart",
                 "is_default": True,
+                "exclude_from_stats": False,
             },
             {
                 "id": 2,
@@ -40,6 +41,7 @@ class TestCategoriesAPI:
                 "color": "#3b82f6",
                 "icon": "car",
                 "is_default": True,
+                "exclude_from_stats": False,
             },
         ]
 
@@ -73,6 +75,7 @@ class TestCategoriesAPI:
             "color": "#06b6d4",
             "icon": None,
             "is_default": False,
+            "exclude_from_stats": False,
         }
 
         fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
@@ -106,6 +109,7 @@ class TestCategoriesAPI:
             "color": "#22c55e",
             "icon": "shopping-cart",
             "is_default": True,
+            "exclude_from_stats": False,
         }
 
         fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
@@ -201,6 +205,7 @@ class TestCategoriesAPI:
             "color": "#22c55e",
             "icon": "shopping-cart",
             "is_default": True,
+            "exclude_from_stats": False,
         }
         mock_transaction_repo.get_transactions.return_value = [
             {
@@ -313,6 +318,7 @@ class TestCategoriesAPI:
                     "color": "#22c55e",
                     "icon": "shopping-cart",
                     "is_default": True,
+                    "exclude_from_stats": False,
                 },
                 "score": 15,
                 "confidence": "high",
@@ -339,6 +345,50 @@ class TestCategoriesAPI:
         assert data[0]["category"]["name"] == "Groceries"
         assert data[0]["confidence"] == "high"
 
+    def test_create_category_with_exclude_from_stats(
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_category_repo,
+    ):
+        """Test creating a category with exclude_from_stats=True."""
+        mock_category_repo.create_category.return_value = {
+            "id": 14,
+            "name": "Internal",
+            "color": "#14b8a6",
+            "icon": None,
+            "is_default": False,
+            "exclude_from_stats": True,
+        }
+
+        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
+            mock_category_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.post(
+                "/api/v1/categories",
+                json={
+                    "name": "Internal",
+                    "color": "#14b8a6",
+                    "exclude_from_stats": True,
+                },
+            )
+
+        fastapi_app.dependency_overrides.clear()
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["name"] == "Internal"
+        assert data["exclude_from_stats"] is True
+        mock_category_repo.create_category.assert_called_once_with(
+            name="Internal",
+            color="#14b8a6",
+            icon=None,
+            exclude_from_stats=True,
+        )
+
     def test_bulk_categorize_success(
         self,
         fastapi_app,
@@ -353,6 +403,7 @@ class TestCategoriesAPI:
             "color": "#06b6d4",
             "icon": "arrow-right-left",
             "is_default": True,
+            "exclude_from_stats": False,
         }
         mock_category_repo.bulk_assign_by_description.return_value = 5
 
@@ -420,6 +471,7 @@ class TestCategoriesAPI:
             "color": "#06b6d4",
             "icon": "arrow-right-left",
             "is_default": True,
+            "exclude_from_stats": False,
         }
         mock_category_repo.bulk_assign_by_description.return_value = 0
 
