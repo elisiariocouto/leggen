@@ -169,8 +169,8 @@ export default function TransactionsTable() {
         : undefined;
 
       return apiClient.getTransactionStats(
-        startDateParam,
-        endDateParam,
+        startDateParam ?? "2000-01-01",
+        endDateParam ?? new Date().toISOString().split("T")[0],
         filterState.selectedAccount || undefined,
         debouncedSearchTerm || undefined,
       );
