@@ -23,7 +23,7 @@
 ## Features — Technical
 
 - [ ] Database migrations system - The codebase has ad-hoc migration functions scattered in the migration repository. A proper migration framework (like Alembic or even a simple versioned migration system) would prevent schema drift issues.
-- [ ] API authentication - No auth at all currently. Even for a self-hosted app, adding optional basic auth or API keys would prevent accidental exposure.
+- [x] API authentication - No auth at all currently. Even for a self-hosted app, adding optional basic auth or API keys would prevent accidental exposure.
 
 ---
 

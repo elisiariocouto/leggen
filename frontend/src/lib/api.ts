@@ -27,6 +27,8 @@ import type {
   CategoryCreate,
   CategoryUpdate,
   CategorySuggestion,
+  LoginResponse,
+  AuthStatus,
 } from "../types/api";
 
 // Use VITE_API_URL for development, relative URLs for production
@@ -38,6 +40,31 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+// Request interceptor: attach JWT token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("leggen_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response interceptor: handle 401
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response?.status === 401 &&
+      !window.location.pathname.includes("/login") &&
+      !error.config?.url?.includes("/auth/")
+    ) {
+      localStorage.removeItem("leggen_token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  },
+);
 
 export const apiClient = {
   // Get all accounts
@@ -419,6 +446,23 @@ export const apiClient = {
     const response = await api.get<CategorySuggestion[]>(
       `/transactions/${accountId}/${transactionId}/suggest-category`,
     );
+    return response.data;
+  },
+
+  // Auth endpoints
+  login: async (
+    username: string,
+    password: string,
+  ): Promise<LoginResponse> => {
+    const response = await api.post<LoginResponse>("/auth/login", {
+      username,
+      password,
+    });
+    return response.data;
+  },
+
+  getAuthStatus: async (): Promise<AuthStatus> => {
+    const response = await api.get<AuthStatus>("/auth/status");
     return response.data;
   },
 };

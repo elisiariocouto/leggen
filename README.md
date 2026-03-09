@@ -69,6 +69,10 @@ cd leggen
 mkdir -p data && cp config.example.toml data/config.toml
 # Edit data/config.toml with your EnableBanking credentials
 
+# Generate the [auth] section for your config
+docker compose run --rm leggen-server /app/.venv/bin/leggen generate-auth-config
+# Copy the output into data/config.toml
+
 # Start all services
 docker compose up -d
 ```
@@ -78,6 +82,16 @@ docker compose up -d
 Create a configuration file at `./data/config.toml`:
 
 ```toml
+# Required: Authentication
+# Generate with: leggen generate-auth-config
+# Docker Compose: docker compose run --rm leggen-server /app/.venv/bin/leggen generate-auth-config
+[auth]
+username = "admin"
+password_hash = "YOUR_BCRYPT_HASH"
+api_key = "YOUR_API_KEY"
+jwt_secret = "YOUR_JWT_SECRET"
+jwt_expiry_minutes = 60
+
 [enablebanking]
 application_id = "your-application-id"
 key_path = "/path/to/private-key.pem"

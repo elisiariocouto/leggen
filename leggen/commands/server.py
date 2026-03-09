@@ -3,12 +3,14 @@ from importlib import metadata
 
 import click
 import uvicorn
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
+from leggen.api.dependencies.auth import get_current_user
 from leggen.api.routes import (
     accounts,
+    auth,
     backup,
     banks,
     categories,
@@ -34,6 +36,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to load configuration: {e}")
         raise
+
+    # Validate auth configuration is present
+    if not config.auth_config:
+        raise RuntimeError(
+            "Missing [auth] section in config. "
+            "Run 'leggen generate-auth-config' to generate one."
+        )
 
     # Run database migrations and ensure tables exist
     try:
@@ -85,14 +94,41 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Include API routes
-    app.include_router(banks.router, prefix="/api/v1", tags=["banks"])
-    app.include_router(accounts.router, prefix="/api/v1", tags=["accounts"])
-    app.include_router(transactions.router, prefix="/api/v1", tags=["transactions"])
-    app.include_router(categories.router, prefix="/api/v1", tags=["categories"])
-    app.include_router(sync.router, prefix="/api/v1", tags=["sync"])
-    app.include_router(notifications.router, prefix="/api/v1", tags=["notifications"])
-    app.include_router(backup.router, prefix="/api/v1", tags=["backup"])
+    # Include auth routes (public, no auth dependency)
+    app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
+
+    # Include API routes (protected by auth)
+    auth_deps = [Depends(get_current_user)]
+    app.include_router(
+        banks.router, prefix="/api/v1", tags=["banks"], dependencies=auth_deps
+    )
+    app.include_router(
+        accounts.router, prefix="/api/v1", tags=["accounts"], dependencies=auth_deps
+    )
+    app.include_router(
+        transactions.router,
+        prefix="/api/v1",
+        tags=["transactions"],
+        dependencies=auth_deps,
+    )
+    app.include_router(
+        categories.router,
+        prefix="/api/v1",
+        tags=["categories"],
+        dependencies=auth_deps,
+    )
+    app.include_router(
+        sync.router, prefix="/api/v1", tags=["sync"], dependencies=auth_deps
+    )
+    app.include_router(
+        notifications.router,
+        prefix="/api/v1",
+        tags=["notifications"],
+        dependencies=auth_deps,
+    )
+    app.include_router(
+        backup.router, prefix="/api/v1", tags=["backup"], dependencies=auth_deps
+    )
 
     @app.get("/api/v1/health")
     async def health():

@@ -167,6 +167,11 @@ class Config:
         """Get backup configuration"""
         return self.config.get("backup", {})
 
+    @property
+    def auth_config(self) -> Dict[str, Any]:
+        """Get authentication configuration"""
+        return self.config.get("auth", {})
+
 
 def load_config(ctx: click.Context, _, filename):
     try:

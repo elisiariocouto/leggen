@@ -27,7 +27,17 @@ _test_key_path.write_bytes(
 _test_config_path = Path(_test_config_dir) / "config.toml"
 
 # Create minimal test config
+# bcrypt hash of "testpassword"
+_test_password_hash = "$2b$12$VNxOF9xF676elZu5M9pW7eYZ.p.qVJsh/n6jIsHE3iNnHWBtUxr/y"
+
 _config_data = {
+    "auth": {
+        "username": "testuser",
+        "password_hash": _test_password_hash,
+        "api_key": "lgn_test-api-key-for-testing",
+        "jwt_secret": "test-jwt-secret-for-testing-only",
+        "jwt_expiry_minutes": 60,
+    },
     "enablebanking": {
         "application_id": "test-app-id",
         "key_path": str(_test_key_path),
@@ -101,6 +111,13 @@ def test_key_path():
 def mock_config(temp_config_dir, test_key_path):
     """Mock configuration for testing."""
     config_data = {
+        "auth": {
+            "username": "testuser",
+            "password_hash": _test_password_hash,
+            "api_key": "lgn_test-api-key-for-testing",
+            "jwt_secret": "test-jwt-secret-for-testing-only",
+            "jwt_expiry_minutes": 60,
+        },
         "enablebanking": {
             "application_id": "test-app-id",
             "key_path": str(test_key_path),
@@ -136,8 +153,10 @@ def fastapi_app(mock_db_path):
 
 @pytest.fixture
 def api_client(fastapi_app):
-    """Create FastAPI test client."""
-    return TestClient(fastapi_app)
+    """Create FastAPI test client with auth headers."""
+    client = TestClient(fastapi_app)
+    client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
+    return client
 
 
 @pytest.fixture
