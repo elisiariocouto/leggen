@@ -86,18 +86,18 @@ function AnalyticsDashboard() {
   return (
     <div className="space-y-8">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <DateRangePicker
-          startDate={startDate}
-          endDate={endDate}
-          onDateRangeChange={handleDateRangeChange}
-          presets={analyticsPresets}
-        />
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <AccountCombobox
           accounts={accounts}
           selectedAccount={selectedAccount}
           onAccountChange={setSelectedAccount}
           className="w-[260px]"
+        />
+        <DateRangePicker
+          startDate={startDate}
+          endDate={endDate}
+          onDateRangeChange={handleDateRangeChange}
+          presets={analyticsPresets}
         />
       </div>
 

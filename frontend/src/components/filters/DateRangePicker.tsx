@@ -118,7 +118,7 @@ export function DateRangePicker({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <Card className="w-auto py-4">
+          <Card className="w-auto pt-4">
             <CardContent className="px-4">
               <Calendar
                 mode="range"
@@ -129,7 +129,7 @@ export function DateRangePicker({
               />
             </CardContent>
             {presets && presets.length > 0 && (
-              <CardFooter className="border-t px-4 !pt-4">
+              <CardFooter className="border-t px-4 !pt-4 !pb-4">
                 <Select
                   value={matchingPresetLabel ?? ""}
                   onValueChange={handlePresetChange}
