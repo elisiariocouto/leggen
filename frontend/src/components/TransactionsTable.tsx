@@ -87,12 +87,10 @@ export default function TransactionsTable() {
     return () => clearTimeout(timer);
   }, [filterState.searchTerm]);
 
-  // Reset pagination when search term changes
+  // Reset pagination when debounced search term changes
   useEffect(() => {
-    if (debouncedSearchTerm !== filterState.searchTerm) {
-      setCurrentPage(1);
-    }
-  }, [debouncedSearchTerm, filterState.searchTerm]);
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
 
   const { data: accounts } = useQuery<Account[]>({
     queryKey: ["accounts"],
@@ -404,90 +402,47 @@ export default function TransactionsTable() {
   }
 
   return (
-    <div className="space-y-6 max-w-full">
-      {/* New FilterBar */}
-      <FilterBar
-        filterState={filterState}
-        onFilterChange={handleFilterChange}
-        onClearFilters={handleClearFilters}
-        accounts={accounts}
-        isSearchLoading={isSearchLoading}
-      />
-
-      {/* Transaction Statistics */}
-      {transactions.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Showing
-                </p>
-                <p className="text-2xl font-bold text-foreground mt-1">
-                  {stats.pageCount}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  of {stats.totalCount} total
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Income
-                </p>
-                <BlurredValue className="text-2xl font-bold text-green-600 mt-1 block">
-                  +{formatCurrency(stats.totalIncome, stats.displayCurrency)}
-                </BlurredValue>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-600 opacity-50" />
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Expenses
-                </p>
-                <BlurredValue className="text-2xl font-bold text-red-600 mt-1 block">
-                  -{formatCurrency(stats.totalExpenses, stats.displayCurrency)}
-                </BlurredValue>
-              </div>
-              <TrendingDown className="h-8 w-8 text-red-600 opacity-50" />
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Net Change
-                </p>
-                <BlurredValue
-                  className={`text-2xl font-bold mt-1 block ${
-                    stats.netChange >= 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {stats.netChange >= 0 ? "+" : ""}
-                  {formatCurrency(stats.netChange, stats.displayCurrency)}
-                </BlurredValue>
-              </div>
-              {stats.netChange >= 0 ? (
-                <TrendingUp className="h-8 w-8 text-green-600 opacity-50" />
-              ) : (
-                <TrendingDown className="h-8 w-8 text-red-600 opacity-50" />
-              )}
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Responsive Table/Cards */}
+    <div className="max-w-full">
       <Card>
+        {/* Header: Filters */}
+        <FilterBar
+          filterState={filterState}
+          onFilterChange={handleFilterChange}
+          onClearFilters={handleClearFilters}
+          accounts={accounts}
+          isSearchLoading={isSearchLoading}
+        />
+
+        {/* Stats Bar */}
+        {transactions.length > 0 && (
+          <div className="px-6 py-2 border-t bg-muted/30">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <span className="text-muted-foreground">
+                {stats.pageCount} of {stats.totalCount.toLocaleString()}
+              </span>
+              <span className="text-muted-foreground hidden sm:inline">·</span>
+              <BlurredValue>
+                <span className="text-green-600">
+                  +{formatCurrency(stats.totalIncome, stats.displayCurrency)} income
+                </span>
+              </BlurredValue>
+              <span className="text-muted-foreground hidden sm:inline">·</span>
+              <BlurredValue>
+                <span className="text-red-600">
+                  -{formatCurrency(stats.totalExpenses, stats.displayCurrency)} expenses
+                </span>
+              </BlurredValue>
+              <span className="text-muted-foreground hidden sm:inline">·</span>
+              <BlurredValue>
+                <span className={stats.netChange >= 0 ? "text-green-600" : "text-red-600"}>
+                  Net {stats.netChange >= 0 ? "+" : ""}
+                  {formatCurrency(stats.netChange, stats.displayCurrency)}
+                </span>
+              </BlurredValue>
+            </div>
+          </div>
+        )}
+
         {/* Desktop Table View (hidden on mobile) */}
         <div className="hidden md:block">
           <table className="min-w-full divide-y divide-border">

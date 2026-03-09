@@ -158,8 +158,8 @@ export default function CategoryBadge({
             {categoryName}
           </button>
         ) : (
-          <button className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer border border-dashed border-muted-foreground/30">
-            <Tag className="h-3 w-3" />
+          <button className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer border border-dashed border-muted-foreground/40">
+            <Tag className="h-3.5 w-3.5" />
             <span>Categorize</span>
           </button>
         )}
