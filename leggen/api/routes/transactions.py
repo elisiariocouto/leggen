@@ -129,6 +129,15 @@ async def get_transaction_stats(
     date_from: str = Query(description="Start date (YYYY-MM-DD)"),
     date_to: str = Query(description="End date (YYYY-MM-DD)"),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
+    search: Optional[str] = Query(
+        default=None, description="Search in transaction descriptions"
+    ),
+    min_amount: Optional[float] = Query(
+        default=None, description="Minimum transaction amount"
+    ),
+    max_amount: Optional[float] = Query(
+        default=None, description="Maximum transaction amount"
+    ),
     group_by: Optional[Literal["month"]] = Query(
         default=None, description="Group results by month"
     ),
@@ -155,6 +164,9 @@ async def get_transaction_stats(
             account_id=account_id,
             date_from=date_from,
             date_to=date_to,
+            min_amount=min_amount,
+            max_amount=max_amount,
+            search=search,
             limit=None,
         )
 

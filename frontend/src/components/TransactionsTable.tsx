@@ -33,7 +33,12 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Button } from "./ui/button";
 import { BlurredValue } from "./ui/blurred-value";
 import CategoryBadge from "./CategoryBadge";
-import type { Account, Transaction, PaginatedResponse } from "../types/api";
+import type {
+  Account,
+  Transaction,
+  PaginatedResponse,
+  TransactionStats,
+} from "../types/api";
 
 export default function TransactionsTable() {
   // Filter state consolidated into a single object
@@ -144,30 +149,30 @@ export default function TransactionsTable() {
     [transactionsResponse],
   );
 
-  // Calculate stats from current page transactions, memoized for performance
-  const stats = useMemo(() => {
-    const totalIncome = transactions
-      .filter((t: Transaction) => t.transaction_value > 0)
-      .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0);
+  // Fetch stats from API (covers all filtered transactions, not just current page)
+  const { data: statsData } = useQuery<TransactionStats>({
+    queryKey: [
+      "transactionStats",
+      filterState.selectedAccount,
+      filterState.startDate,
+      filterState.endDate,
+      debouncedSearchTerm,
+    ],
+    queryFn: () =>
+      apiClient.getTransactionStats(
+        filterState.startDate || "2000-01-01",
+        filterState.endDate || new Date().toISOString().split("T")[0],
+        filterState.selectedAccount || undefined,
+        debouncedSearchTerm || undefined,
+      ),
+    placeholderData: (previousData) => previousData,
+  });
 
-    const totalExpenses = Math.abs(
-      transactions
-        .filter((t: Transaction) => t.transaction_value < 0)
-        .reduce((sum: number, t: Transaction) => sum + t.transaction_value, 0)
-    );
-
-    // Get currency from first transaction, fallback to EUR
-    const displayCurrency = transactions.length > 0 ? transactions[0].transaction_currency : "EUR";
-
-    return {
-      totalCount: pagination?.total || 0,
-      pageCount: transactions.length,
-      totalIncome,
-      totalExpenses,
-      netChange: totalIncome - totalExpenses,
-      displayCurrency,
-    };
-  }, [transactions, pagination]);
+  // Get currency from first transaction, fallback to EUR
+  const displayCurrency =
+    transactions.length > 0
+      ? transactions[0].transaction_currency
+      : "EUR";
 
   // Check if search is currently debouncing
   const isSearchLoading = filterState.searchTerm !== debouncedSearchTerm;
@@ -414,29 +419,29 @@ export default function TransactionsTable() {
         />
 
         {/* Stats Bar */}
-        {transactions.length > 0 && (
+        {transactions.length > 0 && statsData && (
           <div className="px-6 py-2 border-t bg-muted/30">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               <span className="text-muted-foreground">
-                {stats.pageCount} of {stats.totalCount.toLocaleString()}
+                {transactions.length} of {(pagination?.total || 0).toLocaleString()}
               </span>
               <span className="text-muted-foreground hidden sm:inline">·</span>
               <BlurredValue>
                 <span className="text-green-600">
-                  +{formatCurrency(stats.totalIncome, stats.displayCurrency)} income
+                  +{formatCurrency(statsData.total_income, displayCurrency)} income
                 </span>
               </BlurredValue>
               <span className="text-muted-foreground hidden sm:inline">·</span>
               <BlurredValue>
                 <span className="text-red-600">
-                  -{formatCurrency(stats.totalExpenses, stats.displayCurrency)} expenses
+                  -{formatCurrency(statsData.total_expenses, displayCurrency)} expenses
                 </span>
               </BlurredValue>
               <span className="text-muted-foreground hidden sm:inline">·</span>
               <BlurredValue>
-                <span className={stats.netChange >= 0 ? "text-green-600" : "text-red-600"}>
-                  Net {stats.netChange >= 0 ? "+" : ""}
-                  {formatCurrency(stats.netChange, stats.displayCurrency)}
+                <span className={statsData.net_change >= 0 ? "text-green-600" : "text-red-600"}>
+                  Net {statsData.net_change >= 0 ? "+" : ""}
+                  {formatCurrency(statsData.net_change, displayCurrency)}
                 </span>
               </BlurredValue>
             </div>
