@@ -45,17 +45,9 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center space-x-3">
           {/* Version display */}
-          <div className="flex items-center space-x-1">
-            {healthLoading ? (
-              <span className="text-xs text-muted-foreground">v...</span>
-            ) : healthError || !healthStatus ? (
-              <span className="text-xs text-muted-foreground">v?</span>
-            ) : (
-              <span className="text-xs text-muted-foreground">
-                v{healthStatus.version || "?"}
-              </span>
-            )}
-          </div>
+          <span className="text-xs text-muted-foreground">
+            v{healthStatus?.version || "?"}
+          </span>
 
           {/* Connection status */}
           <div className="flex items-center space-x-1">
