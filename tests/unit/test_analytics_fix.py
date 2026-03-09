@@ -47,6 +47,7 @@ class TestAnalyticsFix:
         app = create_app()
         app.dependency_overrides[TransactionRepository] = lambda: mock_transaction_repo
         client = TestClient(app)
+        client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
 
         response = client.get(
             "/api/v1/transactions/stats?date_from=2024-01-01&date_to=2025-01-01"

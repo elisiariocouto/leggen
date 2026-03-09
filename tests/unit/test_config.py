@@ -6,6 +6,14 @@ import pytest
 
 from leggen.utils.config import Config
 
+_AUTH_CONFIG = {
+    "username": "testuser",
+    "password_hash": "$2b$12$VNxOF9xF676elZu5M9pW7eYZ.p.qVJsh/n6jIsHE3iNnHWBtUxr/y",
+    "api_key": "lgn_test-api-key-for-testing",
+    "jwt_secret": "test-jwt-secret-for-testing-only",
+    "jwt_expiry_minutes": 60,
+}
+
 
 @pytest.mark.unit
 class TestConfig:
@@ -20,6 +28,7 @@ class TestConfig:
     def test_load_config_success(self, temp_config_dir, test_key_path):
         """Test successful configuration loading."""
         config_data = {
+            "auth": _AUTH_CONFIG,
             "enablebanking": {
                 "application_id": "test-app-id",
                 "key_path": str(test_key_path),
@@ -59,6 +68,7 @@ class TestConfig:
     def test_save_config_success(self, temp_config_dir, test_key_path):
         """Test successful configuration saving."""
         config_data = {
+            "auth": _AUTH_CONFIG,
             "enablebanking": {
                 "application_id": "new-app-id",
                 "key_path": str(test_key_path),
@@ -88,6 +98,7 @@ class TestConfig:
     def test_update_config_success(self, temp_config_dir, test_key_path):
         """Test updating configuration values."""
         initial_config = {
+            "auth": _AUTH_CONFIG,
             "enablebanking": {
                 "application_id": "old-app-id",
                 "key_path": str(test_key_path),
@@ -121,6 +132,7 @@ class TestConfig:
     def test_update_section_success(self, temp_config_dir, test_key_path):
         """Test updating entire configuration section."""
         initial_config = {
+            "auth": _AUTH_CONFIG,
             "enablebanking": {
                 "application_id": "test-app-id",
                 "key_path": str(test_key_path),

@@ -331,6 +331,16 @@ export interface BackupOperation {
   backup_key?: string;
 }
 
+// Auth types
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface AuthStatus {
+  auth_enabled: boolean;
+}
+
 // Sync schedule types
 export interface ScheduleSettings {
   enabled: boolean;

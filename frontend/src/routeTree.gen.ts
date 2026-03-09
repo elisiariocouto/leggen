@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SyncRouteImport } from './routes/sync'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as BankConnectedRouteImport } from './routes/bank-connected'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AccountsRouteImport } from './routes/accounts'
@@ -30,6 +31,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const NotificationsRoute = NotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BankConnectedRoute = BankConnectedRouteImport.update({
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/accounts': typeof AccountsRoute
   '/analytics': typeof AnalyticsRoute
   '/bank-connected': typeof BankConnectedRoute
+  '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/sync': typeof SyncRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/accounts': typeof AccountsRoute
   '/analytics': typeof AnalyticsRoute
   '/bank-connected': typeof BankConnectedRoute
+  '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/sync': typeof SyncRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/accounts': typeof AccountsRoute
   '/analytics': typeof AnalyticsRoute
   '/bank-connected': typeof BankConnectedRoute
+  '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/sync': typeof SyncRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/analytics'
     | '/bank-connected'
+    | '/login'
     | '/notifications'
     | '/settings'
     | '/sync'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/analytics'
     | '/bank-connected'
+    | '/login'
     | '/notifications'
     | '/settings'
     | '/sync'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/analytics'
     | '/bank-connected'
+    | '/login'
     | '/notifications'
     | '/settings'
     | '/sync'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   AccountsRoute: typeof AccountsRoute
   AnalyticsRoute: typeof AnalyticsRoute
   BankConnectedRoute: typeof BankConnectedRoute
+  LoginRoute: typeof LoginRoute
   NotificationsRoute: typeof NotificationsRoute
   SettingsRoute: typeof SettingsRoute
   SyncRoute: typeof SyncRoute
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bank-connected': {
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountsRoute: AccountsRoute,
   AnalyticsRoute: AnalyticsRoute,
   BankConnectedRoute: BankConnectedRoute,
+  LoginRoute: LoginRoute,
   NotificationsRoute: NotificationsRoute,
   SettingsRoute: SettingsRoute,
   SyncRoute: SyncRoute,

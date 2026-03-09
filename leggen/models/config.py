@@ -76,7 +76,18 @@ class SchedulerConfig(BaseModel):
     sync: SyncScheduleConfig = Field(default_factory=SyncScheduleConfig)
 
 
+class AuthConfig(BaseModel):
+    username: str = Field(..., description="Username for authentication")
+    password_hash: str = Field(..., description="Bcrypt hashed password")
+    api_key: str = Field(..., description="API key for programmatic access")
+    jwt_secret: str = Field(..., description="Secret key for JWT token signing")
+    jwt_expiry_minutes: int = Field(
+        default=60, description="JWT token expiry time in minutes"
+    )
+
+
 class Config(BaseModel):
+    auth: Optional[AuthConfig] = None
     enablebanking: EnableBankingConfig
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     notifications: Optional[NotificationConfig] = None
