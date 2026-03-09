@@ -232,33 +232,35 @@ def calculate_monthly_stats(
     cursor = conn.cursor()
 
     try:
-        # SQL query to aggregate transactions by month
+        # SQL query to aggregate transactions by month, excluding categories with exclude_from_stats
         query = """
         SELECT
-            strftime('%Y-%m', transactionDate) as month,
-            COALESCE(SUM(CASE WHEN transactionValue > 0 THEN transactionValue ELSE 0 END), 0) as income,
-            COALESCE(SUM(CASE WHEN transactionValue < 0 THEN ABS(transactionValue) ELSE 0 END), 0) as expenses,
-            COALESCE(SUM(transactionValue), 0) as net
-        FROM transactions
-        WHERE 1=1
+            strftime('%Y-%m', t.transactionDate) as month,
+            COALESCE(SUM(CASE WHEN t.transactionValue > 0 THEN t.transactionValue ELSE 0 END), 0) as income,
+            COALESCE(SUM(CASE WHEN t.transactionValue < 0 THEN ABS(t.transactionValue) ELSE 0 END), 0) as expenses,
+            COALESCE(SUM(t.transactionValue), 0) as net
+        FROM transactions t
+        LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
+        LEFT JOIN categories c ON tc.categoryId = c.id
+        WHERE (c.exclude_from_stats IS NULL OR c.exclude_from_stats = 0)
         """
 
         params = []
 
         if account_id:
-            query += " AND accountId = ?"
+            query += " AND t.accountId = ?"
             params.append(account_id)
 
         if date_from:
-            query += " AND transactionDate >= ?"
+            query += " AND t.transactionDate >= ?"
             params.append(date_from)
 
         if date_to:
-            query += " AND transactionDate <= ?"
+            query += " AND t.transactionDate <= ?"
             params.append(date_to)
 
         query += """
-        GROUP BY strftime('%Y-%m', transactionDate)
+        GROUP BY strftime('%Y-%m', t.transactionDate)
         ORDER BY month ASC
         """
 

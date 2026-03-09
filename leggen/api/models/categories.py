@@ -13,6 +13,7 @@ class Category(BaseModel):
     color: str = "#6b7280"
     icon: Optional[str] = None
     is_default: bool = False
+    exclude_from_stats: bool = False
 
 
 class CategoryCreate(BaseModel):
@@ -21,6 +22,7 @@ class CategoryCreate(BaseModel):
     name: str
     color: str = "#6b7280"
     icon: Optional[str] = None
+    exclude_from_stats: bool = False
 
 
 class CategoryUpdate(BaseModel):
@@ -29,6 +31,7 @@ class CategoryUpdate(BaseModel):
     name: Optional[str] = None
     color: Optional[str] = None
     icon: Optional[str] = None
+    exclude_from_stats: Optional[bool] = None
 
 
 class CategoryAssignment(BaseModel):
