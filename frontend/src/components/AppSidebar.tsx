@@ -3,6 +3,7 @@ import {
   ArrowLeftRight,
   BarChart3,
   Building2,
+  LogOut,
   RefreshCw,
   Settings,
   TrendingUp,
@@ -13,6 +14,14 @@ import { apiClient } from "../lib/api";
 import { formatCurrency } from "../lib/utils";
 import type { Account } from "../types/api";
 import { BlurredValue } from "./ui/blurred-value";
+import { useAuth } from "../contexts/AuthContext";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -24,6 +33,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarSeparator,
   useSidebar,
 } from "./ui/sidebar";
 
@@ -38,6 +48,7 @@ const navigation = [
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
+  const { username, logout } = useAuth();
 
   const { data: accounts } = useQuery<Account[]>({
     queryKey: ["accounts"],
@@ -163,6 +174,39 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             )}
           </div>
         </SidebarGroup>
+        <SidebarSeparator />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  tooltip={username ?? "User"}
+                  className="data-[state=open]:bg-sidebar-accent"
+                >
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback className="text-xs">
+                      {username
+                        ? username.slice(0, 2).toUpperCase()
+                        : "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate font-medium">{username}</span>
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top"
+                align="start"
+                className="w-[--radix-dropdown-menu-trigger-width]"
+              >
+                <DropdownMenuItem onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   );
