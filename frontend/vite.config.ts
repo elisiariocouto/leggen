@@ -68,6 +68,10 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
         runtimeCaching: [
           {
+            urlPattern: /^https?:\/\/.*\/api\/v1\/health/,
+            handler: "NetworkOnly",
+          },
+          {
             urlPattern: /^https:\/\/.*\/api\//,
             handler: "NetworkFirst",
             options: {
