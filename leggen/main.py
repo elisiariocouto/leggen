@@ -6,7 +6,7 @@ from pathlib import Path
 import click
 from loguru import logger
 
-from leggen.utils.config import config, load_config
+from leggen.utils.config import load_config
 from leggen.utils.paths import path_manager
 from leggen.utils.text import error
 
@@ -184,5 +184,6 @@ def cli(
 
     # Resolve API key: flag/env > config file
     if not api_key:
-        api_key = config.auth_config.get("api_key") if config.auth_config else None
+        auth = ctx.obj.get("auth", {})
+        api_key = auth.get("api_key") if auth else None
     ctx.obj["api_key"] = api_key
