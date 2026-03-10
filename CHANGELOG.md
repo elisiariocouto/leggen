@@ -1,4 +1,22 @@
 
+## 2026.3.4 (2026/03/10)
+
+### Bug Fixes
+
+- **frontend:** Prevent PWA from caching health endpoint responses. ([08fae853](https://github.com/elisiariocouto/leggen/commit/08fae853ef327053c73344b6d6f30200fb8982c4))
+-  Address PR review comments for authentication. ([57da95cc](https://github.com/elisiariocouto/leggen/commit/57da95ccaa7489ba1325fa540f49fffb7359eff0))
+-  Add API key auth to CLI client and reject placeholder config values. ([574e91d2](https://github.com/elisiariocouto/leggen/commit/574e91d231ae75437da46c18ae76916477e00b5c))
+-  Read API key from ctx.obj and normalize base64url in JWT decoding. ([ec073fba](https://github.com/elisiariocouto/leggen/commit/ec073fbac9b634f31132e68ff2bfeb3779c53f39))
+
+
+### Features
+
+- **cli:** Prompt for username in generate-auth-config command. ([20f6c896](https://github.com/elisiariocouto/leggen/commit/20f6c896f459077031a01af7b86ada090630cf0b))
+- **frontend:** Add user avatar and logout button to sidebar. ([10830223](https://github.com/elisiariocouto/leggen/commit/108302232a3772973f6d2a7c81ccc70eb9b3ab83))
+-  Add single-user authentication with JWT and API key support. ([13925e18](https://github.com/elisiariocouto/leggen/commit/13925e18372a023ab59fe20b4841db790622fb94))
+
+
+
 ## 2026.3.3 (2026/03/09)
 
 ### Bug Fixes
