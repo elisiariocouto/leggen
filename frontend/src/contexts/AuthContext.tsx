@@ -20,7 +20,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function decodeTokenUsername(token: string): string | null {
   try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
+    let base64 = token.split(".")[1];
+    base64 = base64.replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(base64));
     return payload.sub || null;
   } catch {
     return null;
