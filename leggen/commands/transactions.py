@@ -21,7 +21,9 @@ def transactions(ctx: click.Context, account: str, limit: int, full: bool):
     If the --account option is used, it will only list transactions for that account.
     """
     api_client = LeggenAPIClient(
-        ctx.obj.get("api_url"), verify_ssl=ctx.obj.get("verify_ssl", True)
+        ctx.obj.get("api_url"),
+        verify_ssl=ctx.obj.get("verify_ssl", True),
+        api_key=ctx.obj.get("api_key"),
     )
 
     # Check if leggen server is available

@@ -44,6 +44,20 @@ async def lifespan(app: FastAPI):
             "Run 'leggen generate-auth-config' to generate one."
         )
 
+    # Reject known placeholder values from config.example.toml
+    _PLACEHOLDER_VALUES = {"YOUR_BCRYPT_HASH", "YOUR_API_KEY", "YOUR_JWT_SECRET"}
+    auth_cfg = config.auth_config
+    placeholder_fields = [
+        key
+        for key in ("password_hash", "api_key", "jwt_secret")
+        if auth_cfg.get(key) in _PLACEHOLDER_VALUES
+    ]
+    if placeholder_fields:
+        raise RuntimeError(
+            f"Placeholder auth values detected for: {', '.join(placeholder_fields)}. "
+            "Run 'leggen generate-auth-config' to generate real values."
+        )
+
     # Run database migrations and ensure tables exist
     try:
         migrations = MigrationRepository()
