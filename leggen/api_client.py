@@ -13,7 +13,12 @@ class LeggenAPIClient:
 
     base_url: str
 
-    def __init__(self, base_url: Optional[str] = None, verify_ssl: bool = True):
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        verify_ssl: bool = True,
+        api_key: Optional[str] = None,
+    ):
         raw_url = (
             base_url
             or os.environ.get("LEGGEN_API_URL", "http://localhost:8000")
@@ -37,6 +42,8 @@ class LeggenAPIClient:
         self.session.headers.update(
             {"Content-Type": "application/json", "Accept": "application/json"}
         )
+        if api_key:
+            self.session.headers["X-API-Key"] = api_key
 
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Any:
         """Make HTTP request to the API"""

@@ -6,7 +6,7 @@ from pathlib import Path
 import click
 from loguru import logger
 
-from leggen.utils.config import load_config
+from leggen.utils.config import config, load_config
 from leggen.utils.paths import path_manager
 from leggen.utils.text import error
 
@@ -122,6 +122,14 @@ class Group(click.Group):
     help="Set the logging level",
 )
 @click.option(
+    "--api-key",
+    type=str,
+    default=None,
+    envvar="LEGGEN_API_KEY",
+    show_envvar=True,
+    help="API key for authenticating with the leggen server",
+)
+@click.option(
     "--no-verify-ssl",
     is_flag=True,
     default=False,
@@ -143,6 +151,7 @@ def cli(
     config_dir: Path,
     database: Path,
     api_url: str,
+    api_key: str | None,
     log_level: str,
     no_verify_ssl: bool,
 ):
@@ -172,3 +181,8 @@ def cli(
     ctx.obj["api_url"] = api_url
     ctx.obj["verify_ssl"] = not no_verify_ssl
     ctx.obj["log_level"] = log_level.lower()
+
+    # Resolve API key: flag/env > config file
+    if not api_key:
+        api_key = config.auth_config.get("api_key") if config.auth_config else None
+    ctx.obj["api_key"] = api_key
