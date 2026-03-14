@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { DateRangePicker } from "./DateRangePicker";
 import type { DatePreset } from "./DateRangePicker";
 import { AccountCombobox } from "./AccountCombobox";
+import { CategoryCombobox } from "./CategoryCombobox";
 import { ActiveFilterChips } from "./ActiveFilterChips";
 import { TIME_PERIODS } from "../../lib/timePeriods";
 import type { Account } from "../../types/api";
@@ -17,6 +18,7 @@ const transactionPresets: DatePreset[] = TIME_PERIODS.map((p) => ({
 export interface FilterState {
   searchTerm: string;
   selectedAccount: string;
+  selectedCategory: string;
   startDate: string;
   endDate: string;
 }
@@ -43,6 +45,7 @@ export function FilterBar({
   const hasActiveFilters =
     filterState.searchTerm ||
     filterState.selectedAccount ||
+    filterState.selectedCategory ||
     filterState.startDate ||
     filterState.endDate;
 
@@ -82,6 +85,14 @@ export function FilterBar({
               selectedAccount={filterState.selectedAccount}
               onAccountChange={(accountId) =>
                 onFilterChange("selectedAccount", accountId)
+              }
+              className="w-[180px]"
+            />
+
+            <CategoryCombobox
+              selectedCategory={filterState.selectedCategory}
+              onCategoryChange={(categoryId) =>
+                onFilterChange("selectedCategory", categoryId)
               }
               className="w-[180px]"
             />
@@ -128,7 +139,16 @@ export function FilterBar({
             className="w-full"
           />
 
-          {/* Third Row: Date Range */}
+          {/* Third Row: Category Selection (Full Width) */}
+          <CategoryCombobox
+            selectedCategory={filterState.selectedCategory}
+            onCategoryChange={(categoryId) =>
+              onFilterChange("selectedCategory", categoryId)
+            }
+            className="w-full"
+          />
+
+          {/* Fourth Row: Date Range */}
           <DateRangePicker
             startDate={filterState.startDate}
             endDate={filterState.endDate}

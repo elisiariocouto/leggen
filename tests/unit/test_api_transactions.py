@@ -177,6 +177,7 @@ class TestTransactionsAPI:
             min_amount=-50.0,
             max_amount=0.0,
             search="Coffee",
+            category_id=None,
         )
 
     def test_get_transactions_empty_result(

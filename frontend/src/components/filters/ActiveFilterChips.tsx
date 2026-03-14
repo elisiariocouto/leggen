@@ -1,9 +1,11 @@
 import { X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
+import { apiClient } from "../../lib/api";
 import type { FilterState } from "./FilterBar";
-import type { Account } from "../../types/api";
+import type { Account, Category } from "../../types/api";
 
 export interface ActiveFilterChipsProps {
   filterState: FilterState;
@@ -18,6 +20,12 @@ export function ActiveFilterChips({
   onClearFilters,
   accounts = [],
 }: ActiveFilterChipsProps) {
+  const { data: categories } = useQuery<Category[]>({
+    queryKey: ["categories"],
+    queryFn: apiClient.getCategories,
+    enabled: !!filterState.selectedCategory,
+  });
+
   const chips: Array<{
     key: keyof FilterState;
     label: string;
@@ -45,6 +53,24 @@ export function ActiveFilterChips({
       key: "selectedAccount",
       label: accountName,
       value: filterState.selectedAccount,
+    });
+  }
+
+  // Category chip
+  if (filterState.selectedCategory) {
+    let categoryLabel = "Category: ";
+    if (filterState.selectedCategory === "uncategorized") {
+      categoryLabel += "Uncategorized";
+    } else {
+      const category = categories?.find(
+        (cat) => String(cat.id) === filterState.selectedCategory,
+      );
+      categoryLabel += category?.name || `ID ${filterState.selectedCategory}`;
+    }
+    chips.push({
+      key: "selectedCategory",
+      label: categoryLabel,
+      value: filterState.selectedCategory,
     });
   }
 

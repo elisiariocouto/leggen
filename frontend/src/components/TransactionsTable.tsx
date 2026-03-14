@@ -45,6 +45,7 @@ export default function TransactionsTable() {
   const [filterState, setFilterState] = useState<FilterState>({
     searchTerm: "",
     selectedAccount: "",
+    selectedCategory: "",
     startDate: "",
     endDate: "",
   });
@@ -76,6 +77,7 @@ export default function TransactionsTable() {
     setFilterState({
       searchTerm: "",
       selectedAccount: "",
+      selectedCategory: "",
       startDate: "",
       endDate: "",
     });
@@ -111,6 +113,7 @@ export default function TransactionsTable() {
     queryKey: [
       "transactions",
       filterState.selectedAccount,
+      filterState.selectedCategory,
       filterState.startDate,
       filterState.endDate,
       currentPage,
@@ -126,6 +129,7 @@ export default function TransactionsTable() {
         perPage: perPage,
         search: debouncedSearchTerm || undefined,
         summaryOnly: false,
+        categoryId: filterState.selectedCategory || undefined,
       }),
     placeholderData: (previousData) => previousData,
   });
@@ -154,6 +158,7 @@ export default function TransactionsTable() {
     queryKey: [
       "transactionStats",
       filterState.selectedAccount,
+      filterState.selectedCategory,
       filterState.startDate,
       filterState.endDate,
       debouncedSearchTerm,
@@ -173,6 +178,9 @@ export default function TransactionsTable() {
         endDateParam ?? new Date().toISOString().split("T")[0],
         filterState.selectedAccount || undefined,
         debouncedSearchTerm || undefined,
+        undefined,
+        undefined,
+        filterState.selectedCategory || undefined,
       );
     },
     placeholderData: (previousData) => previousData,
@@ -197,7 +205,7 @@ export default function TransactionsTable() {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterState.selectedAccount, filterState.startDate, filterState.endDate]);
+  }, [filterState.selectedAccount, filterState.selectedCategory, filterState.startDate, filterState.endDate]);
 
   const handleViewRaw = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -212,6 +220,7 @@ export default function TransactionsTable() {
   const hasActiveFilters =
     filterState.searchTerm ||
     filterState.selectedAccount ||
+    filterState.selectedCategory ||
     filterState.startDate ||
     filterState.endDate;
 

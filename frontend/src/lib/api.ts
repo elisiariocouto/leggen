@@ -12,6 +12,7 @@ import type {
   AccountUpdate,
   TransactionStats,
   MonthlyStats,
+  CategoryStats,
   SyncOperationsResponse,
   SyncResult,
   BankInstitution,
@@ -129,6 +130,7 @@ export const apiClient = {
     summaryOnly?: boolean;
     minAmount?: number;
     maxAmount?: number;
+    categoryId?: string;
   }): Promise<PaginatedResponse<Transaction>> => {
     const queryParams = new URLSearchParams();
 
@@ -148,6 +150,8 @@ export const apiClient = {
     if (params?.maxAmount !== undefined) {
       queryParams.append("max_amount", params.maxAmount.toString());
     }
+    if (params?.categoryId)
+      queryParams.append("category_id", params.categoryId);
 
     const response = await api.get<PaginatedResponse<Transaction>>(
       `/transactions?${queryParams.toString()}`,
@@ -208,6 +212,7 @@ export const apiClient = {
     search?: string,
     minAmount?: number,
     maxAmount?: number,
+    categoryId?: string,
   ): Promise<TransactionStats> => {
     const queryParams = new URLSearchParams();
     queryParams.append("date_from", dateFrom);
@@ -218,6 +223,7 @@ export const apiClient = {
       queryParams.append("min_amount", minAmount.toString());
     if (maxAmount !== undefined)
       queryParams.append("max_amount", maxAmount.toString());
+    if (categoryId) queryParams.append("category_id", categoryId);
 
     const response = await api.get<TransactionStats>(
       `/transactions/stats?${queryParams.toString()}`,
@@ -239,6 +245,23 @@ export const apiClient = {
 
     const response = await api.get<MonthlyStats[]>(
       `/transactions/stats?${queryParams.toString()}`,
+    );
+    return response.data;
+  },
+
+  // Get transaction stats grouped by category
+  getStatsByCategory: async (
+    dateFrom: string,
+    dateTo: string,
+    accountId?: string,
+  ): Promise<CategoryStats[]> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append("date_from", dateFrom);
+    queryParams.append("date_to", dateTo);
+    if (accountId) queryParams.append("account_id", accountId);
+
+    const response = await api.get<CategoryStats[]>(
+      `/transactions/stats/by-category?${queryParams.toString()}`,
     );
     return response.data;
   },
