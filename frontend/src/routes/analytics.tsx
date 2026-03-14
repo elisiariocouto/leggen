@@ -14,6 +14,7 @@ import StatCard from "../components/analytics/StatCard";
 import BalanceChart from "../components/analytics/BalanceChart";
 import TransactionDistribution from "../components/analytics/TransactionDistribution";
 import MonthlyTrends from "../components/analytics/MonthlyTrends";
+import CategoryBreakdown from "../components/analytics/CategoryBreakdown";
 import { DateRangePicker } from "../components/filters/DateRangePicker";
 import type { DatePreset } from "../components/filters/DateRangePicker";
 import { AccountCombobox } from "../components/filters/AccountCombobox";
@@ -165,16 +166,27 @@ function AnalyticsDashboard() {
         </Card>
       </div>
 
-      {/* Monthly Trends */}
-      <Card>
-        <CardContent className="p-6">
-          <MonthlyTrends
-            dateFrom={startDate}
-            dateTo={endDate}
-            accountId={accountId}
-          />
-        </CardContent>
-      </Card>
+      {/* Category Breakdown & Monthly Trends */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card>
+          <CardContent className="p-6">
+            <CategoryBreakdown
+              dateFrom={startDate}
+              dateTo={endDate}
+              accountId={accountId}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <MonthlyTrends
+              dateFrom={startDate}
+              dateTo={endDate}
+              accountId={accountId}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

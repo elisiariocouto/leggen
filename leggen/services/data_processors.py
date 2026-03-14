@@ -293,6 +293,85 @@ def calculate_monthly_stats(
         raise
 
 
+def calculate_category_stats(
+    db_path: Path,
+    account_id: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Calculate transaction statistics grouped by category.
+
+    Returns a list of dicts with category_id, category_name, category_color,
+    transaction_count, income, and expenses for each category.
+    Excludes categories with exclude_from_stats=True.
+    """
+    if not db_path.exists():
+        return []
+
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    try:
+        query = """
+        SELECT
+            c.id as category_id,
+            COALESCE(c.name, 'Uncategorized') as category_name,
+            COALESCE(c.color, '#9ca3af') as category_color,
+            COUNT(*) as transaction_count,
+            COALESCE(SUM(CASE WHEN t.transactionValue > 0 THEN t.transactionValue ELSE 0 END), 0) as income,
+            COALESCE(SUM(CASE WHEN t.transactionValue < 0 THEN ABS(t.transactionValue) ELSE 0 END), 0) as expenses
+        FROM transactions t
+        LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
+        LEFT JOIN categories c ON tc.categoryId = c.id
+        WHERE (c.exclude_from_stats IS NULL OR c.exclude_from_stats = 0)
+        """
+
+        params: list[str] = []
+
+        if account_id:
+            query += " AND t.accountId = ?"
+            params.append(account_id)
+
+        if date_from:
+            query += " AND t.transactionDate >= ?"
+            params.append(date_from)
+
+        if date_to:
+            query += " AND t.transactionDate <= ?"
+            params.append(date_to)
+
+        query += """
+        GROUP BY c.id
+        ORDER BY expenses DESC
+        """
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+
+        category_stats = []
+        for row in rows:
+            category_stats.append(
+                {
+                    "category_id": row["category_id"],
+                    "category_name": row["category_name"],
+                    "category_color": row["category_color"],
+                    "transaction_count": row["transaction_count"],
+                    "income": round(row["income"], 2),
+                    "expenses": round(row["expenses"], 2),
+                }
+            )
+
+        conn.close()
+        return category_stats
+
+    except Exception as e:
+        conn.close()
+        logger.error(f"Failed to calculate category stats: {e}")
+        raise
+
+
 # --- Balance transformation ---
 
 

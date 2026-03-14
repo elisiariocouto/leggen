@@ -18,6 +18,7 @@ class TransactionRepository:
         min_amount: Optional[float] = None,
         max_amount: Optional[float] = None,
         search: Optional[str] = None,
+        category_id: Optional[str] = None,
     ) -> tuple[str, List[Union[str, int, float]]]:
         """Build WHERE clause and params for transaction filtering."""
         clause = ""
@@ -46,6 +47,13 @@ class TransactionRepository:
         if search:
             clause += " AND t.description LIKE ?"
             params.append(f"%{search}%")
+
+        if category_id:
+            if category_id == "uncategorized":
+                clause += " AND tc.categoryId IS NULL"
+            else:
+                clause += " AND tc.categoryId = ?"
+                params.append(int(category_id))
 
         return clause, params
 
@@ -171,6 +179,7 @@ class TransactionRepository:
         min_amount: Optional[float] = None,
         max_amount: Optional[float] = None,
         search: Optional[str] = None,
+        category_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Get transactions with optional filtering"""
         if not db_exists():
@@ -186,6 +195,7 @@ class TransactionRepository:
                 min_amount=min_amount,
                 max_amount=max_amount,
                 search=search,
+                category_id=category_id,
             )
 
             query = (
@@ -228,6 +238,7 @@ class TransactionRepository:
         min_amount: Optional[float] = None,
         max_amount: Optional[float] = None,
         search: Optional[str] = None,
+        category_id: Optional[str] = None,
     ) -> int:
         """Get total count of transactions matching filters"""
         if not db_exists():
@@ -243,9 +254,16 @@ class TransactionRepository:
                 min_amount=min_amount,
                 max_amount=max_amount,
                 search=search,
+                category_id=category_id,
             )
 
-            query = "SELECT COUNT(*) FROM transactions t WHERE 1=1" + filter_clause
+            query = (
+                """SELECT COUNT(*) FROM transactions t
+                LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
+                LEFT JOIN categories c ON tc.categoryId = c.id
+                WHERE 1=1"""
+                + filter_clause
+            )
             cursor.execute(query, params)
             return cursor.fetchone()[0]
 

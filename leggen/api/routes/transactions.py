@@ -6,7 +6,10 @@ from loguru import logger
 from leggen.api.models.accounts import Transaction, TransactionSummary
 from leggen.api.models.common import PaginatedResponse
 from leggen.repositories import TransactionRepository
-from leggen.services.data_processors import calculate_monthly_stats
+from leggen.services.data_processors import (
+    calculate_category_stats,
+    calculate_monthly_stats,
+)
 
 router = APIRouter()
 
@@ -35,6 +38,10 @@ async def get_all_transactions(
         default=None, description="Search in transaction descriptions"
     ),
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
+    category_id: Optional[str] = Query(
+        default=None,
+        description="Filter by category ID or 'uncategorized' for transactions without a category",
+    ),
 ) -> PaginatedResponse[Union[TransactionSummary, Transaction]]:
     """Get all transactions from database with filtering options"""
     try:
@@ -52,6 +59,7 @@ async def get_all_transactions(
             min_amount=min_amount,
             max_amount=max_amount,
             search=search,
+            category_id=category_id,
         )
 
         # Get total count for pagination info (respecting the same filters)
@@ -62,6 +70,7 @@ async def get_all_transactions(
             min_amount=min_amount,
             max_amount=max_amount,
             search=search,
+            category_id=category_id,
         )
 
         if summary_only:
@@ -141,6 +150,10 @@ async def get_transaction_stats(
     group_by: Optional[Literal["month"]] = Query(
         default=None, description="Group results by month"
     ),
+    category_id: Optional[str] = Query(
+        default=None,
+        description="Filter by category ID or 'uncategorized' for transactions without a category",
+    ),
 ) -> Union[dict, List[dict]]:
     """Get transaction statistics for a date range.
 
@@ -167,6 +180,7 @@ async def get_transaction_stats(
             min_amount=min_amount,
             max_amount=max_amount,
             search=search,
+            category_id=category_id,
             limit=None,
         )
 
@@ -235,4 +249,28 @@ async def get_transaction_stats(
         logger.error(f"Failed to get transaction stats from database: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get transaction stats: {str(e)}"
+        ) from e
+
+
+@router.get("/transactions/stats/by-category")
+async def get_stats_by_category(
+    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
+    date_to: str = Query(description="End date (YYYY-MM-DD)"),
+    account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
+) -> List[dict]:
+    """Get transaction statistics grouped by category."""
+    try:
+        from leggen.utils.paths import path_manager
+
+        db_path = path_manager.get_database_path()
+        return calculate_category_stats(
+            db_path,
+            account_id=account_id,
+            date_from=date_from,
+            date_to=date_to,
+        )
+    except Exception as e:
+        logger.error(f"Failed to get category stats: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get category stats: {str(e)}"
         ) from e

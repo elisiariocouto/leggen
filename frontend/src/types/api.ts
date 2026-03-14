@@ -90,6 +90,15 @@ export interface CategorySuggestion {
   confidence: "high" | "medium" | "low";
 }
 
+export interface CategoryStats {
+  category_id: number | null;
+  category_name: string;
+  category_color: string;
+  transaction_count: number;
+  income: number;
+  expenses: number;
+}
+
 export interface Transaction {
   transaction_id: string; // NEW: stable bank-provided transaction ID
   internal_transaction_id: string | null;

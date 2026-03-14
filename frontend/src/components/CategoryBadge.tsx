@@ -52,11 +52,19 @@ export default function CategoryBadge({
     enabled: open && !categoryId,
   });
 
+  const invalidateCategoryRelatedQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["transactionStats"] });
+    queryClient.invalidateQueries({ queryKey: ["transaction-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["monthly-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["category-stats"] });
+  };
+
   const assignMutation = useMutation({
     mutationFn: (catId: number) =>
       apiClient.assignCategory(accountId, transactionId, catId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      invalidateCategoryRelatedQueries();
       queryClient.invalidateQueries({
         queryKey: ["category-suggestions", accountId, transactionId],
       });
@@ -68,7 +76,7 @@ export default function CategoryBadge({
     mutationFn: (catId: number) =>
       apiClient.bulkAssignCategoryByDescription(catId, description || ""),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      invalidateCategoryRelatedQueries();
       toast.success(
         `Category applied to ${data.updated_count} transaction${data.updated_count !== 1 ? "s" : ""}.`,
       );
@@ -79,7 +87,7 @@ export default function CategoryBadge({
   const removeMutation = useMutation({
     mutationFn: () => apiClient.removeCategory(accountId, transactionId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      invalidateCategoryRelatedQueries();
       setOpen(false);
     },
   });
@@ -88,7 +96,7 @@ export default function CategoryBadge({
     mutationFn: () =>
       apiClient.bulkRemoveCategoryByDescription(description || ""),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      invalidateCategoryRelatedQueries();
       toast.success(
         `Category removed from ${data.removed_count} transaction${data.removed_count !== 1 ? "s" : ""}.`,
       );
