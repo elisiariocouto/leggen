@@ -367,42 +367,44 @@ export default function Accounts() {
                                     Deleted
                                   </Badge>
                                 )}
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      onClick={() => handleEditStart(account)}
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-8 w-8 flex-shrink-0"
-                                    >
-                                      <Edit2 className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Edit account name</TooltipContent>
-                                </Tooltip>
-                                {!isDeleted && (
+                                <div className="ml-auto flex items-center flex-shrink-0">
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <Button
-                                        onClick={() => {
-                                          setDeleteDialogAccount(account);
-                                          setDeleteData(true);
-                                        }}
-                                        disabled={
-                                          deleteAccountMutation.isPending
-                                        }
+                                        onClick={() => handleEditStart(account)}
                                         size="icon"
                                         variant="ghost"
-                                        className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                        className="h-8 w-8 flex-shrink-0"
                                       >
-                                        <Trash2 className="h-4 w-4" />
+                                        <Edit2 className="h-4 w-4" />
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>
-                                      Delete account
-                                    </TooltipContent>
+                                    <TooltipContent>Edit account name</TooltipContent>
                                   </Tooltip>
-                                )}
+                                  {!isDeleted && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          onClick={() => {
+                                            setDeleteDialogAccount(account);
+                                            setDeleteData(true);
+                                          }}
+                                          disabled={
+                                            deleteAccountMutation.isPending
+                                          }
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        Delete account
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+                                </div>
                               </div>
                               <p className="text-sm text-muted-foreground truncate">
                                 {account.institution_id}
@@ -572,7 +574,7 @@ export default function Accounts() {
                           <Building2 className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <h4 className="text-base font-medium text-foreground truncate">
                               {connection.aspsp_name}
                             </h4>

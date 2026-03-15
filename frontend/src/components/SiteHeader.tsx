@@ -1,17 +1,21 @@
 import { useLocation } from "@tanstack/react-router";
-import { Activity, Wifi, WifiOff } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../lib/api";
 import { ThemeToggle } from "./ui/theme-toggle";
 import { BalanceToggle } from "./ui/balance-toggle";
 import { Separator } from "./ui/separator";
 import { SidebarTrigger } from "./ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 const navigation = [
   { name: "Transactions", to: "/" },
   { name: "Analytics", to: "/analytics" },
   { name: "Accounts", to: "/accounts" },
-  { name: "Sync", to: "/system" },
+  { name: "Sync", to: "/sync" },
   { name: "Settings", to: "/settings" },
 ];
 
@@ -50,26 +54,34 @@ export function SiteHeader() {
           </span>
 
           {/* Connection status */}
-          <div className="flex items-center space-x-1">
-            {healthLoading ? (
-              <>
-                <Activity className="h-4 w-4 text-muted-foreground animate-pulse" />
-                <span className="text-sm text-muted-foreground">
-                  Checking...
-                </span>
-              </>
-            ) : healthError || healthStatus?.status !== "healthy" ? (
-              <>
-                <WifiOff className="h-4 w-4 text-destructive" />
-                <span className="text-sm text-destructive">Disconnected</span>
-              </>
-            ) : (
-              <>
-                <Wifi className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-muted-foreground">Connected</span>
-              </>
-            )}
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className={`w-2.5 h-2.5 rounded-full ${
+                  healthLoading
+                    ? "bg-muted-foreground animate-pulse"
+                    : healthError || healthStatus?.status !== "healthy"
+                      ? "bg-destructive"
+                      : "bg-green-500"
+                }`}
+                role="img"
+                aria-label={
+                  healthLoading
+                    ? "Checking connection"
+                    : healthError || healthStatus?.status !== "healthy"
+                      ? "Disconnected"
+                      : "Connected"
+                }
+              />
+            </TooltipTrigger>
+            <TooltipContent>
+              {healthLoading
+                ? "Checking..."
+                : healthError || healthStatus?.status !== "healthy"
+                  ? "Disconnected"
+                  : "Connected"}
+            </TooltipContent>
+          </Tooltip>
           <BalanceToggle />
           <ThemeToggle />
         </div>

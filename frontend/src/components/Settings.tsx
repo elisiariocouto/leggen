@@ -476,12 +476,12 @@ export default function Settings() {
               ) : (
                 <div className="space-y-4">
                   <div className="p-6 hover:bg-accent transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="p-3 bg-muted rounded-full">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex items-center space-x-4 min-w-0">
+                        <div className="p-3 bg-muted rounded-full flex-shrink-0">
                           <Cloud className="h-6 w-6 text-muted-foreground" />
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-3">
                             <h4 className="text-lg font-medium text-foreground">
                               S3 Backup
@@ -501,13 +501,13 @@ export default function Settings() {
                               </span>
                             </div>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-sm text-muted-foreground mt-1 truncate">
                             {backupSettings.s3.bucket_name} ({backupSettings.s3.region})
                             {backupSettings.s3.endpoint_url && ` • ${backupSettings.s3.endpoint_url}`}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Button
                           size="sm"
                           variant="outline"
