@@ -33,9 +33,21 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 - View balances of all connected accounts
 - List and filter transactions across all accounts
 
+### 🏷️ Categorization & Analytics
+- Categorize transactions with custom categories
+- Keyword-based learning: automatically categorizes future transactions matching the same description
+- Bulk categorization and removal by transaction description
+- Filter transactions by category (including uncategorized)
+- Analytics dashboard with spending-by-category breakdown
+- `exclude_from_stats` flag for categories like inter-account transfers
+
 ### 🔄 Data Management
 - Sync all transactions with SQLite database
 - Background sync scheduling with configurable cron expressions
+
+### 🔐 Authentication
+- Single-user authentication with JWT tokens
+- API key support for programmatic access
 
 ### 📡 API & Integration
 - **REST API**: Complete FastAPI backend with comprehensive endpoints
@@ -44,7 +56,7 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 ### 🔔 Notifications & Monitoring
 - Discord and Telegram notifications for filtered transactions
 - Configurable transaction filters (case-sensitive/insensitive)
-- Account expiry notifications and status alerts
+- Account expiry notifications and pre-expiry warnings
 - Comprehensive logging and error handling
 
 ## 🚀 Quick Start
