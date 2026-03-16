@@ -1,4 +1,23 @@
 
+## 2026.3.5 (2026/03/16)
+
+### Bug Fixes
+
+- **frontend:** Improve mobile responsiveness for accounts, S3 backup, and header. ([f011ae75](https://github.com/elisiariocouto/leggen/commit/f011ae750c45e7032fa2caf46289dc57ff9570c8))
+
+
+### Features
+
+-  Add category filters and analytics breakdown. ([429fe747](https://github.com/elisiariocouto/leggen/commit/429fe7473f4a9e8bb60de71182298ef29d9414eb))
+
+
+### Miscellaneous Tasks
+
+-  Update README.md with new categorization and authentication features. ([2f04c6d0](https://github.com/elisiariocouto/leggen/commit/2f04c6d075122aa2352928fe745b4668b23f9975))
+-  Update dependencies. ([a1c966e7](https://github.com/elisiariocouto/leggen/commit/a1c966e7eec69ba31f05b0063ecd52e409be4e67))
+
+
+
 ## 2026.3.4 (2026/03/10)
 
 ### Bug Fixes
