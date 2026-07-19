@@ -59,18 +59,6 @@ class TestAuthLogin:
 
 
 @pytest.mark.api
-class TestAuthStatus:
-    """Test GET /api/v1/auth/status endpoint."""
-
-    def test_auth_status_returns_enabled(self, fastapi_app, mock_db_path):
-        """Test auth status endpoint returns auth_enabled: true without credentials."""
-        client = TestClient(fastapi_app)
-        response = client.get("/api/v1/auth/status")
-        assert response.status_code == 200
-        assert response.json() == {"auth_enabled": True}
-
-
-@pytest.mark.api
 class TestAuthDependency:
     """Test authentication dependency via protected endpoints."""
 

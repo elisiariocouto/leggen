@@ -17,10 +17,6 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
 
 
-class AuthStatusResponse(BaseModel):
-    auth_enabled: bool
-
-
 @router.post("/login", response_model=LoginResponse)
 async def login(request: LoginRequest) -> LoginResponse:
     """Authenticate with username and password, returns JWT token."""
@@ -41,9 +37,3 @@ async def login(request: LoginRequest) -> LoginResponse:
     )
 
     return LoginResponse(access_token=token)
-
-
-@router.get("/status", response_model=AuthStatusResponse)
-async def auth_status() -> AuthStatusResponse:
-    """Check if authentication is enabled (always true)."""
-    return AuthStatusResponse(auth_enabled=True)
