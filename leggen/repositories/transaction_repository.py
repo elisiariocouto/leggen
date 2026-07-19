@@ -99,11 +99,27 @@ class TransactionRepository:
 
     def persist(
         self, account_id: str, transactions: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
-        """Persist transactions to database, return new ones"""
+    ) -> tuple[List[Dict[str, Any]], int]:
+        """Persist transactions to database.
+
+        Returns (new_transactions, updated_count). Rows that already exist
+        with identical content are left untouched and counted in neither.
+        """
         try:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
+
+                select_sql = """SELECT
+                    internalTransactionId,
+                    institutionId,
+                    iban,
+                    transactionDate,
+                    description,
+                    transactionValue,
+                    transactionCurrency,
+                    transactionStatus,
+                    rawTransaction
+                FROM transactions WHERE accountId = ? AND transactionId = ?"""
 
                 insert_sql = """INSERT OR REPLACE INTO transactions (
                     accountId,
@@ -120,36 +136,44 @@ class TransactionRepository:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
                 new_transactions = []
+                updated_count = 0
 
                 for transaction in transactions:
                     try:
-                        # Check if transaction already exists
+                        row_values = (
+                            transaction.get("internalTransactionId"),
+                            transaction["institutionId"],
+                            transaction["iban"],
+                            transaction["transactionDate"],
+                            transaction["description"],
+                            transaction["transactionValue"],
+                            transaction["transactionCurrency"],
+                            transaction["transactionStatus"],
+                            json.dumps(transaction["rawTransaction"]),
+                        )
+
                         cursor.execute(
-                            """SELECT COUNT(*) FROM transactions
-                               WHERE accountId = ? AND transactionId = ?""",
+                            select_sql,
                             (transaction["accountId"], transaction["transactionId"]),
                         )
-                        exists = cursor.fetchone()[0] > 0
+                        existing = cursor.fetchone()
+
+                        if existing is not None and tuple(existing) == row_values:
+                            continue
 
                         cursor.execute(
                             insert_sql,
                             (
                                 transaction["accountId"],
                                 transaction["transactionId"],
-                                transaction.get("internalTransactionId"),
-                                transaction["institutionId"],
-                                transaction["iban"],
-                                transaction["transactionDate"],
-                                transaction["description"],
-                                transaction["transactionValue"],
-                                transaction["transactionCurrency"],
-                                transaction["transactionStatus"],
-                                json.dumps(transaction["rawTransaction"]),
+                                *row_values,
                             ),
                         )
 
-                        if not exists:
+                        if existing is None:
                             new_transactions.append(transaction)
+                        else:
+                            updated_count += 1
 
                     except sqlite3.IntegrityError as e:
                         logger.warning(
@@ -160,9 +184,10 @@ class TransactionRepository:
                 conn.commit()
 
             logger.info(
-                f"Persisted {len(new_transactions)} new transactions for account {account_id}"
+                f"Persisted {len(new_transactions)} new and {updated_count} updated "
+                f"transactions for account {account_id}"
             )
-            return new_transactions
+            return new_transactions, updated_count
         except Exception as e:
             logger.error(f"Failed to persist transactions: {e}")
             raise

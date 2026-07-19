@@ -158,7 +158,7 @@ class TestSyncNotifications:
                 "leggen.services.sync_service.process_transactions",
                 return_value=[],
             ),
-            patch.object(sync_service.transactions, "persist", return_value=[]),
+            patch.object(sync_service.transactions, "persist", return_value=([], 0)),
             patch.object(sync_service.sync, "persist", return_value=1),
         ):
             # Setup: One session with one account that succeeds

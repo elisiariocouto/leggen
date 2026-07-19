@@ -225,10 +225,11 @@ class SyncService:
                         processed_transactions = process_transactions(
                             stored_id, account_details, transactions
                         )
-                        new_transactions = self.transactions.persist(
+                        new_transactions, updated_count = self.transactions.persist(
                             stored_id, processed_transactions
                         )
                         transactions_added += len(new_transactions)
+                        transactions_updated += updated_count
 
                         # Send notifications for new transactions
                         if new_transactions:
