@@ -84,7 +84,7 @@ Findings from a full backend + frontend audit. Track fixes here; feature ideas t
 - [ ] Add a frontend test runner (vitest) — currently zero frontend tests.
 - [ ] Backend Dockerfile: non-root `USER`; drop the redundant dev-group `uv sync` layer.
 - [ ] Fix `.dockerignore` entry `docker-compose.dev.yml` → `compose.dev.yml`.
-- [ ] Dependency bumps to plan: Tailwind 3→4 (real migration). Done: recharts 2→3, zod removed (earlier cleanup), `serialize-javascript` override dropped (`@rollup/plugin-terser` now requires `^7.0.3` itself).
+- [x] Dependency bumps to plan: Tailwind 3→4 (CSS-first config via `@theme`, `@tailwindcss/vite` plugin, `tailwindcss-animate` → `tw-animate-css`, postcss/autoprefixer dropped), recharts 2→3, zod removed (earlier cleanup), `serialize-javascript` override dropped (`@rollup/plugin-terser` now requires `^7.0.3` itself).
 - [ ] Docs: add S3 backup to README features; fix frontend/README "Node 18+" (Vite 7 needs 20.19+); fix `frontend/package.json` version `0.0.0`.
 
 ## ✨ New feature ideas (not yet in TASKS.md)
