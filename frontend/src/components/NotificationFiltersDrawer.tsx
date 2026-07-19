@@ -162,7 +162,7 @@ export default function NotificationFiltersDrawer({
                 </Button>
               </div>
 
-              <div className="flex flex-wrap gap-2 min-h-[2rem] p-3 bg-muted rounded-md">
+              <div className="flex flex-wrap gap-2 min-h-8 p-3 bg-muted rounded-md">
                 {filters.case_insensitive.length > 0 ? (
                   filters.case_insensitive.map((filter, index) => (
                     <div
@@ -220,7 +220,7 @@ export default function NotificationFiltersDrawer({
                 </Button>
               </div>
 
-              <div className="flex flex-wrap gap-2 min-h-[2rem] p-3 bg-muted rounded-md">
+              <div className="flex flex-wrap gap-2 min-h-8 p-3 bg-muted rounded-md">
                 {filters.case_sensitive && filters.case_sensitive.length > 0 ? (
                   filters.case_sensitive.map((filter, index) => (
                     <div

@@ -33,14 +33,14 @@ export default function AccountsSkeleton() {
               <div key={i} className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                   <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
-                    <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-full flex-shrink-0" />
+                    <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-full shrink-0" />
                     <div className="flex-1 space-y-2">
                       <Skeleton className="h-5 w-48" />
                       <Skeleton className="h-4 w-32" />
                       <Skeleton className="h-3 w-40" />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between sm:flex-col sm:items-end sm:text-right flex-shrink-0">
+                  <div className="flex items-center justify-between sm:flex-col sm:items-end sm:text-right shrink-0">
                     <div className="flex items-center space-x-2 order-1 sm:order-2">
                       <Skeleton className="h-3 w-3 rounded-full" />
                       <Skeleton className="h-4 w-20" />

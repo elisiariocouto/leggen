@@ -88,7 +88,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link
                 to="/"
@@ -173,7 +173,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       className="p-2 border-b border-border/30 last:border-b-0 hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-start space-x-2">
-                        <div className="flex-shrink-0 p-1 bg-background rounded">
+                        <div className="shrink-0 p-1 bg-background rounded">
                           <Building2 className="h-3 w-3 text-muted-foreground" />
                         </div>
                         <div className="space-y-1 min-w-0 flex-1">
@@ -219,7 +219,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <DropdownMenuContent
                 side="top"
                 align="start"
-                className="w-[--radix-dropdown-menu-trigger-width]"
+                className="w-(--radix-dropdown-menu-trigger-width)"
               >
                 <DropdownMenuItem onClick={logout}>
                   <LogOut className="mr-2 h-4 w-4" />

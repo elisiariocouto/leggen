@@ -236,7 +236,7 @@ export default function CategoryManager() {
               >
                 <div className="flex items-center gap-3">
                   <span
-                    className="h-3 w-3 rounded-full flex-shrink-0"
+                    className="h-3 w-3 rounded-full shrink-0"
                     style={{ backgroundColor: cat.color }}
                   />
                   <span className="text-sm font-medium">{cat.name}</span>

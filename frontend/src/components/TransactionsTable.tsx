@@ -510,7 +510,7 @@ export default function TransactionsTable() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start space-x-3">
                           <div
-                            className={`p-2 rounded-full flex-shrink-0 ${
+                            className={`p-2 rounded-full shrink-0 ${
                               isPositive
                                 ? "bg-green-100 dark:bg-green-900/20"
                                 : "bg-red-100 dark:bg-red-900/20"
@@ -523,12 +523,12 @@ export default function TransactionsTable() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-foreground break-words">
+                            <h4 className="text-sm font-medium text-foreground wrap-break-word">
                               {transaction.description}
                             </h4>
                             <div className="text-xs text-muted-foreground space-y-1 mt-1">
                               {account && (
-                                <p className="break-words">
+                                <p className="wrap-break-word">
                                   {account.display_name || "Unnamed Account"}
                                 </p>
                               )}
@@ -551,7 +551,7 @@ export default function TransactionsTable() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right ml-3 flex-shrink-0">
+                      <div className="text-right ml-3 shrink-0">
                         <p
                           className={`text-lg font-semibold mb-1 ${
                             isPositive

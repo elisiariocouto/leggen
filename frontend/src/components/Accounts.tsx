@@ -317,7 +317,7 @@ export default function Accounts() {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                       <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
-                        <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                        <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
                           {account.logo && !failedImages.has(account.id) ? (
                             <img
                               src={account.logo}
@@ -343,7 +343,7 @@ export default function Accounts() {
                                   onChange={(e) =>
                                     setEditingName(e.target.value)
                                   }
-                                  className="flex-1 px-3 py-1 text-base sm:text-lg font-medium border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                                  className="flex-1 px-3 py-1 text-base sm:text-lg font-medium border border-input rounded-md bg-background focus:outline-hidden focus:ring-2 focus:ring-ring focus:border-ring"
                                   placeholder="Custom account name"
                                   name="account-name"
                                   autoComplete="off"
@@ -400,12 +400,12 @@ export default function Accounts() {
                                 {isDeleted && (
                                   <Badge
                                     variant="secondary"
-                                    className="flex-shrink-0 text-xs"
+                                    className="shrink-0 text-xs"
                                   >
                                     Deleted
                                   </Badge>
                                 )}
-                                <div className="ml-auto flex items-center flex-shrink-0">
+                                <div className="ml-auto flex items-center shrink-0">
                                   {!isDeleted && (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
@@ -420,7 +420,7 @@ export default function Accounts() {
                                           }
                                           size="icon"
                                           variant="ghost"
-                                          className="h-8 w-8 flex-shrink-0"
+                                          className="h-8 w-8 shrink-0"
                                         >
                                           <RefreshCw
                                             className={`h-4 w-4 ${
@@ -444,7 +444,7 @@ export default function Accounts() {
                                         onClick={() => handleEditStart(account)}
                                         size="icon"
                                         variant="ghost"
-                                        className="h-8 w-8 flex-shrink-0"
+                                        className="h-8 w-8 shrink-0"
                                       >
                                         <Edit2 className="h-4 w-4" />
                                       </Button>
@@ -464,7 +464,7 @@ export default function Accounts() {
                                           }
                                           size="icon"
                                           variant="ghost"
-                                          className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                         >
                                           <Trash2 className="h-4 w-4" />
                                         </Button>
@@ -489,7 +489,7 @@ export default function Accounts() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between sm:flex-col sm:items-end sm:text-right flex-shrink-0">
+                      <div className="flex items-center justify-between sm:flex-col sm:items-end sm:text-right shrink-0">
                         <div className="flex items-center space-x-2 order-1 sm:order-2">
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -642,7 +642,7 @@ export default function Accounts() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4 min-w-0 flex-1">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                        <div className="shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center">
                           <Building2 className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -657,7 +657,7 @@ export default function Accounts() {
                             {connection.status === "expired" && (
                               <Badge
                                 variant="outline"
-                                className="flex-shrink-0 text-xs border-red-500 text-red-600 dark:text-red-400"
+                                className="shrink-0 text-xs border-red-500 text-red-600 dark:text-red-400"
                               >
                                 Expired
                               </Badge>
@@ -665,7 +665,7 @@ export default function Accounts() {
                             {connection.days_until_expiry != null && (
                               <Badge
                                 variant="outline"
-                                className={`flex-shrink-0 text-xs ${isExpiring ? "border-amber-500 text-amber-600 dark:text-amber-400" : "border-border text-muted-foreground"}`}
+                                className={`shrink-0 text-xs ${isExpiring ? "border-amber-500 text-amber-600 dark:text-amber-400" : "border-border text-muted-foreground"}`}
                               >
                                 {isExpiring && (
                                   <AlertTriangle className="h-3 w-3 mr-1" />
@@ -688,7 +688,7 @@ export default function Accounts() {
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2 flex-shrink-0">
+                      <div className="flex items-center space-x-2 shrink-0">
                         <div className="text-right">
                           <p className="text-xs text-muted-foreground">
                             Created {formatDate(connection.created_at)}

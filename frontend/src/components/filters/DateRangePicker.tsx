@@ -131,7 +131,7 @@ export function DateRangePicker({
               />
             </CardContent>
             {presets && presets.length > 0 && (
-              <CardFooter className="border-t px-4 !pt-4 !pb-4">
+              <CardFooter className="border-t px-4 pt-4! pb-4!">
                 <Select
                   value={matchingPresetLabel ?? ""}
                   onValueChange={handlePresetChange}

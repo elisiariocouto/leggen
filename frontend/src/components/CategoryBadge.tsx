@@ -172,7 +172,7 @@ export default function CategoryBadge({
             }}
           >
             <span
-              className="h-2 w-2 rounded-full flex-shrink-0"
+              className="h-2 w-2 rounded-full shrink-0"
               style={{ backgroundColor: color }}
             />
             {categoryName}
@@ -222,9 +222,9 @@ export default function CategoryBadge({
                       className="cursor-pointer"
                     >
                       <div className="flex items-center gap-2 flex-1">
-                        <Sparkles className="h-3 w-3 text-yellow-500 flex-shrink-0" />
+                        <Sparkles className="h-3 w-3 text-yellow-500 shrink-0" />
                         <span
-                          className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                          className="h-2.5 w-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: s.category.color }}
                         />
                         <span className="flex-1">{s.category.name}</span>
@@ -249,7 +249,7 @@ export default function CategoryBadge({
                 >
                   <div className="flex items-center gap-2 flex-1">
                     <span
-                      className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                      className="h-2.5 w-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: cat.color }}
                     />
                     <span className="flex-1">{cat.name}</span>

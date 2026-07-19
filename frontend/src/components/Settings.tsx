@@ -389,7 +389,7 @@ export default function Settings() {
                         <Label className="text-xs font-medium text-muted-foreground mb-2 block">
                           Case Insensitive Filters
                         </Label>
-                        <div className="min-h-[2rem] flex flex-wrap gap-1">
+                        <div className="min-h-8 flex flex-wrap gap-1">
                           {notificationSettings.filters.case_insensitive
                             .length > 0 ? (
                             notificationSettings.filters.case_insensitive.map(
@@ -413,7 +413,7 @@ export default function Settings() {
                         <Label className="text-xs font-medium text-muted-foreground mb-2 block">
                           Case Sensitive Filters
                         </Label>
-                        <div className="min-h-[2rem] flex flex-wrap gap-1">
+                        <div className="min-h-8 flex flex-wrap gap-1">
                           {notificationSettings.filters.case_sensitive &&
                           notificationSettings.filters.case_sensitive.length >
                             0 ? (
@@ -488,7 +488,7 @@ export default function Settings() {
                   <div className="p-6 hover:bg-accent transition-colors">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div className="flex items-center space-x-4 min-w-0">
-                        <div className="p-3 bg-muted rounded-full flex-shrink-0">
+                        <div className="p-3 bg-muted rounded-full shrink-0">
                           <Cloud className="h-6 w-6 text-muted-foreground" />
                         </div>
                         <div className="flex-1 min-w-0">

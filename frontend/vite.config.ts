@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-vite-plugin";
 import { VitePWA } from "vite-plugin-pwa";
 
@@ -8,6 +9,7 @@ export default defineConfig({
   plugins: [
     tanstackRouter(),
     react(),
+    tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: [

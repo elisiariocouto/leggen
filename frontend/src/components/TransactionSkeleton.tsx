@@ -20,7 +20,7 @@ export default function TransactionSkeleton({
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-start space-x-3">
-                  <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                  <Skeleton className="h-10 w-10 rounded-full shrink-0" />
                   <div className="flex-1 min-w-0 space-y-2">
                     <Skeleton className="h-4 w-3/4" />
                     <div className="space-y-1">
@@ -31,7 +31,7 @@ export default function TransactionSkeleton({
                   </div>
                 </div>
               </div>
-              <div className="text-right ml-3 flex-shrink-0 space-y-2">
+              <div className="text-right ml-3 shrink-0 space-y-2">
                 <Skeleton className="h-6 w-20" />
                 <Skeleton className="h-4 w-16 ml-auto" />
                 <Skeleton className="h-6 w-12 ml-auto" />
@@ -68,7 +68,7 @@ export default function TransactionSkeleton({
               <tr key={index}>
                 <td className="px-6 py-4">
                   <div className="flex items-start space-x-3">
-                    <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                    <Skeleton className="h-10 w-10 rounded-full shrink-0" />
                     <div className="flex-1 space-y-2">
                       <Skeleton className="h-4 w-3/4" />
                       <div className="space-y-1">

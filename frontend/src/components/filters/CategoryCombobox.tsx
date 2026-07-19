@@ -61,7 +61,7 @@ export function CategoryCombobox({
             <div className="flex items-center">
               {selectedCategoryData ? (
                 <span
-                  className="mr-2 h-3 w-3 rounded-full flex-shrink-0"
+                  className="mr-2 h-3 w-3 rounded-full shrink-0"
                   style={{ backgroundColor: selectedCategoryData.color }}
                 />
               ) : (
@@ -115,7 +115,7 @@ export function CategoryCombobox({
                         : "opacity-0",
                     )}
                   />
-                  <span className="mr-2 h-3 w-3 rounded-full flex-shrink-0 border border-dashed border-muted-foreground" />
+                  <span className="mr-2 h-3 w-3 rounded-full shrink-0 border border-dashed border-muted-foreground" />
                   Uncategorized
                 </CommandItem>
 
@@ -138,7 +138,7 @@ export function CategoryCombobox({
                       )}
                     />
                     <span
-                      className="mr-2 h-3 w-3 rounded-full flex-shrink-0"
+                      className="mr-2 h-3 w-3 rounded-full shrink-0"
                       style={{ backgroundColor: cat.color }}
                     />
                     {cat.name}
