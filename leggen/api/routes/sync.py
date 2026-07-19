@@ -10,11 +10,10 @@ from leggen.api.models.sync import (
     SyncScheduleResponse,
 )
 from leggen.background.scheduler import scheduler
-from leggen.services.sync_service import SyncService
 from leggen.utils.config import config
 
 router = APIRouter()
-sync_service = SyncService()
+sync_service = scheduler.sync_service
 
 
 @router.post("/sync")

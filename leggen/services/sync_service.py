@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
@@ -27,6 +28,11 @@ EXPIRY_WARNING_THRESHOLDS = [7, 3, 1]
 
 
 class SyncService:
+    # Class-level so the "already running" guard and reported status hold
+    # across all instances — only one sync may run per process.
+    _sync_lock = asyncio.Lock()
+    _sync_status = SyncStatus(is_running=False)
+
     def __init__(self):
         self.enablebanking = EnableBankingService()
         self.notifications = NotificationService()
@@ -41,8 +47,6 @@ class SyncService:
         self.sync = SyncRepository()
         self.session_repo = SessionRepository()
 
-        self._sync_status = SyncStatus(is_running=False)
-
     async def get_sync_status(self) -> SyncStatus:
         """Get current sync status"""
         return self._sync_status
@@ -51,8 +55,9 @@ class SyncService:
         self, full_sync: bool = False, trigger_type: str = "manual"
     ) -> SyncResult:
         """Sync all connected accounts"""
-        if self._sync_status.is_running:
+        if self._sync_lock.locked():
             raise Exception("Sync is already running")
+        await self._sync_lock.acquire()
 
         start_time = datetime.now()
         self._sync_status.is_running = True
@@ -298,6 +303,7 @@ class SyncService:
             raise
         finally:
             self._sync_status.is_running = False
+            self._sync_lock.release()
 
     async def _check_session_expiry(self, sessions: List[dict]) -> None:
         """Check sessions for expiry and send notifications.
