@@ -12,7 +12,7 @@ A modern React dashboard for the Leggen Open Banking CLI tool. This frontend pro
 
 ## Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 20.19+ and npm
 - Leggen API server running (configurable via environment variables)
 
 ## Getting Started

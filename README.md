@@ -44,6 +44,7 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 ### 🔄 Data Management
 - Sync all transactions with SQLite database
 - Background sync scheduling with configurable cron expressions
+- Automatic database backups to S3-compatible storage, with restore via API
 
 ### 🔐 Authentication
 - Single-user authentication with JWT tokens

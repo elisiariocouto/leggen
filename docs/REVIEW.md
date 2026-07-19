@@ -10,14 +10,14 @@ Findings from a full backend + frontend audit. Track fixes here; feature ideas t
 - [x] `maximum_consent_validity` plumbed but never passed — consents hardcoded to 90 days (`enablebanking_service.py:80`, `routes/banks.py:55-60`). Fixed: `POST /banks/connect` looks up the ASPSP via the (cached) `get_aspsps` call and forwards its `maximum_consent_validity` to `start_auth`, so consents are requested for the longest validity the bank supports; the 90-day default remains only for banks that don't report one.
 - [x] Deep-link search params (`accountId`/`startDate`/`endDate`) declared but never read (`routes/index.tsx:6-10`). Fixed (removed): nothing in the app wrote these params either, so the dead `validateSearch` declaration was deleted. Real URL-driven filters on the transactions page stay a candidate feature.
 - [ ] Backup restore exists in API but has no UI.
-- [ ] `GET /auth/status` always returns `auth_enabled: true`; frontend caller is dead (`routes/auth.py:46-49`, `api.ts:487`).
+- [x] `GET /auth/status` always returns `auth_enabled: true`; frontend caller is dead (`routes/auth.py:46-49`, `api.ts:487`). Fixed (removed): endpoint, its test, and the unused frontend `getAuthStatus`/`AuthStatus` type are gone — auth is always on, so the endpoint carried no information.
 - [x] `[database] sqlite` config section is a no-op (`utils/config.py:200`); remove from config + example. Fixed: `DatabaseConfig`, the `database_config` property, and the `[database]` sections in `config.example.toml`/README are gone. Legacy configs that still contain `[database]` load fine (Pydantic ignores unknown sections — covered by a test).
 - [ ] `generate_sample_db --force` doesn't overwrite (old rows persist); printed instructions use invalid `leggen server --database X` ordering (`generate_sample_db.py:662-679`).
 
 ## 🎨 Consistency
 
 - [ ] CLI: exit non-zero on failure everywhere (currently `return` after catch → exit 0); `bank/delete.py` missing health check and error handling; unify stderr `error()` vs stdout `click.echo`.
-- [ ] API error conventions: stop embedding `str(e)` in 500 bodies (path/SQL leakage — categories routes already sanitize, copy that); `POST /sync` should return 409 not 500 for "already running"; unify `limit`/`offset` vs `page`/`per_page`.
+- [x] API error conventions: stop embedding `str(e)` in 500 bodies (path/SQL leakage — categories routes already sanitize, copy that); `POST /sync` should return 409 not 500 for "already running"; unify `limit`/`offset` vs `page`/`per_page`. Fixed: all catch-all handlers now return static messages (details still go to the log); `SyncService` raises `SyncAlreadyRunningError`, which `POST /sync` maps to 409; `GET /sync/operations` now takes `page`/`per_page` and returns the same `PaginatedResponse` envelope as `/transactions` (frontend caller updated).
 - [ ] `NotificationService.active` is the real on/off signal; `Settings.tsx:305-320` derives status from `enabled && configured` — "Needs Configuration" state unreachable.
 - [ ] Naming drift (larger effort, needs migration): `institution_id` stores ASPSP name, `balances.bank`, camelCase `transactions` columns vs snake_case elsewhere, `internalTransactionId` holding `entry_reference`.
 - [ ] Balances table: add `UNIQUE(account_id, type, timestamp)` or skip-if-unchanged dedup — currently unbounded append growth; the `IntegrityError` handler at `balance_repository.py:67` is dead code.
@@ -25,13 +25,13 @@ Findings from a full backend + frontend audit. Track fixes here; feature ideas t
 
 ## 🔧 CI / tooling
 
-- [ ] Add `ruff check` + `mypy` to CI (currently pytest only, `.github/workflows/ci.yml`).
-- [ ] Gate `release.yml` on tests (currently any tag ships to PyPI/Docker).
+- [x] Add `ruff check` + `mypy` to CI (currently pytest only, `.github/workflows/ci.yml`). Fixed: both run before pytest in the `test-python` job.
+- [x] Gate `release.yml` on tests (currently any tag ships to PyPI/Docker). Fixed: `ci.yml` is now reusable (`workflow_call`) and `release.yml` runs it as a `test` job that gates build, PyPI, and both Docker pushes; the version-bump-commit skip condition was adjusted so it doesn't skip tag builds (tags point at that very commit).
 - [ ] Add tests for the riskiest untested code: `migration_repository.py` (840 lines, zero coverage), `data_processors.py`, `enablebanking_service.py`, repositories, CLI commands (the `cli` marker exists, unused — would have caught the bank-group break).
 - [ ] Add a frontend test runner (vitest) — currently zero frontend tests.
-- [ ] Backend Dockerfile: non-root `USER`; drop the redundant dev-group `uv sync` layer.
-- [ ] Fix `.dockerignore` entry `docker-compose.dev.yml` → `compose.dev.yml`.
-- [ ] Docs: add S3 backup to README features; fix frontend/README "Node 18+" (Vite 7 needs 20.19+); fix `frontend/package.json` version `0.0.0`.
+- [ ] Backend Dockerfile: non-root `USER` — deliberately deferred: compose deployments bind-mount `./data:/root/.config/leggen`, so going non-root breaks existing volume paths/ownership; needs a coordinated path change (e.g. `LEGGEN_CONFIG_DIR=/data`). The redundant dev-group install is fixed (`--no-group dev` on the deps-only `uv sync` layer).
+- [x] Fix `.dockerignore` entry `docker-compose.dev.yml` → `compose.dev.yml`.
+- [x] Docs: add S3 backup to README features; fix frontend/README "Node 18+" (Vite 7 needs 20.19+); fix `frontend/package.json` version `0.0.0`. Fixed: version set to the backend's CalVer and `scripts/release.sh` now bumps it (via `npm version`, keeping `package-lock.json` in sync) on every release.
 
 ## ✨ New feature ideas (not yet in TASKS.md)
 
