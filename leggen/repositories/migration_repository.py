@@ -1,9 +1,9 @@
-import sqlite3
 import uuid
 from datetime import datetime
 
 from loguru import logger
 
+from leggen.repositories.db import create_connection
 from leggen.utils.paths import path_manager
 
 
@@ -18,6 +18,36 @@ class MigrationRepository:
         await self.migrate_add_display_name_if_needed()
         await self.migrate_add_logo_if_needed()
         await self.migrate_add_exclude_from_stats_if_needed()
+        await self.cleanup_orphaned_category_rows()
+
+    async def cleanup_orphaned_category_rows(self):
+        """Remove category link rows orphaned by deletes made before
+        foreign key enforcement was enabled (ON DELETE CASCADE never fired)."""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return
+
+        try:
+            conn = create_connection(db_path)
+            cursor = conn.cursor()
+
+            removed = 0
+            for table in ("transaction_categories", "category_keywords"):
+                cursor.execute(
+                    f"DELETE FROM {table} "
+                    "WHERE categoryId NOT IN (SELECT id FROM categories)"
+                )
+                removed += cursor.rowcount
+
+            conn.commit()
+            conn.close()
+
+            if removed:
+                logger.info(f"Removed {removed} orphaned category link rows")
+
+        except Exception as e:
+            logger.error(f"Failed to clean up orphaned category rows: {e}")
+            raise
 
     # Balance timestamp migration methods
     async def migrate_balance_timestamps_if_needed(self):
@@ -40,7 +70,7 @@ class MigrationRepository:
             return False
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -67,7 +97,7 @@ class MigrationRepository:
             return
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -154,7 +184,7 @@ class MigrationRepository:
             return False
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -181,7 +211,7 @@ class MigrationRepository:
             return
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -276,7 +306,7 @@ class MigrationRepository:
             return False
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             cursor.execute(
@@ -314,7 +344,7 @@ class MigrationRepository:
             return
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             logger.info("Starting composite key migration...")
@@ -443,7 +473,7 @@ class MigrationRepository:
             return False
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             cursor.execute(
@@ -473,7 +503,7 @@ class MigrationRepository:
             return
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             logger.info("Adding display_name column to accounts table...")
@@ -513,7 +543,7 @@ class MigrationRepository:
             return False
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             cursor.execute(
@@ -543,7 +573,7 @@ class MigrationRepository:
             return
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             logger.info("Adding logo column to accounts table...")
@@ -583,7 +613,7 @@ class MigrationRepository:
             return False
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             cursor.execute(
@@ -613,7 +643,7 @@ class MigrationRepository:
             return
 
         try:
-            conn = sqlite3.connect(str(db_path))
+            conn = create_connection(db_path)
             cursor = conn.cursor()
 
             logger.info("Adding exclude_from_stats column to categories table...")

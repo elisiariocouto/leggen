@@ -1,12 +1,12 @@
 """Data processing layer for all transformation logic."""
 
-import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from loguru import logger
 
+from leggen.repositories.db import create_connection
 from leggen.services.enablebanking_service import EnableBankingService
 
 # --- Account enrichment ---
@@ -105,8 +105,7 @@ def calculate_historical_balances(
     if not db_path.exists():
         return []
 
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
+    conn = create_connection(db_path, row_factory=True)
     cursor = conn.cursor()
 
     try:
@@ -227,8 +226,7 @@ def calculate_monthly_stats(
     if not db_path.exists():
         return []
 
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
+    conn = create_connection(db_path, row_factory=True)
     cursor = conn.cursor()
 
     try:
@@ -309,8 +307,7 @@ def calculate_category_stats(
     if not db_path.exists():
         return []
 
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
+    conn = create_connection(db_path, row_factory=True)
     cursor = conn.cursor()
 
     try:

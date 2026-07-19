@@ -2,7 +2,6 @@
 
 import json
 import random
-import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, TypedDict
@@ -10,6 +9,7 @@ from typing import Any, TypedDict
 import click
 
 from leggen.repositories import ensure_tables
+from leggen.repositories.db import create_connection
 from leggen.utils.keywords import extract_keywords
 from leggen.utils.paths import path_manager
 
@@ -323,7 +323,7 @@ class SampleDataGenerator:
         balances: list[dict[str, Any]],
     ):
         """Insert generated data into the database."""
-        conn = sqlite3.connect(str(self.db_path))
+        conn = create_connection(self.db_path)
         cursor = conn.cursor()
 
         # Insert accounts
