@@ -79,12 +79,12 @@ Findings from a full backend + frontend audit. Track fixes here; feature ideas t
 
 - [ ] Add `ruff check` + `mypy` to CI (currently pytest only, `.github/workflows/ci.yml`).
 - [ ] Gate `release.yml` on tests (currently any tag ships to PyPI/Docker).
-- [ ] `frontend/Dockerfile`: `npm ci` instead of `npm i`; bump Node 20 (EOL) base image and CI `node-version`.
+- [x] `frontend/Dockerfile`: `npm ci` instead of `npm i`; bump Node 20 (EOL) base image and CI `node-version`. Fixed: Node 22 in Dockerfile and CI, `npm ci` in both.
 - [ ] Add tests for the riskiest untested code: `migration_repository.py` (840 lines, zero coverage), `data_processors.py`, `enablebanking_service.py`, repositories, CLI commands (the `cli` marker exists, unused — would have caught the bank-group break).
 - [ ] Add a frontend test runner (vitest) — currently zero frontend tests.
 - [ ] Backend Dockerfile: non-root `USER`; drop the redundant dev-group `uv sync` layer.
 - [ ] Fix `.dockerignore` entry `docker-compose.dev.yml` → `compose.dev.yml`.
-- [ ] Dependency bumps to plan: Tailwind 3→4 (real migration), recharts 2→3, zod 3→4 (or remove — currently unused); revisit the `serialize-javascript` override after bumping.
+- [ ] Dependency bumps to plan: Tailwind 3→4 (real migration). Done: recharts 2→3, zod removed (earlier cleanup), `serialize-javascript` override dropped (`@rollup/plugin-terser` now requires `^7.0.3` itself).
 - [ ] Docs: add S3 backup to README features; fix frontend/README "Node 18+" (Vite 7 needs 20.19+); fix `frontend/package.json` version `0.0.0`.
 
 ## ✨ New feature ideas (not yet in TASKS.md)
