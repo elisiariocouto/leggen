@@ -34,6 +34,7 @@ class BankCallbackRequest(BaseModel):
     """Request to exchange authorization code for a session"""
 
     code: str
+    state: str
 
 
 class BankConnectionStatus(BaseModel):

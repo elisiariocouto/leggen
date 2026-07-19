@@ -75,6 +75,12 @@ async def bank_auth_callback(
     session_repo: Annotated[SessionRepository, Depends()],
 ) -> dict:
     """Exchange authorization code for a session"""
+    if not enablebanking_service.consume_auth_state(request.state):
+        raise HTTPException(
+            status_code=400,
+            detail="Unknown or expired authorization state. Restart the bank connection flow.",
+        )
+
     try:
         session_data = await enablebanking_service.create_session(request.code)
 
@@ -87,7 +93,7 @@ async def bank_auth_callback(
             "aspsp_country": aspsp.get("country", ""),
             "accounts": session_data.get("accounts"),
             "valid_until": access.get("valid_until"),
-            "created_at": datetime.now().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "status": "active",
         }
         session_repo.persist(session_record)
@@ -118,6 +124,9 @@ async def get_bank_connections_status(
             if valid_until_str and status == "active":
                 try:
                     valid_until = datetime.fromisoformat(valid_until_str)
+                    # Timestamps stored without an offset are UTC
+                    if valid_until.tzinfo is None:
+                        valid_until = valid_until.replace(tzinfo=timezone.utc)
                     days_until_expiry = (valid_until - now).days
                     if valid_until < now:
                         status = "expired"

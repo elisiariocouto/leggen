@@ -1,5 +1,6 @@
 """Tests for backup service functionality."""
 
+import sqlite3
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -155,7 +156,7 @@ class TestBackupService:
 
     @pytest.mark.asyncio
     async def test_backup_database_success(self):
-        """Test successful database backup."""
+        """Test successful database backup uploads a sqlite snapshot."""
         s3_config = S3BackupConfig(
             access_key_id="test-key",
             secret_access_key="test-secret",
@@ -166,22 +167,101 @@ class TestBackupService:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test.db"
-            db_path.write_text("test database content")
+            conn = sqlite3.connect(db_path)
+            conn.execute("CREATE TABLE t (id INTEGER PRIMARY KEY)")
+            conn.execute("INSERT INTO t VALUES (1)")
+            conn.commit()
+            conn.close()
 
             # Mock S3 client
             with patch("boto3.Session") as mock_session:
                 mock_client = MagicMock()
                 mock_session.return_value.client.return_value = mock_client
 
+                uploaded = {}
+
+                def capture_upload(source, bucket, key):
+                    # The snapshot only exists during the call — verify it here
+                    snapshot = sqlite3.connect(source)
+                    uploaded["rows"] = snapshot.execute(
+                        "SELECT COUNT(*) FROM t"
+                    ).fetchone()[0]
+                    snapshot.close()
+                    uploaded["source"] = source
+                    uploaded["bucket"] = bucket
+                    uploaded["key"] = key
+
+                mock_client.upload_file.side_effect = capture_upload
+
                 result = await service.backup_database(db_path)
                 assert result is True
 
-                # Verify upload_file was called
-                mock_client.upload_file.assert_called_once()
-                args = mock_client.upload_file.call_args[0]
-                assert args[0] == str(db_path)  # source file
-                assert args[1] == "test-bucket"  # bucket name
-                assert args[2].startswith("leggen_backups/database_backup_")  # key
+                # A sqlite snapshot is uploaded, not the live file
+                assert uploaded["source"] != str(db_path)
+                assert uploaded["rows"] == 1
+                assert uploaded["bucket"] == "test-bucket"
+                assert uploaded["key"].startswith("leggen_backups/database_backup_")
+
+    @pytest.mark.asyncio
+    async def test_restore_database_rejects_foreign_key(self):
+        """Restore refuses S3 keys outside the backup prefix."""
+        s3_config = S3BackupConfig(
+            access_key_id="test-key",
+            secret_access_key="test-secret",
+            bucket_name="test-bucket",
+            region="us-east-1",
+        )
+        service = BackupService(s3_config)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            restore_path = Path(tmpdir) / "restored.db"
+            with patch("boto3.Session") as mock_session:
+                mock_client = MagicMock()
+                mock_session.return_value.client.return_value = mock_client
+
+                assert (
+                    await service.restore_database("other/key.db", restore_path)
+                    is False
+                )
+                assert (
+                    await service.restore_database(
+                        "leggen_backups/../secrets", restore_path
+                    )
+                    is False
+                )
+                mock_client.download_file.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_restore_database_success(self):
+        """Restore downloads into the destination directory and swaps in place."""
+        s3_config = S3BackupConfig(
+            access_key_id="test-key",
+            secret_access_key="test-secret",
+            bucket_name="test-bucket",
+            region="us-east-1",
+        )
+        service = BackupService(s3_config)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            restore_path = Path(tmpdir) / "restored.db"
+
+            with patch("boto3.Session") as mock_session:
+                mock_client = MagicMock()
+                mock_session.return_value.client.return_value = mock_client
+
+                def fake_download(bucket, key, dest):
+                    # The temp file must live next to the final location so the
+                    # rename never crosses filesystems
+                    assert Path(dest).parent == restore_path.parent
+                    Path(dest).write_text("db payload")
+
+                mock_client.download_file.side_effect = fake_download
+
+                result = await service.restore_database(
+                    "leggen_backups/database_backup_x.db", restore_path
+                )
+                assert result is True
+                assert restore_path.read_text() == "db payload"
 
     @pytest.mark.asyncio
     async def test_list_backups_success(self):

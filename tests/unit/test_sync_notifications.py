@@ -12,7 +12,7 @@ class TestSyncNotifications:
     """Test sync service notification functionality."""
 
     @pytest.mark.asyncio
-    async def test_sync_failure_sends_notification(self):
+    async def test_sync_failure_sends_notification(self, mock_db_path):
         """Test that sync failures trigger notifications."""
         sync_service = SyncService()
 
@@ -54,7 +54,7 @@ class TestSyncNotifications:
             assert call_args["type"] == "account_sync_failure"
 
     @pytest.mark.asyncio
-    async def test_expired_session_sends_notification(self):
+    async def test_expired_session_sends_notification(self, mock_db_path):
         """Test that expired sessions trigger expiry notifications."""
         sync_service = SyncService()
 
@@ -92,7 +92,7 @@ class TestSyncNotifications:
             assert call_args["days_left"] == 0
 
     @pytest.mark.asyncio
-    async def test_multiple_failures_send_multiple_notifications(self):
+    async def test_multiple_failures_send_multiple_notifications(self, mock_db_path):
         """Test that multiple account failures send multiple notifications."""
         sync_service = SyncService()
 
@@ -130,7 +130,7 @@ class TestSyncNotifications:
             assert mock_send_notification.call_count == 2
 
     @pytest.mark.asyncio
-    async def test_successful_sync_no_failure_notification(self):
+    async def test_successful_sync_no_failure_notification(self, mock_db_path):
         """Test that successful syncs don't send failure notifications."""
         sync_service = SyncService()
 
@@ -193,7 +193,7 @@ class TestSyncNotifications:
             mock_send_notification.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_notification_failure_does_not_stop_sync(self):
+    async def test_notification_failure_does_not_stop_sync(self, mock_db_path):
         """Test that notification failures don't stop the sync process."""
         sync_service = SyncService()
 
@@ -234,3 +234,33 @@ class TestSyncNotifications:
             assert result.success is False
             assert len(result.errors) > 0
             assert "API Error" in result.errors[0]
+
+    @pytest.mark.asyncio
+    async def test_expired_session_notifies_only_once(self, mock_db_path):
+        """Expired sessions must not re-notify on every sync."""
+        sync_service = SyncService()
+
+        with (
+            patch.object(
+                sync_service.session_repo, "get_sessions"
+            ) as mock_get_sessions,
+            patch.object(
+                sync_service.notifications, "send_expiry_notification"
+            ) as mock_send_expiry,
+            patch.object(sync_service.sync, "persist", return_value=1),
+        ):
+            mock_get_sessions.return_value = [
+                {
+                    "session_id": "sess-expired-dedup",
+                    "aspsp_name": "EXPIRED_BANK",
+                    "aspsp_country": "PT",
+                    "status": "active",
+                    "valid_until": "2020-01-01T00:00:00+00:00",
+                    "accounts": [],
+                }
+            ]
+
+            await sync_service.sync_all_accounts()
+            await sync_service.sync_all_accounts()
+
+            mock_send_expiry.assert_called_once()

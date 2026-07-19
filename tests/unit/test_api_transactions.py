@@ -428,3 +428,26 @@ class TestTransactionsAPI:
         call_kwargs = mock_transaction_repo.get_transactions.call_args.kwargs
         assert call_kwargs["date_from"] == "2025-08-28"
         assert call_kwargs["date_to"] == "2025-09-04"
+
+    def test_get_transactions_invalid_per_page(self, api_client, mock_config):
+        """per_page below 1 is rejected instead of dividing by zero."""
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.get("/api/v1/transactions?per_page=0")
+        assert response.status_code == 422
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.get("/api/v1/transactions?per_page=-5")
+        assert response.status_code == 422
+
+    def test_get_transactions_invalid_category_id(self, api_client, mock_config):
+        """Non-numeric category_id is rejected with 422, not a 500."""
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.get("/api/v1/transactions?category_id=abc")
+        assert response.status_code == 422
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.get(
+                "/api/v1/transactions/stats"
+                "?date_from=2025-01-01&date_to=2025-01-31&category_id=abc"
+            )
+        assert response.status_code == 422

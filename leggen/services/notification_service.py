@@ -7,9 +7,15 @@ from leggen.utils.config import config
 
 
 class NotificationService:
-    def __init__(self):
-        self.notifications_config = config.notifications_config
-        self.filters_config = config.filters_config
+    # Config is read live via properties (not cached at construction) so
+    # settings changes apply without a server restart.
+    @property
+    def notifications_config(self) -> Dict[str, Any]:
+        return config.notifications_config
+
+    @property
+    def filters_config(self) -> Dict[str, Any]:
+        return config.filters_config
 
     async def send_transaction_notifications(
         self, transactions: List[Dict[str, Any]]
@@ -54,7 +60,7 @@ class NotificationService:
         try:
             if self._is_discord_enabled():
                 webhook_url = self._get_discord_webhook()
-                discord.send_expire_notification(webhook_url, notification_data)
+                await discord.send_expire_notification(webhook_url, notification_data)
                 logger.info(f"Sent Discord expiry notification: {notification_data}")
         except Exception as e:
             logger.error(f"Failed to send Discord expiry notification: {e}")
@@ -62,7 +68,9 @@ class NotificationService:
         try:
             if self._is_telegram_enabled():
                 token, chat_id = self._get_telegram_credentials()
-                telegram.send_expire_notification(token, chat_id, notification_data)
+                await telegram.send_expire_notification(
+                    token, chat_id, notification_data
+                )
                 logger.info(f"Sent Telegram expiry notification: {notification_data}")
         except Exception as e:
             logger.error(f"Failed to send Telegram expiry notification: {e}")
@@ -74,7 +82,9 @@ class NotificationService:
         try:
             if self._is_discord_enabled():
                 webhook_url = self._get_discord_webhook()
-                discord.send_sync_failure_notification(webhook_url, notification_data)
+                await discord.send_sync_failure_notification(
+                    webhook_url, notification_data
+                )
                 logger.info(
                     f"Sent Discord sync failure notification: {notification_data}"
                 )
@@ -84,7 +94,7 @@ class NotificationService:
         try:
             if self._is_telegram_enabled():
                 token, chat_id = self._get_telegram_credentials()
-                telegram.send_sync_failure_notification(
+                await telegram.send_sync_failure_notification(
                     token, chat_id, notification_data
                 )
                 logger.info(
@@ -105,29 +115,22 @@ class NotificationService:
             description = transaction.get("description", "")
             description_lower = description.lower()
 
-            for filter_value in filters_case_insensitive:
-                if filter_value.lower() in description_lower:
-                    matching.append(
-                        {
-                            "name": transaction["description"],
-                            "value": transaction["transactionValue"],
-                            "currency": transaction["transactionCurrency"],
-                            "date": transaction["transactionDate"],
-                        }
-                    )
-                    break
+            matches = any(
+                filter_value.lower() in description_lower
+                for filter_value in filters_case_insensitive
+            ) or any(
+                filter_value in description for filter_value in filters_case_sensitive
+            )
 
-            for filter_value in filters_case_sensitive:
-                if filter_value in description:
-                    matching.append(
-                        {
-                            "name": transaction["description"],
-                            "value": transaction["transactionValue"],
-                            "currency": transaction["transactionCurrency"],
-                            "date": transaction["transactionDate"],
-                        }
-                    )
-                    break
+            if matches:
+                matching.append(
+                    {
+                        "name": transaction["description"],
+                        "value": transaction["transactionValue"],
+                        "currency": transaction["transactionCurrency"],
+                        "date": transaction["transactionDate"],
+                    }
+                )
 
         return matching
 
@@ -157,26 +160,28 @@ class NotificationService:
     ) -> None:
         try:
             webhook_url = self._get_discord_webhook()
-            discord.send_transactions_message(webhook_url, transactions)
+            await discord.send_transactions_message(webhook_url, transactions)
             logger.info(
                 f"Sent {len(transactions)} transaction notifications to Discord"
             )
         except Exception as e:
+            # Never re-raise: a notification failure must not mark an
+            # otherwise successful sync as failed.
             logger.error(f"Failed to send Discord transaction notifications: {e}")
-            raise
 
     async def _send_telegram_notifications(
         self, transactions: List[Dict[str, Any]]
     ) -> None:
         try:
             token, chat_id = self._get_telegram_credentials()
-            telegram.send_transaction_message(token, chat_id, transactions)
+            await telegram.send_transaction_message(token, chat_id, transactions)
             logger.info(
                 f"Sent {len(transactions)} transaction notifications to Telegram"
             )
         except Exception as e:
+            # Never re-raise: a notification failure must not mark an
+            # otherwise successful sync as failed.
             logger.error(f"Failed to send Telegram transaction notifications: {e}")
-            raise
 
     async def _send_discord_test(self, message: str) -> None:
         try:
@@ -187,7 +192,7 @@ class NotificationService:
                 "status": "active",
                 "days_left": 30,
             }
-            discord.send_expire_notification(webhook_url, test_notification)
+            await discord.send_expire_notification(webhook_url, test_notification)
             logger.info(f"Discord test notification sent: {message}")
         except Exception as e:
             logger.error(f"Failed to send Discord test notification: {e}")
@@ -202,7 +207,7 @@ class NotificationService:
                 "status": "active",
                 "days_left": 30,
             }
-            telegram.send_expire_notification(token, chat_id, test_notification)
+            await telegram.send_expire_notification(token, chat_id, test_notification)
             logger.info(f"Telegram test notification sent: {message}")
         except Exception as e:
             logger.error(f"Failed to send Telegram test notification: {e}")

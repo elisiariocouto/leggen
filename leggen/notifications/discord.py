@@ -1,93 +1,87 @@
-from discord_webhook import DiscordEmbed, DiscordWebhook
+from datetime import datetime, timezone
+from typing import Any
+
+import httpx
 
 from leggen.utils.text import info
 
+_AUTHOR = {"name": "Leggen", "url": "https://github.com/elisiariocouto/leggen"}
+_INFO_COLOR = 0x03B2F8
+_WARNING_COLOR = 0xFFAA00
 
-def send_expire_notification(webhook_url: str, notification: dict):
+
+async def _post_embed(webhook_url: str, embed: dict[str, Any]) -> None:
+    """Post a single embed to a Discord webhook."""
+    embed.setdefault("author", _AUTHOR)
+    embed.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(webhook_url, json={"embeds": [embed]})
+        if response.status_code >= 400:
+            raise Exception(
+                f"Discord notification failed: {response.status_code}\n{response.text}"
+            )
+
+
+async def send_expire_notification(webhook_url: str, notification: dict):
     info("Sending expiration notification to Discord")
-    webhook = DiscordWebhook(url=webhook_url)
-
-    embed = DiscordEmbed(
-        title="",
-        description=f"Your account {notification['bank']} ({notification['session_id']}) is in {notification['status']} status. Days left: {notification['days_left']}",
-        color="03b2f8",
+    await _post_embed(
+        webhook_url,
+        {
+            "description": (
+                f"Your account {notification['bank']} ({notification['session_id']}) "
+                f"is in {notification['status']} status. "
+                f"Days left: {notification['days_left']}"
+            ),
+            "color": _INFO_COLOR,
+            "footer": {"text": "Expiration notice"},
+        },
     )
-    embed.set_author(
-        name="Leggen",
-        url="https://github.com/elisiariocouto/leggen",
-    )
-    embed.set_footer(text="Expiration notice")
-    embed.set_timestamp()
-
-    webhook.add_embed(embed)
-    response = webhook.execute()
-    try:
-        response.raise_for_status()
-    except Exception as e:
-        raise Exception(f"Discord notification failed: {e}\n{response.text}") from e
 
 
-def send_transactions_message(webhook_url: str, transactions: list):
+async def send_transactions_message(webhook_url: str, transactions: list):
     info(f"Got {len(transactions)} new transactions, sending message to Discord")
-    webhook = DiscordWebhook(url=webhook_url)
-
-    embed = DiscordEmbed(
-        title="",
-        description=f"{len(transactions)} new transaction matches",
-        color="03b2f8",
+    await _post_embed(
+        webhook_url,
+        {
+            "description": f"{len(transactions)} new transaction matches",
+            "color": _INFO_COLOR,
+            "footer": {"text": "Transaction filters"},
+            "fields": [
+                {
+                    "name": str(transaction["name"])[:256],
+                    "value": (
+                        f"{transaction['value']}{transaction['currency']} "
+                        f"({transaction['date']})"
+                    ),
+                    "inline": False,
+                }
+                for transaction in transactions[:25]  # Discord caps fields at 25
+            ],
+        },
     )
-    embed.set_author(
-        name="Leggen",
-        url="https://github.com/elisiariocouto/leggen",
-    )
-    embed.set_footer(text="Case-insensitive filters")
-    embed.set_timestamp()
-    for transaction in transactions:
-        embed.add_embed_field(
-            name=transaction["name"],
-            value=f"{transaction['value']}{transaction['currency']} ({transaction['date']})",
-        )
-
-    webhook.add_embed(embed)
-    response = webhook.execute()
-    try:
-        response.raise_for_status()
-    except Exception as e:
-        raise Exception(f"Discord notification failed: {e}\n{response.text}") from e
 
 
-def send_sync_failure_notification(webhook_url: str, notification: dict):
+async def send_sync_failure_notification(webhook_url: str, notification: dict):
     info("Sending sync failure notification to Discord")
-    webhook = DiscordWebhook(url=webhook_url)
 
-    color = "ffaa00"  # Orange for sync failure
-    title = "⚠️ Sync Failure"
-
-    # Build description with account info if available
     description = "Account sync failed"
     if notification.get("account_id"):
         description = f"Account {notification['account_id']} sync failed"
 
-    embed = DiscordEmbed(
-        title=title,
-        description=description,
-        color=color,
+    await _post_embed(
+        webhook_url,
+        {
+            "title": "⚠️ Sync Failure",
+            "description": description,
+            "color": _WARNING_COLOR,
+            "footer": {"text": "Sync failure notification"},
+            "fields": [
+                {
+                    "name": "Error",
+                    "value": notification["error"][:1024],  # Discord field limit
+                    "inline": False,
+                }
+            ],
+        },
     )
-    embed.set_author(
-        name="Leggen",
-        url="https://github.com/elisiariocouto/leggen",
-    )
-    embed.add_embed_field(
-        name="Error",
-        value=notification["error"][:1024],  # Discord has field value limits
-        inline=False,
-    )
-    embed.set_footer(text="Sync failure notification")
-    embed.set_timestamp()
-
-    webhook.add_embed(embed)
-    response = webhook.execute()
-    try:
-        response.raise_for_status()
-    except Exception as e:
-        raise Exception(f"Discord notification failed: {e}\n{response.text}") from e

@@ -1,3 +1,4 @@
+from collections import Counter
 from typing import Annotated, List, Literal, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -14,11 +15,20 @@ from leggen.services.data_processors import (
 router = APIRouter()
 
 
+def _validate_category_id(category_id: Optional[str]) -> None:
+    """Reject category_id values that are neither numeric nor 'uncategorized'."""
+    if category_id and category_id != "uncategorized" and not category_id.isdigit():
+        raise HTTPException(
+            status_code=422,
+            detail="category_id must be a numeric ID or 'uncategorized'",
+        )
+
+
 @router.get("/transactions")
 async def get_all_transactions(
     transaction_repo: Annotated[TransactionRepository, Depends()],
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
-    per_page: int = Query(default=50, le=500, description="Items per page"),
+    per_page: int = Query(default=50, ge=1, le=500, description="Items per page"),
     summary_only: bool = Query(
         default=True, description="Return transaction summaries only"
     ),
@@ -44,6 +54,7 @@ async def get_all_transactions(
     ),
 ) -> PaginatedResponse[Union[TransactionSummary, Transaction]]:
     """Get all transactions from database with filtering options"""
+    _validate_category_id(category_id)
     try:
         # Calculate offset from page and per_page
         offset = (page - 1) * per_page
@@ -160,6 +171,7 @@ async def get_transaction_stats(
     Without group_by: returns totals (transactions, income, expenses, etc.)
     With group_by=month: returns array of monthly stats.
     """
+    _validate_category_id(category_id)
     try:
         if group_by == "month":
             from leggen.utils.paths import path_manager
@@ -201,14 +213,27 @@ async def get_transaction_stats(
             ]
 
         total_transactions = len(recent_transactions)
+
+        # Summing amounts across currencies is meaningless — compute money
+        # totals over the dominant currency only and report which one it is.
+        currency_counts = Counter(
+            txn.get("transactionCurrency") for txn in recent_transactions
+        )
+        currency = currency_counts.most_common(1)[0][0] if currency_counts else None
+        money_transactions = [
+            txn
+            for txn in recent_transactions
+            if txn.get("transactionCurrency") == currency
+        ]
+
         total_income = sum(
             txn["transactionValue"]
-            for txn in recent_transactions
+            for txn in money_transactions
             if txn["transactionValue"] > 0
         )
         total_expenses = sum(
             abs(txn["transactionValue"])
-            for txn in recent_transactions
+            for txn in money_transactions
             if txn["transactionValue"] < 0
         )
         net_change = total_income - total_expenses
@@ -232,15 +257,16 @@ async def get_transaction_stats(
             "total_transactions": total_transactions,
             "booked_transactions": booked_count,
             "pending_transactions": pending_count,
+            "currency": currency,
             "total_income": round(total_income, 2),
             "total_expenses": round(total_expenses, 2),
             "net_change": round(net_change, 2),
             "average_transaction": round(
-                sum(txn["transactionValue"] for txn in recent_transactions)
-                / total_transactions,
+                sum(txn["transactionValue"] for txn in money_transactions)
+                / len(money_transactions),
                 2,
             )
-            if total_transactions > 0
+            if money_transactions
             else 0,
             "accounts_included": unique_accounts,
         }

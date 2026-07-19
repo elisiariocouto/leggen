@@ -81,6 +81,36 @@ async def _fetch_institution_logo(
 # --- Analytics ---
 
 
+def _dominant_currency(
+    cursor,
+    account_id: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+) -> Optional[str]:
+    """Return the most common transaction currency for the given filters.
+
+    Money aggregations are restricted to one currency because summing mixed
+    currencies produces meaningless numbers.
+    """
+    query = "SELECT transactionCurrency FROM transactions t WHERE 1=1"
+    params: list[str] = []
+
+    if account_id:
+        query += " AND t.accountId = ?"
+        params.append(account_id)
+    if date_from:
+        query += " AND t.transactionDate >= ?"
+        params.append(date_from)
+    if date_to:
+        query += " AND t.transactionDate < date(?, '+1 day')"
+        params.append(date_to)
+
+    query += " GROUP BY transactionCurrency ORDER BY COUNT(*) DESC LIMIT 1"
+    cursor.execute(query, params)
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+
 def calculate_historical_balances(
     db_path: Path,
     account_id: Optional[str] = None,
@@ -230,6 +260,10 @@ def calculate_monthly_stats(
     cursor = conn.cursor()
 
     try:
+        currency = _dominant_currency(
+            cursor, account_id=account_id, date_from=date_from, date_to=date_to
+        )
+
         # SQL query to aggregate transactions by month, excluding categories with exclude_from_stats
         query = """
         SELECT
@@ -245,6 +279,10 @@ def calculate_monthly_stats(
 
         params = []
 
+        if currency:
+            query += " AND t.transactionCurrency = ?"
+            params.append(currency)
+
         if account_id:
             query += " AND t.accountId = ?"
             params.append(account_id)
@@ -254,7 +292,7 @@ def calculate_monthly_stats(
             params.append(date_from)
 
         if date_to:
-            query += " AND t.transactionDate <= ?"
+            query += " AND t.transactionDate < date(?, '+1 day')"
             params.append(date_to)
 
         query += """
@@ -279,6 +317,7 @@ def calculate_monthly_stats(
                     "income": round(row["income"], 2),
                     "expenses": round(row["expenses"], 2),
                     "net": round(row["net"], 2),
+                    "currency": currency,
                 }
             )
 
@@ -311,6 +350,10 @@ def calculate_category_stats(
     cursor = conn.cursor()
 
     try:
+        currency = _dominant_currency(
+            cursor, account_id=account_id, date_from=date_from, date_to=date_to
+        )
+
         query = """
         SELECT
             c.id as category_id,
@@ -327,6 +370,10 @@ def calculate_category_stats(
 
         params: list[str] = []
 
+        if currency:
+            query += " AND t.transactionCurrency = ?"
+            params.append(currency)
+
         if account_id:
             query += " AND t.accountId = ?"
             params.append(account_id)
@@ -336,7 +383,7 @@ def calculate_category_stats(
             params.append(date_from)
 
         if date_to:
-            query += " AND t.transactionDate <= ?"
+            query += " AND t.transactionDate < date(?, '+1 day')"
             params.append(date_to)
 
         query += """
@@ -357,6 +404,7 @@ def calculate_category_stats(
                     "transaction_count": row["transaction_count"],
                     "income": round(row["income"], 2),
                     "expenses": round(row["expenses"], 2),
+                    "currency": currency,
                 }
             )
 
@@ -483,7 +531,9 @@ def _process_single_transaction(
         "internalTransactionId": entry_reference,
         "institutionId": account_info["institution_id"],
         "iban": account_info.get("iban", "N/A"),
-        "transactionDate": min_date,
+        # Stored as an ISO 8601 T-separated string; passing a datetime would go
+        # through sqlite3's deprecated (and space-separated) datetime adapter.
+        "transactionDate": min_date.isoformat(),
         "description": description,
         "transactionValue": amount,
         "transactionCurrency": currency,

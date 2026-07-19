@@ -275,18 +275,6 @@ wheels = [
 ]
 
 [[package]]
-name = "discord-webhook"
-version = "1.4.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/89/35/4837053ab7d781983c2dce787c5dda42918c3b2936ccadf4e097057ca29a/discord_webhook-1.4.1.tar.gz", hash = "sha256:2913c3ccb216e7d82911f96296f78b6b28b68a6f33a6fa5a61fc2da697b34a4d", size = 13724, upload-time = "2025-03-05T10:18:08.823Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/90/a4db0122694a5657d9434f5c782adc894477a2d17776309290674ba3e7ac/discord_webhook-1.4.1-py3-none-any.whl", hash = "sha256:1ed6a07d16ca0e6e6b1a91536c2fc34d0ba8251e5be37fe8850189aaf1155ee8", size = 13573, upload-time = "2025-03-05T10:18:07.426Z" },
-]
-
-[[package]]
 name = "distlib"
 version = "0.4.3"
 source = { registry = "https://pypi.org/simple" }
@@ -417,7 +405,6 @@ dependencies = [
     { name = "bcrypt" },
     { name = "boto3" },
     { name = "click" },
-    { name = "discord-webhook" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "loguru" },
@@ -449,7 +436,6 @@ requires-dist = [
     { name = "bcrypt", specifier = ">=4.0.0,<5" },
     { name = "boto3", specifier = ">=1.35.0,<2" },
     { name = "click", specifier = ">=8.1.7,<9" },
-    { name = "discord-webhook", specifier = ">=1.3.1,<2" },
     { name = "fastapi", specifier = ">=0.104.0,<1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "loguru", specifier = ">=0.7.2,<0.8" },

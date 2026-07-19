@@ -18,7 +18,42 @@ class MigrationRepository:
         await self.migrate_add_display_name_if_needed()
         await self.migrate_add_logo_if_needed()
         await self.migrate_add_exclude_from_stats_if_needed()
+        await self.migrate_transaction_date_format_if_needed()
         await self.cleanup_orphaned_category_rows()
+
+    async def migrate_transaction_date_format_if_needed(self):
+        """Normalize transactionDate values to ISO 8601 T-separated strings.
+
+        Rows written through sqlite3's deprecated datetime adapter used a
+        space separator ("YYYY-MM-DD HH:MM:SS"), while newer rows use "T".
+        Lexicographic date comparisons require a single format.
+        """
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return
+
+        try:
+            conn = create_connection(db_path)
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "UPDATE transactions"
+                " SET transactionDate = replace(transactionDate, ' ', 'T')"
+                " WHERE transactionDate LIKE '% %'"
+            )
+            normalized = cursor.rowcount
+
+            conn.commit()
+            conn.close()
+
+            if normalized:
+                logger.info(
+                    f"Normalized {normalized} space-separated transaction dates to ISO format"
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to normalize transaction date format: {e}")
+            raise
 
     async def cleanup_orphaned_category_rows(self):
         """Remove category link rows orphaned by deletes made before

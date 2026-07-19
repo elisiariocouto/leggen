@@ -33,7 +33,9 @@ class TransactionRepository:
             params.append(date_from)
 
         if date_to:
-            clause += " AND t.transactionDate <= ?"
+            # transactionDate carries a time component, so an inclusive end
+            # date means "anything before the start of the following day"
+            clause += " AND t.transactionDate < date(?, '+1 day')"
             params.append(date_to)
 
         if min_amount is not None:

@@ -1,6 +1,6 @@
 """Tests for banks API endpoints."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -80,11 +80,13 @@ class TestBanksAPI:
 
         mock_eb = AsyncMock()
         mock_eb.create_session.return_value = session_response
+        mock_eb.consume_auth_state = MagicMock(return_value=True)
         api_client.app.dependency_overrides[EnableBankingService] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.post(
-                "/api/v1/banks/callback", json={"code": "test-auth-code"}
+                "/api/v1/banks/callback",
+                json={"code": "test-auth-code", "state": "test-state"},
             )
 
         api_client.app.dependency_overrides.pop(EnableBankingService, None)
@@ -94,6 +96,25 @@ class TestBanksAPI:
         assert data["session_id"] == "sess-123"
         assert data["aspsp_name"] == "Revolut"
         assert data["aspsp_country"] == "GB"
+
+    def test_bank_callback_rejects_unknown_state(
+        self, api_client, mock_config, mock_db_path
+    ):
+        """Callback rejects a state that was never issued by start_auth."""
+        mock_eb = AsyncMock()
+        mock_eb.consume_auth_state = MagicMock(return_value=False)
+        api_client.app.dependency_overrides[EnableBankingService] = lambda: mock_eb
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.post(
+                "/api/v1/banks/callback",
+                json={"code": "test-auth-code", "state": "forged-state"},
+            )
+
+        api_client.app.dependency_overrides.pop(EnableBankingService, None)
+
+        assert response.status_code == 400
+        mock_eb.create_session.assert_not_called()
 
     def test_get_bank_status_success(self, api_client, mock_config, mock_db_path):
         """Test successful retrieval of bank connection status."""
@@ -107,10 +128,14 @@ class TestBanksAPI:
 
         mock_eb = AsyncMock()
         mock_eb.create_session.return_value = session_response
+        mock_eb.consume_auth_state = MagicMock(return_value=True)
         api_client.app.dependency_overrides[EnableBankingService] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
-            api_client.post("/api/v1/banks/callback", json={"code": "test-code"})
+            api_client.post(
+                "/api/v1/banks/callback",
+                json={"code": "test-code", "state": "test-state"},
+            )
 
         api_client.app.dependency_overrides.pop(EnableBankingService, None)
 
@@ -150,10 +175,14 @@ class TestBanksAPI:
 
         mock_eb = AsyncMock()
         mock_eb.create_session.return_value = session_response
+        mock_eb.consume_auth_state = MagicMock(return_value=True)
         api_client.app.dependency_overrides[EnableBankingService] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
-            api_client.post("/api/v1/banks/callback", json={"code": "test-code"})
+            api_client.post(
+                "/api/v1/banks/callback",
+                json={"code": "test-code", "state": "test-state"},
+            )
 
         api_client.app.dependency_overrides.pop(EnableBankingService, None)
 

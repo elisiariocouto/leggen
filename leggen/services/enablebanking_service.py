@@ -10,19 +10,32 @@ from loguru import logger
 
 from leggen.utils.config import config
 
+# States issued by start_auth, awaiting the bank redirect. Module-level
+# because a fresh service instance is created per request via Depends().
+_pending_auth_states: Dict[str, float] = {}
+
 
 class EnableBankingService:
     JWT_TTL_SECONDS = 3600
     ASPSPS_CACHE_TTL_SECONDS = 3600
+    AUTH_STATE_TTL_SECONDS = 3600
 
     def __init__(self):
-        self.config = config.enablebanking_config
-        self.base_url = self.config.get("url", "https://api.enablebanking.com")
         self._private_key: Optional[str] = None
         self._client: Optional[httpx.AsyncClient] = None
         self._jwt_token: Optional[str] = None
         self._jwt_expires_at: float = 0.0
         self._aspsps_cache: Dict[str, tuple[float, list[Dict[str, Any]]]] = {}
+
+    # Config is read live via properties (not cached at construction) so
+    # settings changes apply without a server restart.
+    @property
+    def config(self) -> Dict[str, str]:
+        return config.enablebanking_config
+
+    @property
+    def base_url(self) -> str:
+        return self.config.get("url", "https://api.enablebanking.com")
 
     def _get_client(self) -> httpx.AsyncClient:
         """Return the shared HTTP client, creating it on first use."""
@@ -116,6 +129,7 @@ class EnableBankingService:
             valid_until = dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
         state = str(uuid.uuid4())
+        self._register_auth_state(state)
         body: Dict[str, Any] = {
             "aspsp": {"name": aspsp_name, "country": aspsp_country},
             "state": state,
@@ -129,6 +143,23 @@ class EnableBankingService:
         }
 
         return await self._make_request("POST", "/auth", json=body)
+
+    def _register_auth_state(self, state: str) -> None:
+        """Track a state issued to the bank so the callback can verify it."""
+        now = time.time()
+        # Drop states that were never redeemed
+        for pending, issued_at in list(_pending_auth_states.items()):
+            if now - issued_at > self.AUTH_STATE_TTL_SECONDS:
+                del _pending_auth_states[pending]
+        _pending_auth_states[state] = now
+
+    def consume_auth_state(self, state: str) -> bool:
+        """Redeem a state from a bank redirect. Each state is single-use."""
+        issued_at = _pending_auth_states.pop(state, None)
+        return (
+            issued_at is not None
+            and time.time() - issued_at <= self.AUTH_STATE_TTL_SECONDS
+        )
 
     async def create_session(self, code: str) -> Dict[str, Any]:
         """Exchange authorization code for a session."""

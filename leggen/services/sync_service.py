@@ -59,7 +59,7 @@ class SyncService:
             raise Exception("Sync is already running")
         await self._sync_lock.acquire()
 
-        start_time = datetime.now()
+        start_time = datetime.now(timezone.utc)
         self._sync_status.is_running = True
         self._sync_status.errors = []
 
@@ -222,7 +222,7 @@ class SyncService:
                             f"Failed to send sync failure notification: {notify_err}"
                         )
 
-            end_time = datetime.now()
+            end_time = datetime.now(timezone.utc)
             duration = (end_time - start_time).total_seconds()
 
             self._sync_status.last_sync = end_time
@@ -276,7 +276,7 @@ class SyncService:
             logger.error(error_msg)
 
             # Save failed sync operation
-            end_time = datetime.now()
+            end_time = datetime.now(timezone.utc)
             duration = (end_time - start_time).total_seconds()
             sync_operation.update(
                 {
@@ -308,8 +308,9 @@ class SyncService:
     async def _check_session_expiry(self, sessions: List[dict]) -> None:
         """Check sessions for expiry and send notifications.
 
-        Sends notifications when sessions have expired or are about to expire
-        (at 7, 3, and 1 day thresholds).
+        Sends a notification once when a session expires, and once per warning
+        threshold (7, 3, 1 days) when the remaining validity crosses it —
+        sent state is persisted so syncs don't re-notify every run.
 
         Args:
             sessions: List of session dictionaries to check
@@ -325,29 +326,43 @@ class SyncService:
 
             try:
                 valid_until = datetime.fromisoformat(valid_until_str)
-                days_left = (valid_until - now).days
-
-                if valid_until < now:
-                    logger.warning(f"Session {session_id} for {aspsp_name} has expired")
-                    await self.notifications.send_expiry_notification(
-                        {
-                            "bank": aspsp_name,
-                            "session_id": session_id,
-                            "status": "expired",
-                            "days_left": EXPIRED_DAYS_LEFT,
-                        }
-                    )
-                elif days_left in EXPIRY_WARNING_THRESHOLDS:
-                    logger.info(
-                        f"Session {session_id} for {aspsp_name} expires in {days_left} day(s)"
-                    )
-                    await self.notifications.send_expiry_notification(
-                        {
-                            "bank": aspsp_name,
-                            "session_id": session_id,
-                            "status": "expiring",
-                            "days_left": days_left,
-                        }
-                    )
             except (ValueError, TypeError):
+                logger.warning(
+                    f"Session {session_id} has unparseable valid_until: {valid_until_str!r}"
+                )
                 continue
+            # Timestamps stored without an offset are UTC
+            if valid_until.tzinfo is None:
+                valid_until = valid_until.replace(tzinfo=timezone.utc)
+
+            if valid_until < now:
+                status = "expired"
+                days_left = EXPIRED_DAYS_LEFT
+                threshold = EXPIRED_DAYS_LEFT
+            else:
+                days_left = (valid_until - now).days
+                crossed = [t for t in EXPIRY_WARNING_THRESHOLDS if days_left <= t]
+                if not crossed:
+                    continue
+                status = "expiring"
+                # Only the most urgent crossed threshold fires; skipped
+                # thresholds (e.g. sync was down at day 7) don't pile up.
+                threshold = min(crossed)
+
+            if self.session_repo.was_expiry_notified(session_id, threshold):
+                continue
+
+            log = logger.warning if status == "expired" else logger.info
+            log(
+                f"Session {session_id} for {aspsp_name} is {status} "
+                f"({days_left} day(s) left)"
+            )
+            await self.notifications.send_expiry_notification(
+                {
+                    "bank": aspsp_name,
+                    "session_id": session_id,
+                    "status": status,
+                    "days_left": days_left,
+                }
+            )
+            self.session_repo.mark_expiry_notified(session_id, threshold)

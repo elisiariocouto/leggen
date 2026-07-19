@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from loguru import logger
@@ -25,6 +25,14 @@ class SessionRepository:
                     status TEXT DEFAULT 'active'
                 )
             """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS expiry_notifications (
+                    session_id TEXT NOT NULL,
+                    threshold INTEGER NOT NULL,
+                    sent_at DATETIME NOT NULL,
+                    PRIMARY KEY (session_id, threshold)
+                )
+            """)
             conn.commit()
 
     def persist(self, session_data: Dict[str, Any]) -> str:
@@ -47,7 +55,9 @@ class SessionRepository:
                     session_data["aspsp_country"],
                     accounts_json,
                     session_data.get("valid_until"),
-                    session_data.get("created_at", datetime.now().isoformat()),
+                    session_data.get(
+                        "created_at", datetime.now(timezone.utc).isoformat()
+                    ),
                     session_data.get("status", "active"),
                 ),
             )
@@ -77,5 +87,31 @@ class SessionRepository:
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
+            deleted = cursor.rowcount > 0
+            cursor.execute(
+                "DELETE FROM expiry_notifications WHERE session_id = ?", (session_id,)
+            )
             conn.commit()
-            return cursor.rowcount > 0
+            return deleted
+
+    def was_expiry_notified(self, session_id: str, threshold: int) -> bool:
+        """Check whether an expiry notification was already sent for this
+        session at the given threshold (days left; 0 means expired)."""
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT 1 FROM expiry_notifications WHERE session_id = ? AND threshold = ?",
+                (session_id, threshold),
+            )
+            return cursor.fetchone() is not None
+
+    def mark_expiry_notified(self, session_id: str, threshold: int) -> None:
+        """Record that an expiry notification was sent for this session/threshold."""
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """INSERT OR REPLACE INTO expiry_notifications (session_id, threshold, sent_at)
+                   VALUES (?, ?, ?)""",
+                (session_id, threshold, datetime.now(timezone.utc).isoformat()),
+            )
+            conn.commit()

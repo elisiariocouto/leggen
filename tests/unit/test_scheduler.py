@@ -105,10 +105,23 @@ class TestBackgroundScheduler:
 
             scheduler.start()
 
-            # With invalid cron, scheduler.start() should not be called due to early return
-            # and add_job should not be called
-            mock_scheduler.start.assert_not_called()
+            # With invalid cron, no job is scheduled but the scheduler still
+            # starts so a later reschedule_sync() can recover
+            mock_scheduler.start.assert_called_once()
             mock_scheduler.add_job.assert_not_called()
+
+    def test_convert_day_of_week(self):
+        """Standard cron day-of-week (0=Sunday) maps to APScheduler (0=Monday)."""
+        convert = BackgroundScheduler._convert_day_of_week
+
+        assert convert("0") == "6"  # Sunday
+        assert convert("7") == "6"  # Sunday (alternate form)
+        assert convert("1") == "0"  # Monday
+        assert convert("1-5") == "0,1,2,3,4"  # weekdays
+        assert convert("0,3") == "6,2"
+        assert convert("*/2") == "1,3,5,6"  # Sun,Tue,Thu,Sat
+        assert convert("mon-fri") == "mon-fri"  # names pass through
+        assert convert("sun") == "sun"
 
     def test_scheduler_shutdown(self, scheduler):
         """Test scheduler shutdown."""

@@ -47,18 +47,23 @@ class BackgroundScheduler:
             self.scheduler.start()
             return
 
-        # Parse schedule configuration
+        # Parse schedule configuration. The scheduler must start even when the
+        # configured cron is invalid, otherwise reschedule_sync() can never
+        # recover (it only adds jobs to a running scheduler).
         trigger = self._parse_cron_config(schedule_config)
-        if not trigger:
-            return
-
-        self.scheduler.add_job(
-            self._run_sync,
-            trigger,
-            id="daily_sync",
-            name="Scheduled sync of all transactions",
-            max_instances=1,
-        )
+        if trigger:
+            self.scheduler.add_job(
+                self._run_sync,
+                trigger,
+                id="daily_sync",
+                name="Scheduled sync of all transactions",
+                max_instances=1,
+            )
+        else:
+            logger.error(
+                "Invalid sync schedule configuration; no sync job scheduled. "
+                "Fix it via PUT /api/v1/sync/schedule or the config file."
+            )
 
         self.scheduler.start()
         logger.info(f"Background scheduler started with sync job: {trigger}")
@@ -95,7 +100,42 @@ class BackgroundScheduler:
             )
             logger.info(f"Rescheduled sync job with: {trigger}")
 
-    def _parse_cron_config(self, schedule_config: dict) -> CronTrigger:
+    @staticmethod
+    def _convert_day_of_week(day_of_week: str) -> str:
+        """Convert a standard cron day-of-week field to APScheduler numbering.
+
+        Standard cron uses 0/7=Sunday..6=Saturday; APScheduler uses
+        0=Monday..6=Sunday. Numeric values, ranges, and steps are expanded and
+        remapped; day names pass through unchanged (both use mon..sun).
+        """
+
+        def remap(value: str) -> int:
+            std = int(value)
+            if not 0 <= std <= 7:
+                raise ValueError(f"day-of-week value out of range: {value}")
+            return (std - 1) % 7
+
+        converted = []
+        for token in day_of_week.split(","):
+            spec, _, step_str = token.partition("/")
+            step = int(step_str) if step_str else 1
+            if spec == "*":
+                values = list(range(0, 7, step))
+            elif "-" in spec:
+                start, end = spec.split("-", 1)
+                if not (start.isdigit() and end.isdigit()):
+                    converted.append(token)  # named range, e.g. mon-fri
+                    continue
+                values = list(range(int(start), int(end) + 1, step))
+            elif spec.isdigit():
+                values = [int(spec)]
+            else:
+                converted.append(token)  # day name, e.g. sun
+                continue
+            converted.extend(str(v) for v in sorted({remap(str(v)) for v in values}))
+        return ",".join(converted)
+
+    def _parse_cron_config(self, schedule_config: dict) -> CronTrigger | None:
         """Parse cron configuration and return CronTrigger"""
         if schedule_config.get("cron"):
             # Parse custom cron expression (e.g., "0 3 * * *" for daily at 3 AM)
@@ -108,7 +148,9 @@ class BackgroundScheduler:
                         hour=hour,
                         day=day if day != "*" else None,
                         month=month if month != "*" else None,
-                        day_of_week=day_of_week if day_of_week != "*" else None,
+                        day_of_week=self._convert_day_of_week(day_of_week)
+                        if day_of_week != "*"
+                        else None,
                     )
                 else:
                     logger.error(f"Invalid cron expression: {schedule_config['cron']}")
