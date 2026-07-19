@@ -72,8 +72,20 @@ class SyncScheduleConfig(BaseModel):
     )
 
 
+class BackupScheduleConfig(BaseModel):
+    enabled: bool = Field(default=True, description="Enable scheduled S3 backups")
+    hour: int = Field(default=4, ge=0, le=23, description="Hour to run backup (0-23)")
+    minute: int = Field(
+        default=0, ge=0, le=59, description="Minute to run backup (0-59)"
+    )
+    cron: Optional[str] = Field(
+        default=None, description="Custom cron expression (overrides hour/minute)"
+    )
+
+
 class SchedulerConfig(BaseModel):
     sync: SyncScheduleConfig = Field(default_factory=SyncScheduleConfig)
+    backup: BackupScheduleConfig = Field(default_factory=BackupScheduleConfig)
 
 
 class AuthConfig(BaseModel):

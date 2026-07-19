@@ -15,7 +15,10 @@ class TestBackgroundScheduler:
     @pytest.fixture
     def mock_config(self):
         """Mock configuration for scheduler tests."""
-        return {"sync": {"enabled": True, "hour": 3, "minute": 0, "cron": None}}
+        return {
+            "sync": {"enabled": True, "hour": 3, "minute": 0, "cron": None},
+            "backup": {"enabled": True, "hour": 4, "minute": 0, "cron": None},
+        }
 
     @pytest.fixture
     def scheduler(self):
@@ -38,24 +41,22 @@ class TestBackgroundScheduler:
 
     def test_scheduler_start_default_config(self, scheduler, mock_config):
         """Test starting scheduler with default configuration."""
-        with patch("leggen.utils.config.config") as mock_config_obj:
+        with patch("leggen.background.scheduler.config") as mock_config_obj:
             mock_config_obj.scheduler_config = mock_config
-
-            # Mock the job that gets added
-            mock_job = MagicMock()
-            mock_job.id = "daily_sync"
-            scheduler.scheduler.get_jobs.return_value = [mock_job]
 
             scheduler.start()
 
             # Verify scheduler.start() was called
             scheduler.scheduler.start.assert_called_once()
-            # Verify add_job was called
-            scheduler.scheduler.add_job.assert_called_once()
+            # Both the sync and backup jobs are scheduled
+            job_ids = {
+                call.kwargs["id"] for call in scheduler.scheduler.add_job.call_args_list
+            }
+            assert job_ids == {"daily_sync", "daily_backup"}
 
     def test_scheduler_start_disabled(self, scheduler):
-        """Test scheduler behavior when sync is disabled."""
-        disabled_config = {"sync": {"enabled": False}}
+        """Test scheduler behavior when sync and backup are disabled."""
+        disabled_config = {"sync": {"enabled": False}, "backup": {"enabled": False}}
 
         with (
             patch.object(scheduler, "scheduler") as mock_scheduler,
@@ -68,7 +69,7 @@ class TestBackgroundScheduler:
 
             # Verify scheduler.start() was called
             mock_scheduler.start.assert_called_once()
-            # Verify add_job was NOT called for disabled sync
+            # Verify add_job was NOT called for disabled jobs
             mock_scheduler.add_job.assert_not_called()
 
     def test_scheduler_start_with_cron(self, scheduler):
@@ -77,10 +78,11 @@ class TestBackgroundScheduler:
             "sync": {
                 "enabled": True,
                 "cron": "0 6 * * 1-5",  # 6 AM on weekdays
-            }
+            },
+            "backup": {"enabled": False},
         }
 
-        with patch("leggen.utils.config.config") as mock_config_obj:
+        with patch("leggen.background.scheduler.config") as mock_config_obj:
             mock_config_obj.scheduler_config = cron_config
 
             scheduler.start()
@@ -94,7 +96,10 @@ class TestBackgroundScheduler:
 
     def test_scheduler_start_invalid_cron(self, scheduler):
         """Test handling of invalid cron expressions."""
-        invalid_cron_config = {"sync": {"enabled": True, "cron": "invalid cron"}}
+        invalid_cron_config = {
+            "sync": {"enabled": True, "cron": "invalid cron"},
+            "backup": {"enabled": True, "cron": "invalid cron"},
+        }
 
         with (
             patch.object(scheduler, "scheduler") as mock_scheduler,
@@ -109,6 +114,16 @@ class TestBackgroundScheduler:
             # starts so a later reschedule_sync() can recover
             mock_scheduler.start.assert_called_once()
             mock_scheduler.add_job.assert_not_called()
+
+    def test_scheduler_backup_job_scheduled_by_default(self, scheduler):
+        """The backup job is scheduled even without a [scheduler.backup] section."""
+        with patch("leggen.background.scheduler.config") as mock_config_obj:
+            mock_config_obj.scheduler_config = {"sync": {"enabled": False}}
+
+            scheduler.start()
+
+            scheduler.scheduler.add_job.assert_called_once()
+            assert scheduler.scheduler.add_job.call_args.kwargs["id"] == "daily_backup"
 
     def test_convert_day_of_week(self):
         """Standard cron day-of-week (0=Sunday) maps to APScheduler (0=Monday)."""
@@ -200,11 +215,79 @@ class TestBackgroundScheduler:
         mock_sync_service.sync_all_accounts.assert_called_once()
 
     def test_scheduler_job_max_instances(self, scheduler, mock_config):
-        """Test that sync jobs have max_instances=1."""
-        with patch("leggen.utils.config.config") as mock_config_obj:
+        """Test that scheduled jobs have max_instances=1."""
+        with patch("leggen.background.scheduler.config") as mock_config_obj:
             mock_config_obj.scheduler_config = mock_config
             scheduler.start()
 
-            # Verify add_job was called with max_instances=1
-            call_args = scheduler.scheduler.add_job.call_args
-            assert call_args.kwargs["max_instances"] == 1
+            # Verify every job was added with max_instances=1
+            assert scheduler.scheduler.add_job.call_args_list
+            for call in scheduler.scheduler.add_job.call_args_list:
+                assert call.kwargs["max_instances"] == 1
+
+    @pytest.mark.asyncio
+    async def test_run_backup_success(self, scheduler):
+        """A scheduled backup runs against the live S3 configuration."""
+        s3_settings = {
+            "access_key_id": "key",
+            "secret_access_key": "secret",
+            "bucket_name": "bucket",
+            "enabled": True,
+        }
+
+        with (
+            patch("leggen.background.scheduler.config") as mock_config_obj,
+            patch("leggen.background.scheduler.BackupService") as mock_service_cls,
+        ):
+            mock_config_obj.backup_config = {"s3": s3_settings}
+            mock_service = mock_service_cls.return_value
+            mock_service.backup_database = AsyncMock(return_value=True)
+
+            await scheduler._run_backup()
+
+            s3_config = mock_service_cls.call_args.args[0]
+            assert s3_config.bucket_name == "bucket"
+            mock_service.backup_database.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_run_backup_skips_when_unconfigured_or_disabled(self, scheduler):
+        """The backup job no-ops when S3 is unconfigured or disabled."""
+        disabled_s3 = {
+            "access_key_id": "key",
+            "secret_access_key": "secret",
+            "bucket_name": "bucket",
+            "enabled": False,
+        }
+
+        for backup_config in [{}, {"s3": {}}, {"s3": disabled_s3}]:
+            with (
+                patch("leggen.background.scheduler.config") as mock_config_obj,
+                patch("leggen.background.scheduler.BackupService") as mock_service_cls,
+            ):
+                mock_config_obj.backup_config = backup_config
+
+                await scheduler._run_backup()
+
+                mock_service_cls.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_run_backup_failure_does_not_raise(self, scheduler):
+        """A failed scheduled backup logs the error instead of raising."""
+        s3_settings = {
+            "access_key_id": "key",
+            "secret_access_key": "secret",
+            "bucket_name": "bucket",
+            "enabled": True,
+        }
+
+        with (
+            patch("leggen.background.scheduler.config") as mock_config_obj,
+            patch("leggen.background.scheduler.BackupService") as mock_service_cls,
+        ):
+            mock_config_obj.backup_config = {"s3": s3_settings}
+            mock_service = mock_service_cls.return_value
+            mock_service.backup_database = AsyncMock(side_effect=Exception("S3 down"))
+
+            await scheduler._run_backup()
+
+            mock_service.backup_database.assert_called_once()

@@ -42,7 +42,7 @@ Findings from a full backend + frontend audit. Track fixes here; feature ideas t
 - [ ] `SyncRequest.account_ids` accepted but ignored — per-account sync doesn't exist (`api/models/sync.py:30`, `routes/sync.py:24`).
 - [ ] `transactions_updated` always 0 — plumbed through models/DB/UI, never incremented (`sync_service.py:63,232`).
 - [ ] `POST /notifications/test` ignores the user's message, sends a canned expiry notification (`notification_service.py:181-209`); Discord/Telegram test buttons give zero UI feedback (`DiscordConfigDrawer.tsx:71-77`, `TelegramConfigDrawer.tsx:73-78`).
-- [ ] No scheduled S3 backups despite `enabled` flag — only manual `POST /backup/operation`; add a scheduler job.
+- [x] No scheduled S3 backups despite `enabled` flag — only manual `POST /backup/operation`; add a scheduler job. Fixed: the scheduler now runs a `daily_backup` job (new `[scheduler.backup]` config section, default 4 AM daily, hour/minute or cron like sync). The job reads the S3 config live on every run and skips when unconfigured/disabled, so toggling backups via `PUT /backup/settings` takes effect without a restart.
 - [ ] Settings can't be cleared: empty notification filter lists skipped on save (`routes/notifications.py:82-91`); S3 config can't be removed via API (`routes/backup.py:80-95`).
 - [ ] `maximum_consent_validity` plumbed but never passed — consents hardcoded to 90 days (`enablebanking_service.py:80`, `routes/banks.py:55-60`).
 - [ ] Deep-link search params (`accountId`/`startDate`/`endDate`) declared but never read (`routes/index.tsx:6-10`).
@@ -89,7 +89,7 @@ Findings from a full backend + frontend audit. Track fixes here; feature ideas t
 
 ## ✨ New feature ideas (not yet in TASKS.md)
 
-- [ ] Scheduled S3 backups (also listed under half-implemented — the flag exists, make it real).
+- [x] Scheduled S3 backups (also listed under half-implemented — the flag exists, make it real). Done — see the half-implemented section.
 - [ ] Net-worth / balance-over-time dashboard on the overview page — `/balances/history` and per-sync snapshots already exist.
 - [ ] Data-driven bank names/logos in analytics — accounts table stores `logo`; kills the hard-coded 3-bank map (`TransactionDistribution.tsx:41`).
 - [ ] Pending-transaction filter/visual distinction — `transactionStatus` is stored and counted but not surfaced.

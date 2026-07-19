@@ -144,7 +144,13 @@ class Config:
                 "hour": 3,
                 "minute": 0,
                 "cron": None,  # Optional custom cron expression
-            }
+            },
+            "backup": {
+                "enabled": True,
+                "hour": 4,
+                "minute": 0,
+                "cron": None,  # Optional custom cron expression
+            },
         }
         return self.config.get("scheduler", default_schedule)
 

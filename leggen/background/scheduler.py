@@ -2,9 +2,12 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from loguru import logger
 
+from leggen.models.config import S3BackupConfig
+from leggen.services.backup_service import BackupService
 from leggen.services.notification_service import NotificationService
 from leggen.services.sync_service import SyncService
 from leggen.utils.config import config
+from leggen.utils.paths import path_manager
 
 
 class BackgroundScheduler:
@@ -39,34 +42,59 @@ class BackgroundScheduler:
         self._notification_service = value
 
     def start(self):
-        """Start the scheduler and configure sync jobs based on configuration"""
-        schedule_config = config.scheduler_config.get("sync", {})
+        """Start the scheduler and configure jobs based on configuration"""
+        scheduler_config = config.scheduler_config
 
-        if not schedule_config.get("enabled", True):
-            logger.info("Sync scheduling is disabled in configuration")
-            self.scheduler.start()
-            return
-
-        # Parse schedule configuration. The scheduler must start even when the
+        # Parse schedule configuration. The scheduler must start even when a
         # configured cron is invalid, otherwise reschedule_sync() can never
         # recover (it only adds jobs to a running scheduler).
-        trigger = self._parse_cron_config(schedule_config)
-        if trigger:
-            self.scheduler.add_job(
-                self._run_sync,
-                trigger,
-                id="daily_sync",
-                name="Scheduled sync of all transactions",
-                max_instances=1,
-            )
+        sync_config = scheduler_config.get("sync", {})
+        if not sync_config.get("enabled", True):
+            logger.info("Sync scheduling is disabled in configuration")
         else:
-            logger.error(
-                "Invalid sync schedule configuration; no sync job scheduled. "
-                "Fix it via PUT /api/v1/sync/schedule or the config file."
+            trigger = self._parse_cron_config(sync_config)
+            if trigger:
+                self.scheduler.add_job(
+                    self._run_sync,
+                    trigger,
+                    id="daily_sync",
+                    name="Scheduled sync of all transactions",
+                    max_instances=1,
+                )
+            else:
+                logger.error(
+                    "Invalid sync schedule configuration; no sync job scheduled. "
+                    "Fix it via PUT /api/v1/sync/schedule or the config file."
+                )
+
+        # The backup job is scheduled unconditionally (unless disabled) and
+        # checks the live S3 config at run time, so enabling S3 backups via
+        # PUT /api/v1/backup/settings takes effect without a restart.
+        backup_config = scheduler_config.get("backup", {})
+        if not backup_config.get("enabled", True):
+            logger.info("Backup scheduling is disabled in configuration")
+        else:
+            trigger = self._parse_cron_config(
+                backup_config, default_hour=4, default_minute=0
             )
+            if trigger:
+                self.scheduler.add_job(
+                    self._run_backup,
+                    trigger,
+                    id="daily_backup",
+                    name="Scheduled S3 database backup",
+                    max_instances=1,
+                )
+            else:
+                logger.error(
+                    "Invalid backup schedule configuration; no backup job scheduled."
+                )
 
         self.scheduler.start()
-        logger.info(f"Background scheduler started with sync job: {trigger}")
+        logger.info(
+            f"Background scheduler started with jobs: "
+            f"{[job.id for job in self.scheduler.get_jobs()]}"
+        )
 
     def shutdown(self):
         if self.scheduler.running:
@@ -135,7 +163,9 @@ class BackgroundScheduler:
             converted.extend(str(v) for v in sorted({remap(str(v)) for v in values}))
         return ",".join(converted)
 
-    def _parse_cron_config(self, schedule_config: dict) -> CronTrigger | None:
+    def _parse_cron_config(
+        self, schedule_config: dict, default_hour: int = 3, default_minute: int = 0
+    ) -> CronTrigger | None:
         """Parse cron configuration and return CronTrigger"""
         if schedule_config.get("cron"):
             # Parse custom cron expression (e.g., "0 3 * * *" for daily at 3 AM)
@@ -159,9 +189,9 @@ class BackgroundScheduler:
                 logger.error(f"Error parsing cron expression: {e}")
                 return None
         else:
-            # Use hour/minute configuration (default: 3:00 AM daily)
-            hour = schedule_config.get("hour", 3)
-            minute = schedule_config.get("minute", 0)
+            # Use hour/minute configuration
+            hour = schedule_config.get("hour", default_hour)
+            minute = schedule_config.get("minute", default_minute)
             return CronTrigger(hour=hour, minute=minute)
 
     async def _run_sync(self, retry_count: int = 0):
@@ -225,6 +255,35 @@ class BackgroundScheduler:
                     logger.error(
                         f"Failed to send final failure notification: {notification_error}"
                     )
+
+    async def _run_backup(self):
+        """Run the scheduled S3 database backup.
+
+        Reads the S3 configuration live on every run and silently skips when
+        S3 backups are not configured or disabled, so the job can stay
+        scheduled while settings change at runtime.
+        """
+        s3_settings = config.backup_config.get("s3", {})
+        if not s3_settings.get("bucket_name"):
+            logger.debug("Scheduled backup skipped: S3 backup is not configured")
+            return
+        if not s3_settings.get("enabled", True):
+            logger.debug("Scheduled backup skipped: S3 backup is disabled")
+            return
+
+        try:
+            s3_config = S3BackupConfig(**s3_settings)
+            backup_service = BackupService(s3_config)
+            logger.info("Starting scheduled database backup")
+            success = await backup_service.backup_database(
+                path_manager.get_database_path()
+            )
+            if success:
+                logger.info("Scheduled database backup completed successfully")
+            else:
+                logger.error("Scheduled database backup failed")
+        except Exception as e:
+            logger.error(f"Scheduled database backup failed: {e}")
 
     def get_next_sync_time(self):
         """Get the next scheduled sync time"""
