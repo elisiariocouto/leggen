@@ -50,6 +50,9 @@ class TestBanksAPI:
     def test_connect_to_bank_success(self, fastapi_app, api_client, mock_config):
         """Test successful bank authorization start."""
         mock_eb = AsyncMock()
+        mock_eb.get_aspsps.return_value = [
+            {"name": "Revolut", "country": "GB", "maximum_consent_validity": 15552000}
+        ]
         mock_eb.start_auth.return_value = {
             "url": "https://bank.example.com/auth?state=abc"
         }
@@ -68,6 +71,29 @@ class TestBanksAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["url"] == "https://bank.example.com/auth?state=abc"
+        # The bank's maximum consent validity must be forwarded to start_auth
+        call_kwargs = mock_eb.start_auth.call_args.kwargs
+        assert call_kwargs["maximum_consent_validity"] == 15552000
+
+    def test_connect_to_bank_without_consent_validity(
+        self, fastapi_app, api_client, mock_config
+    ):
+        """Banks that don't report a maximum consent validity fall back to None."""
+        mock_eb = AsyncMock()
+        mock_eb.get_aspsps.return_value = [{"name": "Revolut", "country": "GB"}]
+        mock_eb.start_auth.return_value = {
+            "url": "https://bank.example.com/auth?state=abc"
+        }
+        fastapi_app.dependency_overrides[EnableBankingService] = lambda: mock_eb
+
+        with patch("leggen.utils.config.config", mock_config):
+            request_data = {"aspsp_name": "Revolut", "aspsp_country": "GB"}
+            response = api_client.post("/api/v1/banks/connect", json=request_data)
+
+        fastapi_app.dependency_overrides.pop(EnableBankingService, None)
+
+        assert response.status_code == 200
+        assert mock_eb.start_auth.call_args.kwargs["maximum_consent_validity"] is None
 
     def test_bank_callback_success(self, api_client, mock_config, mock_db_path):
         """Test successful auth code exchange."""

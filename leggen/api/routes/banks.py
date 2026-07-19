@@ -52,11 +52,24 @@ async def connect_to_bank(
     """Start bank authorization flow"""
     try:
         redirect_url = request.redirect_url or "http://localhost:8000/"
+
+        # Ask for the longest consent the bank supports; start_auth falls back
+        # to 90 days when the ASPSP doesn't report a maximum.
+        maximum_consent_validity = None
+        aspsps = await enablebanking_service.get_aspsps(request.aspsp_country)
+        for aspsp in aspsps:
+            if aspsp.get("name") == request.aspsp_name:
+                validity = aspsp.get("maximum_consent_validity")
+                if validity:
+                    maximum_consent_validity = int(validity)
+                break
+
         result = await enablebanking_service.start_auth(
             aspsp_name=request.aspsp_name,
             aspsp_country=request.aspsp_country,
             redirect_url=redirect_url,
             psu_type=request.psu_type,
+            maximum_consent_validity=maximum_consent_validity,
         )
         return BankAuthResponse(url=result["url"])
     except Exception as e:
