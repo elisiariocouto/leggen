@@ -34,6 +34,7 @@ class TestConfig:
                 "key_path": str(test_key_path),
                 "url": "https://api.enablebanking.com",
             },
+            # Legacy no-op section — must be tolerated and dropped, not rejected
             "database": {"sqlite": True},
         }
 
@@ -53,9 +54,8 @@ class TestConfig:
 
         # Result should contain validated config data
         assert result["enablebanking"]["application_id"] == "test-app-id"
-        assert result["database"]["sqlite"] is True
         assert config.enablebanking_config["application_id"] == "test-app-id"
-        assert config.database_config["sqlite"] is True
+        assert "database" not in result
 
     def test_load_config_file_not_found(self):
         """Test handling of missing configuration file."""
@@ -74,7 +74,6 @@ class TestConfig:
                 "key_path": str(test_key_path),
                 "url": "https://api.enablebanking.com",
             },
-            "database": {"sqlite": True},
         }
 
         config_file = temp_config_dir / "new_config.toml"
@@ -93,7 +92,6 @@ class TestConfig:
             saved_data = tomllib.load(f)
 
         assert saved_data["enablebanking"]["application_id"] == "new-app-id"
-        assert saved_data["database"]["sqlite"] is True
 
     def test_update_section_success(self, temp_config_dir, test_key_path):
         """Test updating entire configuration section."""
@@ -104,7 +102,6 @@ class TestConfig:
                 "key_path": str(test_key_path),
                 "url": "https://api.enablebanking.com",
             },
-            "database": {"sqlite": True},
         }
 
         config_file = temp_config_dir / "config.toml"
@@ -118,10 +115,10 @@ class TestConfig:
         config._config_model = None
         config.load_config(str(config_file))
 
-        new_db_config = {"sqlite": False}
-        config.update_section("database", new_db_config)
+        new_filters_config = {"case_insensitive": ["salary"]}
+        config.update_section("filters", new_filters_config)
 
-        assert config.database_config["sqlite"] is False
+        assert config.filters_config["case_insensitive"] == ["salary"]
 
     def test_scheduler_config_defaults(self):
         """Test scheduler configuration with defaults."""

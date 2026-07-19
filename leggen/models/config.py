@@ -22,10 +22,6 @@ class EnableBankingConfig(BaseModel):
         return str(value)
 
 
-class DatabaseConfig(BaseModel):
-    sqlite: bool = Field(default=True, description="Enable SQLite database")
-
-
 class DiscordNotificationConfig(BaseModel):
     webhook: str = Field(..., description="Discord webhook URL")
     enabled: bool = Field(default=True, description="Enable Discord notifications")
@@ -101,7 +97,6 @@ class AuthConfig(BaseModel):
 class Config(BaseModel):
     auth: Optional[AuthConfig] = None
     enablebanking: EnableBankingConfig
-    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     notifications: Optional[NotificationConfig] = None
     filters: Optional[FilterConfig] = None
     scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)

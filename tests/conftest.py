@@ -43,7 +43,6 @@ _config_data = {
         "key_path": str(_test_key_path),
         "url": "https://api.enablebanking.com",
     },
-    "database": {"sqlite": True},
     "scheduler": {"sync": {"enabled": True, "hour": 3, "minute": 0}},
 }
 
@@ -123,7 +122,6 @@ def mock_config(temp_config_dir, test_key_path):
             "key_path": str(test_key_path),
             "url": "https://api.enablebanking.com",
         },
-        "database": {"sqlite": True},
         "scheduler": {"sync": {"enabled": True, "hour": 3, "minute": 0}},
     }
 

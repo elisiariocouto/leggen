@@ -12,9 +12,6 @@ application_id = "your-application-id"
 key_path = "/path/to/private-key.pem"
 # url = "https://api.enablebanking.com"
 
-[database]
-sqlite = true
-
 # Optional: Background sync scheduling
 [scheduler.sync]
 enabled = true

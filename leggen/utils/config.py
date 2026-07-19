@@ -124,10 +124,6 @@ class Config:
         return self.config.get("enablebanking", {})
 
     @property
-    def database_config(self) -> Dict[str, Any]:
-        return self.config.get("database", {})
-
-    @property
     def notifications_config(self) -> Dict[str, Any]:
         return self.config.get("notifications", {})
 
