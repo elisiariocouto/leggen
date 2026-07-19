@@ -1,11 +1,10 @@
 import click
 
 from leggen.api_client import LeggenAPIClient
-from leggen.main import cli
 from leggen.utils.text import info, success
 
 
-@cli.command()
+@click.command()
 @click.argument("session_id", type=str, required=True, metavar="SESSION_ID")
 @click.pass_context
 def delete(ctx, session_id: str):

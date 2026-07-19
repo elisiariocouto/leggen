@@ -3,11 +3,10 @@ from urllib.parse import parse_qs, urlparse
 import click
 
 from leggen.api_client import LeggenAPIClient
-from leggen.main import cli
 from leggen.utils.text import info, print_table, success, warning
 
 
-@cli.command()
+@click.command()
 @click.pass_context
 def add(ctx):
     """

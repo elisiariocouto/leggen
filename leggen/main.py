@@ -73,7 +73,7 @@ class Group(click.Group):
         except ImportError as e:
             error(f"Can't import command {name}. Exception: {e}")
             return
-        return getattr(mod, name)
+        return getattr(mod, name, None)
 
 
 @click.option(

@@ -51,7 +51,7 @@ Frontend dev server at `http://localhost:5173` (port 3000 is only the Docker ngi
 Nearly all business logic lives in the FastAPI server. CLI commands (`leggen/commands/`) call the running server over HTTP via `LeggenAPIClient` (`leggen/api_client.py`) — they fail if the server isn't up. Exceptions that run locally: `server`, `generate_auth_config`, `generate_sample_db`.
 
 ### CLI command discovery
-`leggen/main.py` defines a custom Click group that discovers commands dynamically: dropping `foo.py` in `leggen/commands/` with a function named `foo` registers a `foo` command. A subdirectory becomes a command group only if it has `__init__.py` (`commands/bank/` doesn't, so its `add`/`delete` register at top level). Global options (`--config`, `--database`, `--api-url`, `--api-key`, …) all have `LEGGEN_*` env-var equivalents.
+`leggen/main.py` defines a custom Click group that discovers commands dynamically: dropping `foo.py` in `leggen/commands/` with a function named `foo` registers a `foo` command. A subdirectory becomes a command group when it has an `__init__.py` defining a Click group named after the directory (see `commands/bank/`); its command modules use plain `@click.command()`. Global options (`--config`, `--database`, `--api-url`, `--api-key`, …) all have `LEGGEN_*` env-var equivalents.
 
 ### Backend layering
 Routes → services → repositories:
