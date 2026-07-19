@@ -123,11 +123,11 @@ export default function Settings() {
   const createBackupMutation = useMutation({
     mutationFn: () => apiClient.performBackupOperation({ operation: "backup" }),
     onSuccess: (response) => {
-      if (response.success) {
-        toast.success(response.message || "Backup created successfully!");
+      if (response.completed) {
+        toast.success("Backup created successfully!");
         queryClient.invalidateQueries({ queryKey: ["backups"] });
       } else {
-        toast.error(response.message || "Failed to create backup.");
+        toast.error("Failed to create backup.");
       }
     },
     onError: (error: Error & { response?: { data?: { detail?: string } } }) => {

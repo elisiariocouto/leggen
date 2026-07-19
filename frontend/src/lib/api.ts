@@ -358,12 +358,11 @@ export const apiClient = {
 
   testBackupConnection: async (
     test: BackupTest,
-  ): Promise<{ connected?: boolean; success?: boolean; message?: string }> => {
-    const response = await api.post<{
-      connected?: boolean;
-      success?: boolean;
-      message?: string;
-    }>("/backup/test", test);
+  ): Promise<{ connected: boolean }> => {
+    const response = await api.post<{ connected: boolean }>(
+      "/backup/test",
+      test,
+    );
     return response.data;
   },
 
@@ -374,18 +373,11 @@ export const apiClient = {
 
   performBackupOperation: async (
     operation: BackupOperation,
-  ): Promise<{
-    operation: string;
-    completed: boolean;
-    success?: boolean;
-    message?: string;
-  }> => {
-    const response = await api.post<{
-      operation: string;
-      completed: boolean;
-      success?: boolean;
-      message?: string;
-    }>("/backup/operation", operation);
+  ): Promise<{ operation: string; completed: boolean }> => {
+    const response = await api.post<{ operation: string; completed: boolean }>(
+      "/backup/operation",
+      operation,
+    );
     return response.data;
   },
 
