@@ -52,9 +52,16 @@ class SyncService:
         return self._sync_status
 
     async def sync_all_accounts(
-        self, full_sync: bool = False, trigger_type: str = "manual"
+        self,
+        full_sync: bool = False,
+        trigger_type: str = "manual",
+        account_ids: Optional[List[str]] = None,
     ) -> SyncResult:
-        """Sync all connected accounts"""
+        """Sync connected accounts, optionally restricted to account_ids.
+
+        account_ids accepts the IDs returned by GET /accounts (IBAN-based
+        database IDs) as well as EnableBanking account UIDs.
+        """
         if self._sync_lock.locked():
             raise Exception("Sync is already running")
         await self._sync_lock.acquire()
@@ -91,19 +98,25 @@ class SyncService:
             # Get all sessions from local DB
             sessions = self.session_repo.get_sessions()
 
-            # Build account-to-session mapping
+            # Build account-to-session mapping. Session rows store the raw
+            # EnableBanking account objects, whose IBAN (when present) is the
+            # database account ID — keep it for the per-account filter below.
             account_session_map = {}
+            account_iban_map: dict = {}
             all_account_ids = set()
             for session in sessions:
                 session_accounts = session.get("accounts", []) or []
                 for account in session_accounts:
                     if isinstance(account, dict):
                         uid = account.get("uid") or account.get("id")
+                        iban = (account.get("account_id") or {}).get("iban")
                     else:
                         uid = account
+                        iban = None
                     if uid:
                         all_account_ids.add(uid)
                         account_session_map[uid] = session
+                        account_iban_map[uid] = iban
 
             # Skip deleted accounts
             deleted_ids = {
@@ -112,6 +125,21 @@ class SyncService:
                 if a.get("status") == "DELETED"
             }
             all_account_ids -= deleted_ids
+
+            # Per-account sync: keep accounts whose UID or IBAN was requested.
+            # A UID with no locally known IBAN can't be ruled out yet — keep it
+            # and let the in-loop check (which resolves the IBAN via account
+            # details) decide.
+            requested_ids = set(account_ids) if account_ids else None
+            if requested_ids:
+                all_account_ids = {
+                    uid
+                    for uid in all_account_ids
+                    if uid in requested_ids
+                    or account_iban_map.get(uid) in requested_ids
+                    or account_iban_map.get(uid) is None
+                }
+                logs.append(f"Per-account sync requested for: {sorted(requested_ids)}")
 
             self._sync_status.total_accounts = len(all_account_ids)
             logs.append(f"Found {len(all_account_ids)} accounts to sync")
@@ -138,6 +166,18 @@ class SyncService:
 
                     # Use IBAN as stored ID to prevent duplicates across providers
                     stored_id = details.get("account_id", {}).get("iban") or account_id
+
+                    # Authoritative per-account filter: accounts kept only
+                    # because their IBAN wasn't known locally are resolved now
+                    if (
+                        requested_ids
+                        and account_id not in requested_ids
+                        and stored_id not in requested_ids
+                    ):
+                        logger.debug(
+                            f"Skipping account {account_id}: not in requested accounts"
+                        )
+                        continue
 
                     # Map to internal format
                     account_details = {

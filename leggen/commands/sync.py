@@ -7,10 +7,17 @@ from leggen.utils.text import error, info, success
 
 @cli.command()
 @click.option("--full", is_flag=True, help="Full sync instead of last 30 days only")
+@click.option(
+    "-a",
+    "--account",
+    "accounts",
+    multiple=True,
+    help="Sync only this account ID (repeatable); defaults to all accounts",
+)
 @click.pass_context
-def sync(ctx: click.Context, full: bool):
+def sync(ctx: click.Context, full: bool, accounts: tuple[str, ...]):
     """
-    Sync all transactions with database
+    Sync transactions with database
     """
     api_client = LeggenAPIClient(
         ctx.obj.get("api_url"),
@@ -25,7 +32,9 @@ def sync(ctx: click.Context, full: bool):
 
     try:
         info("Starting sync...")
-        result = api_client.trigger_sync(full_sync=full)
+        result = api_client.trigger_sync(
+            account_ids=list(accounts) or None, full_sync=full
+        )
 
         if result.get("success"):
             success("Sync completed successfully!")

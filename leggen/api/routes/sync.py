@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 
 from leggen.api.models.sync import (
@@ -10,20 +10,41 @@ from leggen.api.models.sync import (
     SyncScheduleResponse,
 )
 from leggen.background.scheduler import scheduler
+from leggen.repositories import AccountRepository
 from leggen.utils.config import config
 
 router = APIRouter()
 
 
 @router.post("/sync")
-async def trigger_sync(sync_request: Optional[SyncRequest] = None) -> SyncResult:
+async def trigger_sync(
+    account_repo: Annotated[AccountRepository, Depends()],
+    sync_request: Optional[SyncRequest] = None,
+) -> SyncResult:
     """Run sync synchronously and return results"""
     try:
         full_sync = sync_request.full_sync if sync_request else False
-        result = await scheduler.sync_service.sync_all_accounts(full_sync, "api")
+        account_ids = sync_request.account_ids if sync_request else None
+
+        if account_ids:
+            known_ids = {
+                a["id"] for a in account_repo.get_accounts(account_ids=account_ids)
+            }
+            unknown_ids = sorted(set(account_ids) - known_ids)
+            if unknown_ids:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Unknown account IDs: {', '.join(unknown_ids)}",
+                )
+
+        result = await scheduler.sync_service.sync_all_accounts(
+            full_sync, "api", account_ids=account_ids or None
+        )
 
         return result
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to run sync: {e}")
         raise HTTPException(

@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { isAxiosError } from "axios";
 import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
 import {
@@ -132,6 +133,41 @@ export default function Accounts() {
     },
     onError: () => {
       toast.error("Failed to delete account.");
+    },
+  });
+
+  const syncAccountMutation = useMutation({
+    mutationFn: (accountId: string) =>
+      apiClient.triggerSync({ account_ids: [accountId] }),
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(
+          `Account synced: ${result.transactions_added} new transactions.`,
+        );
+      } else {
+        toast.error(
+          `Sync finished with errors: ${result.errors.join(", ") || "Unknown error"}`,
+        );
+      }
+      for (const key of [
+        "accounts",
+        "balances",
+        "transactions",
+        "transactionStats",
+        "transaction-stats",
+        "monthly-stats",
+        "category-stats",
+        "historical-balances",
+        "syncOperations",
+      ]) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
+    },
+    onError: (error) => {
+      const detail = isAxiosError(error)
+        ? error.response?.data?.detail
+        : undefined;
+      toast.error(detail || "Failed to sync account.");
     },
   });
 
@@ -368,6 +404,38 @@ export default function Accounts() {
                                   </Badge>
                                 )}
                                 <div className="ml-auto flex items-center flex-shrink-0">
+                                  {!isDeleted && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          onClick={() =>
+                                            syncAccountMutation.mutate(
+                                              account.id,
+                                            )
+                                          }
+                                          disabled={
+                                            syncAccountMutation.isPending
+                                          }
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-8 w-8 flex-shrink-0"
+                                        >
+                                          <RefreshCw
+                                            className={`h-4 w-4 ${
+                                              syncAccountMutation.isPending &&
+                                              syncAccountMutation.variables ===
+                                                account.id
+                                                ? "animate-spin"
+                                                : ""
+                                            }`}
+                                          />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        Sync this account
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <Button

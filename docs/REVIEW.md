@@ -39,7 +39,7 @@ Findings from a full backend + frontend audit. Track fixes here; feature ideas t
 
 ## 🟡 Half-implemented features
 
-- [ ] `SyncRequest.account_ids` accepted but ignored — per-account sync doesn't exist (`api/models/sync.py:30`, `routes/sync.py:24`).
+- [x] `SyncRequest.account_ids` accepted but ignored — per-account sync doesn't exist (`api/models/sync.py:30`, `routes/sync.py:24`). Fixed: `POST /sync` validates `account_ids` against the accounts DB (404 on unknown IDs) and forwards them to `sync_all_accounts`, which filters the account loop — accepting both DB account IDs (IBANs, as returned by `GET /accounts`) and EnableBanking UIDs, resolving via account details when the session lacks a local IBAN. Surfaced as `leggen sync --account <id>` (repeatable) and a per-account sync button on the Accounts page.
 - [ ] `transactions_updated` always 0 — plumbed through models/DB/UI, never incremented (`sync_service.py:63,232`).
 - [ ] `POST /notifications/test` ignores the user's message, sends a canned expiry notification (`notification_service.py:181-209`); Discord/Telegram test buttons give zero UI feedback (`DiscordConfigDrawer.tsx:71-77`, `TelegramConfigDrawer.tsx:73-78`).
 - [x] No scheduled S3 backups despite `enabled` flag — only manual `POST /backup/operation`; add a scheduler job. Fixed: the scheduler now runs a `daily_backup` job (new `[scheduler.backup]` config section, default 4 AM daily, hour/minute or cron like sync). The job reads the S3 config live on every run and skips when unconfigured/disabled, so toggling backups via `PUT /backup/settings` takes effect without a restart.

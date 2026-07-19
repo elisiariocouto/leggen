@@ -171,3 +171,7 @@ class TestLeggenAPIClient:
             result = client.trigger_sync(account_ids=["acc1", "acc2"], full_sync=True)
             assert result["success"] is True
             assert result["transactions_added"] == 50
+
+            request_body = m.last_request.json()
+            assert request_body["account_ids"] == ["acc1", "acc2"]
+            assert request_body["full_sync"] is True
