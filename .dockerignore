@@ -1,5 +1,5 @@
 .git/
 data/
-docker-compose.dev.yml
+compose.dev.yml
 frontend/node_modules/
 .venv/
