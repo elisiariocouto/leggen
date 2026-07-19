@@ -58,7 +58,7 @@ Routes → services → repositories:
 - `leggen/commands/server.py` — `create_app()` assembles the FastAPI app; the lifespan hook loads config, runs DB migrations, and starts the scheduler
 - `leggen/api/routes/` — routers mounted under `/api/v1`; all except `auth` require authentication (JWT Bearer from the frontend login flow, or `X-API-Key` header for CLI/programmatic access — resolved in `leggen/api/dependencies/auth.py`)
 - `leggen/api/models/` — Pydantic request/response models
-- `leggen/services/` — business logic: `sync_service.py` (orchestrator), `enablebanking_service.py` (external API; auth is an RS256 JWT signed with the RSA key at config `key_path`), `notification_service.py`, `backup_service.py`, `categorizer.py`, `data_processors.py`
+- `leggen/services/` — business logic: `sync_service.py` (orchestrator), `enablebanking_service.py` (external API; auth is an RS256 JWT signed with the RSA key at config `key_path`), `notification_service.py`, `backup_service.py`, `data_processors.py` (keyword extraction for categorization lives in `leggen/utils/keywords.py`)
 - `leggen/repositories/` — raw SQL against SQLite via stdlib `sqlite3` (no ORM). `db.py` provides the connection context manager; `ensure_tables()` in `repositories/__init__.py` creates tables at startup; schema changes are imperative `migrate_*_if_needed()` methods in `migration_repository.py` (no Alembic — add a migration method there when changing schema)
 
 ### Config and paths are singletons

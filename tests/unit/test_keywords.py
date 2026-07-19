@@ -1,6 +1,6 @@
 """Tests for the keyword extraction utility."""
 
-from leggen.services.categorizer import extract_keywords
+from leggen.utils.keywords import extract_keywords
 
 
 class TestExtractKeywords:

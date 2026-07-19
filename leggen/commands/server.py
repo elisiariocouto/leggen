@@ -58,11 +58,11 @@ async def lifespan(app: FastAPI):
             "Run 'leggen generate-auth-config' to generate real values."
         )
 
-    # Run database migrations and ensure tables exist
+    # Ensure tables exist, then run schema/data migrations on legacy databases
     try:
+        ensure_tables()
         migrations = MigrationRepository()
         await migrations.run_all_migrations()
-        ensure_tables()
         logger.info("Database migrations completed")
     except Exception as e:
         logger.error(f"Database migration failed: {e}")

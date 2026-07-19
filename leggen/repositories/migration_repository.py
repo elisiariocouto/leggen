@@ -16,10 +16,7 @@ class MigrationRepository:
         await self.migrate_null_transaction_ids_if_needed()
         await self.migrate_to_composite_key_if_needed()
         await self.migrate_add_display_name_if_needed()
-        await self.migrate_add_sync_operations_if_needed()
         await self.migrate_add_logo_if_needed()
-        await self.migrate_add_sessions_table_if_needed()
-        await self.migrate_add_categories_tables_if_needed()
         await self.migrate_add_exclude_from_stats_if_needed()
 
     # Balance timestamp migration methods
@@ -377,10 +374,6 @@ class MigrationRepository:
 
             logger.info("Recreating indexes...")
             cursor.execute(
-                """CREATE INDEX IF NOT EXISTS idx_transactions_internal_id
-                   ON transactions(internalTransactionId)"""
-            )
-            cursor.execute(
                 """CREATE INDEX IF NOT EXISTS idx_transactions_date
                    ON transactions(transactionDate)"""
             )
@@ -472,91 +465,6 @@ class MigrationRepository:
             logger.error(f"Display name column migration failed: {e}")
             raise
 
-    # Sync operations migration methods
-    async def migrate_add_sync_operations_if_needed(self):
-        """Check and add sync_operations table if needed"""
-        try:
-            if await self._check_sync_operations_migration_needed():
-                logger.info("Sync operations table migration needed, starting...")
-                await self._migrate_add_sync_operations()
-                logger.info("Sync operations table migration completed")
-            else:
-                logger.info("Sync operations table already exists")
-        except Exception as e:
-            logger.error(f"Sync operations table migration failed: {e}")
-            raise
-
-    async def _check_sync_operations_migration_needed(self) -> bool:
-        """Check if sync_operations table needs to be created"""
-        db_path = path_manager.get_database_path()
-        if not db_path.exists():
-            return False
-
-        try:
-            conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
-
-            cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='sync_operations'"
-            )
-            table_exists = cursor.fetchone() is not None
-
-            conn.close()
-            return not table_exists
-
-        except Exception as e:
-            logger.error(f"Failed to check sync_operations migration status: {e}")
-            return False
-
-    async def _migrate_add_sync_operations(self):
-        """Add sync_operations table"""
-        db_path = path_manager.get_database_path()
-        if not db_path.exists():
-            logger.warning("Database file not found, skipping migration")
-            return
-
-        try:
-            conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
-
-            logger.info("Creating sync_operations table...")
-
-            cursor.execute("""
-                CREATE TABLE sync_operations (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    started_at DATETIME NOT NULL,
-                    completed_at DATETIME,
-                    success BOOLEAN,
-                    accounts_processed INTEGER DEFAULT 0,
-                    transactions_added INTEGER DEFAULT 0,
-                    transactions_updated INTEGER DEFAULT 0,
-                    balances_updated INTEGER DEFAULT 0,
-                    duration_seconds REAL,
-                    errors TEXT,
-                    logs TEXT,
-                    trigger_type TEXT DEFAULT 'manual'
-                )
-            """)
-
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_sync_operations_started_at ON sync_operations(started_at)"
-            )
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_sync_operations_success ON sync_operations(success)"
-            )
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_sync_operations_trigger_type ON sync_operations(trigger_type)"
-            )
-
-            conn.commit()
-            conn.close()
-
-            logger.info("Sync operations table migration completed successfully")
-
-        except Exception as e:
-            logger.error(f"Sync operations table migration failed: {e}")
-            raise
-
     # Logo migration methods
     async def migrate_add_logo_if_needed(self):
         """Check and add logo column to accounts table if needed"""
@@ -625,76 +533,6 @@ class MigrationRepository:
 
         except Exception as e:
             logger.error(f"Logo column migration failed: {e}")
-            raise
-
-    # Sessions table migration methods
-    async def migrate_add_sessions_table_if_needed(self):
-        """Check and add sessions table if needed"""
-        try:
-            if await self._check_sessions_table_migration_needed():
-                logger.info("Sessions table migration needed, starting...")
-                await self._migrate_add_sessions_table()
-                logger.info("Sessions table migration completed")
-            else:
-                logger.info("Sessions table already exists")
-        except Exception as e:
-            logger.error(f"Sessions table migration failed: {e}")
-            raise
-
-    async def _check_sessions_table_migration_needed(self) -> bool:
-        """Check if sessions table needs to be created"""
-        db_path = path_manager.get_database_path()
-        if not db_path.exists():
-            return False
-
-        try:
-            conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
-
-            cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'"
-            )
-            table_exists = cursor.fetchone() is not None
-
-            conn.close()
-            return not table_exists
-
-        except Exception as e:
-            logger.error(f"Failed to check sessions table migration status: {e}")
-            return False
-
-    async def _migrate_add_sessions_table(self):
-        """Create sessions table for EnableBanking session storage"""
-        db_path = path_manager.get_database_path()
-        if not db_path.exists():
-            logger.warning("Database file not found, skipping migration")
-            return
-
-        try:
-            conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
-
-            logger.info("Creating sessions table...")
-
-            cursor.execute("""
-                CREATE TABLE sessions (
-                    session_id TEXT PRIMARY KEY,
-                    aspsp_name TEXT NOT NULL,
-                    aspsp_country TEXT NOT NULL,
-                    accounts JSON,
-                    valid_until DATETIME,
-                    created_at DATETIME,
-                    status TEXT DEFAULT 'active'
-                )
-            """)
-
-            conn.commit()
-            conn.close()
-
-            logger.info("Sessions table migration completed successfully")
-
-        except Exception as e:
-            logger.error(f"Sessions table migration failed: {e}")
             raise
 
     # Exclude from stats migration methods
@@ -777,64 +615,4 @@ class MigrationRepository:
 
         except Exception as e:
             logger.error(f"Exclude from stats column migration failed: {e}")
-            raise
-
-    # Categories tables migration methods
-    async def migrate_add_categories_tables_if_needed(self):
-        """Check and add categories tables if needed"""
-        try:
-            if await self._check_categories_tables_migration_needed():
-                logger.info("Categories tables migration needed, starting...")
-                await self._migrate_add_categories_tables()
-                logger.info("Categories tables migration completed")
-            else:
-                logger.info("Categories tables already exist")
-        except Exception as e:
-            logger.error(f"Categories tables migration failed: {e}")
-            raise
-
-    async def _check_categories_tables_migration_needed(self) -> bool:
-        """Check if categories tables need to be created"""
-        db_path = path_manager.get_database_path()
-        if not db_path.exists():
-            return False
-
-        try:
-            conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
-
-            cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('categories', 'transaction_categories', 'category_keywords')"
-            )
-            existing_tables = {row[0] for row in cursor.fetchall()}
-            required_tables = {
-                "categories",
-                "transaction_categories",
-                "category_keywords",
-            }
-
-            conn.close()
-            return not required_tables.issubset(existing_tables)
-
-        except Exception as e:
-            logger.error(f"Failed to check categories tables migration status: {e}")
-            return False
-
-    async def _migrate_add_categories_tables(self):
-        """Create categories, transaction_categories, and category_keywords tables"""
-        db_path = path_manager.get_database_path()
-        if not db_path.exists():
-            logger.warning("Database file not found, skipping migration")
-            return
-
-        try:
-            from leggen.repositories.category_repository import CategoryRepository
-
-            # Use the repository's create_table method which handles table creation and seeding
-            CategoryRepository().create_table()
-
-            logger.info("Categories tables migration completed successfully")
-
-        except Exception as e:
-            logger.error(f"Categories tables migration failed: {e}")
             raise

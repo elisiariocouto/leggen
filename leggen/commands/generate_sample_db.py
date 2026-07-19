@@ -9,6 +9,10 @@ from typing import Any, TypedDict
 
 import click
 
+from leggen.repositories import ensure_tables
+from leggen.utils.keywords import extract_keywords
+from leggen.utils.paths import path_manager
+
 
 class TransactionType(TypedDict):
     """Type definition for transaction type configuration."""
@@ -108,132 +112,9 @@ class SampleDataGenerator:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
     def create_tables(self):
-        """Create database tables."""
-        conn = sqlite3.connect(str(self.db_path))
-        cursor = conn.cursor()
-
-        # Create accounts table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS accounts (
-                id TEXT PRIMARY KEY,
-                institution_id TEXT,
-                status TEXT,
-                iban TEXT,
-                name TEXT,
-                currency TEXT,
-                created DATETIME,
-                last_accessed DATETIME,
-                last_updated DATETIME,
-                display_name TEXT
-            )
-        """)
-
-        # Create transactions table with composite primary key
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS transactions (
-                accountId TEXT NOT NULL,
-                transactionId TEXT NOT NULL,
-                internalTransactionId TEXT,
-                institutionId TEXT,
-                iban TEXT,
-                transactionDate DATETIME,
-                description TEXT,
-                transactionValue REAL,
-                transactionCurrency TEXT,
-                transactionStatus TEXT,
-                rawTransaction JSON,
-                PRIMARY KEY (accountId, transactionId)
-            )
-        """)
-
-        # Create balances table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS balances (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                account_id TEXT,
-                bank TEXT,
-                status TEXT,
-                iban TEXT,
-                amount REAL,
-                currency TEXT,
-                type TEXT,
-                timestamp DATETIME
-            )
-        """)
-
-        # Create indexes
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_transactions_internal_id ON transactions(internalTransactionId)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transactionDate)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_transactions_account_date ON transactions(accountId, transactionDate)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_transactions_amount ON transactions(transactionValue)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_balances_account_id ON balances(account_id)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_balances_timestamp ON balances(timestamp)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_balances_account_type_timestamp ON balances(account_id, type, timestamp)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_accounts_institution_id ON accounts(institution_id)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_accounts_status ON accounts(status)"
-        )
-
-        # Create category tables
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS categories (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                color TEXT DEFAULT '#6b7280',
-                icon TEXT,
-                is_default BOOLEAN DEFAULT 0,
-                exclude_from_stats BOOLEAN DEFAULT 0,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS transaction_categories (
-                accountId TEXT NOT NULL,
-                transactionId TEXT NOT NULL,
-                categoryId INTEGER NOT NULL,
-                assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (accountId, transactionId),
-                FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE CASCADE
-            )
-        """)
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_tc_category ON transaction_categories(categoryId)"
-        )
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS category_keywords (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                keyword TEXT NOT NULL,
-                categoryId INTEGER NOT NULL,
-                frequency INTEGER DEFAULT 1,
-                UNIQUE(keyword, categoryId),
-                FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE CASCADE
-            )
-        """)
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_ck_keyword ON category_keywords(keyword)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_ck_category ON category_keywords(categoryId)"
-        )
-
-        conn.commit()
-        conn.close()
+        """Create database tables using the shared repository schema."""
+        path_manager.set_database_path(self.db_path)
+        ensure_tables()
 
     def generate_iban(self, country_code: str) -> str:
         """Generate a realistic IBAN for the given country."""
@@ -512,22 +393,11 @@ class SampleDataGenerator:
                 ),
             )
 
-        # Seed default categories
-        from leggen.repositories.category_repository import DEFAULT_CATEGORIES
-
-        for cat in DEFAULT_CATEGORIES:
-            cursor.execute(
-                "INSERT OR IGNORE INTO categories (name, color, icon, is_default, exclude_from_stats) VALUES (?, ?, ?, 1, ?)",
-                (cat["name"], cat["color"], cat["icon"], cat["exclude_from_stats"]),
-            )
-
-        # Build category name -> id mapping
+        # Build category name -> id mapping (defaults are seeded by create_tables)
         cursor.execute("SELECT id, name FROM categories")
         category_map = {row[1]: row[0] for row in cursor.fetchall()}
 
         # Assign categories to ~60% of transactions and learn keywords
-        from leggen.services.categorizer import extract_keywords
-
         for transaction in transactions:
             if random.random() > 0.6:
                 continue

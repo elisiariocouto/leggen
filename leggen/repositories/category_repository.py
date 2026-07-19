@@ -3,7 +3,7 @@
 from typing import Any, Optional
 
 from leggen.repositories.db import db_exists, get_db_connection
-from leggen.services.categorizer import extract_keywords
+from leggen.utils.keywords import extract_keywords
 
 DEFAULT_CATEGORIES = [
     {
@@ -330,25 +330,6 @@ class CategoryRepository:
             )
             conn.commit()
             return True
-
-    def get_transaction_category(
-        self, account_id: str, transaction_id: str
-    ) -> Optional[dict[str, Any]]:
-        """Get the category assigned to a transaction."""
-        if not db_exists():
-            return None
-
-        with get_db_connection(row_factory=True) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """SELECT c.id, c.name, c.color, c.icon, c.is_default, c.exclude_from_stats
-                   FROM transaction_categories tc
-                   JOIN categories c ON tc.categoryId = c.id
-                   WHERE tc.accountId = ? AND tc.transactionId = ?""",
-                (account_id, transaction_id),
-            )
-            row = cursor.fetchone()
-            return dict(row) if row else None
 
     def bulk_assign_by_description(
         self,
