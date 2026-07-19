@@ -114,18 +114,18 @@ export function ActiveFilterChips({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm text-gray-600 font-medium">Active filters:</span>
+      <span className="text-sm text-muted-foreground font-medium">Active filters:</span>
       {chips.map((chip) => (
         <Badge
           key={`${chip.key}-${chip.value}`}
           variant="secondary"
-          className="pl-3 pr-1 py-1 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+          className="pl-3 pr-1 py-1 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
         >
           <span className="mr-1 text-xs">{chip.label}</span>
           <Button
             variant="ghost"
             size="sm"
-            className="h-4 w-4 p-0 hover:bg-blue-200/50"
+            className="h-4 w-4 p-0 hover:bg-primary/20"
             onClick={() => handleRemoveChip(chip.key)}
           >
             <X className="h-3 w-3" />

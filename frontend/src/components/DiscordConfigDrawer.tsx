@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, TestTube } from "lucide-react";
-import { apiClient, MASKED_SECRET } from "../lib/api";
+import { toast } from "sonner";
+import { apiClient, getApiErrorMessage, MASKED_SECRET } from "../lib/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -56,9 +57,12 @@ export default function DiscordConfigDrawer({
       queryClient.invalidateQueries({ queryKey: ["notificationSettings"] });
       queryClient.invalidateQueries({ queryKey: ["notificationServices"] });
       setOpen(false);
+      toast.success("Discord configuration saved.");
     },
     onError: (error) => {
-      console.error("Failed to update Discord configuration:", error);
+      toast.error(
+        getApiErrorMessage(error, "Failed to update Discord configuration."),
+      );
     },
   });
 
@@ -70,10 +74,12 @@ export default function DiscordConfigDrawer({
           "Test notification from Leggen - Discord configuration is working!",
       }),
     onSuccess: () => {
-      console.log("Test Discord notification sent successfully");
+      toast.success("Test Discord notification sent.");
     },
     onError: (error) => {
-      console.error("Failed to send test Discord notification:", error);
+      toast.error(
+        getApiErrorMessage(error, "Failed to send test Discord notification."),
+      );
     },
   });
 

@@ -8,7 +8,16 @@ import {
 } from "recharts";
 import { BlurredValue } from "../ui/blurred-value";
 import { dominantCurrency, formatCurrency } from "../../lib/utils";
+import { getAccountDisplayName } from "../../lib/accountDisplay";
 import type { Account } from "../../types/api";
+
+const CHART_COLORS = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+];
 
 interface TransactionDistributionProps {
   accounts: Account[];
@@ -33,24 +42,6 @@ export default function TransactionDistribution({
   accounts,
   className,
 }: TransactionDistributionProps) {
-  // Helper function to get bank name from institution_id
-  const getBankName = (institutionId: string): string => {
-    const bankMapping: Record<string, string> = {
-      REVOLUT_REVOLT21: "Revolut",
-      NUBANK_NUPBBR25: "Nu Pagamentos",
-      BANCOBPI_BBPIPTPL: "Banco BPI",
-      // TODO: Add more bank mappings as needed
-    };
-    return bankMapping[institutionId] || institutionId.split("_")[0];
-  };
-
-  // Helper function to create display name for account
-  const getAccountDisplayName = (account: Account): string => {
-    const bankName = getBankName(account.institution_id);
-    const accountName = account.name || `Account ${account.id.split("-")[1]}`;
-    return `${bankName} - ${accountName}`;
-  };
-
   // A share-of-total pie only makes sense in one currency — keep accounts
   // whose primary balance is in the dominant one
   const currency = dominantCurrency(
@@ -69,12 +60,10 @@ export default function TransactionDistribution({
     .map((account, index) => {
       const primaryBalance = account.balances?.[0]?.amount || 0;
 
-      const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
-
       return {
         name: getAccountDisplayName(account),
         value: primaryBalance,
-        color: colors[index % colors.length],
+        color: CHART_COLORS[index % CHART_COLORS.length],
       };
     });
 

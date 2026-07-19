@@ -10,7 +10,16 @@ import {
 } from "recharts";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, dominantCurrency, formatCurrency } from "../../lib/utils";
+import { getAccountDisplayName } from "../../lib/accountDisplay";
 import type { Balance, Account } from "../../types/api";
+
+const CHART_COLORS = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+];
 
 interface BalanceChartProps {
   data: Balance[];
@@ -55,26 +64,11 @@ export default function BalanceChart({
     {} as Record<string, Account>,
   );
 
-  // Helper function to get bank name from institution_id
-  const getBankName = (institutionId: string): string => {
-    const bankMapping: Record<string, string> = {
-      REVOLUT_REVOLT21: "Revolut",
-      NUBANK_NUPBBR25: "Nu Pagamentos",
-      BANCOBPI_BBPIPTPL: "Banco BPI",
-      // Add more mappings as needed
-    };
-    return bankMapping[institutionId] || institutionId.split("_")[0];
-  };
-
-  // Helper function to create display name for account
-  const getAccountDisplayName = (accountId: string): string => {
+  const displayName = (accountId: string): string => {
     const account = accountMap[accountId];
-    if (account) {
-      const bankName = getBankName(account.institution_id);
-      const accountName = account.name || `Account ${accountId.split("-")[1]}`;
-      return `${bankName} - ${accountName}`;
-    }
-    return `Account ${accountId.split("-")[1]}`;
+    return account
+      ? getAccountDisplayName(account)
+      : `Account ${accountId.split("-")[1]}`;
   };
   // Stacked areas only make sense in one currency — keep the dominant one
   const currency = dominantCurrency(data.map((balance) => balance.currency));
@@ -120,8 +114,6 @@ export default function BalanceChart({
       new Date(b.date.split("/").reverse().join("/")).getTime(),
   );
 
-  const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
-
   const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
@@ -129,8 +121,7 @@ export default function BalanceChart({
           <p className="font-medium text-foreground">Date: {label}</p>
           {payload.map((entry, index) => (
             <p key={index} style={{ color: entry.color }}>
-              {getAccountDisplayName(entry.name)}:{" "}
-              {formatCurrency(entry.value, currency)}
+              {displayName(entry.name)}: {formatCurrency(entry.value, currency)}
             </p>
           ))}
         </div>
@@ -160,10 +151,10 @@ export default function BalanceChart({
       <div className={cn("h-80", !isBalanceVisible && "blur-md select-none")}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={finalData}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
               tickFormatter={(value) => {
                 // Convert DD/MM/YYYY back to a proper date for formatting
                 const [day, month, year] = value.split("/");
@@ -175,7 +166,7 @@ export default function BalanceChart({
               }}
             />
             <YAxis
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
               tickFormatter={(value) => formatCurrency(value, currency)}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -186,9 +177,9 @@ export default function BalanceChart({
                 type="monotone"
                 dataKey={accountId}
                 stackId="1"
-                fill={colors[index % colors.length]}
-                stroke={colors[index % colors.length]}
-                name={getAccountDisplayName(accountId)}
+                fill={CHART_COLORS[index % CHART_COLORS.length]}
+                stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                name={displayName(accountId)}
               />
             ))}
           </AreaChart>

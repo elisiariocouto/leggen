@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Send, TestTube } from "lucide-react";
-import { apiClient, MASKED_SECRET } from "../lib/api";
+import { toast } from "sonner";
+import { apiClient, getApiErrorMessage, MASKED_SECRET } from "../lib/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -57,9 +58,12 @@ export default function TelegramConfigDrawer({
       queryClient.invalidateQueries({ queryKey: ["notificationSettings"] });
       queryClient.invalidateQueries({ queryKey: ["notificationServices"] });
       setOpen(false);
+      toast.success("Telegram configuration saved.");
     },
     onError: (error) => {
-      console.error("Failed to update Telegram configuration:", error);
+      toast.error(
+        getApiErrorMessage(error, "Failed to update Telegram configuration."),
+      );
     },
   });
 
@@ -71,10 +75,15 @@ export default function TelegramConfigDrawer({
           "Test notification from Leggen - Telegram configuration is working!",
       }),
     onSuccess: () => {
-      console.log("Test Telegram notification sent successfully");
+      toast.success("Test Telegram notification sent.");
     },
     onError: (error) => {
-      console.error("Failed to send test Telegram notification:", error);
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Failed to send test Telegram notification.",
+        ),
+      );
     },
   });
 

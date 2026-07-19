@@ -69,11 +69,13 @@ export default function StatCard({
             <Icon
               className={cn(
                 "h-5 w-5",
-                iconColor === "green" && "text-green-600",
-                iconColor === "blue" && "text-blue-600",
-                iconColor === "red" && "text-red-600",
-                iconColor === "purple" && "text-purple-600",
-                iconColor === "orange" && "text-orange-600",
+                iconColor === "green" && "text-green-600 dark:text-green-400",
+                iconColor === "blue" && "text-blue-600 dark:text-blue-400",
+                iconColor === "red" && "text-red-600 dark:text-red-400",
+                iconColor === "purple" &&
+                  "text-purple-600 dark:text-purple-400",
+                iconColor === "orange" &&
+                  "text-orange-600 dark:text-orange-400",
                 iconColor === "default" && "text-muted-foreground",
               )}
             />

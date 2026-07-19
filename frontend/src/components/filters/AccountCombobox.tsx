@@ -82,7 +82,7 @@ export function AccountCombobox({
                       selectedAccount === "" ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  <Building2 className="mr-2 h-4 w-4 text-gray-400" />
+                  <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
                   All accounts
                 </CommandItem>
 
@@ -110,7 +110,7 @@ export function AccountCombobox({
                           account.name ||
                           "Unnamed Account"}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         {account.institution_id}
                         {account.iban && ` • ${account.iban.slice(-4)}`}
                       </span>

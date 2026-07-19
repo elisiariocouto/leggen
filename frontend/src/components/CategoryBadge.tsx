@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tag, Sparkles, X, Check } from "lucide-react";
-import { apiClient } from "../lib/api";
+import { apiClient, getApiErrorMessage } from "../lib/api";
 import {
   Popover,
   PopoverContent,
@@ -70,6 +70,9 @@ export default function CategoryBadge({
       });
       setOpen(false);
     },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to assign category."));
+    },
   });
 
   const bulkAssignMutation = useMutation({
@@ -82,6 +85,9 @@ export default function CategoryBadge({
       );
       setOpen(false);
     },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to assign category."));
+    },
   });
 
   const removeMutation = useMutation({
@@ -89,6 +95,9 @@ export default function CategoryBadge({
     onSuccess: () => {
       invalidateCategoryRelatedQueries();
       setOpen(false);
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to remove category."));
     },
   });
 
@@ -101,6 +110,9 @@ export default function CategoryBadge({
         `Category removed from ${data.removed_count} transaction${data.removed_count !== 1 ? "s" : ""}.`,
       );
       setOpen(false);
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to remove category."));
     },
   });
 

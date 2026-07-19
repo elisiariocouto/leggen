@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Building2, ExternalLink } from "lucide-react";
-import { apiClient } from "../lib/api";
+import { toast } from "sonner";
+import { apiClient, getApiErrorMessage } from "../lib/api";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import {
@@ -58,7 +59,12 @@ export default function AddBankAccountDrawer() {
       }
     },
     onError: (error) => {
-      console.error("Failed to create bank connection:", error);
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Failed to create bank connection. Please try again.",
+        ),
+      );
     },
   });
 
@@ -216,14 +222,6 @@ export default function AddBankAccountDrawer() {
             </Alert>
           )}
 
-          {/* Error Display */}
-          {connectBankMutation.isError && (
-            <Alert variant="destructive">
-              <AlertDescription>
-                Failed to create bank connection. Please try again.
-              </AlertDescription>
-            </Alert>
-          )}
         </div>
 
         <DrawerFooter>

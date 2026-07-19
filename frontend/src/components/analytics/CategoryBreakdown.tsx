@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
 import { BlurredValue } from "../ui/blurred-value";
+import { Skeleton } from "../ui/skeleton";
 import apiClient from "../../lib/api";
 import type { CategoryStats } from "../../types/api";
 
@@ -41,6 +42,7 @@ export default function CategoryBreakdown({
   const { data: categoryData, isLoading } = useQuery({
     queryKey: ["category-stats", dateFrom, dateTo, accountId],
     queryFn: () => apiClient.getStatsByCategory(dateFrom, dateTo, accountId),
+    placeholderData: (previousData) => previousData,
   });
 
   if (isLoading) {
@@ -49,9 +51,7 @@ export default function CategoryBreakdown({
         <h3 className="text-lg font-medium text-foreground mb-4">
           Spending by Category
         </h3>
-        <div className="h-80 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
+        <Skeleton className="h-80 w-full" />
       </div>
     );
   }
@@ -88,7 +88,7 @@ export default function CategoryBreakdown({
             Expenses: {formatCurrency(data.expenses, currency)}
           </p>
           {data.income > 0 && (
-            <p className="text-green-600">
+            <p className="text-green-600 dark:text-green-400">
               Income: {formatCurrency(data.income, currency)}
             </p>
           )}
@@ -119,16 +119,20 @@ export default function CategoryBreakdown({
             layout="vertical"
             margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={false}
+              stroke="hsl(var(--border))"
+            />
             <XAxis
               type="number"
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
               tickFormatter={(value) => formatCurrency(value, currency)}
             />
             <YAxis
               type="category"
               dataKey="category_name"
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
               width={120}
             />
             <Tooltip content={<CustomTooltip />} />

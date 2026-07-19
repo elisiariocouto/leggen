@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Tag, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient } from "../lib/api";
+import { apiClient, getApiErrorMessage } from "../lib/api";
 import {
   Card,
   CardContent,
@@ -17,11 +17,22 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
+import { Skeleton } from "./ui/skeleton";
 import { Switch } from "./ui/switch";
 import type { Category } from "../types/api";
 
@@ -132,8 +143,8 @@ export default function CategoryManager() {
       setShowCreate(false);
       toast.success("Category created.");
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to create category.");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to create category."));
     },
   });
 
@@ -151,8 +162,8 @@ export default function CategoryManager() {
       setEditingCategory(null);
       toast.success("Category updated.");
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to update category.");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to update category."));
     },
   });
 
@@ -164,8 +175,8 @@ export default function CategoryManager() {
       setDeleteTarget(null);
       toast.success("Category deleted.");
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to delete category.");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete category."));
     },
   });
 
@@ -211,7 +222,11 @@ export default function CategoryManager() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="text-sm text-muted-foreground">Loading categories...</div>
+          <div className="space-y-2">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
         ) : (
           <div className="space-y-2">
             {categories?.map((cat) => (
@@ -280,11 +295,11 @@ export default function CategoryManager() {
                   </Dialog>
 
                   {!cat.is_default && (
-                    <Dialog
+                    <AlertDialog
                       open={deleteTarget?.id === cat.id}
                       onOpenChange={(open) => !open && setDeleteTarget(null)}
                     >
-                      <DialogTrigger asChild>
+                      <AlertDialogTrigger asChild>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -293,29 +308,27 @@ export default function CategoryManager() {
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Delete Category</DialogTitle>
-                          <DialogDescription>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                          <AlertDialogDescription>
                             Are you sure you want to delete &quot;{cat.name}&quot;? This will remove
                             the category from all transactions that use it.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-                            Cancel
-                          </Button>
-                          <Button
-                            variant="destructive"
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
                             onClick={() => deleteMutation.mutate(cat.id)}
                             disabled={deleteMutation.isPending}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
                             {deleteMutation.isPending ? "Deleting..." : "Delete"}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </div>
               </div>

@@ -14,8 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { isAxiosError } from "axios";
-import { apiClient } from "../lib/api";
+import { apiClient, getApiErrorMessage } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
 import {
   Card,
@@ -48,7 +47,7 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { Checkbox } from "./ui/checkbox";
-import type { Account, Balance } from "../types/api";
+import type { Account, Balance, BankConnectionStatus } from "../types/api";
 
 const getStatusIndicator = (status: string) => {
   const statusLower = status.toLowerCase();
@@ -77,6 +76,8 @@ export default function Accounts() {
   const [deleteDialogAccount, setDeleteDialogAccount] =
     useState<Account | null>(null);
   const [deleteData, setDeleteData] = useState(true);
+  const [deleteDialogConnection, setDeleteDialogConnection] =
+    useState<BankConnectionStatus | null>(null);
   const [hideDeleted, setHideDeleted] = useState(false);
 
   const queryClient = useQueryClient();
@@ -110,8 +111,8 @@ export default function Accounts() {
       setEditingAccountId(null);
       setEditingName("");
     },
-    onError: () => {
-      toast.error("Failed to update account name.");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to update account name."));
     },
   });
 
@@ -131,8 +132,8 @@ export default function Accounts() {
       setDeleteData(true);
       toast.success("Account deleted successfully.");
     },
-    onError: () => {
-      toast.error("Failed to delete account.");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete account."));
     },
   });
 
@@ -164,10 +165,7 @@ export default function Accounts() {
       }
     },
     onError: (error) => {
-      const detail = isAxiosError(error)
-        ? error.response?.data?.detail
-        : undefined;
-      toast.error(detail || "Failed to sync account.");
+      toast.error(getApiErrorMessage(error, "Failed to sync account."));
     },
   });
 
@@ -177,9 +175,13 @@ export default function Accounts() {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["bankConnections"] });
       queryClient.invalidateQueries({ queryKey: ["balances"] });
+      setDeleteDialogConnection(null);
+      toast.success("Bank connection deleted.");
     },
-    onError: () => {
-      toast.error("Failed to delete bank connection.");
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(error, "Failed to delete bank connection."),
+      );
     },
   });
 
@@ -362,7 +364,7 @@ export default function Accounts() {
                                       }
                                       size="icon"
                                       variant="ghost"
-                                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100"
+                                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/20"
                                     >
                                       <Check className="h-4 w-4" />
                                     </Button>
@@ -517,7 +519,9 @@ export default function Accounts() {
                           )}
                           <BlurredValue
                             className={`text-base sm:text-lg font-semibold ${
-                              isPositive ? "text-green-600" : "text-red-600"
+                              isPositive
+                                ? "text-green-600 dark:text-green-400"
+                                : "text-red-600 dark:text-red-400"
                             }`}
                           >
                             {formatCurrency(balance, currency)}
@@ -653,7 +657,7 @@ export default function Accounts() {
                             {connection.status === "expired" && (
                               <Badge
                                 variant="outline"
-                                className="flex-shrink-0 text-xs border-red-500 text-red-600"
+                                className="flex-shrink-0 text-xs border-red-500 text-red-600 dark:text-red-400"
                               >
                                 Expired
                               </Badge>
@@ -661,7 +665,7 @@ export default function Accounts() {
                             {connection.days_until_expiry != null && (
                               <Badge
                                 variant="outline"
-                                className={`flex-shrink-0 text-xs ${isExpiring ? "border-amber-500 text-amber-600" : "border-border text-muted-foreground"}`}
+                                className={`flex-shrink-0 text-xs ${isExpiring ? "border-amber-500 text-amber-600 dark:text-amber-400" : "border-border text-muted-foreground"}`}
                               >
                                 {isExpiring && (
                                   <AlertTriangle className="h-3 w-3 mr-1" />
@@ -693,18 +697,9 @@ export default function Accounts() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              onClick={() => {
-                                const isActive = connection.status === "active";
-                                const message = isActive
-                                  ? `Are you sure you want to disconnect "${connection.aspsp_name}"? This will stop syncing new transactions but keep your existing transaction history.`
-                                  : `Delete connection to ${connection.aspsp_name}?`;
-
-                                if (confirm(message)) {
-                                  deleteBankConnectionMutation.mutate(
-                                    connection.session_id,
-                                  );
-                                }
-                              }}
+                              onClick={() =>
+                                setDeleteDialogConnection(connection)
+                              }
                               disabled={deleteBankConnectionMutation.isPending}
                               size="icon"
                               variant="ghost"
@@ -724,6 +719,64 @@ export default function Accounts() {
           </CardContent>
         )}
       </Card>
+
+      {/* Delete Bank Connection Dialog */}
+      <AlertDialog
+        open={!!deleteDialogConnection}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteDialogConnection(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deleteDialogConnection?.status === "active"
+                ? "Disconnect Bank"
+                : "Delete Connection"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteDialogConnection?.status === "active" ? (
+                <>
+                  Are you sure you want to disconnect{" "}
+                  <span className="font-medium text-foreground">
+                    {deleteDialogConnection?.aspsp_name}
+                  </span>
+                  ? This will stop syncing new transactions but keep your
+                  existing transaction history.
+                </>
+              ) : (
+                <>
+                  Delete the connection to{" "}
+                  <span className="font-medium text-foreground">
+                    {deleteDialogConnection?.aspsp_name}
+                  </span>
+                  ?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteDialogConnection) {
+                  deleteBankConnectionMutation.mutate(
+                    deleteDialogConnection.session_id,
+                  );
+                }
+              }}
+              disabled={deleteBankConnectionMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteDialogConnection?.status === "active"
+                ? "Disconnect"
+                : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

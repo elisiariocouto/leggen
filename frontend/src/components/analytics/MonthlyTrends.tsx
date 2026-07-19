@@ -10,6 +10,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
+import { Skeleton } from "../ui/skeleton";
 import apiClient from "../../lib/api";
 
 interface MonthlyTrendsProps {
@@ -41,6 +42,7 @@ export default function MonthlyTrends({
     queryKey: ["monthly-stats", dateFrom, dateTo, accountId],
     queryFn: () =>
       apiClient.getTransactionStatsByMonth(dateFrom, dateTo, accountId),
+    placeholderData: (previousData) => previousData,
   });
 
   if (isLoading) {
@@ -49,9 +51,7 @@ export default function MonthlyTrends({
         <h3 className="text-lg font-medium text-foreground mb-4">
           Monthly Spending Trends
         </h3>
-        <div className="h-80 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
+        <Skeleton className="h-80 w-full" />
       </div>
     );
   }
@@ -98,16 +98,16 @@ export default function MonthlyTrends({
             data={monthlyData}
             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis
               dataKey="month"
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
               angle={-45}
               textAnchor="end"
               height={60}
             />
             <YAxis
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
               tickFormatter={(value) => formatCurrency(value, currency)}
             />
             <Tooltip content={<CustomTooltip />} />

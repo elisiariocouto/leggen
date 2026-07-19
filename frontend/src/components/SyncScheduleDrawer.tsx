@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Clock } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient } from "../lib/api";
+import { apiClient, getApiErrorMessage } from "../lib/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -60,11 +60,13 @@ export default function SyncScheduleDrawer({
       setOpen(false);
       toast.success("Sync schedule updated successfully");
     },
-    onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
-      const message =
-        error?.response?.data?.detail ||
-        "Failed to update sync schedule. Please check your settings.";
-      toast.error(message);
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Failed to update sync schedule. Please check your settings.",
+        ),
+      );
     },
   });
 

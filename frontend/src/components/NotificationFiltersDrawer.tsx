@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, X } from "lucide-react";
-import { apiClient } from "../lib/api";
+import { toast } from "sonner";
+import { apiClient, getApiErrorMessage } from "../lib/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -55,9 +56,12 @@ export default function NotificationFiltersDrawer({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notificationSettings"] });
       setOpen(false);
+      toast.success("Notification filters saved.");
     },
     onError: (error) => {
-      console.error("Failed to update notification filters:", error);
+      toast.error(
+        getApiErrorMessage(error, "Failed to update notification filters."),
+      );
     },
   });
 

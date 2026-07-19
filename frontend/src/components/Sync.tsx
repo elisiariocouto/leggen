@@ -11,7 +11,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient } from "../lib/api";
+import { apiClient, getApiErrorMessage } from "../lib/api";
 import {
   Card,
   CardContent,
@@ -147,8 +147,10 @@ export default function Sync() {
       }
       invalidateSyncedData();
     },
-    onError: () => {
-      toast.error("Failed to trigger sync. Please try again.");
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(error, "Failed to trigger sync. Please try again."),
+      );
       queryClient.invalidateQueries({ queryKey: ["syncOperations"] });
     },
   });
@@ -218,16 +220,16 @@ export default function Sync() {
               <CardDescription className="mt-1.5">
                 <span className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className="gap-1">
-                    <CheckCircle className="h-3 w-3 text-green-600" />
+                    <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
                     {successCount} successful
                   </Badge>
                   <Badge variant="outline" className="gap-1">
-                    <AlertCircle className="h-3 w-3 text-red-600" />
+                    <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
                     {failedCount} failed
                   </Badge>
                   {runningCount > 0 && (
                     <Badge variant="outline" className="gap-1">
-                      <RefreshCw className="h-3 w-3 text-blue-600 animate-spin" />
+                      <RefreshCw className="h-3 w-3 text-blue-600 dark:text-blue-400 animate-spin" />
                       {runningCount} running
                     </Badge>
                   )}
@@ -313,10 +315,10 @@ export default function Sync() {
                         <div
                           className={`p-2 rounded-full ${
                             isRunning
-                              ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600"
+                              ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
                               : operation.success
-                                ? "bg-green-100 dark:bg-green-900/20 text-green-600"
-                                : "bg-red-100 dark:bg-red-900/20 text-red-600"
+                                ? "bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400"
+                                : "bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400"
                           }`}
                         >
                           {isRunning ? (
@@ -377,10 +379,10 @@ export default function Sync() {
                           <div
                             className={`p-2 rounded-full ${
                               isRunning
-                                ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600"
+                                ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
                                 : operation.success
-                                  ? "bg-green-100 dark:bg-green-900/20 text-green-600"
-                                  : "bg-red-100 dark:bg-red-900/20 text-red-600"
+                                  ? "bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400"
+                                  : "bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400"
                             }`}
                           >
                             {isRunning ? (

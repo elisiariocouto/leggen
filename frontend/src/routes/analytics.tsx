@@ -20,6 +20,7 @@ import { DateRangePicker } from "../components/filters/DateRangePicker";
 import type { DatePreset } from "../components/filters/DateRangePicker";
 import { AccountCombobox } from "../components/filters/AccountCombobox";
 import { Card, CardContent } from "../components/ui/card";
+import { Skeleton } from "../components/ui/skeleton";
 import { TIME_PERIODS } from "../lib/timePeriods";
 
 const analyticsPresets: DatePreset[] = TIME_PERIODS.map((p) => ({
@@ -47,10 +48,12 @@ function AnalyticsDashboard() {
     return `${format(from, "MMM d, yyyy")} – ${format(to, "MMM d, yyyy")}`;
   }, [startDate, endDate]);
 
-  // Fetch analytics data
+  // Fetch analytics data; placeholderData keeps the previous results visible
+  // while a filter change refetches, instead of flashing the loading state
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["transaction-stats", startDate, endDate, accountId],
     queryFn: () => apiClient.getTransactionStats(startDate, endDate, accountId),
+    placeholderData: (previousData) => previousData,
   });
 
   const { data: accounts, isLoading: accountsLoading } = useQuery({
@@ -62,6 +65,7 @@ function AnalyticsDashboard() {
     queryKey: ["historical-balances", startDate, endDate, accountId],
     queryFn: () =>
       apiClient.getHistoricalBalances(startDate, endDate, accountId),
+    placeholderData: (previousData) => previousData,
   });
 
   const isLoading = statsLoading || accountsLoading || balancesLoading;
@@ -71,17 +75,15 @@ function AnalyticsDashboard() {
   if (isLoading) {
     return (
       <div className="space-y-8">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-48 mb-6"></div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-24 bg-muted rounded"></div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="h-96 bg-muted rounded"></div>
-            <div className="h-96 bg-muted rounded"></div>
-          </div>
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96" />
         </div>
       </div>
     );

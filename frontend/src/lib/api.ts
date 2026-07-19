@@ -39,6 +39,18 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "/api/v1";
 // on update means "keep the current value"
 export const MASKED_SECRET = "***";
 
+// Standard error message for mutation failures: prefer the backend's
+// `detail` over Axios's generic message, falling back to `fallback`.
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const detail = error.response?.data?.detail;
+    if (typeof detail === "string" && detail.trim()) {
+      return detail;
+    }
+  }
+  return fallback;
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

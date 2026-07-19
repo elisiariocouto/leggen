@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Cloud, TestTube } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient, MASKED_SECRET } from "../lib/api";
+import { apiClient, getApiErrorMessage, MASKED_SECRET } from "../lib/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -58,12 +58,13 @@ export default function S3BackupConfigDrawer({
       setOpen(false);
       toast.success("S3 backup configuration saved successfully");
     },
-    onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
-      console.error("Failed to update S3 backup configuration:", error);
-      const message =
-        error?.response?.data?.detail ||
-        "Failed to save S3 configuration. Please check your settings and try again.";
-      toast.error(message);
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Failed to save S3 configuration. Please check your settings and try again.",
+        ),
+      );
     },
   });
 
@@ -84,12 +85,13 @@ export default function S3BackupConfigDrawer({
         );
       }
     },
-    onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
-      console.error("Failed to test S3 connection:", error);
-      const message =
-        error?.response?.data?.detail ||
-        "S3 connection test failed. Please verify your credentials and settings.";
-      toast.error(message);
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "S3 connection test failed. Please verify your credentials and settings.",
+        ),
+      );
     },
   });
 

@@ -20,7 +20,7 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { toast } from "sonner";
-import { apiClient } from "../lib/api";
+import { apiClient, getApiErrorMessage } from "../lib/api";
 import { formatDate } from "../lib/utils";
 import {
   Card,
@@ -32,6 +32,16 @@ import {
 import { Button } from "./ui/button";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Label } from "./ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 
 import AccountsSkeleton from "./AccountsSkeleton";
 import CategoryManager from "./CategoryManager";
@@ -50,6 +60,9 @@ import type {
 
 export default function Settings() {
   const [showBackups, setShowBackups] = useState(false);
+  const [deleteServiceTarget, setDeleteServiceTarget] = useState<string | null>(
+    null,
+  );
 
   const queryClient = useQueryClient();
 
@@ -113,9 +126,13 @@ export default function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notificationSettings"] });
       queryClient.invalidateQueries({ queryKey: ["notificationServices"] });
+      setDeleteServiceTarget(null);
+      toast.success("Notification service deleted.");
     },
-    onError: () => {
-      toast.error("Failed to delete notification service.");
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(error, "Failed to delete notification service."),
+      );
     },
   });
 
@@ -130,24 +147,15 @@ export default function Settings() {
         toast.error("Failed to create backup.");
       }
     },
-    onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
-      const message =
-        error?.response?.data?.detail ||
-        "Failed to create backup. Please check your S3 configuration.";
-      toast.error(message);
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Failed to create backup. Please check your S3 configuration.",
+        ),
+      );
     },
   });
-
-  // Notification handlers
-  const handleDeleteService = (serviceName: string) => {
-    if (
-      confirm(
-        `Are you sure you want to delete the ${serviceName} notification service?`,
-      )
-    ) {
-      deleteServiceMutation.mutate(serviceName.toLowerCase());
-    }
-  };
 
   // Backup handlers
   const handleCreateBackup = () => {
@@ -339,7 +347,9 @@ export default function Settings() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
-                                onClick={() => handleDeleteService(service.name)}
+                                onClick={() =>
+                                  setDeleteServiceTarget(service.name)
+                                }
                                 disabled={deleteServiceMutation.isPending}
                                 variant="ghost"
                                 size="icon"
@@ -593,6 +603,45 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+
+      {/* Delete Notification Service Dialog */}
+      <AlertDialog
+        open={!!deleteServiceTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteServiceTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Notification Service</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the{" "}
+              <span className="font-medium text-foreground capitalize">
+                {deleteServiceTarget}
+              </span>{" "}
+              notification service?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteServiceTarget) {
+                  deleteServiceMutation.mutate(
+                    deleteServiceTarget.toLowerCase(),
+                  );
+                }
+              }}
+              disabled={deleteServiceMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
