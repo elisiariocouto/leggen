@@ -187,7 +187,7 @@ export default function TelegramConfigDrawer({
               <div className="flex space-x-2">
                 <Button
                   type="submit"
-                  disabled={updateMutation.isPending || !config.enabled}
+                  disabled={updateMutation.isPending}
                 >
                   {updateMutation.isPending
                     ? "Saving..."

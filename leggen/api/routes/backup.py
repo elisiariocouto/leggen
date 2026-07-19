@@ -82,15 +82,17 @@ async def update_backup_settings(settings: BackupSettings) -> dict:
                 enabled=settings.s3.enabled,
             )
 
-            # Test connection
-            backup_service = BackupService()
-            connection_success = await backup_service.test_connection(s3_config)
+            # Test connection, unless the config is being disabled —
+            # turning S3 off must not require working credentials
+            if settings.s3.enabled:
+                backup_service = BackupService()
+                connection_success = await backup_service.test_connection(s3_config)
 
-            if not connection_success:
-                raise HTTPException(
-                    status_code=400,
-                    detail="S3 connection test failed. Please check your configuration.",
-                )
+                if not connection_success:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="S3 connection test failed. Please check your configuration.",
+                    )
 
             config.update_section(
                 "backup",

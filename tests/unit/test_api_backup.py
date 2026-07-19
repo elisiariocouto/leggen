@@ -108,6 +108,34 @@ class TestBackupAPI:
         assert "S3 connection test failed" in data["detail"]
 
     @patch("leggen.services.backup_service.BackupService.test_connection")
+    def test_update_backup_settings_disabled_skips_connection_test(
+        self, mock_test_connection, api_client, mock_config
+    ):
+        """Disabling S3 must save without requiring working credentials."""
+        mock_test_connection.return_value = False
+        mock_config._config["backup"] = {}
+
+        request_data = {
+            "s3": {
+                "access_key_id": "AKIATEST123",
+                "secret_access_key": "secret123",
+                "bucket_name": "test-bucket",
+                "region": "us-east-1",
+                "endpoint_url": None,
+                "path_style": False,
+                "enabled": False,
+            }
+        }
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.put("/api/v1/backup/settings", json=request_data)
+
+        assert response.status_code == 200
+        assert response.json()["updated"] is True
+        mock_test_connection.assert_not_called()
+        assert mock_config._config["backup"]["s3"]["enabled"] is False
+
+    @patch("leggen.services.backup_service.BackupService.test_connection")
     def test_update_backup_settings_masked_secrets_keep_stored_values(
         self, mock_test_connection, api_client, mock_config
     ):
