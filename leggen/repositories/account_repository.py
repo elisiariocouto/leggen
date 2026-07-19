@@ -44,16 +44,18 @@ class AccountRepository:
         with get_db_connection() as conn:
             cursor = conn.cursor()
 
-            # Check if account exists and preserve display_name
+            # Check if account exists and preserve display_name and logo
             cursor.execute(
-                "SELECT display_name FROM accounts WHERE id = ?",
+                "SELECT display_name, logo FROM accounts WHERE id = ?",
                 (account_data["id"],),
             )
             existing_row = cursor.fetchone()
             existing_display_name = existing_row[0] if existing_row else None
+            existing_logo = existing_row[1] if existing_row else None
 
-            # Use existing display_name if not provided in account_data
+            # Use existing values if not provided in account_data
             display_name = account_data.get("display_name", existing_display_name)
+            logo = account_data.get("logo") or existing_logo
 
             cursor.execute(
                 """INSERT OR REPLACE INTO accounts (
@@ -80,7 +82,7 @@ class AccountRepository:
                     account_data.get("last_accessed"),
                     account_data.get("last_updated", account_data["created"]),
                     display_name,
-                    account_data.get("logo"),
+                    logo,
                 ),
             )
             conn.commit()
