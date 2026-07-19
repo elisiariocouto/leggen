@@ -12,10 +12,23 @@ from leggen.utils.config import config
 
 
 class EnableBankingService:
+    JWT_TTL_SECONDS = 3600
+    ASPSPS_CACHE_TTL_SECONDS = 3600
+
     def __init__(self):
         self.config = config.enablebanking_config
         self.base_url = self.config.get("url", "https://api.enablebanking.com")
         self._private_key: Optional[str] = None
+        self._client: Optional[httpx.AsyncClient] = None
+        self._jwt_token: Optional[str] = None
+        self._jwt_expires_at: float = 0.0
+        self._aspsps_cache: Dict[str, tuple[float, list[Dict[str, Any]]]] = {}
+
+    def _get_client(self) -> httpx.AsyncClient:
+        """Return the shared HTTP client, creating it on first use."""
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(timeout=30)
+        return self._client
 
     def _load_private_key(self) -> str:
         """Load RSA private key from the configured file path."""
@@ -25,23 +38,31 @@ class EnableBankingService:
         return self._private_key
 
     def _generate_jwt(self) -> str:
-        """Generate a JWT token for EnableBanking API authentication."""
+        """Return a JWT for EnableBanking API auth, cached until near expiry."""
+        now = time.time()
+        if self._jwt_token is not None and now < self._jwt_expires_at - 60:
+            return self._jwt_token
+
         application_id = self.config["application_id"]
         private_key = self._load_private_key()
-        now = int(time.time())
+        iat = int(now)
 
         payload = {
             "iss": "enablebanking.com",
             "aud": "api.enablebanking.com",
-            "iat": now,
-            "exp": now + 3600,
+            "iat": iat,
+            "exp": iat + self.JWT_TTL_SECONDS,
         }
 
         headers = {
             "kid": application_id,
         }
 
-        return jwt.encode(payload, private_key, algorithm="RS256", headers=headers)
+        self._jwt_token = jwt.encode(
+            payload, private_key, algorithm="RS256", headers=headers
+        )
+        self._jwt_expires_at = iat + self.JWT_TTL_SECONDS
+        return self._jwt_token
 
     async def _make_request(self, method: str, path: str, **kwargs) -> Dict[str, Any]:
         """Make an authenticated request to the EnableBanking API."""
@@ -53,22 +74,27 @@ class EnableBankingService:
             "Content-Type": "application/json",
         }
 
-        async with httpx.AsyncClient() as client:
-            response = await client.request(
-                method, url, headers=headers, timeout=30, **kwargs
-            )
-            logger.debug(f"{method} {url} -> {response.status_code}")
-            if response.status_code >= 400:
-                logger.error(f"{method} {url} error response body: {response.text}")
-            response.raise_for_status()
-            result = response.json()
-            logger.debug(f"{method} {url} response: {result}")
-            return result
+        response = await self._get_client().request(
+            method, url, headers=headers, **kwargs
+        )
+        logger.debug(f"{method} {url} -> {response.status_code}")
+        if response.status_code >= 400:
+            logger.error(f"{method} {url} error response body: {response.text}")
+        response.raise_for_status()
+        result = response.json()
+        logger.debug(f"{method} {url} response: {result}")
+        return result
 
     async def get_aspsps(self, country: str) -> list[Dict[str, Any]]:
-        """Get available ASPSPs (banks) for a country."""
+        """Get available ASPSPs (banks) for a country, cached per country."""
+        cached = self._aspsps_cache.get(country)
+        if cached and time.time() - cached[0] < self.ASPSPS_CACHE_TTL_SECONDS:
+            return cached[1]
+
         result = await self._make_request("GET", "/aspsps", params={"country": country})
-        return result.get("aspsps", [])
+        aspsps = result.get("aspsps", [])
+        self._aspsps_cache[country] = (time.time(), aspsps)
+        return aspsps
 
     async def start_auth(
         self,
@@ -107,10 +133,6 @@ class EnableBankingService:
     async def create_session(self, code: str) -> Dict[str, Any]:
         """Exchange authorization code for a session."""
         return await self._make_request("POST", "/sessions", json={"code": code})
-
-    async def get_session(self, session_id: str) -> Dict[str, Any]:
-        """Get session details."""
-        return await self._make_request("GET", f"/sessions/{session_id}")
 
     async def get_account_details(self, account_id: str) -> Dict[str, Any]:
         """Get account details."""
