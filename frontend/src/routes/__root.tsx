@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { AppSidebar } from "../components/AppSidebar";
 import { SiteHeader } from "../components/SiteHeader";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { SidebarInset, SidebarProvider } from "../components/ui/sidebar";
 import { Toaster } from "../components/ui/sonner";
 
@@ -29,7 +30,9 @@ function RootLayout() {
   if (isLoginPage) {
     return (
       <>
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
         <Toaster />
       </>
     );
@@ -52,7 +55,9 @@ function RootLayout() {
       <SidebarInset>
         <SiteHeader />
         <main className="flex-1 p-6 min-w-0">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </SidebarInset>
 
