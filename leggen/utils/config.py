@@ -160,6 +160,10 @@ class Config:
 
 
 def load_config(ctx: click.Context, _, filename):
+    # Help output must not require a config file (same guard as leggen.main.cli)
+    if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
+        return
+
     try:
         with click.open_file(str(filename), "rb") as f:
             raw_config = tomllib.load(f)
@@ -174,7 +178,7 @@ def load_config(ctx: click.Context, _, filename):
 
     except FileNotFoundError:
         error(
-            "Configuration file not found. Provide a valid configuration file path with leggen --config <path> or LEGGEN_CONFIG=<path> environment variable."
+            "Configuration file not found. Provide a valid configuration file path with leggen --config <path> or LEGGEN_CONFIG_FILE=<path> environment variable."
         )
         sys.exit(1)
 

@@ -10,10 +10,33 @@ from leggen.utils.config import config
 class BackgroundScheduler:
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
-        self.sync_service = SyncService()
-        self.notification_service = NotificationService()
         self.max_retries = 3
         self.retry_delay = 300  # 5 minutes
+        self._sync_service: SyncService | None = None
+        self._notification_service: NotificationService | None = None
+
+    # Services are created lazily: this module's singleton is imported by
+    # route modules and the CLI, and constructing the services reads the
+    # config file and touches the database.
+    @property
+    def sync_service(self) -> SyncService:
+        if self._sync_service is None:
+            self._sync_service = SyncService()
+        return self._sync_service
+
+    @sync_service.setter
+    def sync_service(self, value: SyncService) -> None:
+        self._sync_service = value
+
+    @property
+    def notification_service(self) -> NotificationService:
+        if self._notification_service is None:
+            self._notification_service = NotificationService()
+        return self._notification_service
+
+    @notification_service.setter
+    def notification_service(self, value: NotificationService) -> None:
+        self._notification_service = value
 
     def start(self):
         """Start the scheduler and configure sync jobs based on configuration"""

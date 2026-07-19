@@ -15,7 +15,6 @@ from leggen.utils.config import config
 from leggen.utils.masking import mask_secret, resolve_secret
 
 router = APIRouter()
-notification_service = NotificationService()
 
 
 @router.get("/notifications/settings")
@@ -124,7 +123,7 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
 async def test_notification(test_request: NotificationTest) -> dict:
     """Send a test notification"""
     try:
-        success = await notification_service.send_test_notification(
+        success = await NotificationService().send_test_notification(
             test_request.service, test_request.message
         )
 

@@ -13,7 +13,6 @@ from leggen.background.scheduler import scheduler
 from leggen.utils.config import config
 
 router = APIRouter()
-sync_service = scheduler.sync_service
 
 
 @router.post("/sync")
@@ -21,7 +20,7 @@ async def trigger_sync(sync_request: Optional[SyncRequest] = None) -> SyncResult
     """Run sync synchronously and return results"""
     try:
         full_sync = sync_request.full_sync if sync_request else False
-        result = await sync_service.sync_all_accounts(full_sync, "api")
+        result = await scheduler.sync_service.sync_all_accounts(full_sync, "api")
 
         return result
 
