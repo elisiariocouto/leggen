@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
-import { cn } from "../../lib/utils";
+import { cn, formatCurrency } from "../../lib/utils";
 import apiClient from "../../lib/api";
 
 interface MonthlyTrendsProps {
@@ -69,6 +69,8 @@ export default function MonthlyTrends({
     );
   }
 
+  const currency = monthlyData[0]?.currency ?? "EUR";
+
   const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
@@ -76,7 +78,7 @@ export default function MonthlyTrends({
           <p className="font-medium text-foreground">{label}</p>
           {payload.map((entry, index) => (
             <p key={index} style={{ color: entry.color }}>
-              {entry.name}: €{Math.abs(entry.value).toLocaleString()}
+              {entry.name}: {formatCurrency(Math.abs(entry.value), currency)}
             </p>
           ))}
         </div>
@@ -106,7 +108,7 @@ export default function MonthlyTrends({
             />
             <YAxis
               tick={{ fontSize: 12 }}
-              tickFormatter={(value) => `€${value.toLocaleString()}`}
+              tickFormatter={(value) => formatCurrency(value, currency)}
             />
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="income" fill="#10B981" name="Income" />

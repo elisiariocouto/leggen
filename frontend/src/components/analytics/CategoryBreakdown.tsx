@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
-import { cn } from "../../lib/utils";
+import { cn, formatCurrency } from "../../lib/utils";
 import { BlurredValue } from "../ui/blurred-value";
 import apiClient from "../../lib/api";
 import type { CategoryStats } from "../../types/api";
@@ -75,6 +75,7 @@ export default function CategoryBreakdown({
   }
 
   const totalExpenses = chartData.reduce((sum, cat) => sum + cat.expenses, 0);
+  const currency = chartData[0]?.currency ?? "EUR";
 
   const CustomTooltip = ({ active, payload }: TooltipProps) => {
     if (active && payload && payload.length) {
@@ -84,11 +85,11 @@ export default function CategoryBreakdown({
         <div className="bg-card p-3 border rounded shadow-lg">
           <p className="font-medium text-foreground">{data.category_name}</p>
           <p style={{ color: data.category_color }}>
-            Expenses: €{data.expenses.toLocaleString()}
+            Expenses: {formatCurrency(data.expenses, currency)}
           </p>
           {data.income > 0 && (
             <p className="text-green-600">
-              Income: €{data.income.toLocaleString()}
+              Income: {formatCurrency(data.income, currency)}
             </p>
           )}
           <p className="text-muted-foreground">
@@ -122,7 +123,7 @@ export default function CategoryBreakdown({
             <XAxis
               type="number"
               tick={{ fontSize: 12 }}
-              tickFormatter={(value) => `€${value.toLocaleString()}`}
+              tickFormatter={(value) => formatCurrency(value, currency)}
             />
             <YAxis
               type="category"
@@ -142,7 +143,7 @@ export default function CategoryBreakdown({
       <div className="mt-4 text-sm text-muted-foreground text-center">
         Total expenses:{" "}
         <span className="font-medium text-foreground">
-          <BlurredValue>€{totalExpenses.toLocaleString()}</BlurredValue>
+          <BlurredValue>{formatCurrency(totalExpenses, currency)}</BlurredValue>
         </span>
         {" · "}
         {chartData.length} categories

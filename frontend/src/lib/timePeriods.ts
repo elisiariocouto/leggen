@@ -1,11 +1,15 @@
+import { format } from "date-fns";
+
 export type TimePeriod = {
   label: string;
   value: string;
   getDateRange: () => { startDate: string; endDate: string };
 };
 
+// Format in local time — toISOString() converts to UTC first, which shifts
+// the date by one day for anyone east of Greenwich
 function toISODate(date: Date): string {
-  return date.toISOString().split("T")[0];
+  return format(date, "yyyy-MM-dd");
 }
 
 export const TIME_PERIODS: TimePeriod[] = [

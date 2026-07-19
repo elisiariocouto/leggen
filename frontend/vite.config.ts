@@ -29,7 +29,7 @@ export default defineConfig({
             name: "Transactions",
             short_name: "Transactions",
             description: "View and manage transactions",
-            url: "/transactions",
+            url: "/",
             icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }],
           },
           {

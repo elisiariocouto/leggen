@@ -12,17 +12,22 @@ import { apiClient } from "../lib/api";
 
 function BankConnected() {
   const search = useSearch({ from: "/bank-connected" });
+  const missingState = Boolean(search?.code && !search?.state);
   const [status, setStatus] = useState<"loading" | "success" | "error">(
-    search?.code ? "loading" : "success",
+    search?.code ? (missingState ? "error" : "loading") : "success",
   );
-  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string>(
+    missingState
+      ? "The bank redirect is missing the authorization state. Please restart the connection flow."
+      : "",
+  );
   const exchangedRef = useRef(false);
 
   useEffect(() => {
-    if (search?.code && !exchangedRef.current) {
+    if (search?.code && search?.state && !exchangedRef.current) {
       exchangedRef.current = true;
       apiClient
-        .exchangeAuthCode(search.code)
+        .exchangeAuthCode(search.code, search.state)
         .then(() => {
           setStatus("success");
         })
@@ -33,7 +38,7 @@ function BankConnected() {
           );
         });
     }
-  }, [search?.code]);
+  }, [search?.code, search?.state]);
 
   if (status === "loading") {
     return (
@@ -119,6 +124,7 @@ export const Route = createFileRoute("/bank-connected")({
   validateSearch: (search: Record<string, unknown>) => {
     return {
       code: (search.code as string) || undefined,
+      state: (search.state as string) || undefined,
     };
   },
 });

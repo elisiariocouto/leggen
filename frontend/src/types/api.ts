@@ -97,10 +97,12 @@ export interface CategoryStats {
   transaction_count: number;
   income: number;
   expenses: number;
+  currency?: string | null;
 }
 
+// Mirrors leggen/api/models/accounts.py Transaction/TransactionSummary
 export interface Transaction {
-  transaction_id: string; // NEW: stable bank-provided transaction ID
+  transaction_id: string; // stable bank-provided transaction ID
   internal_transaction_id: string | null;
   account_id: string;
   transaction_value: number;
@@ -108,39 +110,14 @@ export interface Transaction {
   description: string;
   transaction_date: string;
   transaction_status: string;
-  // Optional fields that may be present in some transactions
+  // Only present when summary_only=false
   institution_id?: string;
   iban?: string;
-  booking_date?: string;
-  value_date?: string;
-  creditor_name?: string;
-  debtor_name?: string;
-  reference?: string;
   category_id?: number;
   category_name?: string;
   category_color?: string;
-  created_at?: string;
-  updated_at?: string;
   // Raw transaction data (only present when summary_only=false)
   raw_transaction?: RawTransactionData;
-}
-
-// Type for raw transaction data from API (before sanitization)
-export interface RawTransaction {
-  id?: string;
-  internal_id?: string;
-  account_id?: string;
-  amount?: number;
-  currency?: string;
-  description?: string;
-  transaction_date?: string;
-  booking_date?: string;
-  value_date?: string;
-  creditor_name?: string;
-  debtor_name?: string;
-  reference?: string;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface Balance {
@@ -232,6 +209,8 @@ export interface TransactionStats {
   total_transactions: number;
   booked_transactions: number;
   pending_transactions: number;
+  /** Money totals cover only the dominant currency of the filtered set. */
+  currency?: string | null;
   total_income: number;
   total_expenses: number;
   net_change: number;
@@ -244,6 +223,7 @@ export interface MonthlyStats {
   income: number;
   expenses: number;
   net: number;
+  currency?: string | null;
 }
 
 // Sync operations types

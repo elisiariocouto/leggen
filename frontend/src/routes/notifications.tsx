@@ -1,6 +1,0 @@
-import { createFileRoute } from "@tanstack/react-router";
-import Sync from "../components/Sync";
-
-export const Route = createFileRoute("/notifications")({
-  component: Sync,
-});

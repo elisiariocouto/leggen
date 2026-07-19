@@ -9,7 +9,7 @@ import {
   Legend,
 } from "recharts";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
-import { cn } from "../../lib/utils";
+import { cn, dominantCurrency, formatCurrency } from "../../lib/utils";
 import type { Balance, Account } from "../../types/api";
 
 interface BalanceChartProps {
@@ -76,9 +76,13 @@ export default function BalanceChart({
     }
     return `Account ${accountId.split("-")[1]}`;
   };
+  // Stacked areas only make sense in one currency — keep the dominant one
+  const currency = dominantCurrency(data.map((balance) => balance.currency));
+
   // Process balance data for the chart
   // Backend already picks the best balance type per account, so no client-side type filtering needed
   const chartData = data
+    .filter((balance) => (balance.currency || currency) === currency)
     .map((balance) => ({
       date: new Date(balance.reference_date).toLocaleDateString("en-GB"), // DD/MM/YYYY format
       balance: balance.balance_amount,
@@ -125,8 +129,8 @@ export default function BalanceChart({
           <p className="font-medium text-foreground">Date: {label}</p>
           {payload.map((entry, index) => (
             <p key={index} style={{ color: entry.color }}>
-              {getAccountDisplayName(entry.name)}: €
-              {entry.value.toLocaleString()}
+              {getAccountDisplayName(entry.name)}:{" "}
+              {formatCurrency(entry.value, currency)}
             </p>
           ))}
         </div>
@@ -172,7 +176,7 @@ export default function BalanceChart({
             />
             <YAxis
               tick={{ fontSize: 12 }}
-              tickFormatter={(value) => `€${value.toLocaleString()}`}
+              tickFormatter={(value) => formatCurrency(value, currency)}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />

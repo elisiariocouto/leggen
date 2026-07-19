@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Calendar as CalendarIcon, ChevronDown } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 
@@ -43,25 +43,27 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
 
-  // Convert string dates to Date objects for the calendar
+  // Convert string dates to Date objects for the calendar.
+  // parseISO/format work in local time — new Date("YYYY-MM-DD") and
+  // toISOString() go through UTC and shift the date in non-UTC zones.
   const dateRange: DateRange | undefined =
     startDate && endDate
       ? {
-          from: new Date(startDate),
-          to: new Date(endDate),
+          from: parseISO(startDate),
+          to: parseISO(endDate),
         }
       : undefined;
 
   const handleDateRangeSelect = (range: DateRange | undefined) => {
     if (range?.from && range?.to) {
       onDateRangeChange(
-        range.from.toISOString().split("T")[0],
-        range.to.toISOString().split("T")[0],
+        format(range.from, "yyyy-MM-dd"),
+        format(range.to, "yyyy-MM-dd"),
       );
     } else if (range?.from && !range?.to) {
       onDateRangeChange(
-        range.from.toISOString().split("T")[0],
-        range.from.toISOString().split("T")[0],
+        format(range.from, "yyyy-MM-dd"),
+        format(range.from, "yyyy-MM-dd"),
       );
     }
   };
@@ -89,8 +91,8 @@ export function DateRangePicker({
       return matchingPresetLabel;
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = parseISO(startDate);
+    const end = parseISO(endDate);
 
     if (startDate === endDate) {
       return format(start, "MMM d, yyyy");

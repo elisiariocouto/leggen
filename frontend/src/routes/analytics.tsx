@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
+import { formatCurrency } from "../lib/utils";
 import StatCard from "../components/analytics/StatCard";
 import BalanceChart from "../components/analytics/BalanceChart";
 import TransactionDistribution from "../components/analytics/TransactionDistribution";
@@ -65,6 +66,8 @@ function AnalyticsDashboard() {
 
   const isLoading = statsLoading || accountsLoading || balancesLoading;
 
+  const statsCurrency = stats?.currency ?? "EUR";
+
   if (isLoading) {
     return (
       <div className="space-y-8">
@@ -113,7 +116,7 @@ function AnalyticsDashboard() {
         />
         <StatCard
           title="Total Income"
-          value={`€${(stats?.total_income || 0).toLocaleString()}`}
+          value={formatCurrency(stats?.total_income || 0, statsCurrency)}
           subtitle="Inflows this period"
           icon={TrendingUp}
           iconColor="green"
@@ -121,7 +124,7 @@ function AnalyticsDashboard() {
         />
         <StatCard
           title="Total Expenses"
-          value={`€${(stats?.total_expenses || 0).toLocaleString()}`}
+          value={formatCurrency(stats?.total_expenses || 0, statsCurrency)}
           subtitle="Outflows this period"
           icon={TrendingDown}
           iconColor="red"
@@ -129,7 +132,7 @@ function AnalyticsDashboard() {
         />
         <StatCard
           title="Net Change"
-          value={`€${(stats?.net_change || 0).toLocaleString()}`}
+          value={formatCurrency(stats?.net_change || 0, statsCurrency)}
           subtitle="Income minus expenses"
           icon={CreditCard}
           iconColor={(stats?.net_change || 0) >= 0 ? "green" : "red"}
@@ -137,7 +140,10 @@ function AnalyticsDashboard() {
         />
         <StatCard
           title="Average Transaction"
-          value={`€${Math.abs(stats?.average_transaction || 0).toLocaleString()}`}
+          value={formatCurrency(
+            Math.abs(stats?.average_transaction || 0),
+            statsCurrency,
+          )}
           subtitle="Per transaction"
           icon={Activity}
           iconColor="purple"

@@ -107,7 +107,30 @@ export default function Sync() {
   } = useQuery<SyncOperationsResponse>({
     queryKey: ["syncOperations"],
     queryFn: () => apiClient.getSyncOperations(10, 0), // Get latest 10 operations
+    // Keep polling while an operation is running (e.g. a scheduled sync),
+    // otherwise its spinner never resolves
+    refetchInterval: (query) =>
+      query.state.data?.operations.some((op) => !op.completed_at)
+        ? 5000
+        : false,
   });
+
+  // Synced data changed — refetch everything derived from it
+  const invalidateSyncedData = () => {
+    for (const key of [
+      "syncOperations",
+      "accounts",
+      "transactions",
+      "transactionStats",
+      "transaction-stats",
+      "monthly-stats",
+      "category-stats",
+      "historical-balances",
+      "banks",
+    ]) {
+      queryClient.invalidateQueries({ queryKey: [key] });
+    }
+  };
 
   const syncMutation = useMutation({
     mutationFn: (params?: { full_sync?: boolean }) =>
@@ -122,10 +145,11 @@ export default function Sync() {
           `Sync finished with errors: ${result.errors.join(", ") || "Unknown error"}`,
         );
       }
-      queryClient.invalidateQueries({ queryKey: ["syncOperations"] });
+      invalidateSyncedData();
     },
     onError: () => {
       toast.error("Failed to trigger sync. Please try again.");
+      queryClient.invalidateQueries({ queryKey: ["syncOperations"] });
     },
   });
 

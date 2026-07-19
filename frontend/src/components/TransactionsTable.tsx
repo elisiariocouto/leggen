@@ -1,25 +1,18 @@
 import { useState, useEffect, useMemo } from "react";
+import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import type {
-  ColumnDef,
-  SortingState,
-  ColumnFiltersState,
-} from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   TrendingUp,
   TrendingDown,
   RefreshCw,
   AlertCircle,
   Eye,
-  ChevronUp,
-  ChevronDown,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
@@ -63,10 +56,6 @@ export default function TransactionsTable() {
     filterState.searchTerm,
   );
 
-  // Table state (remove pagination from table)
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-
   // Helper function to update filter state
   const handleFilterChange = (key: keyof FilterState, value: string) => {
     setFilterState((prev) => ({ ...prev, [key]: value }));
@@ -81,7 +70,6 @@ export default function TransactionsTable() {
       startDate: "",
       endDate: "",
     });
-    setColumnFilters([]);
     setCurrentPage(1);
   };
 
@@ -169,13 +157,14 @@ export default function TransactionsTable() {
       const startDateParam = hasDateFilter
         ? filterState.startDate || "2000-01-01"
         : undefined;
+      const today = format(new Date(), "yyyy-MM-dd");
       const endDateParam = hasDateFilter
-        ? filterState.endDate || new Date().toISOString().split("T")[0]
+        ? filterState.endDate || today
         : undefined;
 
       return apiClient.getTransactionStats(
         startDateParam ?? "2000-01-01",
-        endDateParam ?? new Date().toISOString().split("T")[0],
+        endDateParam ?? today,
         filterState.selectedAccount || undefined,
         debouncedSearchTerm || undefined,
         undefined,
@@ -186,11 +175,11 @@ export default function TransactionsTable() {
     placeholderData: (previousData) => previousData,
   });
 
-  // Get currency from first transaction, fallback to EUR
+  // Stats totals are per dominant currency (reported by the backend);
+  // fall back to the current page's currency
   const displayCurrency =
-    transactions.length > 0
-      ? transactions[0].transaction_currency
-      : "EUR";
+    statsData?.currency ??
+    (transactions.length > 0 ? transactions[0].transaction_currency : "EUR");
 
   // Check if search is currently debouncing
   const isSearchLoading = filterState.searchTerm !== debouncedSearchTerm;
@@ -259,15 +248,6 @@ export default function TransactionsTable() {
                     {account.display_name || "Unnamed Account"}
                   </p>
                 )}
-                {(transaction.creditor_name || transaction.debtor_name) && (
-                  <p className="truncate">
-                    {isPositive ? "From: " : "To: "}
-                    {transaction.creditor_name || transaction.debtor_name}
-                  </p>
-                )}
-                {transaction.reference && (
-                  <p className="truncate">Ref: {transaction.reference}</p>
-                )}
               </div>
             </div>
           </div>
@@ -290,7 +270,6 @@ export default function TransactionsTable() {
           />
         );
       },
-      enableSorting: false,
     },
     {
       accessorKey: "transaction_value",
@@ -316,7 +295,6 @@ export default function TransactionsTable() {
           </div>
         );
       },
-      sortingFn: "basic",
     },
     {
       accessorKey: "transaction_date",
@@ -328,16 +306,9 @@ export default function TransactionsTable() {
             {transaction.transaction_date
               ? formatDate(transaction.transaction_date)
               : "No date"}
-            {transaction.booking_date &&
-              transaction.booking_date !== transaction.transaction_date && (
-                <p className="text-xs text-muted-foreground">
-                  Booked: {formatDate(transaction.booking_date)}
-                </p>
-              )}
           </div>
         );
       },
-      sortingFn: "datetime",
     },
     {
       id: "actions",
@@ -359,38 +330,12 @@ export default function TransactionsTable() {
     },
   ];
 
+  // Filtering, sorting, and pagination all happen server-side — the table
+  // only renders the current page as-is.
   const table = useReactTable({
     data: transactions,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter: filterState.searchTerm,
-    },
-    onGlobalFilterChange: (value: string) =>
-      handleFilterChange("searchTerm", value),
-    globalFilterFn: (row, _columnId, filterValue) => {
-      // Custom global filter that searches multiple fields
-      const transaction = row.original;
-      const searchLower = filterValue.toLowerCase();
-
-      const description = transaction.description || "";
-      const creditorName = transaction.creditor_name || "";
-      const debtorName = transaction.debtor_name || "";
-      const reference = transaction.reference || "";
-
-      return (
-        description.toLowerCase().includes(searchLower) ||
-        creditorName.toLowerCase().includes(searchLower) ||
-        debtorName.toLowerCase().includes(searchLower) ||
-        reference.toLowerCase().includes(searchLower)
-      );
-    },
   });
 
   if (transactionsLoading) {
@@ -476,37 +421,14 @@ export default function TransactionsTable() {
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted"
-                      onClick={header.column.getToggleSortingHandler()}
+                      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
                     >
-                      <div className="flex items-center space-x-1">
-                        <span>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
-                        </span>
-                        {header.column.getCanSort() && (
-                          <div className="flex flex-col">
-                            <ChevronUp
-                              className={`h-3 w-3 ${
-                                header.column.getIsSorted() === "asc"
-                                  ? "text-primary"
-                                  : "text-muted-foreground"
-                              }`}
-                            />
-                            <ChevronDown
-                              className={`h-3 w-3 -mt-1 ${
-                                header.column.getIsSorted() === "desc"
-                                  ? "text-primary"
-                                  : "text-muted-foreground"
-                              }`}
-                            />
-                          </div>
-                        )}
-                      </div>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                     </th>
                   ))}
                 </tr>
@@ -604,31 +526,10 @@ export default function TransactionsTable() {
                                   {account.display_name || "Unnamed Account"}
                                 </p>
                               )}
-                              {(transaction.creditor_name ||
-                                transaction.debtor_name) && (
-                                <p className="break-words">
-                                  {isPositive ? "From: " : "To: "}
-                                  {transaction.creditor_name ||
-                                    transaction.debtor_name}
-                                </p>
-                              )}
-                              {transaction.reference && (
-                                <p className="break-words">
-                                  Ref: {transaction.reference}
-                                </p>
-                              )}
                               <p className="text-muted-foreground">
                                 {transaction.transaction_date
                                   ? formatDate(transaction.transaction_date)
                                   : "No date"}
-                                {transaction.booking_date &&
-                                  transaction.booking_date !==
-                                    transaction.transaction_date && (
-                                    <span className="ml-2">
-                                      (Booked:{" "}
-                                      {formatDate(transaction.booking_date)})
-                                    </span>
-                                  )}
                               </p>
                               <div className="mt-1">
                                 <CategoryBadge

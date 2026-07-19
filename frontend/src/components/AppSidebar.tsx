@@ -59,11 +59,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     (a) => a.status.toLowerCase() !== "deleted",
   );
 
-  const totalBalance =
-    activeAccounts?.reduce((sum, account) => {
-      const primaryBalance = account.balances?.[0]?.amount || 0;
-      return sum + primaryBalance;
-    }, 0) || 0;
+  // One total per currency — amounts in different currencies can't be summed
+  const totalsByCurrency = (activeAccounts || []).reduce(
+    (totals, account) => {
+      const primaryBalance = account.balances?.[0];
+      if (!primaryBalance) return totals;
+      const currency = primaryBalance.currency || account.currency || "EUR";
+      totals[currency] = (totals[currency] || 0) + primaryBalance.amount;
+      return totals;
+    },
+    {} as Record<string, number>,
+  );
+  const totalEntries = Object.entries(totalsByCurrency).sort(
+    ([, a], [, b]) => b - a,
+  );
 
   // Handler to close mobile sidebar when navigation item is clicked
   const handleNavigationClick = () => {
@@ -128,9 +137,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </span>
                 <TrendingUp className="h-4 w-4 text-green-500" />
               </div>
-              <p className="text-xl font-bold text-foreground mt-1">
-                <BlurredValue>{formatCurrency(totalBalance)}</BlurredValue>
-              </p>
+              {totalEntries.length === 0 ? (
+                <p className="text-xl font-bold text-foreground mt-1">
+                  <BlurredValue>{formatCurrency(0)}</BlurredValue>
+                </p>
+              ) : (
+                totalEntries.map(([currency, total]) => (
+                  <p
+                    key={currency}
+                    className="text-xl font-bold text-foreground mt-1"
+                  >
+                    <BlurredValue>
+                      {formatCurrency(total, currency)}
+                    </BlurredValue>
+                  </p>
+                ))
+              )}
               <p className="text-sm text-muted-foreground">
                 {activeAccounts?.length || 0} accounts
               </p>

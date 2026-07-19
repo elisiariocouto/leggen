@@ -323,10 +323,11 @@ export const apiClient = {
 
   exchangeAuthCode: async (
     code: string,
+    state: string,
   ): Promise<Record<string, unknown>> => {
     const response = await api.post<Record<string, unknown>>(
       "/banks/callback",
-      { code },
+      { code, state },
     );
     return response.data;
   },

@@ -7,6 +7,7 @@ import {
   Legend,
 } from "recharts";
 import { BlurredValue } from "../ui/blurred-value";
+import { dominantCurrency, formatCurrency } from "../../lib/utils";
 import type { Account } from "../../types/api";
 
 interface TransactionDistributionProps {
@@ -50,18 +51,32 @@ export default function TransactionDistribution({
     return `${bankName} - ${accountName}`;
   };
 
+  // A share-of-total pie only makes sense in one currency — keep accounts
+  // whose primary balance is in the dominant one
+  const currency = dominantCurrency(
+    accounts.map(
+      (account) => account.balances?.[0]?.currency || account.currency,
+    ),
+  );
+
   // Create pie chart data from account balances
-  const pieData: PieDataPoint[] = accounts.map((account, index) => {
-    const primaryBalance = account.balances?.[0]?.amount || 0;
+  const pieData: PieDataPoint[] = accounts
+    .filter(
+      (account) =>
+        (account.balances?.[0]?.currency || account.currency || currency) ===
+        currency,
+    )
+    .map((account, index) => {
+      const primaryBalance = account.balances?.[0]?.amount || 0;
 
-    const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
+      const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
 
-    return {
-      name: getAccountDisplayName(account),
-      value: primaryBalance,
-      color: colors[index % colors.length],
-    };
-  });
+      return {
+        name: getAccountDisplayName(account),
+        value: primaryBalance,
+        color: colors[index % colors.length],
+      };
+    });
 
   const totalBalance = pieData.reduce((sum, item) => sum + item.value, 0);
 
@@ -87,7 +102,7 @@ export default function TransactionDistribution({
           <p className="font-medium text-foreground">{data.name}</p>
           <p className="text-primary">
             Balance:{" "}
-            <BlurredValue>€{data.value.toLocaleString()}</BlurredValue>
+            <BlurredValue>{formatCurrency(data.value, currency)}</BlurredValue>
           </p>
           <p className="text-muted-foreground">{percentage}% of total</p>
         </div>
@@ -140,7 +155,7 @@ export default function TransactionDistribution({
               <span className="text-foreground">{item.name}</span>
             </div>
             <span className="font-medium text-foreground">
-              <BlurredValue>€{item.value.toLocaleString()}</BlurredValue>
+              <BlurredValue>{formatCurrency(item.value, currency)}</BlurredValue>
             </span>
           </div>
         ))}
