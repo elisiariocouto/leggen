@@ -139,7 +139,7 @@ async def get_all_transactions(
     except Exception as e:
         logger.error(f"Failed to get transactions from database: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get transactions: {str(e)}"
+            status_code=500, detail="Failed to get transactions."
         ) from e
 
 
@@ -274,7 +274,7 @@ async def get_transaction_stats(
     except Exception as e:
         logger.error(f"Failed to get transaction stats from database: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get transaction stats: {str(e)}"
+            status_code=500, detail="Failed to get transaction stats."
         ) from e
 
 
@@ -298,5 +298,5 @@ async def get_stats_by_category(
     except Exception as e:
         logger.error(f"Failed to get category stats: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get category stats: {str(e)}"
+            status_code=500, detail="Failed to get category stats."
         ) from e

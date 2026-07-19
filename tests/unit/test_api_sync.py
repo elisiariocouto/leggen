@@ -8,7 +8,7 @@ import pytest
 from leggen.api.models.sync import SyncResult
 from leggen.background.scheduler import scheduler
 from leggen.repositories import AccountRepository
-from leggen.services.sync_service import SyncService
+from leggen.services.sync_service import SyncAlreadyRunningError, SyncService
 
 
 def _sync_result() -> SyncResult:
@@ -103,6 +103,30 @@ class TestSyncAPI:
         mock_sync_service.sync_all_accounts.assert_called_once_with(
             True, "api", account_ids=None
         )
+
+    def test_sync_already_running_returns_409(
+        self, fastapi_app, api_client, mock_db_path, mock_sync_service
+    ):
+        mock_sync_service.sync_all_accounts.side_effect = SyncAlreadyRunningError(
+            "Sync is already running"
+        )
+
+        response = api_client.post("/api/v1/sync")
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "Sync is already running."
+
+    def test_sync_failure_returns_sanitized_500(
+        self, fastapi_app, api_client, mock_db_path, mock_sync_service
+    ):
+        mock_sync_service.sync_all_accounts.side_effect = Exception(
+            "sqlite3.OperationalError: /secret/path/leggen.db is locked"
+        )
+
+        response = api_client.post("/api/v1/sync")
+
+        assert response.status_code == 500
+        assert response.json()["detail"] == "Failed to run sync."
 
 
 @pytest.mark.unit

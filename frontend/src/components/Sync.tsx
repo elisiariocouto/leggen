@@ -37,7 +37,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import type { SyncOperationsResponse, SyncOperation } from "../types/api";
+import type { PaginatedResponse, SyncOperation } from "../types/api";
 
 // Component for viewing sync operation logs
 function LogsDialog({ operation }: { operation: SyncOperation }) {
@@ -104,15 +104,13 @@ export default function Sync() {
     isLoading: syncOperationsLoading,
     error: syncOperationsError,
     refetch: refetchSyncOperations,
-  } = useQuery<SyncOperationsResponse>({
+  } = useQuery<PaginatedResponse<SyncOperation>>({
     queryKey: ["syncOperations"],
-    queryFn: () => apiClient.getSyncOperations(10, 0), // Get latest 10 operations
+    queryFn: () => apiClient.getSyncOperations(1, 10), // Get latest 10 operations
     // Keep polling while an operation is running (e.g. a scheduled sync),
     // otherwise its spinner never resolves
     refetchInterval: (query) =>
-      query.state.data?.operations.some((op) => !op.completed_at)
-        ? 5000
-        : false,
+      query.state.data?.data.some((op) => !op.completed_at) ? 5000 : false,
   });
 
   // Synced data changed — refetch everything derived from it
@@ -157,12 +155,12 @@ export default function Sync() {
 
   // Compute summary counts
   const successCount =
-    syncOperations?.operations.filter((op) => op.success).length || 0;
+    syncOperations?.data.filter((op) => op.success).length || 0;
   const failedCount =
-    syncOperations?.operations.filter((op) => !op.success && op.completed_at)
+    syncOperations?.data.filter((op) => !op.success && op.completed_at)
       .length || 0;
   const runningCount =
-    syncOperations?.operations.filter((op) => !op.completed_at).length || 0;
+    syncOperations?.data.filter((op) => !op.completed_at).length || 0;
 
   if (syncOperationsLoading) {
     return (
@@ -284,7 +282,7 @@ export default function Sync() {
           </div>
         </CardHeader>
         <CardContent>
-          {!syncOperations || syncOperations.operations.length === 0 ? (
+          {!syncOperations || syncOperations.data.length === 0 ? (
             <div className="text-center py-6">
               <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">
@@ -297,7 +295,7 @@ export default function Sync() {
             </div>
           ) : (
             <div className="space-y-4">
-              {syncOperations.operations.slice(0, 10).map((operation) => {
+              {syncOperations.data.slice(0, 10).map((operation) => {
                 const startedAt = new Date(operation.started_at);
                 const isRunning = !operation.completed_at;
                 const duration = operation.duration_seconds

@@ -40,7 +40,7 @@ async def get_bank_institutions(
     except Exception as e:
         logger.error(f"Failed to get institutions for {country}: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get institutions: {str(e)}"
+            status_code=500, detail="Failed to get institutions."
         ) from e
 
 
@@ -76,9 +76,7 @@ async def connect_to_bank(
         logger.error(
             f"Failed to start auth for {request.aspsp_name} ({request.aspsp_country}): {e}"
         )
-        raise HTTPException(
-            status_code=500, detail=f"Failed to connect to bank: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to connect to bank.") from e
 
 
 @router.post("/banks/callback")
@@ -114,9 +112,7 @@ async def bank_auth_callback(
         return session_record
     except Exception as e:
         logger.error(f"Failed to exchange auth code: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to create session: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to create session.") from e
 
 
 @router.get("/banks/status")
@@ -165,9 +161,7 @@ async def get_bank_connections_status(
         return connections
     except Exception as e:
         logger.error(f"Failed to get bank connection status: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get bank status: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to get bank status.") from e
 
 
 @router.delete("/banks/connections/{session_id}")

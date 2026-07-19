@@ -53,7 +53,7 @@ async def get_notification_settings() -> NotificationSettings:
     except Exception as e:
         logger.error(f"Failed to get notification settings: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get notification settings: {str(e)}"
+            status_code=500, detail="Failed to get notification settings."
         ) from e
 
 
@@ -115,7 +115,7 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
     except Exception as e:
         logger.error(f"Failed to update notification settings: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to update notification settings: {str(e)}"
+            status_code=500, detail="Failed to update notification settings."
         ) from e
 
 
@@ -140,7 +140,7 @@ async def test_notification(test_request: NotificationTest) -> dict:
     except Exception as e:
         logger.error(f"Failed to send test notification: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to send test notification: {str(e)}"
+            status_code=500, detail="Failed to send test notification."
         ) from e
 
 
@@ -178,7 +178,7 @@ async def get_notification_services() -> dict:
     except Exception as e:
         logger.error(f"Failed to get notification services: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get notification services: {str(e)}"
+            status_code=500, detail="Failed to get notification services."
         ) from e
 
 
@@ -203,5 +203,5 @@ async def delete_notification_service(service: str) -> dict:
     except Exception as e:
         logger.error(f"Failed to delete notification service {service}: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to delete notification service: {str(e)}"
+            status_code=500, detail="Failed to delete notification service."
         ) from e

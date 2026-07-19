@@ -122,3 +122,15 @@ class SyncRepository:
         except Exception as e:
             logger.error(f"Failed to get sync operations: {e}")
             return []
+
+    def get_operations_count(self) -> int:
+        """Get total number of sync operations"""
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM sync_operations")
+                return int(cursor.fetchone()[0])
+
+        except Exception as e:
+            logger.error(f"Failed to count sync operations: {e}")
+            return 0

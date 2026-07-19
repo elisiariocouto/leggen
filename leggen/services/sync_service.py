@@ -27,6 +27,10 @@ EXPIRED_DAYS_LEFT = 0
 EXPIRY_WARNING_THRESHOLDS = [7, 3, 1]
 
 
+class SyncAlreadyRunningError(Exception):
+    """Raised when a sync is triggered while another one is still running."""
+
+
 class SyncService:
     # Class-level so the "already running" guard and reported status hold
     # across all instances — only one sync may run per process.
@@ -63,7 +67,7 @@ class SyncService:
         database IDs) as well as EnableBanking account UIDs.
         """
         if self._sync_lock.locked():
-            raise Exception("Sync is already running")
+            raise SyncAlreadyRunningError("Sync is already running")
         await self._sync_lock.acquire()
 
         start_time = datetime.now(timezone.utc)

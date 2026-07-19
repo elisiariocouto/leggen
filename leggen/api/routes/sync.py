@@ -1,8 +1,9 @@
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
 
+from leggen.api.models.common import PaginatedResponse
 from leggen.api.models.sync import (
     SyncRequest,
     SyncResult,
@@ -10,7 +11,8 @@ from leggen.api.models.sync import (
     SyncScheduleResponse,
 )
 from leggen.background.scheduler import scheduler
-from leggen.repositories import AccountRepository
+from leggen.repositories import AccountRepository, SyncRepository
+from leggen.services.sync_service import SyncAlreadyRunningError
 from leggen.utils.config import config
 
 router = APIRouter()
@@ -45,11 +47,11 @@ async def trigger_sync(
 
     except HTTPException:
         raise
+    except SyncAlreadyRunningError as e:
+        raise HTTPException(status_code=409, detail="Sync is already running.") from e
     except Exception as e:
         logger.error(f"Failed to run sync: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to run sync: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to run sync.") from e
 
 
 @router.get("/sync/schedule")
@@ -69,7 +71,7 @@ async def get_sync_schedule() -> SyncScheduleResponse:
     except Exception as e:
         logger.error(f"Failed to get sync schedule: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get sync schedule: {str(e)}"
+            status_code=500, detail="Failed to get sync schedule."
         ) from e
 
 
@@ -100,23 +102,36 @@ async def update_sync_schedule(request: SyncScheduleRequest) -> SyncScheduleResp
     except Exception as e:
         logger.error(f"Failed to update sync schedule: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to update sync schedule: {str(e)}"
+            status_code=500, detail="Failed to update sync schedule."
         ) from e
 
 
 @router.get("/sync/operations")
-async def get_sync_operations(limit: int = 50, offset: int = 0) -> dict:
+async def get_sync_operations(
+    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
+    per_page: int = Query(default=50, ge=1, le=500, description="Items per page"),
+) -> PaginatedResponse[dict]:
     """Get sync operations history"""
     try:
-        from leggen.repositories import SyncRepository
-
         sync_repo = SyncRepository()
-        operations = sync_repo.get_operations(limit=limit, offset=offset)
+        operations = sync_repo.get_operations(
+            limit=per_page, offset=(page - 1) * per_page
+        )
+        total = sync_repo.get_operations_count()
+        total_pages = (total + per_page - 1) // per_page
 
-        return {"operations": operations, "count": len(operations)}
+        return PaginatedResponse(
+            data=operations,
+            total=total,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1,
+        )
 
     except Exception as e:
         logger.error(f"Failed to get sync operations: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get sync operations: {str(e)}"
+            status_code=500, detail="Failed to get sync operations."
         ) from e

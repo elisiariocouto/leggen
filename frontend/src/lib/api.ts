@@ -13,7 +13,7 @@ import type {
   TransactionStats,
   MonthlyStats,
   CategoryStats,
-  SyncOperationsResponse,
+  SyncOperation,
   SyncResult,
   BankInstitution,
   BankConnectionStatus,
@@ -29,7 +29,6 @@ import type {
   CategoryUpdate,
   CategorySuggestion,
   LoginResponse,
-  AuthStatus,
 } from "../types/api";
 
 // Use VITE_API_URL for development, relative URLs for production
@@ -284,11 +283,11 @@ export const apiClient = {
 
   // Get sync operations history
   getSyncOperations: async (
-    limit: number = 50,
-    offset: number = 0,
-  ): Promise<SyncOperationsResponse> => {
-    const response = await api.get<SyncOperationsResponse>(
-      `/sync/operations?limit=${limit}&offset=${offset}`,
+    page: number = 1,
+    perPage: number = 50,
+  ): Promise<PaginatedResponse<SyncOperation>> => {
+    const response = await api.get<PaginatedResponse<SyncOperation>>(
+      `/sync/operations?page=${page}&per_page=${perPage}`,
     );
     return response.data;
   },
@@ -490,11 +489,6 @@ export const apiClient = {
       username,
       password,
     });
-    return response.data;
-  },
-
-  getAuthStatus: async (): Promise<AuthStatus> => {
-    const response = await api.get<AuthStatus>("/auth/status");
     return response.data;
   },
 };

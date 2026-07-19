@@ -242,11 +242,6 @@ export interface SyncOperation {
   trigger_type: "manual" | "scheduled" | "api";
 }
 
-export interface SyncOperationsResponse {
-  operations: SyncOperation[];
-  count: number;
-}
-
 export interface SyncResult {
   success: boolean;
   accounts_processed: number;
@@ -324,10 +319,6 @@ export interface BackupOperation {
 export interface LoginResponse {
   access_token: string;
   token_type: string;
-}
-
-export interface AuthStatus {
-  auth_enabled: boolean;
 }
 
 // Sync schedule types

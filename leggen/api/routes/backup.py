@@ -46,7 +46,7 @@ async def get_backup_settings() -> BackupSettings:
     except Exception as e:
         logger.error(f"Failed to get backup settings: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get backup settings: {str(e)}"
+            status_code=500, detail="Failed to get backup settings."
         ) from e
 
 
@@ -116,7 +116,7 @@ async def update_backup_settings(settings: BackupSettings) -> dict:
     except Exception as e:
         logger.error(f"Failed to update backup settings: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to update backup settings: {str(e)}"
+            status_code=500, detail="Failed to update backup settings."
         ) from e
 
 
@@ -169,7 +169,7 @@ async def test_backup_connection(test_request: BackupTest) -> dict:
     except Exception as e:
         logger.error(f"Failed to test backup connection: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to test backup connection: {str(e)}"
+            status_code=500, detail="Failed to test backup connection."
         ) from e
 
 
@@ -192,9 +192,7 @@ async def list_backups() -> list:
 
     except Exception as e:
         logger.error(f"Failed to list backups: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to list backups: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to list backups.") from e
 
 
 @router.post("/backup/operation")
@@ -211,7 +209,7 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
             s3_config = S3BackupConfig(**backup_config)
         except Exception as e:
             raise HTTPException(
-                status_code=400, detail=f"Invalid S3 configuration: {str(e)}"
+                status_code=400, detail="Invalid S3 configuration."
             ) from e
 
         backup_service = BackupService(s3_config)
@@ -253,5 +251,5 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
     except Exception as e:
         logger.error(f"Failed to perform backup operation: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to perform backup operation: {str(e)}"
+            status_code=500, detail="Failed to perform backup operation."
         ) from e

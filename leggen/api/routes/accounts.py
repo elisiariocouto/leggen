@@ -70,9 +70,7 @@ async def get_all_accounts(
 
     except Exception as e:
         logger.error(f"Failed to get accounts: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get accounts: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to get accounts.") from e
 
 
 @router.get("/balances")
@@ -117,9 +115,7 @@ async def get_all_balances(
 
     except Exception as e:
         logger.error(f"Failed to get all balances: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get balances: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to get balances.") from e
 
 
 @router.get("/balances/history")
@@ -144,7 +140,7 @@ async def get_historical_balances(
     except Exception as e:
         logger.error(f"Failed to get historical balances: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get historical balances: {str(e)}"
+            status_code=500, detail="Failed to get historical balances."
         ) from e
 
 
@@ -193,6 +189,4 @@ async def update_account_details(
         raise
     except Exception as e:
         logger.error(f"Failed to update account {account_id}: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to update account: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to update account.") from e
