@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, TestTube } from "lucide-react";
-import { apiClient } from "../lib/api";
+import { apiClient, MASKED_SECRET } from "../lib/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -86,9 +86,12 @@ export default function DiscordConfigDrawer({
     testMutation.mutate();
   };
 
+  // The API masks the stored webhook; the masked value means "keep it"
+  const isSavedSecret = config.webhook === MASKED_SECRET;
   const isConfigValid =
-    config.webhook.trim().length > 0 &&
-    config.webhook.includes("discord.com/api/webhooks");
+    isSavedSecret ||
+    (config.webhook.trim().length > 0 &&
+      config.webhook.includes("discord.com/api/webhooks"));
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
@@ -105,7 +108,7 @@ export default function DiscordConfigDrawer({
             </DrawerDescription>
           </DrawerHeader>
 
-          <form onSubmit={handleSubmit} className="p-4 space-y-6">
+          <form onSubmit={handleSubmit} noValidate className="p-4 space-y-6">
             {/* Enable/Disable Toggle */}
             <div className="flex items-center justify-between">
               <Label className="text-base font-medium">
@@ -131,8 +134,9 @@ export default function DiscordConfigDrawer({
                 disabled={!config.enabled}
               />
               <p className="text-xs text-muted-foreground">
-                Create a webhook in your Discord server settings under
-                Integrations → Webhooks
+                {isSavedSecret
+                  ? "A webhook is saved. Leave it unchanged to keep it, or paste a new URL to replace it."
+                  : "Create a webhook in your Discord server settings under Integrations → Webhooks"}
               </p>
             </div>
 

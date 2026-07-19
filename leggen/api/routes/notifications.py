@@ -12,6 +12,7 @@ from leggen.api.models.notifications import (
 )
 from leggen.services.notification_service import NotificationService
 from leggen.utils.config import config
+from leggen.utils.masking import mask_secret, resolve_secret
 
 router = APIRouter()
 notification_service = NotificationService()
@@ -30,13 +31,13 @@ async def get_notification_settings() -> NotificationSettings:
 
         settings = NotificationSettings(
             discord=DiscordConfig(
-                webhook="***" if discord_config.get("webhook") else "",
+                webhook=mask_secret(discord_config.get("webhook")),
                 enabled=discord_config.get("enabled", True),
             )
             if discord_config.get("webhook")
             else None,
             telegram=TelegramConfig(
-                token="***" if telegram_config.get("token") else "",
+                token=mask_secret(telegram_config.get("token")),
                 chat_id=telegram_config.get("chat_id", 0),
                 enabled=telegram_config.get("enabled", True),
             )
@@ -61,18 +62,36 @@ async def get_notification_settings() -> NotificationSettings:
 async def update_notification_settings(settings: NotificationSettings) -> dict:
     """Update notification settings"""
     try:
-        # Update notifications config
+        # Clients echo back masked secrets from GET to mean "keep current value"
+        stored_config = config.notifications_config
+
         notifications_config = {}
 
         if settings.discord:
+            try:
+                webhook = resolve_secret(
+                    settings.discord.webhook,
+                    stored_config.get("discord", {}).get("webhook"),
+                    "Discord webhook",
+                )
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e)) from e
             notifications_config["discord"] = {
-                "webhook": settings.discord.webhook,
+                "webhook": webhook,
                 "enabled": settings.discord.enabled,
             }
 
         if settings.telegram:
+            try:
+                token = resolve_secret(
+                    settings.telegram.token,
+                    stored_config.get("telegram", {}).get("token"),
+                    "Telegram token",
+                )
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e)) from e
             notifications_config["telegram"] = {
-                "token": settings.telegram.token,
+                "token": token,
                 "chat_id": settings.telegram.chat_id,
                 "enabled": settings.telegram.enabled,
             }
@@ -92,6 +111,8 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
 
         return {"updated": True}
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to update notification settings: {e}")
         raise HTTPException(

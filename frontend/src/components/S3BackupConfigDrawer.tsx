@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Cloud, TestTube } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient } from "../lib/api";
+import { apiClient, MASKED_SECRET } from "../lib/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -148,6 +148,11 @@ export default function S3BackupConfigDrawer({
                     placeholder="Your AWS Access Key ID"
                     required
                   />
+                  {config.access_key_id === MASKED_SECRET && (
+                    <p className="text-xs text-muted-foreground">
+                      A key is saved. Leave it unchanged to keep it.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -165,6 +170,11 @@ export default function S3BackupConfigDrawer({
                     placeholder="Your AWS Secret Access Key"
                     required
                   />
+                  {config.secret_access_key === MASKED_SECRET && (
+                    <p className="text-xs text-muted-foreground">
+                      A key is saved. Leave it unchanged to keep it.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">

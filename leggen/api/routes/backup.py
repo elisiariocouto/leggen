@@ -12,6 +12,7 @@ from leggen.api.models.backup import (
 from leggen.models.config import S3BackupConfig
 from leggen.services.backup_service import BackupService
 from leggen.utils.config import config
+from leggen.utils.masking import mask_secret, resolve_secret
 from leggen.utils.paths import path_manager
 
 router = APIRouter()
@@ -28,8 +29,8 @@ async def get_backup_settings() -> BackupSettings:
 
         settings = BackupSettings(
             s3=S3Config(
-                access_key_id="***" if s3_config.get("access_key_id") else "",
-                secret_access_key="***" if s3_config.get("secret_access_key") else "",
+                access_key_id=mask_secret(s3_config.get("access_key_id")),
+                secret_access_key=mask_secret(s3_config.get("secret_access_key")),
                 bucket_name=s3_config.get("bucket_name", ""),
                 region=s3_config.get("region", "us-east-1"),
                 endpoint_url=s3_config.get("endpoint_url"),
@@ -53,12 +54,27 @@ async def get_backup_settings() -> BackupSettings:
 async def update_backup_settings(settings: BackupSettings) -> dict:
     """Update backup settings."""
     try:
-        # First test the connection if S3 config is provided
         if settings.s3:
+            # Clients echo back masked secrets from GET to mean "keep current value"
+            stored_s3 = config.backup_config.get("s3", {})
+            try:
+                access_key_id = resolve_secret(
+                    settings.s3.access_key_id,
+                    stored_s3.get("access_key_id"),
+                    "S3 access key ID",
+                )
+                secret_access_key = resolve_secret(
+                    settings.s3.secret_access_key,
+                    stored_s3.get("secret_access_key"),
+                    "S3 secret access key",
+                )
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e)) from e
+
             # Convert API model to config model
             s3_config = S3BackupConfig(
-                access_key_id=settings.s3.access_key_id,
-                secret_access_key=settings.s3.secret_access_key,
+                access_key_id=access_key_id,
+                secret_access_key=secret_access_key,
                 bucket_name=settings.s3.bucket_name,
                 region=settings.s3.region,
                 endpoint_url=settings.s3.endpoint_url,
@@ -76,23 +92,20 @@ async def update_backup_settings(settings: BackupSettings) -> dict:
                     detail="S3 connection test failed. Please check your configuration.",
                 )
 
-        # Update backup config
-        backup_config = {}
-
-        if settings.s3:
-            backup_config["s3"] = {
-                "access_key_id": settings.s3.access_key_id,
-                "secret_access_key": settings.s3.secret_access_key,
-                "bucket_name": settings.s3.bucket_name,
-                "region": settings.s3.region,
-                "endpoint_url": settings.s3.endpoint_url,
-                "path_style": settings.s3.path_style,
-                "enabled": settings.s3.enabled,
-            }
-
-        # Save to config
-        if backup_config:
-            config.update_section("backup", backup_config)
+            config.update_section(
+                "backup",
+                {
+                    "s3": {
+                        "access_key_id": access_key_id,
+                        "secret_access_key": secret_access_key,
+                        "bucket_name": settings.s3.bucket_name,
+                        "region": settings.s3.region,
+                        "endpoint_url": settings.s3.endpoint_url,
+                        "path_style": settings.s3.path_style,
+                        "enabled": settings.s3.enabled,
+                    }
+                },
+            )
 
         return {"updated": True}
 
@@ -114,10 +127,26 @@ async def test_backup_connection(test_request: BackupTest) -> dict:
                 status_code=400, detail="Only 's3' service is supported"
             )
 
+        # Clients may submit masked secrets meaning "test with the stored value"
+        stored_s3 = config.backup_config.get("s3", {})
+        try:
+            access_key_id = resolve_secret(
+                test_request.config.access_key_id,
+                stored_s3.get("access_key_id"),
+                "S3 access key ID",
+            )
+            secret_access_key = resolve_secret(
+                test_request.config.secret_access_key,
+                stored_s3.get("secret_access_key"),
+                "S3 secret access key",
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
         # Convert API model to config model
         s3_config = S3BackupConfig(
-            access_key_id=test_request.config.access_key_id,
-            secret_access_key=test_request.config.secret_access_key,
+            access_key_id=access_key_id,
+            secret_access_key=secret_access_key,
             bucket_name=test_request.config.bucket_name,
             region=test_request.config.region,
             endpoint_url=test_request.config.endpoint_url,

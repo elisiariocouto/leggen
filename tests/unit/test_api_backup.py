@@ -108,6 +108,119 @@ class TestBackupAPI:
         assert "S3 connection test failed" in data["detail"]
 
     @patch("leggen.services.backup_service.BackupService.test_connection")
+    def test_update_backup_settings_masked_secrets_keep_stored_values(
+        self, mock_test_connection, api_client, mock_config
+    ):
+        """Echoing masked credentials back must keep the stored keys, so other
+        fields (e.g. the bucket) can be edited without re-typing secrets."""
+        mock_test_connection.return_value = True
+        mock_config._config["backup"] = {
+            "s3": {
+                "access_key_id": "AKIAREAL123",
+                "secret_access_key": "real-secret",
+                "bucket_name": "old-bucket",
+                "region": "us-east-1",
+                "path_style": False,
+                "enabled": True,
+            }
+        }
+
+        request_data = {
+            "s3": {
+                "access_key_id": "***",
+                "secret_access_key": "***",
+                "bucket_name": "new-bucket",
+                "region": "us-east-1",
+                "endpoint_url": None,
+                "path_style": False,
+                "enabled": True,
+            }
+        }
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.put("/api/v1/backup/settings", json=request_data)
+
+        assert response.status_code == 200
+        assert response.json()["updated"] is True
+
+        s3_config = mock_config._config["backup"]["s3"]
+        assert s3_config["access_key_id"] == "AKIAREAL123"
+        assert s3_config["secret_access_key"] == "real-secret"
+        assert s3_config["bucket_name"] == "new-bucket"
+
+        # The connection test must run with the real (resolved) credentials
+        tested_config = mock_test_connection.call_args[0][0]
+        assert tested_config.access_key_id == "AKIAREAL123"
+        assert tested_config.secret_access_key == "real-secret"
+
+    @patch("leggen.services.backup_service.BackupService.test_connection")
+    def test_update_backup_settings_masked_secrets_nothing_stored(
+        self, mock_test_connection, api_client, mock_config
+    ):
+        """A masked placeholder with no stored secret is a client error."""
+        mock_test_connection.return_value = True
+        mock_config._config["backup"] = {}
+
+        request_data = {
+            "s3": {
+                "access_key_id": "***",
+                "secret_access_key": "***",
+                "bucket_name": "test-bucket",
+                "region": "us-east-1",
+                "endpoint_url": None,
+                "path_style": False,
+                "enabled": True,
+            }
+        }
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.put("/api/v1/backup/settings", json=request_data)
+
+        assert response.status_code == 400
+        assert "no existing value" in response.json()["detail"]
+        mock_test_connection.assert_not_called()
+
+    @patch("leggen.services.backup_service.BackupService.test_connection")
+    def test_test_backup_connection_resolves_masked_secrets(
+        self, mock_test_connection, api_client, mock_config
+    ):
+        """The test endpoint resolves masked credentials against stored ones."""
+        mock_test_connection.return_value = True
+        mock_config._config["backup"] = {
+            "s3": {
+                "access_key_id": "AKIAREAL123",
+                "secret_access_key": "real-secret",
+                "bucket_name": "test-bucket",
+                "region": "us-east-1",
+                "path_style": False,
+                "enabled": True,
+            }
+        }
+
+        request_data = {
+            "service": "s3",
+            "config": {
+                "access_key_id": "***",
+                "secret_access_key": "***",
+                "bucket_name": "test-bucket",
+                "region": "us-east-1",
+                "endpoint_url": None,
+                "path_style": False,
+                "enabled": True,
+            },
+        }
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.post("/api/v1/backup/test", json=request_data)
+
+        assert response.status_code == 200
+        assert response.json()["connected"] is True
+
+        tested_config = mock_test_connection.call_args[0][0]
+        assert tested_config.access_key_id == "AKIAREAL123"
+        assert tested_config.secret_access_key == "real-secret"
+
+    @patch("leggen.services.backup_service.BackupService.test_connection")
     def test_test_backup_connection_success(self, mock_test_connection, api_client):
         """Test successful backup connection test."""
         mock_test_connection.return_value = True

@@ -35,6 +35,10 @@ import type {
 // Use VITE_API_URL for development, relative URLs for production
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api/v1";
 
+// Placeholder the API returns instead of stored secrets; sending it back
+// on update means "keep the current value"
+export const MASKED_SECRET = "***";
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

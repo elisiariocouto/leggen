@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Send, TestTube } from "lucide-react";
-import { apiClient } from "../lib/api";
+import { apiClient, MASKED_SECRET } from "../lib/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -87,6 +87,8 @@ export default function TelegramConfigDrawer({
     testMutation.mutate();
   };
 
+  // The API masks the stored token; the masked value means "keep it"
+  const isSavedSecret = config.token === MASKED_SECRET;
   const isConfigValid = config.token.trim().length > 0 && config.chat_id !== 0;
 
   return (
@@ -130,7 +132,9 @@ export default function TelegramConfigDrawer({
                 disabled={!config.enabled}
               />
               <p className="text-xs text-muted-foreground">
-                Create a bot using @BotFather on Telegram to get your token
+                {isSavedSecret
+                  ? "A token is saved. Leave it unchanged to keep it, or enter a new token to replace it."
+                  : "Create a bot using @BotFather on Telegram to get your token"}
               </p>
             </div>
 
