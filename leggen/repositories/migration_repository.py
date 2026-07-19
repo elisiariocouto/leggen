@@ -319,6 +319,30 @@ class MigrationRepository:
 
             logger.info("Starting composite key migration...")
 
+            # Derive the bank transaction ID with the same fallback chain the
+            # sync path uses (EnableBanking is snake_case; legacy GoCardless
+            # data was camelCase).
+            key_expr = (
+                "COALESCE("
+                "json_extract(rawTransaction, '$.transaction_id'), "
+                "json_extract(rawTransaction, '$.transactionId'), "
+                "json_extract(rawTransaction, '$.entry_reference'), "
+                "internalTransactionId)"
+            )
+
+            cursor.execute("SELECT COUNT(*) FROM transactions")
+            source_count = cursor.fetchone()[0]
+            cursor.execute(
+                f"SELECT COUNT(*) FROM transactions WHERE {key_expr} IS NULL"
+            )
+            missing_key_count = cursor.fetchone()[0]
+            if missing_key_count:
+                raise RuntimeError(
+                    f"{missing_key_count} of {source_count} transactions have no "
+                    "derivable transaction ID; aborting composite key migration "
+                    "to avoid data loss"
+                )
+
             logger.info("Creating temporary table with composite primary key...")
             cursor.execute("DROP TABLE IF EXISTS transactions_temp")
             cursor.execute("""
@@ -339,11 +363,11 @@ class MigrationRepository:
             """)
 
             logger.info("Inserting deduplicated data...")
-            cursor.execute("""
+            cursor.execute(f"""
                 INSERT INTO transactions_temp
                 SELECT
                     accountId,
-                    json_extract(rawTransaction, '$.transactionId') as transactionId,
+                    {key_expr} as transactionId,
                     internalTransactionId,
                     institutionId,
                     iban,
@@ -356,17 +380,20 @@ class MigrationRepository:
                 FROM (
                     SELECT *,
                            ROW_NUMBER() OVER (
-                               PARTITION BY accountId, json_extract(rawTransaction, '$.transactionId')
+                               PARTITION BY accountId, {key_expr}
                                ORDER BY transactionDate DESC
                            ) as rn
                     FROM transactions
-                    WHERE json_extract(rawTransaction, '$.transactionId') IS NOT NULL
+                    WHERE {key_expr} IS NOT NULL
                 )
                 WHERE rn = 1
             """)
 
             rows_migrated = cursor.rowcount
-            logger.info(f"Migrated {rows_migrated} unique transactions")
+            logger.info(
+                f"Migrated {rows_migrated} of {source_count} transactions "
+                f"({source_count - rows_migrated} duplicates collapsed)"
+            )
 
             logger.info("Replacing old table...")
             cursor.execute("DROP TABLE transactions")
