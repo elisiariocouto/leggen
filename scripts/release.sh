@@ -12,6 +12,7 @@ function check_command {
 check_command git
 check_command git-cliff
 check_command uv
+check_command npm
 
 # Get current date components
 YEAR=$(date +%Y)
@@ -35,8 +36,9 @@ CURRENT_VERSION=$(uv version --short)
 echo " > Current version is $CURRENT_VERSION"
 echo " > Setting new version to $NEXT_VERSION"
 
-# Manually update version in pyproject.toml
+# Manually update version in pyproject.toml and frontend/package.json
 sed -i '' "s/^version = .*/version = \"${NEXT_VERSION}\"/" pyproject.toml
+(cd frontend && npm version "$NEXT_VERSION" --no-git-tag-version --allow-same-version > /dev/null)
 
 echo " > Version bumped to $NEXT_VERSION"
 echo "Updating CHANGELOG.md"
@@ -46,7 +48,7 @@ echo "Locking dependencies"
 uv lock
 
 echo " > Commiting changes and adding git tag"
-git add pyproject.toml CHANGELOG.md uv.lock
+git add pyproject.toml frontend/package.json frontend/package-lock.json CHANGELOG.md uv.lock
 git commit -m "chore(ci): Bump version to $NEXT_VERSION"
 git tag -a "$NEXT_VERSION" -m "$NEXT_VERSION"
 
