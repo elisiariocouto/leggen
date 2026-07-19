@@ -45,31 +45,37 @@ class TestCommandDiscovery:
             assert command in result.output
 
 
+def _run_cli_without_config(args, tmp_path, input=None):
+    """Run the CLI in a subprocess with a missing config file.
+
+    A subprocess is required because the no-config guards check sys.argv,
+    which CliRunner does not simulate.
+    """
+    env = os.environ.copy()
+    env["LEGGEN_CONFIG_FILE"] = str(tmp_path / "missing.toml")
+    env["LEGGEN_CONFIG_DIR"] = str(tmp_path)
+    env.pop("LEGGEN_DATABASE_PATH", None)
+    return subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            f"import sys; sys.argv = ['leggen'] + {args!r}; "
+            "from leggen.main import cli; cli()",
+        ],
+        env=env,
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        input=input,
+    )
+
+
 @pytest.mark.cli
 class TestHelpWithoutConfig:
-    """Help must work without a config file and must not create any files.
-
-    Runs in a subprocess because the --help guards check sys.argv, which
-    CliRunner does not simulate.
-    """
+    """Help must work without a config file and must not create any files."""
 
     def _run(self, args, tmp_path):
-        env = os.environ.copy()
-        env["LEGGEN_CONFIG_FILE"] = str(tmp_path / "missing.toml")
-        env["LEGGEN_CONFIG_DIR"] = str(tmp_path)
-        env.pop("LEGGEN_DATABASE_PATH", None)
-        return subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                f"import sys; sys.argv = ['leggen'] + {args!r}; "
-                "from leggen.main import cli; cli()",
-            ],
-            env=env,
-            cwd=tmp_path,
-            capture_output=True,
-            text=True,
-        )
+        return _run_cli_without_config(args, tmp_path)
 
     def test_help_without_config(self, tmp_path):
         result = self._run(["--help"], tmp_path)
@@ -90,3 +96,41 @@ class TestHelpWithoutConfig:
         assert result.returncode == 1
         assert "Configuration file not found" in result.stderr
         assert "Traceback" not in result.stderr
+
+
+@pytest.mark.cli
+class TestBootstrapCommandsWithoutConfig:
+    """Commands that bootstrap a config/database must run without one."""
+
+    def test_generate_auth_config_without_config(self, tmp_path):
+        result = _run_cli_without_config(
+            ["generate_auth_config"], tmp_path, input="\nsecretpw\nsecretpw\n"
+        )
+        assert result.returncode == 0, result.stderr
+        assert "[auth]" in result.stdout
+        assert "password_hash" in result.stdout
+
+    def test_generate_sample_db_without_config(self, tmp_path):
+        db_path = tmp_path / "sample.db"
+        result = _run_cli_without_config(
+            [
+                "generate_sample_db",
+                "--database",
+                str(db_path),
+                "--accounts",
+                "1",
+                "--transactions",
+                "2",
+                "--force",
+            ],
+            tmp_path,
+        )
+        assert result.returncode == 0, result.stderr
+        assert db_path.exists()
+
+    def test_dashed_command_name_also_skips_config(self, tmp_path):
+        result = _run_cli_without_config(
+            ["generate-auth-config"], tmp_path, input="\nsecretpw\nsecretpw\n"
+        )
+        assert result.returncode == 0, result.stderr
+        assert "[auth]" in result.stdout

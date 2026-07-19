@@ -159,10 +159,20 @@ class Config:
         return self.config.get("auth", {})
 
 
+# Commands that must be able to run before a valid config file exists
+# (they are what you run to bootstrap one).
+_CONFIG_OPTIONAL_COMMANDS = {"generate_auth_config", "generate_sample_db"}
+
+
 def load_config(ctx: click.Context, _, filename):
     # Help output must not require a config file (same guard as leggen.main.cli)
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
         return
+
+    # Argv tokens are checked dash-normalized, matching token_normalize_func
+    config_optional = bool(
+        _CONFIG_OPTIONAL_COMMANDS & {arg.replace("-", "_") for arg in sys.argv[1:]}
+    )
 
     try:
         with click.open_file(str(filename), "rb") as f:
@@ -173,10 +183,16 @@ def load_config(ctx: click.Context, _, filename):
             validated_model = ConfigModel(**raw_config)
             ctx.obj = validated_model.dict(by_alias=True, exclude_none=True)
         except ValidationError as e:
+            if config_optional:
+                ctx.obj = {}
+                return
             error(f"Configuration validation failed: {e}")
             sys.exit(1)
 
     except FileNotFoundError:
+        if config_optional:
+            ctx.obj = {}
+            return
         error(
             "Configuration file not found. Provide a valid configuration file path with leggen --config <path> or LEGGEN_CONFIG_FILE=<path> environment variable."
         )
