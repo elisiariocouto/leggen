@@ -157,17 +157,6 @@ class LeggenAPIClient:
         response = self._make_request("GET", "/transactions", params=params)
         return response.get("data", [])
 
-    def get_transaction_stats(
-        self, days: int = 30, account_id: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """Get transaction statistics"""
-        params: Dict[str, Union[int, str]] = {"days": days}
-        if account_id:
-            params["account_id"] = account_id
-
-        response = self._make_request("GET", "/transactions/stats", params=params)
-        return response
-
     # Sync endpoints
     def trigger_sync(
         self, account_ids: Optional[List[str]] = None, full_sync: bool = False

@@ -20,9 +20,6 @@ class SyncOperation(BaseModel):
     logs: list[str] = []
     trigger_type: str = "manual"  # manual, scheduled, retry, api
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
-
 
 class SyncRequest(BaseModel):
     """Request to trigger a sync"""
@@ -41,9 +38,6 @@ class SyncStatus(BaseModel):
     total_accounts: int = 0
     transactions_added: int = 0
     errors: list[str] = []
-
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
 
 
 class SyncScheduleRequest(BaseModel):
@@ -64,9 +58,6 @@ class SyncScheduleResponse(BaseModel):
     cron: Optional[str] = None
     next_sync_time: Optional[str] = None
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
-
 
 class SyncResult(BaseModel):
     """Result of a sync operation"""
@@ -80,6 +71,3 @@ class SyncResult(BaseModel):
     errors: list[str] = []
     started_at: datetime
     completed_at: datetime
-
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}

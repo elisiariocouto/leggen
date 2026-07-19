@@ -12,9 +12,6 @@ class AccountBalance(BaseModel):
     balance_type: str
     last_change_date: Optional[datetime] = None
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
-
 
 class AccountDetails(BaseModel):
     """Account details model"""
@@ -31,17 +28,11 @@ class AccountDetails(BaseModel):
     last_accessed: Optional[datetime] = None
     balances: List[AccountBalance] = []
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
-
 
 class AccountUpdate(BaseModel):
     """Account update model"""
 
     display_name: Optional[str] = None
-
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
 
 
 class Transaction(BaseModel):
@@ -62,9 +53,6 @@ class Transaction(BaseModel):
     category_name: Optional[str] = None
     category_color: Optional[str] = None
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
-
 
 class TransactionSummary(BaseModel):
     """Transaction summary for lists"""
@@ -80,6 +68,3 @@ class TransactionSummary(BaseModel):
     category_id: Optional[int] = None
     category_name: Optional[str] = None
     category_color: Optional[str] = None
-
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}

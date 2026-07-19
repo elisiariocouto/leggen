@@ -38,14 +38,3 @@ class NotificationTest(BaseModel):
 
     service: str  # "discord" or "telegram"
     message: str = "Test notification from Leggen"
-
-
-class NotificationHistory(BaseModel):
-    """Notification history entry"""
-
-    id: str
-    service: str
-    message: str
-    status: str  # "sent", "failed"
-    sent_at: str
-    error: Optional[str] = None

@@ -95,40 +95,6 @@ class TestConfig:
         assert saved_data["enablebanking"]["application_id"] == "new-app-id"
         assert saved_data["database"]["sqlite"] is True
 
-    def test_update_config_success(self, temp_config_dir, test_key_path):
-        """Test updating configuration values."""
-        initial_config = {
-            "auth": _AUTH_CONFIG,
-            "enablebanking": {
-                "application_id": "old-app-id",
-                "key_path": str(test_key_path),
-                "url": "https://api.enablebanking.com",
-            },
-            "database": {"sqlite": True},
-        }
-
-        config_file = temp_config_dir / "config.toml"
-        with open(config_file, "wb") as f:
-            import tomli_w
-
-            tomli_w.dump(initial_config, f)
-
-        config = Config()
-        config._config = None
-        config._config_model = None
-        config.load_config(str(config_file))
-
-        config.update_config("enablebanking", "application_id", "new-app-id")
-
-        assert config.enablebanking_config["application_id"] == "new-app-id"
-
-        # Verify it was saved to file
-        import tomllib
-
-        with open(config_file, "rb") as f:
-            saved_data = tomllib.load(f)
-        assert saved_data["enablebanking"]["application_id"] == "new-app-id"
-
     def test_update_section_success(self, temp_config_dir, test_key_path):
         """Test updating entire configuration section."""
         initial_config = {

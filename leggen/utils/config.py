@@ -100,20 +100,6 @@ class Config:
             logger.error(f"Error saving configuration: {e}")
             raise
 
-    def update_config(self, section: str, key: str, value: Any) -> None:
-        """Update a specific configuration value"""
-        if self._config is None:
-            self.load_config()
-
-        if self._config is None:
-            raise RuntimeError("Failed to load config")
-
-        if section not in self._config:
-            self._config[section] = {}
-
-        self._config[section][key] = value
-        self.save_config()
-
     def update_section(self, section: str, data: Dict[str, Any]) -> None:
         """Update an entire configuration section"""
         if self._config is None:
@@ -195,8 +181,3 @@ def load_config(ctx: click.Context, _, filename):
 
 # Global singleton instance
 config = Config()
-
-
-def is_sqlite_enabled() -> bool:
-    """Check if SQLite is enabled in configuration."""
-    return config.database_config.get("sqlite", True)

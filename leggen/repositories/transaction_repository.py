@@ -81,10 +81,6 @@ class TransactionRepository:
 
             # Create indexes for better performance
             cursor.execute(
-                """CREATE INDEX IF NOT EXISTS idx_transactions_internal_id
-                   ON transactions(internalTransactionId)"""
-            )
-            cursor.execute(
                 """CREATE INDEX IF NOT EXISTS idx_transactions_date
                    ON transactions(transactionDate)"""
             )
@@ -292,28 +288,4 @@ class TransactionRepository:
                         transaction["rawTransaction"]
                     )
                 return transaction
-            return None
-
-    def get_account_summary(self, account_id: str) -> Optional[Dict[str, Any]]:
-        """Get basic account info from transactions table"""
-        if not db_exists():
-            return None
-
-        with get_db_connection(row_factory=True) as conn:
-            cursor = conn.cursor()
-
-            cursor.execute(
-                """
-                SELECT DISTINCT accountId, institutionId, iban
-                FROM transactions
-                WHERE accountId = ?
-                ORDER BY transactionDate DESC
-                LIMIT 1
-            """,
-                (account_id,),
-            )
-
-            row = cursor.fetchone()
-            if row:
-                return dict(row)
             return None

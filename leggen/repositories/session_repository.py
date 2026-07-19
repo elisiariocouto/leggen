@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from loguru import logger
 
@@ -72,21 +72,6 @@ class SessionRepository:
 
         return sessions
 
-    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """Get a single session by ID."""
-        with get_db_connection(row_factory=True) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,))
-            row = cursor.fetchone()
-
-        if row is None:
-            return None
-
-        session = dict(row)
-        if session.get("accounts"):
-            session["accounts"] = json.loads(session["accounts"])
-        return session
-
     def delete_session(self, session_id: str) -> bool:
         """Delete a session. Returns True if a row was deleted."""
         with get_db_connection() as conn:
@@ -94,21 +79,3 @@ class SessionRepository:
             cursor.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
             conn.commit()
             return cursor.rowcount > 0
-
-    def get_all_account_ids(self) -> List[str]:
-        """Extract all account UIDs from active sessions."""
-        sessions = self.get_sessions()
-        account_ids = []
-        for session in sessions:
-            if session.get("status") != "active":
-                continue
-            accounts = session.get("accounts", [])
-            if accounts:
-                for account in accounts:
-                    if isinstance(account, dict):
-                        uid = account.get("uid") or account.get("id")
-                        if uid:
-                            account_ids.append(uid)
-                    elif isinstance(account, str):
-                        account_ids.append(account)
-        return account_ids

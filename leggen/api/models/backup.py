@@ -32,14 +32,6 @@ class BackupTest(BaseModel):
     config: S3Config = Field(..., description="S3 configuration to test")
 
 
-class BackupInfo(BaseModel):
-    """Backup file information model."""
-
-    key: str = Field(..., description="S3 object key")
-    last_modified: str = Field(..., description="Last modified timestamp (ISO format)")
-    size: int = Field(..., description="File size in bytes")
-
-
 class BackupOperation(BaseModel):
     """Backup operation request model."""
 
