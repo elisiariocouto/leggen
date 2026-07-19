@@ -5,6 +5,7 @@ on:
     branches: ["main", "dev"]
   pull_request:
     branches: ["main", "dev"]
+  workflow_call:
 
 permissions:
   contents: read
@@ -13,7 +14,9 @@ jobs:
   test-python:
     name: Test Python
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, 'chore(ci): Bump version to')"
+    # Skip the version-bump commit on branch pushes, but always run when
+    # called from the release workflow (tag pushes point at that same commit)
+    if: "startsWith(github.ref, 'refs/tags/') || !contains(github.event.head_commit.message, 'chore(ci): Bump version to')"
     steps:
       - uses: actions/checkout@v4
 
@@ -30,13 +33,19 @@ jobs:
           mkdir -p ~/.config/leggen
           cp config.example.toml ~/.config/leggen/config.toml
 
+      - name: Run ruff
+        run: uv run ruff check .
+
+      - name: Run mypy
+        run: uv run mypy leggen --check-untyped-defs
+
       - name: Run Python tests
         run: uv run pytest
 
   test-frontend:
     name: Test Frontend
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, 'chore(ci): Bump version to')"
+    if: "startsWith(github.ref, 'refs/tags/') || !contains(github.event.head_commit.message, 'chore(ci): Bump version to')"
     defaults:
       run:
         working-directory: ./frontend
