@@ -23,43 +23,13 @@ export interface AccountUpdate {
   display_name?: string;
 }
 
-export interface RawTransactionData {
-  transactionId?: string;
-  bookingDate?: string;
-  valueDate?: string;
-  bookingDateTime?: string;
-  valueDateTime?: string;
-  transactionAmount?: {
-    amount: string;
-    currency: string;
-  };
-  currencyExchange?: {
-    instructedAmount?: {
-      amount: string;
-      currency: string;
-    };
-    sourceCurrency?: string;
-    exchangeRate?: string;
-    unitCurrency?: string;
-    targetCurrency?: string;
-  };
-  creditorName?: string;
-  debtorName?: string;
-  debtorAccount?: {
-    iban?: string;
-  };
-  remittanceInformationUnstructuredArray?: string[];
-  proprietaryBankTransactionCode?: string;
-  balanceAfterTransaction?: {
-    balanceAmount: {
-      amount: string;
-      currency: string;
-    };
-    balanceType: string;
-  };
-  internalTransactionId?: string;
-  [key: string]: unknown; // Allow additional fields
-}
+/**
+ * Unmodified bank transaction dict as stored by the sync. Keys are
+ * snake_case for EnableBanking data, camelCase for mock/legacy
+ * (GoCardless-era) data, and vary per bank — read it through
+ * extractRawFields() in lib/raw-transaction.ts.
+ */
+export type RawTransactionData = Record<string, unknown>;
 
 export interface Category {
   id: number;

@@ -244,23 +244,46 @@ class SampleDataGenerator:
                 )
                 description = random.choice(specific_descriptions)
 
-                # Create raw transaction
-                raw_transaction = {
-                    "transactionId": transaction_id,
-                    "bookingDate": transaction_date.strftime("%Y-%m-%d"),
-                    "valueDate": transaction_date.strftime("%Y-%m-%d"),
-                    "transactionAmount": {
-                        "amount": str(amount),
-                        "currency": account["currency"],
-                    },
-                    "remittanceInformationUnstructured": description,
-                    "bankTransactionCode": "PMNT" if amount < 0 else "RCDT",
-                }
-
                 # Determine status (most are booked, some recent ones might be pending)
                 status = (
                     "pending" if days_ago < 2 and random.random() < 0.1 else "booked"
                 )
+
+                # Raw transaction mirroring EnableBanking's snake_case payload
+                # (the sync stores the provider dict unmodified)
+                raw_transaction: dict[str, Any] = {
+                    "transaction_id": transaction_id,
+                    "entry_reference": internal_transaction_id,
+                    "booking_date": transaction_date.strftime("%Y-%m-%d"),
+                    "value_date": transaction_date.strftime("%Y-%m-%d"),
+                    "transaction_amount": {
+                        "amount": str(abs(amount)),
+                        "currency": account["currency"],
+                    },
+                    "credit_debit_indicator": "DBIT" if amount < 0 else "CRDT",
+                    "remittance_information": [description],
+                    "status": "BOOK" if status == "booked" else "PDNG",
+                    "bank_transaction_code": {
+                        "code": "PMNT" if amount < 0 else "RCDT",
+                    },
+                }
+
+                # Counterparty details are bank-dependent — include them most
+                # of the time so both shapes show up in the data
+                counterparty = {"name": description.title()}
+                counterparty_iban = (
+                    f"DE{random.randint(10, 99)}{random.randint(10**17, 10**18 - 1)}"
+                )
+                if amount < 0:
+                    raw_transaction["creditor"] = counterparty
+                    if random.random() < 0.7:
+                        raw_transaction["creditor_account"] = {
+                            "iban": counterparty_iban
+                        }
+                else:
+                    raw_transaction["debtor"] = counterparty
+                    if random.random() < 0.7:
+                        raw_transaction["debtor_account"] = {"iban": counterparty_iban}
 
                 transaction = {
                     "accountId": account["id"],

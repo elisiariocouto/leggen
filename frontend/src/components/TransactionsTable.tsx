@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -12,13 +12,12 @@ import {
   TrendingDown,
   RefreshCw,
   AlertCircle,
-  Eye,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
 import TransactionSkeleton from "./TransactionSkeleton";
 import FiltersSkeleton from "./FiltersSkeleton";
-import RawTransactionModal from "./RawTransactionModal";
+import TransactionDetail from "./TransactionDetail";
 import { FilterBar, type FilterState } from "./filters";
 import { DataTablePagination } from "./ui/data-table-pagination";
 import { Card } from "./ui/card";
@@ -43,9 +42,14 @@ export default function TransactionsTable() {
     endDate: "",
   });
 
-  const [showRawModal, setShowRawModal] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<Transaction | null>(null);
+  // Transaction detail panel state. The transaction is stored by key and
+  // re-derived from the query data below, so category changes made while
+  // the panel is open (which invalidate ["transactions"]) refresh it too.
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<{
+    accountId: string;
+    transactionId: string;
+  } | null>(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -126,6 +130,31 @@ export default function TransactionsTable() {
     () => transactionsResponse?.data || [],
     [transactionsResponse],
   );
+
+  const selectedFromQuery = useMemo(
+    () =>
+      transactions.find(
+        (t) =>
+          t.account_id === selectedKey?.accountId &&
+          t.transaction_id === selectedKey?.transactionId,
+      ) ?? null,
+    [transactions, selectedKey],
+  );
+  // Snapshot keeps the panel populated if the row leaves the current page
+  // (e.g. a category filter is active and the transaction was just
+  // recategorized) or during the close animation.
+  const lastSelectedRef = useRef<Transaction | null>(null);
+  if (selectedFromQuery) lastSelectedRef.current = selectedFromQuery;
+  const selectedTransaction = selectedFromQuery ?? lastSelectedRef.current;
+
+  const openDetail = (transaction: Transaction) => {
+    setSelectedKey({
+      accountId: transaction.account_id,
+      transactionId: transaction.transaction_id,
+    });
+    lastSelectedRef.current = transaction;
+    setDetailOpen(true);
+  };
   const pagination = useMemo(
     () =>
       transactionsResponse
@@ -195,16 +224,6 @@ export default function TransactionsTable() {
   useEffect(() => {
     setCurrentPage(1);
   }, [filterState.selectedAccount, filterState.selectedCategory, filterState.startDate, filterState.endDate]);
-
-  const handleViewRaw = (transaction: Transaction) => {
-    setSelectedTransaction(transaction);
-    setShowRawModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowRawModal(false);
-    setSelectedTransaction(null);
-  };
 
   const hasActiveFilters =
     filterState.searchTerm ||
@@ -311,24 +330,6 @@ export default function TransactionsTable() {
               ? formatDate(transaction.transaction_date)
               : "No date"}
           </div>
-        );
-      },
-    },
-    {
-      id: "actions",
-      header: "",
-      cell: ({ row }) => {
-        const transaction = row.original;
-        return (
-          <Button
-            onClick={() => handleViewRaw(transaction)}
-            variant="ghost"
-            size="sm"
-            title="View raw transaction data"
-          >
-            <Eye className="h-3 w-3 mr-1" />
-            Raw
-          </Button>
         );
       },
     },
@@ -460,9 +461,23 @@ export default function TransactionsTable() {
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-muted/50">
+                  <tr
+                    key={row.id}
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() => openDetail(row.original)}
+                  >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
+                      <td
+                        key={cell.id}
+                        className="px-6 py-4 whitespace-nowrap"
+                        // Keep category popover interactions from opening the
+                        // detail panel (Radix portals bubble in the React tree)
+                        onClick={
+                          cell.column.id === "category"
+                            ? (e) => e.stopPropagation()
+                            : undefined
+                        }
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),
@@ -504,7 +519,8 @@ export default function TransactionsTable() {
                 return (
                   <div
                     key={row.id}
-                    className="p-4 hover:bg-muted/50 transition-colors"
+                    className="p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => openDetail(transaction)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -537,7 +553,12 @@ export default function TransactionsTable() {
                                   ? formatDate(transaction.transaction_date)
                                   : "No date"}
                               </p>
-                              <div className="mt-1">
+                              <div
+                                className="mt-1"
+                                // Keep category popover interactions from
+                                // opening the detail panel
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <CategoryBadge
                                   accountId={transaction.account_id}
                                   transactionId={transaction.transaction_id}
@@ -553,7 +574,7 @@ export default function TransactionsTable() {
                       </div>
                       <div className="text-right ml-3 shrink-0">
                         <p
-                          className={`text-lg font-semibold mb-1 ${
+                          className={`text-lg font-semibold ${
                             isPositive
                               ? "text-green-600 dark:text-green-400"
                               : "text-red-600 dark:text-red-400"
@@ -567,15 +588,6 @@ export default function TransactionsTable() {
                             )}
                           </BlurredValue>
                         </p>
-                        <Button
-                          onClick={() => handleViewRaw(transaction)}
-                          variant="ghost"
-                          size="sm"
-                          title="View raw transaction data"
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          Raw
-                        </Button>
                       </div>
                     </div>
                   </div>
@@ -600,12 +612,11 @@ export default function TransactionsTable() {
         )}
       </Card>
 
-      {/* Raw Transaction Modal */}
-      <RawTransactionModal
-        isOpen={showRawModal}
-        onClose={handleCloseModal}
-        rawTransaction={selectedTransaction?.raw_transaction}
-        transactionId={selectedTransaction?.transaction_id || "unknown"}
+      <TransactionDetail
+        transaction={selectedTransaction}
+        open={detailOpen && !!selectedTransaction}
+        onOpenChange={setDetailOpen}
+        accounts={accounts}
       />
     </div>
   );

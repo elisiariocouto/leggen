@@ -32,7 +32,7 @@
 ## 🖥️ Features — UI/UX
 
 - [ ] Empty states & onboarding - When a user first opens the app with no bank connections, there's no guided onboarding flow. A first-run wizard or prominent call-to-action on the dashboard would help.
-- [ ] Transaction detail view - Currently clicking a transaction only shows raw JSON (`RawTransactionModal.tsx`). A formatted transaction detail panel/drawer showing all fields cleanly (merchant info, status, dates, category history) would be much more useful.
+- [x] Transaction detail view - Clicking a transaction opens a formatted detail panel (`TransactionDetail.tsx`, Sheet on desktop / Drawer on mobile) with counterparty, status, dates, references, inline categorization and collapsible raw JSON. Category history was skipped — the backend only stores the current category (no audit trail).
 - [ ] Keyboard navigation - No keyboard shortcuts for common actions (j/k to move between transactions, c to categorize, / to search). Power users managing hundreds of transactions would benefit greatly.
 - [ ] Multi-select transactions - Currently bulk operations only work by description match. Being able to select multiple transactions with checkboxes and then bulk-categorize, export, or tag them would be more flexible.
 - [ ] Pending-transaction filter/visual distinction — `transaction_status` is stored and typed (`types/api.ts:112`) but never surfaced in the transactions table or filters.
