@@ -88,6 +88,47 @@ class TestErrorEnvelope:
 
 
 @pytest.mark.api
+class TestOpenAPISchema:
+    def test_error_schema_documented_on_operations(self, fastapi_app, mock_db_path):
+        schema = fastapi_app.openapi()
+
+        assert "ErrorResponse" in schema["components"]["schemas"]
+
+        protected = schema["paths"]["/api/v1/accounts"]["get"]["responses"]
+        for status in ("401", "500"):
+            ref = protected[status]["content"]["application/json"]["schema"]["$ref"]
+            assert ref.endswith("/ErrorResponse")
+
+    def test_public_paths_document_no_401(self, fastapi_app, mock_db_path):
+        schema = fastapi_app.openapi()
+
+        assert "401" not in schema["paths"]["/api/v1/auth/login"]["post"]["responses"]
+        assert "401" not in schema["paths"]["/api/v1/health"]["get"]["responses"]
+
+    def test_public_paths_match_the_routes_that_skip_auth(
+        self, fastapi_app, mock_db_path
+    ):
+        """Guards against the hardcoded set drifting if a route moves."""
+        from leggen.api.errors import _PUBLIC_PATHS
+
+        client = TestClient(fastapi_app)
+        for path in _PUBLIC_PATHS:
+            # Unauthenticated: reachable, so never 401. A 4xx other than 401
+            # (bad body, unhealthy) still proves auth was not required.
+            method = "post" if path.endswith("login") else "get"
+            response = client.request(method, path, json={})
+            assert response.status_code != 401, path
+
+    def test_validation_responses_use_the_error_schema(self, fastapi_app, mock_db_path):
+        """FastAPI documents a list-shaped 422; ours is the envelope."""
+        schema = fastapi_app.openapi()
+
+        responses = schema["paths"]["/api/v1/transactions"]["get"]["responses"]
+        ref = responses["422"]["content"]["application/json"]["schema"]["$ref"]
+        assert ref.endswith("/ErrorResponse")
+
+
+@pytest.mark.api
 class TestHealthEndpoint:
     def test_healthy(self, fastapi_app, mock_db_path):
         client = TestClient(fastapi_app)

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -32,6 +33,7 @@ __all__ = [
     "code_for_status",
     "error_response",
     "register_exception_handlers",
+    "use_error_schema_in_openapi",
 ]
 
 
@@ -147,3 +149,65 @@ def register_exception_handlers(app: FastAPI) -> None:
     for exc_class, handler in handlers:
         # Starlette types the registry loosely; the pairs above are consistent.
         app.add_exception_handler(exc_class, handler)
+
+
+_ERROR_SCHEMA_REF = "#/components/schemas/ErrorResponse"
+
+# Endpoints reachable without credentials, so no 401 is documented for them.
+_PUBLIC_PATHS = frozenset({"/api/v1/auth/login", "/api/v1/health"})
+
+
+def _error_content() -> dict[str, Any]:
+    return {"application/json": {"schema": {"$ref": _ERROR_SCHEMA_REF}}}
+
+
+def use_error_schema_in_openapi(app: FastAPI) -> None:
+    """Document the error envelope on every operation.
+
+    Applied globally rather than per route: with ~45 endpoints, `responses=`
+    declarations drift from what the handlers actually return. A route may
+    still declare its own 404/409 — anything already documented is left alone.
+    """
+
+    def custom_openapi() -> dict[str, Any]:
+        if app.openapi_schema:
+            return app.openapi_schema
+
+        schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            description=app.description,
+            routes=app.routes,
+        )
+        components = schema.setdefault("components", {}).setdefault("schemas", {})
+
+        model_schema = ErrorResponse.model_json_schema(
+            ref_template="#/components/schemas/{model}"
+        )
+        components.update(model_schema.pop("$defs", {}))
+        components["ErrorResponse"] = model_schema
+
+        for path, operations in schema.get("paths", {}).items():
+            for operation in operations.values():
+                if not isinstance(operation, dict):
+                    continue
+                responses = operation.setdefault("responses", {})
+
+                # FastAPI documents its own list-shaped 422; ours is different.
+                if "422" in responses:
+                    responses["422"]["content"] = _error_content()
+
+                documented = {
+                    "500": "Internal server error",
+                    **({} if path in _PUBLIC_PATHS else {"401": "Not authenticated"}),
+                }
+                for status, description in documented.items():
+                    responses.setdefault(
+                        status,
+                        {"description": description, "content": _error_content()},
+                    )
+
+        app.openapi_schema = schema
+        return schema
+
+    app.openapi = custom_openapi  # type: ignore[method-assign]

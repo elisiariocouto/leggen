@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 
 from leggen.api.dependencies.auth import get_current_user
-from leggen.api.errors import register_exception_handlers
+from leggen.api.errors import register_exception_handlers, use_error_schema_in_openapi
 from leggen.api.routes import (
     accounts,
     auth,
@@ -174,6 +174,9 @@ def create_app() -> FastAPI:
                 status_code=503,
                 content={"status": "unhealthy"},
             )
+
+    # Document the error envelope; must run once every route is registered
+    use_error_schema_in_openapi(app)
 
     return app
 
