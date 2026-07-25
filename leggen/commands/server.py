@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 from leggen.api.dependencies.auth import get_current_user
+from leggen.api.errors import register_exception_handlers
 from leggen.api.routes import (
     accounts,
     auth,
@@ -107,6 +108,9 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Give every error response the same envelope
+    register_exception_handlers(app)
 
     # Include auth routes (public, no auth dependency)
     app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
