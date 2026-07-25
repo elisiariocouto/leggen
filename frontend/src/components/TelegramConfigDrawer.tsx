@@ -68,12 +68,7 @@ export default function TelegramConfigDrawer({
   });
 
   const testMutation = useMutation({
-    mutationFn: () =>
-      apiClient.testNotification({
-        service: "telegram",
-        message:
-          "Test notification from Leggen - Telegram configuration is working!",
-      }),
+    mutationFn: () => apiClient.testNotification({ service: "telegram" }),
     onSuccess: () => {
       toast.success("Test Telegram notification sent.");
     },

@@ -37,14 +37,14 @@ class NotificationService:
         if self._is_telegram_enabled():
             await self._send_telegram_notifications(matching_transactions)
 
-    async def send_test_notification(self, service: str, message: str) -> bool:
+    async def send_test_notification(self, service: str) -> bool:
         """Send a test notification."""
         try:
             if service == "discord" and self._is_discord_enabled():
-                await self._send_discord_test(message)
+                await self._send_discord_test()
                 return True
             elif service == "telegram" and self._is_telegram_enabled():
-                await self._send_telegram_test(message)
+                await self._send_telegram_test()
                 return True
             else:
                 logger.error(
@@ -183,32 +183,19 @@ class NotificationService:
             # otherwise successful sync as failed.
             logger.error(f"Failed to send Telegram transaction notifications: {e}")
 
-    async def _send_discord_test(self, message: str) -> None:
+    async def _send_discord_test(self) -> None:
         try:
-            webhook_url = self._get_discord_webhook()
-            test_notification = {
-                "bank": "Test",
-                "session_id": "test-123",
-                "status": "active",
-                "days_left": 30,
-            }
-            await discord.send_expire_notification(webhook_url, test_notification)
-            logger.info(f"Discord test notification sent: {message}")
+            await discord.send_test_notification(self._get_discord_webhook())
+            logger.info("Discord test notification sent")
         except Exception as e:
             logger.error(f"Failed to send Discord test notification: {e}")
             raise
 
-    async def _send_telegram_test(self, message: str) -> None:
+    async def _send_telegram_test(self) -> None:
         try:
             token, chat_id = self._get_telegram_credentials()
-            test_notification = {
-                "bank": "Test",
-                "session_id": "test-123",
-                "status": "active",
-                "days_left": 30,
-            }
-            await telegram.send_expire_notification(token, chat_id, test_notification)
-            logger.info(f"Telegram test notification sent: {message}")
+            await telegram.send_test_notification(token, chat_id)
+            logger.info("Telegram test notification sent")
         except Exception as e:
             logger.error(f"Failed to send Telegram test notification: {e}")
             raise

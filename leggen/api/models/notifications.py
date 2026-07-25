@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -36,5 +36,4 @@ class NotificationSettings(BaseModel):
 class NotificationTest(BaseModel):
     """Test notification request"""
 
-    service: str  # "discord" or "telegram"
-    message: str = "Test notification from Leggen"
+    service: Literal["discord", "telegram"]

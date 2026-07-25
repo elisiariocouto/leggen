@@ -67,12 +67,7 @@ export default function DiscordConfigDrawer({
   });
 
   const testMutation = useMutation({
-    mutationFn: () =>
-      apiClient.testNotification({
-        service: "discord",
-        message:
-          "Test notification from Leggen - Discord configuration is working!",
-      }),
+    mutationFn: () => apiClient.testNotification({ service: "discord" }),
     onSuccess: () => {
       toast.success("Test Discord notification sent.");
     },

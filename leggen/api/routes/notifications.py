@@ -124,7 +124,7 @@ async def test_notification(test_request: NotificationTest) -> dict:
     """Send a test notification"""
     try:
         success = await NotificationService().send_test_notification(
-            test_request.service, test_request.message
+            test_request.service
         )
 
         if not success:

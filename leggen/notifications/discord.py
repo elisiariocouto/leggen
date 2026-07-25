@@ -39,6 +39,19 @@ async def send_expire_notification(webhook_url: str, notification: dict):
     )
 
 
+async def send_test_notification(webhook_url: str):
+    info("Sending test notification to Discord")
+    await _post_embed(
+        webhook_url,
+        {
+            "title": "🔔 Test Notification",
+            "description": "Leggen notifications are configured correctly.",
+            "color": _INFO_COLOR,
+            "footer": {"text": "Test notification"},
+        },
+    )
+
+
 async def send_transactions_message(webhook_url: str, transactions: list):
     info(f"Got {len(transactions)} new transactions, sending message to Discord")
     await _post_embed(

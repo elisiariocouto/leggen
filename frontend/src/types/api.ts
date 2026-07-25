@@ -142,8 +142,7 @@ export interface NotificationSettings {
 }
 
 export interface NotificationTest {
-  service: string;
-  message?: string;
+  service: "discord" | "telegram";
 }
 
 export interface NotificationService {

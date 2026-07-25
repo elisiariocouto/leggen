@@ -53,6 +53,13 @@ async def send_expire_notification(token: str, chat_id: str, notification: dict)
     await _send_message(token, chat_id, message)
 
 
+async def send_test_notification(token: str, chat_id: str):
+    info("Sending test notification to Telegram")
+    message = "*🔔 [Leggen](https://github.com/elisiariocouto/leggen)*\n"
+    message += escape_markdown("Leggen notifications are configured correctly.")
+    await _send_message(token, chat_id, message)
+
+
 async def send_transaction_message(token: str, chat_id: str, transactions: list):
     info(f"Got {len(transactions)} new transactions, sending message to Telegram")
     message = "*💲 [Leggen](https://github.com/elisiariocouto/leggen)*\n"
