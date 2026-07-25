@@ -15,13 +15,10 @@ from leggen.services.data_processors import (
 router = APIRouter()
 
 
-def _validate_category_id(category_id: Optional[str]) -> None:
-    """Reject category_id values that are neither numeric nor 'uncategorized'."""
-    if category_id and category_id != "uncategorized" and not category_id.isdigit():
-        raise HTTPException(
-            status_code=422,
-            detail="category_id must be a numeric ID or 'uncategorized'",
-        )
+# A category filter is either a numeric ID or the "uncategorized" bucket.
+# Declaring it as a pattern lets FastAPI produce the 422, so the response
+# carries field-level errors and the constraint shows up in the schema.
+_CATEGORY_ID_PATTERN = r"^(\d+|uncategorized)$"
 
 
 @router.get("/transactions")
@@ -50,11 +47,11 @@ async def get_all_transactions(
     account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
     category_id: Optional[str] = Query(
         default=None,
+        pattern=_CATEGORY_ID_PATTERN,
         description="Filter by category ID or 'uncategorized' for transactions without a category",
     ),
 ) -> PaginatedResponse[Union[TransactionSummary, Transaction]]:
     """Get all transactions from database with filtering options"""
-    _validate_category_id(category_id)
     try:
         # Calculate offset from page and per_page
         offset = (page - 1) * per_page
@@ -163,6 +160,7 @@ async def get_transaction_stats(
     ),
     category_id: Optional[str] = Query(
         default=None,
+        pattern=_CATEGORY_ID_PATTERN,
         description="Filter by category ID or 'uncategorized' for transactions without a category",
     ),
 ) -> Union[dict, List[dict]]:
@@ -171,7 +169,6 @@ async def get_transaction_stats(
     Without group_by: returns totals (transactions, income, expenses, etc.)
     With group_by=month: returns array of monthly stats.
     """
-    _validate_category_id(category_id)
     try:
         if group_by == "month":
             from leggen.utils.paths import path_manager

@@ -133,6 +133,24 @@ class TestValidationErrors:
         # `input` and `ctx` are deliberately dropped, see the handler.
         assert set(field_error) == {"field", "message", "type"}
 
+    def test_bad_category_id_reports_the_field(
+        self, fastapi_app, api_client, mock_db_path
+    ):
+        """This filter used to hand-raise a 422 with no field information."""
+        response = api_client.get("/api/v1/transactions?category_id=bogus")
+
+        assert response.status_code == 422
+        body = response.json()
+        _assert_envelope(body, 422, "VALIDATION_ERROR")
+        assert body["errors"][0]["field"] == "query.category_id"
+
+    def test_valid_category_id_values_are_accepted(
+        self, fastapi_app, api_client, mock_db_path
+    ):
+        for value in ("7", "uncategorized"):
+            response = api_client.get(f"/api/v1/transactions?category_id={value}")
+            assert response.status_code == 200, value
+
     def test_validation_error_does_not_echo_submitted_secrets(
         self, fastapi_app, api_client, mock_db_path
     ):
