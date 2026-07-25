@@ -19,18 +19,27 @@ class TelegramConfig(BaseModel):
 
 
 class NotificationFilters(BaseModel):
-    """Notification filters configuration"""
+    """Notification filters configuration
 
-    case_insensitive: List[str] = []
+    Both lists are tri-state on update: omitted means "leave as stored", an
+    empty list clears that list, and a populated list replaces it.
+    """
+
+    case_insensitive: Optional[List[str]] = None
     case_sensitive: Optional[List[str]] = None
 
 
 class NotificationSettings(BaseModel):
-    """Complete notification settings"""
+    """Complete notification settings
+
+    Every field is optional so that an update can address one part of the
+    settings without disturbing the rest; see the PUT handler in
+    `api/routes/notifications.py` for the merge semantics.
+    """
 
     discord: Optional[DiscordConfig] = None
     telegram: Optional[TelegramConfig] = None
-    filters: NotificationFilters = NotificationFilters()
+    filters: Optional[NotificationFilters] = None
 
 
 class NotificationTest(BaseModel):

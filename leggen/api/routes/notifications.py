@@ -59,53 +59,63 @@ async def get_notification_settings() -> NotificationSettings:
 
 @router.put("/notifications/settings")
 async def update_notification_settings(settings: NotificationSettings) -> dict:
-    """Update notification settings"""
+    """Update notification settings
+
+    Fields absent from the request body are left as stored; `update_section`
+    replaces a section wholesale, so merging here is what keeps a partial body
+    from wiping the settings it does not mention. An explicit `null` service
+    removes it, and an explicit empty filter list clears it.
+    """
     try:
         # Clients echo back masked secrets from GET to mean "keep current value"
         stored_config = config.notifications_config
+        notifications_config = dict(stored_config)
 
-        notifications_config = {}
+        if "discord" in settings.model_fields_set:
+            if settings.discord is None:
+                notifications_config.pop("discord", None)
+            else:
+                try:
+                    webhook = resolve_secret(
+                        settings.discord.webhook,
+                        stored_config.get("discord", {}).get("webhook"),
+                        "Discord webhook",
+                    )
+                except MaskedSecretError as e:
+                    raise HTTPException(status_code=400, detail=str(e)) from e
+                notifications_config["discord"] = {
+                    "webhook": webhook,
+                    "enabled": settings.discord.enabled,
+                }
 
-        if settings.discord:
-            try:
-                webhook = resolve_secret(
-                    settings.discord.webhook,
-                    stored_config.get("discord", {}).get("webhook"),
-                    "Discord webhook",
-                )
-            except MaskedSecretError as e:
-                raise HTTPException(status_code=400, detail=str(e)) from e
-            notifications_config["discord"] = {
-                "webhook": webhook,
-                "enabled": settings.discord.enabled,
-            }
+        if "telegram" in settings.model_fields_set:
+            if settings.telegram is None:
+                notifications_config.pop("telegram", None)
+            else:
+                try:
+                    token = resolve_secret(
+                        settings.telegram.token,
+                        stored_config.get("telegram", {}).get("token"),
+                        "Telegram token",
+                    )
+                except MaskedSecretError as e:
+                    raise HTTPException(status_code=400, detail=str(e)) from e
+                notifications_config["telegram"] = {
+                    "token": token,
+                    "chat_id": settings.telegram.chat_id,
+                    "enabled": settings.telegram.enabled,
+                }
 
-        if settings.telegram:
-            try:
-                token = resolve_secret(
-                    settings.telegram.token,
-                    stored_config.get("telegram", {}).get("token"),
-                    "Telegram token",
-                )
-            except MaskedSecretError as e:
-                raise HTTPException(status_code=400, detail=str(e)) from e
-            notifications_config["telegram"] = {
-                "token": token,
-                "chat_id": settings.telegram.chat_id,
-                "enabled": settings.telegram.enabled,
-            }
-
-        # Update filters config
-        filters_config: Dict[str, Any] = {}
-        if settings.filters.case_insensitive:
-            filters_config["case_insensitive"] = settings.filters.case_insensitive
-        if settings.filters.case_sensitive:
-            filters_config["case_sensitive"] = settings.filters.case_sensitive
-
-        # Save to config
-        if notifications_config:
+        if notifications_config != stored_config:
             config.update_section("notifications", notifications_config)
-        if filters_config:
+
+        # `exclude_none` on save would drop a null list, so cleared filters are
+        # written as empty lists rather than None.
+        if settings.filters is not None:
+            filters_config: Dict[str, Any] = dict(config.filters_config)
+            for field in ("case_insensitive", "case_sensitive"):
+                if field in settings.filters.model_fields_set:
+                    filters_config[field] = getattr(settings.filters, field) or []
             config.update_section("filters", filters_config)
 
         return {"updated": True}
@@ -179,6 +189,23 @@ async def get_notification_services() -> dict:
         logger.error(f"Failed to get notification services: {e}")
         raise HTTPException(
             status_code=500, detail="Failed to get notification services."
+        ) from e
+
+
+# Declared before the /{service} route below, which would otherwise match
+# "filters" and reject it as an unknown service.
+@router.delete("/notifications/settings/filters")
+async def delete_notification_filters() -> dict:
+    """Remove all notification filters"""
+    try:
+        config.update_section("filters", {})
+
+        return {"deleted": "filters"}
+
+    except Exception as e:
+        logger.error(f"Failed to delete notification filters: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to delete notification filters."
         ) from e
 
 

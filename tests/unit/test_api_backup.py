@@ -136,6 +136,71 @@ class TestBackupAPI:
         assert mock_config._config["backup"]["s3"]["enabled"] is False
 
     @patch("leggen.services.backup_service.BackupService.test_connection")
+    def test_update_backup_settings_without_s3_is_rejected(
+        self, mock_test_connection, api_client, mock_config
+    ):
+        """A body with no s3 config used to report success while doing nothing."""
+        stored = {
+            "s3": {
+                "access_key_id": "AKIAREAL123",
+                "secret_access_key": "real-secret",
+                "bucket_name": "test-bucket",
+                "region": "us-east-1",
+                "path_style": False,
+                "enabled": True,
+            }
+        }
+
+        for request_data in ({"s3": None}, {}):
+            mock_config._config["backup"] = {
+                "s3": dict(stored["s3"]),
+            }
+
+            with patch("leggen.utils.config.config", mock_config):
+                response = api_client.put("/api/v1/backup/settings", json=request_data)
+
+            assert response.status_code == 400
+            assert "DELETE /backup/settings" in response.json()["detail"]
+            mock_test_connection.assert_not_called()
+            # The stored configuration is left intact
+            assert mock_config._config["backup"]["s3"]["bucket_name"] == "test-bucket"
+
+    def test_delete_backup_settings_clears_the_section(self, api_client, mock_config):
+        """Removing the configuration must drop the stored credentials."""
+        mock_config._config["backup"] = {
+            "s3": {
+                "access_key_id": "AKIAREAL123",
+                "secret_access_key": "real-secret",
+                "bucket_name": "test-bucket",
+                "region": "us-east-1",
+                "path_style": False,
+                "enabled": True,
+            }
+        }
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.delete("/api/v1/backup/settings")
+
+        assert response.status_code == 200
+        assert response.json() == {"deleted": "s3"}
+        assert not mock_config._config["backup"].get("s3")
+
+        # The GET endpoint now reports nothing configured
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.get("/api/v1/backup/settings")
+        assert response.json()["s3"] is None
+
+    def test_delete_backup_settings_with_nothing_stored(self, api_client, mock_config):
+        """Deleting an absent configuration is not an error."""
+        mock_config._config.pop("backup", None)
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.delete("/api/v1/backup/settings")
+
+        assert response.status_code == 200
+        assert response.json() == {"deleted": "s3"}
+
+    @patch("leggen.services.backup_service.BackupService.test_connection")
     def test_update_backup_settings_masked_secrets_keep_stored_values(
         self, mock_test_connection, api_client, mock_config
     ):

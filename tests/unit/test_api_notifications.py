@@ -122,6 +122,145 @@ class TestNotificationSettingsAPI:
 
 
 @pytest.fixture
+def clean_notification_sections(mock_config):
+    """Drop the sections these tests write.
+
+    `mock_config` mutates the process-global `config` singleton rather than
+    replacing it, so `filters`/`notifications` have to be removed afterwards or
+    they leak into later tests.
+    """
+    yield mock_config
+
+    mock_config._config.pop("filters", None)
+    mock_config._config.pop("notifications", None)
+
+
+@pytest.mark.api
+@pytest.mark.usefixtures("clean_notification_sections")
+class TestNotificationFiltersUpdateAPI:
+    """Test that filters can be cleared and that a partial body merges."""
+
+    def test_empty_filter_lists_clear_stored_filters(self, api_client, mock_config):
+        """Removing the last filter in the UI must persist as no filters."""
+        mock_config._config["filters"] = {
+            "case_insensitive": ["rent"],
+            "case_sensitive": ["ACME"],
+        }
+
+        request_data = {"filters": {"case_insensitive": [], "case_sensitive": []}}
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.put(
+                "/api/v1/notifications/settings", json=request_data
+            )
+
+        assert response.status_code == 200
+        assert mock_config._config["filters"]["case_insensitive"] == []
+        assert mock_config._config["filters"]["case_sensitive"] == []
+
+    def test_omitted_filter_list_is_left_alone(self, api_client, mock_config):
+        """A body that mentions one list must not clear the other."""
+        mock_config._config["filters"] = {
+            "case_insensitive": ["rent"],
+            "case_sensitive": ["ACME"],
+        }
+
+        request_data = {"filters": {"case_insensitive": ["rent", "gym"]}}
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.put(
+                "/api/v1/notifications/settings", json=request_data
+            )
+
+        assert response.status_code == 200
+        assert mock_config._config["filters"]["case_insensitive"] == ["rent", "gym"]
+        assert mock_config._config["filters"]["case_sensitive"] == ["ACME"]
+
+    def test_omitted_filters_leave_the_section_untouched(self, api_client, mock_config):
+        """Saving a service must not disturb stored filters."""
+        mock_config._config["filters"] = {"case_insensitive": ["rent"]}
+        mock_config._config["notifications"] = {}
+
+        request_data = {
+            "discord": {
+                "webhook": "https://discord.com/api/webhooks/123/secret",
+                "enabled": True,
+            }
+        }
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.put(
+                "/api/v1/notifications/settings", json=request_data
+            )
+
+        assert response.status_code == 200
+        assert mock_config._config["filters"]["case_insensitive"] == ["rent"]
+
+    def test_omitted_service_survives_an_update_to_the_other(
+        self, api_client, mock_config
+    ):
+        """`update_section` replaces wholesale, so the handler has to merge."""
+        real_token = "123456:real-token"
+        mock_config._config["notifications"] = {
+            "telegram": {"token": real_token, "chat_id": 42, "enabled": True},
+        }
+
+        request_data = {
+            "discord": {
+                "webhook": "https://discord.com/api/webhooks/123/secret",
+                "enabled": True,
+            }
+        }
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.put(
+                "/api/v1/notifications/settings", json=request_data
+            )
+
+        assert response.status_code == 200
+        notifications = mock_config._config["notifications"]
+        assert notifications["telegram"]["token"] == real_token
+        assert notifications["discord"]["enabled"] is True
+
+    def test_null_service_removes_it(self, api_client, mock_config):
+        """An explicit null means "remove this service"."""
+        mock_config._config["notifications"] = {
+            "discord": {
+                "webhook": "https://discord.com/api/webhooks/123/secret",
+                "enabled": True,
+            },
+            "telegram": {"token": "123456:token", "chat_id": 42, "enabled": True},
+        }
+
+        request_data = {"telegram": None}
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.put(
+                "/api/v1/notifications/settings", json=request_data
+            )
+
+        assert response.status_code == 200
+        notifications = mock_config._config["notifications"]
+        assert "telegram" not in notifications
+        assert notifications["discord"]["enabled"] is True
+
+    def test_delete_filters_clears_the_section(self, api_client, mock_config):
+        """The filters DELETE must not be shadowed by the /{service} route."""
+        mock_config._config["filters"] = {
+            "case_insensitive": ["rent"],
+            "case_sensitive": ["ACME"],
+        }
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.delete("/api/v1/notifications/settings/filters")
+
+        assert response.status_code == 200
+        assert response.json() == {"deleted": "filters"}
+        assert not mock_config._config["filters"].get("case_insensitive")
+        assert not mock_config._config["filters"].get("case_sensitive")
+
+
+@pytest.fixture
 def enabled_notifications(mock_config):
     """Enable both notification services for the duration of a test.
 
