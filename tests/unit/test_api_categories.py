@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from leggen.errors import CategoryExistsError
 from leggen.repositories.category_repository import CategoryRepository
 from leggen.repositories.transaction_repository import TransactionRepository
 
@@ -553,3 +554,44 @@ class TestCategoriesAPI:
         data = response.json()
         assert data["status"] == "ok"
         assert data["removed_count"] == 0
+
+
+@pytest.mark.api
+class TestDuplicateCategory:
+    """A duplicate category name is a conflict, not a server error."""
+
+    def test_create_duplicate_returns_409(
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_category_repo,
+    ):
+        mock_category_repo.create_category.side_effect = CategoryExistsError(
+            "Category 'Travel' already exists."
+        )
+
+        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
+            mock_category_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.post(
+                "/api/v1/categories",
+                json={"name": "Travel", "color": "#06b6d4"},
+            )
+
+        fastapi_app.dependency_overrides.clear()
+
+        assert response.status_code == 409
+        body = response.json()
+        assert body["code"] == "CATEGORY_EXISTS"
+        assert body["detail"] == "Category 'Travel' already exists."
+
+    def test_repository_translates_unique_violation(self, mock_db_path):
+        """The real INSERT must raise the domain error, not sqlite3.IntegrityError."""
+        repo = CategoryRepository()
+        repo.create_category(name="Travel", color="#06b6d4")
+
+        with pytest.raises(CategoryExistsError):
+            repo.create_category(name="Travel", color="#06b6d4")

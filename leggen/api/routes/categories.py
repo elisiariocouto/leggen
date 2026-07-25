@@ -57,22 +57,18 @@ async def create_category(
     body: CategoryCreate,
     category_repo: Annotated[CategoryRepository, Depends()],
 ) -> Category:
-    """Create a new custom category."""
-    try:
-        cat = category_repo.create_category(
-            name=body.name,
-            color=body.color,
-            icon=body.icon,
-            exclude_from_stats=body.exclude_from_stats,
-        )
-        return Category(**cat)
-    except Exception as e:
-        logger.error(f"Failed to create category: {e}")
-        if "UNIQUE constraint" in str(e):
-            raise HTTPException(
-                status_code=409, detail=f"Category '{body.name}' already exists."
-            ) from e
-        raise HTTPException(status_code=500, detail="Failed to create category.") from e
+    """Create a new custom category.
+
+    A duplicate name raises CategoryExistsError from the repository, which the
+    exception handlers render as a 409.
+    """
+    cat = category_repo.create_category(
+        name=body.name,
+        color=body.color,
+        icon=body.icon,
+        exclude_from_stats=body.exclude_from_stats,
+    )
+    return Category(**cat)
 
 
 @router.put("/categories/{category_id}", response_model=Category)

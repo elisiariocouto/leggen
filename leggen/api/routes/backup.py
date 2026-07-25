@@ -12,7 +12,7 @@ from leggen.api.models.backup import (
 from leggen.models.config import S3BackupConfig
 from leggen.services.backup_service import BackupService
 from leggen.utils.config import config
-from leggen.utils.masking import mask_secret, resolve_secret
+from leggen.utils.masking import MaskedSecretError, mask_secret, resolve_secret
 from leggen.utils.paths import path_manager
 
 router = APIRouter()
@@ -68,7 +68,7 @@ async def update_backup_settings(settings: BackupSettings) -> dict:
                     stored_s3.get("secret_access_key"),
                     "S3 secret access key",
                 )
-            except ValueError as e:
+            except MaskedSecretError as e:
                 raise HTTPException(status_code=400, detail=str(e)) from e
 
             # Convert API model to config model
@@ -142,7 +142,7 @@ async def test_backup_connection(test_request: BackupTest) -> dict:
                 stored_s3.get("secret_access_key"),
                 "S3 secret access key",
             )
-        except ValueError as e:
+        except MaskedSecretError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
 
         # Convert API model to config model

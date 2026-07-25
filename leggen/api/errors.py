@@ -1,10 +1,13 @@
-"""Domain errors and the exception handlers that render them.
+"""The exception handlers that render every API error response.
 
 Every error leaving the API is shaped by one of the handlers registered in
 `register_exception_handlers`, so clients see a single envelope
 (`leggen.api.models.common.ErrorResponse`) regardless of where the failure
 came from: a deliberate `HTTPException`, a `LeggenError` raised deep in a
 service, request validation, or an unhandled crash.
+
+The domain errors themselves live in `leggen.errors`, free of HTTP imports,
+and are re-exported here for convenience.
 """
 
 from typing import TYPE_CHECKING, Any
@@ -17,38 +20,19 @@ from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from leggen.api.models.common import ErrorField, ErrorResponse
+from leggen.errors import ConflictError, LeggenError, NotFoundError
 
 if TYPE_CHECKING:
     from starlette.requests import Request
 
-
-class LeggenError(Exception):
-    """Base for domain errors that map onto an HTTP response.
-
-    Services and repositories raise these to signal *what* went wrong without
-    importing HTTP concerns; the handler below turns them into responses.
-    """
-
-    status_code: int = 500
-    code: str = "INTERNAL_ERROR"
-
-    def __init__(self, detail: str) -> None:
-        super().__init__(detail)
-        self.detail = detail
-
-
-class NotFoundError(LeggenError):
-    """The requested resource does not exist."""
-
-    status_code = 404
-    code = "NOT_FOUND"
-
-
-class ConflictError(LeggenError):
-    """The request conflicts with the current state of the resource."""
-
-    status_code = 409
-    code = "CONFLICT"
+__all__ = [
+    "ConflictError",
+    "LeggenError",
+    "NotFoundError",
+    "code_for_status",
+    "error_response",
+    "register_exception_handlers",
+]
 
 
 # Fallback codes for errors raised as plain HTTPExceptions, which carry a

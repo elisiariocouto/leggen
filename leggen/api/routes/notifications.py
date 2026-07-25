@@ -12,7 +12,7 @@ from leggen.api.models.notifications import (
 )
 from leggen.services.notification_service import NotificationService
 from leggen.utils.config import config
-from leggen.utils.masking import mask_secret, resolve_secret
+from leggen.utils.masking import MaskedSecretError, mask_secret, resolve_secret
 
 router = APIRouter()
 
@@ -73,7 +73,7 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
                     stored_config.get("discord", {}).get("webhook"),
                     "Discord webhook",
                 )
-            except ValueError as e:
+            except MaskedSecretError as e:
                 raise HTTPException(status_code=400, detail=str(e)) from e
             notifications_config["discord"] = {
                 "webhook": webhook,
@@ -87,7 +87,7 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
                     stored_config.get("telegram", {}).get("token"),
                     "Telegram token",
                 )
-            except ValueError as e:
+            except MaskedSecretError as e:
                 raise HTTPException(status_code=400, detail=str(e)) from e
             notifications_config["telegram"] = {
                 "token": token,

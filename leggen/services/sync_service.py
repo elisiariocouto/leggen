@@ -5,6 +5,7 @@ from typing import List, Optional
 from loguru import logger
 
 from leggen.api.models.sync import SyncResult, SyncStatus
+from leggen.errors import ConflictError
 from leggen.repositories import (
     AccountRepository,
     BalanceRepository,
@@ -27,8 +28,10 @@ EXPIRED_DAYS_LEFT = 0
 EXPIRY_WARNING_THRESHOLDS = [7, 3, 1]
 
 
-class SyncAlreadyRunningError(Exception):
+class SyncAlreadyRunningError(ConflictError):
     """Raised when a sync is triggered while another one is still running."""
+
+    code = "SYNC_ALREADY_RUNNING"
 
 
 class SyncService:

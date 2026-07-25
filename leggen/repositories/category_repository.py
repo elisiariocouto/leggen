@@ -1,7 +1,9 @@
 """Repository for transaction category data operations."""
 
+import sqlite3
 from typing import Any, Optional
 
+from leggen.errors import CategoryExistsError
 from leggen.repositories.db import db_exists, get_db_connection
 from leggen.utils.keywords import extract_keywords
 
@@ -185,13 +187,22 @@ class CategoryRepository:
         icon: Optional[str] = None,
         exclude_from_stats: bool = False,
     ) -> dict[str, Any]:
-        """Create a new custom category."""
+        """Create a new custom category.
+
+        Raises:
+            ConflictError: If a category with this name already exists. The
+                name is unique in the domain, not just in the schema, so the
+                IntegrityError is translated rather than surfaced verbatim.
+        """
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO categories (name, color, icon, is_default, exclude_from_stats) VALUES (?, ?, ?, 0, ?)",
-                (name, color, icon, exclude_from_stats),
-            )
+            try:
+                cursor.execute(
+                    "INSERT INTO categories (name, color, icon, is_default, exclude_from_stats) VALUES (?, ?, ?, 0, ?)",
+                    (name, color, icon, exclude_from_stats),
+                )
+            except sqlite3.IntegrityError as e:
+                raise CategoryExistsError(f"Category '{name}' already exists.") from e
             conn.commit()
             category_id = cursor.lastrowid
             cursor.execute("SELECT * FROM categories WHERE id = ?", (category_id,))
