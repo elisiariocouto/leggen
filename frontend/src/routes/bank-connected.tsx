@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { apiClient } from "../lib/api";
+import { apiClient, getApiErrorMessage } from "../lib/api";
 
 function BankConnected() {
   const search = useSearch({ from: "/bank-connected" });
@@ -34,7 +34,7 @@ function BankConnected() {
         .catch((err) => {
           setStatus("error");
           setErrorMessage(
-            err?.response?.data?.detail || "Failed to complete bank connection",
+            getApiErrorMessage(err, "Failed to complete bank connection"),
           );
         });
     }

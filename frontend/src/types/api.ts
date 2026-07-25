@@ -158,6 +158,21 @@ export interface NotificationServicesResponse {
 }
 
 // Health check response data
+// Error envelope returned by every API error response.
+// Mirrors ErrorResponse/ErrorField in leggen/api/models/common.py.
+export interface ApiErrorField {
+  field: string;
+  message: string;
+  type: string;
+}
+
+export interface ApiError {
+  detail: string;
+  code: string;
+  status: number;
+  errors?: ApiErrorField[];
+}
+
 export interface HealthData {
   status: string;
   config_loaded?: boolean;

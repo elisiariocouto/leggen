@@ -1,5 +1,7 @@
 import axios from "axios";
 import type {
+  ApiError,
+  ApiErrorField,
   Account,
   Transaction,
   Balance,
@@ -38,16 +40,36 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "/api/v1";
 // on update means "keep the current value"
 export const MASKED_SECRET = "***";
 
+// Parse the backend's error envelope. Returns null for network failures and
+// for any response that doesn't carry one, so callers fall back to their own
+// message rather than showing something unhelpful.
+export function getApiError(error: unknown): ApiError | null {
+  if (!axios.isAxiosError(error)) {
+    return null;
+  }
+  const data = error.response?.data;
+  if (typeof data?.detail !== "string" || !data.detail.trim()) {
+    return null;
+  }
+  const status = error.response?.status ?? 0;
+  return {
+    detail: data.detail,
+    // Older servers predate the envelope, so code and status may be absent.
+    code: typeof data.code === "string" ? data.code : "HTTP_ERROR",
+    status: typeof data.status === "number" ? data.status : status,
+    errors: Array.isArray(data.errors) ? data.errors : undefined,
+  };
+}
+
+// Field-level problems from a validation error, empty for anything else.
+export function getApiFieldErrors(error: unknown): ApiErrorField[] {
+  return getApiError(error)?.errors ?? [];
+}
+
 // Standard error message for mutation failures: prefer the backend's
 // `detail` over Axios's generic message, falling back to `fallback`.
 export function getApiErrorMessage(error: unknown, fallback: string): string {
-  if (axios.isAxiosError(error)) {
-    const detail = error.response?.data?.detail;
-    if (typeof detail === "string" && detail.trim()) {
-      return detail;
-    }
-  }
-  return fallback;
+  return getApiError(error)?.detail ?? fallback;
 }
 
 const api = axios.create({

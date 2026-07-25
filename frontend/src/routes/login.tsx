@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../contexts/AuthContext";
+import { getApiErrorMessage } from "../lib/api";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -29,8 +30,9 @@ function LoginPage() {
     try {
       await login(username, password);
       navigate({ to: "/" });
-    } catch {
-      setError("Invalid username or password");
+    } catch (err) {
+      // Distinguishes a rejected login from the API being unreachable.
+      setError(getApiErrorMessage(err, "Invalid username or password"));
     } finally {
       setIsSubmitting(false);
     }
