@@ -390,6 +390,11 @@ export const apiClient = {
     return response.data;
   },
 
+  // Removes the S3 configuration and its stored credentials
+  deleteBackupSettings: async (): Promise<void> => {
+    await api.delete("/backup/settings");
+  },
+
   testBackupConnection: async (
     test: BackupTest,
   ): Promise<{ connected: boolean }> => {

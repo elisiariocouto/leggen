@@ -130,15 +130,19 @@ export interface TelegramConfig {
   enabled: boolean;
 }
 
+// Mirrors NotificationFilters/NotificationSettings in
+// leggen/api/models/notifications.py. On update every field is optional:
+// omitting one leaves it as stored, an empty list clears a filter list, and an
+// explicit null removes a service.
 export interface NotificationFilters {
-  case_insensitive: string[];
+  case_insensitive?: string[];
   case_sensitive?: string[];
 }
 
 export interface NotificationSettings {
-  discord?: DiscordConfig;
-  telegram?: TelegramConfig;
-  filters: NotificationFilters;
+  discord?: DiscordConfig | null;
+  telegram?: TelegramConfig | null;
+  filters?: NotificationFilters;
 }
 
 export interface NotificationTest {

@@ -390,8 +390,9 @@ export default function Settings() {
                           Case Insensitive Filters
                         </Label>
                         <div className="min-h-8 flex flex-wrap gap-1">
-                          {notificationSettings.filters.case_insensitive
-                            .length > 0 ? (
+                          {notificationSettings.filters.case_insensitive &&
+                          notificationSettings.filters.case_insensitive.length >
+                            0 ? (
                             notificationSettings.filters.case_insensitive.map(
                               (filter) => (
                                 <span

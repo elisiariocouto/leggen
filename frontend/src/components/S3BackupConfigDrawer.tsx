@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Cloud, TestTube } from "lucide-react";
+import { Cloud, TestTube, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage, MASKED_SECRET } from "../lib/api";
 import { Button } from "./ui/button";
@@ -18,6 +18,16 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "./ui/drawer";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 import type { BackupSettings, S3Config } from "../types/api";
 
 interface S3BackupConfigDrawerProps {
@@ -25,26 +35,32 @@ interface S3BackupConfigDrawerProps {
   trigger?: React.ReactNode;
 }
 
+const EMPTY_S3_CONFIG: S3Config = {
+  access_key_id: "",
+  secret_access_key: "",
+  bucket_name: "",
+  region: "us-east-1",
+  endpoint_url: "",
+  path_style: false,
+  enabled: true,
+};
+
 export default function S3BackupConfigDrawer({
   settings,
   trigger,
 }: S3BackupConfigDrawerProps) {
   const [open, setOpen] = useState(false);
-  const [config, setConfig] = useState<S3Config>({
-    access_key_id: "",
-    secret_access_key: "",
-    bucket_name: "",
-    region: "us-east-1",
-    endpoint_url: "",
-    path_style: false,
-    enabled: true,
-  });
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [config, setConfig] = useState<S3Config>(EMPTY_S3_CONFIG);
 
   const queryClient = useQueryClient();
 
   useEffect(() => {
     if (settings?.s3) {
       setConfig({ ...settings.s3 });
+    } else {
+      // Removing the configuration must not leave the old values in the form
+      setConfig(EMPTY_S3_CONFIG);
     }
   }, [settings]);
 
@@ -64,6 +80,22 @@ export default function S3BackupConfigDrawer({
           error,
           "Failed to save S3 configuration. Please check your settings and try again.",
         ),
+      );
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: apiClient.deleteBackupSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["backupSettings"] });
+      queryClient.invalidateQueries({ queryKey: ["backups"] });
+      setConfirmRemove(false);
+      setOpen(false);
+      toast.success("S3 backup configuration removed.");
+    },
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(error, "Failed to remove S3 configuration."),
       );
     },
   });
@@ -273,6 +305,18 @@ export default function S3BackupConfigDrawer({
                   </Button>
                 )}
               </div>
+              {settings?.s3 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setConfirmRemove(true)}
+                  disabled={deleteMutation.isPending}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Remove configuration
+                </Button>
+              )}
               <DrawerClose asChild>
                 <Button variant="ghost">Cancel</Button>
               </DrawerClose>
@@ -280,6 +324,36 @@ export default function S3BackupConfigDrawer({
           </form>
         </div>
       </DrawerContent>
+
+      <AlertDialog
+        open={confirmRemove}
+        onOpenChange={(next) => {
+          if (!next) {
+            setConfirmRemove(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove S3 Configuration</AlertDialogTitle>
+            <AlertDialogDescription>
+              This deletes the bucket settings and the stored credentials.
+              Scheduled backups will stop until S3 is configured again. Existing
+              backups in the bucket are not touched.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Drawer>
   );
 }

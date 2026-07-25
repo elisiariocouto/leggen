@@ -29,7 +29,9 @@ export default function NotificationFiltersDrawer({
   trigger,
 }: NotificationFiltersDrawerProps) {
   const [open, setOpen] = useState(false);
-  const [filters, setFilters] = useState<NotificationFilters>({
+  // Both lists are always present in local state; the API leaves them optional
+  // so that an update can address one without clearing the other.
+  const [filters, setFilters] = useState<Required<NotificationFilters>>({
     case_insensitive: [],
     case_sensitive: [],
   });
