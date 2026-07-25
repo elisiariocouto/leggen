@@ -88,6 +88,33 @@ class TestErrorEnvelope:
 
 
 @pytest.mark.api
+class TestHealthEndpoint:
+    def test_healthy(self, fastapi_app, mock_db_path):
+        client = TestClient(fastapi_app)
+
+        response = client.get("/api/v1/health")
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "healthy"
+
+    def test_unhealthy_returns_503_without_exception_details(
+        self, fastapi_app, mock_db_path
+    ):
+        """The endpoint is unauthenticated, so it must not echo the failure."""
+        client = TestClient(fastapi_app)
+
+        with patch(
+            "leggen.commands.server.metadata.version",
+            side_effect=Exception("/secret/path/leggen.db unreadable"),
+        ):
+            response = client.get("/api/v1/health")
+
+        assert response.status_code == 503
+        assert response.json() == {"status": "unhealthy"}
+        assert "/secret/path" not in response.text
+
+
+@pytest.mark.api
 class TestValidationErrors:
     def test_validation_error_has_string_detail_and_field_errors(
         self, fastapi_app, api_client, mock_db_path

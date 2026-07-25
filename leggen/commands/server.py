@@ -5,6 +5,7 @@ import click
 import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from loguru import logger
 
 from leggen.api.dependencies.auth import get_current_user
@@ -166,11 +167,13 @@ def create_app() -> FastAPI:
                 "version": version,
             }
         except Exception as e:
+            # This endpoint is unauthenticated, so the failure reason stays in
+            # the log; the status code is what callers act on.
             logger.error(f"Health check failed: {e}")
-            return {
-                "status": "unhealthy",
-                "error": str(e),
-            }
+            return JSONResponse(
+                status_code=503,
+                content={"status": "unhealthy"},
+            )
 
     return app
 

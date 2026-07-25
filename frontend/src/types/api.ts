@@ -163,7 +163,6 @@ export interface HealthData {
   config_loaded?: boolean;
   version?: string;
   message?: string;
-  error?: string;
 }
 
 // Version information from root endpoint
