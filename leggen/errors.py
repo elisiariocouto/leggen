@@ -49,3 +49,17 @@ class CategoryExistsError(ConflictError):
     """A category with the requested name already exists."""
 
     code = "CATEGORY_EXISTS"
+
+
+class NotificationNotEnabledError(LeggenError):
+    """A notification service was asked to send while switched off or unconfigured."""
+
+    status_code = 400
+    code = "NOTIFICATION_NOT_ENABLED"
+
+
+class NotificationSendError(LeggenError):
+    """A notification provider (Discord/Telegram) rejected or failed the send."""
+
+    status_code = 502
+    code = "NOTIFICATION_SEND_FAILED"

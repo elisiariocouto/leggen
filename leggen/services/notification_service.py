@@ -2,6 +2,11 @@ from typing import Any, Dict, List
 
 from loguru import logger
 
+from leggen.errors import (
+    NotificationNotEnabledError,
+    NotificationSendError,
+    describe_exception,
+)
 from leggen.notifications import discord, telegram
 from leggen.utils.config import config
 
@@ -37,23 +42,32 @@ class NotificationService:
         if self._is_telegram_enabled():
             await self._send_telegram_notifications(matching_transactions)
 
-    async def send_test_notification(self, service: str) -> bool:
-        """Send a test notification."""
+    async def send_test_notification(self, service: str) -> None:
+        """Send a test notification.
+
+        Raises ``NotificationNotEnabledError`` when the service is switched off
+        or missing credentials, and ``NotificationSendError`` when the provider
+        call itself fails, so callers can tell a misconfiguration apart from an
+        upstream failure.
+        """
+        if service == "discord" and self._is_discord_enabled():
+            sender = self._send_discord_test
+        elif service == "telegram" and self._is_telegram_enabled():
+            sender = self._send_telegram_test
+        else:
+            logger.error(f"Notification service '{service}' not enabled or not found")
+            raise NotificationNotEnabledError(
+                f"Notification service '{service}' is not enabled or not configured"
+            )
+
         try:
-            if service == "discord" and self._is_discord_enabled():
-                await self._send_discord_test()
-                return True
-            elif service == "telegram" and self._is_telegram_enabled():
-                await self._send_telegram_test()
-                return True
-            else:
-                logger.error(
-                    f"Notification service '{service}' not enabled or not found"
-                )
-                return False
+            await sender()
         except Exception as e:
             logger.error(f"Failed to send test notification to {service}: {e}")
-            return False
+            raise NotificationSendError(
+                f"Failed to send test notification to {service}: "
+                f"{describe_exception(e)}"
+            ) from e
 
     async def send_expiry_notification(self, notification_data: Dict[str, Any]) -> None:
         """Send notification about account expiry."""

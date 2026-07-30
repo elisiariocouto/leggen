@@ -259,6 +259,75 @@ class TestNotificationFiltersUpdateAPI:
         assert not mock_config._config["filters"].get("case_insensitive")
         assert not mock_config._config["filters"].get("case_sensitive")
 
+    def test_delete_unknown_service_returns_422(self, api_client, mock_config):
+        """An unsupported service name fails path validation, consistent with
+        the test endpoint rather than the old hand-rolled 400."""
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.delete("/api/v1/notifications/settings/slack")
+
+        assert response.status_code == 422
+        assert response.json()["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.api
+class TestNotificationServicesStatusAPI:
+    """GET /notifications/services keeps enabled/configured/active distinct so
+    the frontend's status states are all reachable."""
+
+    def test_unconfigured_service_is_not_active(self, api_client, mock_config):
+        """No credentials → configured False and active False, even though the
+        default toggle leaves it enabled ("Needs Configuration")."""
+        previous = mock_config._config.get("notifications")
+        mock_config._config["notifications"] = {}
+        try:
+            with patch("leggen.utils.config.config", mock_config):
+                response = api_client.get("/api/v1/notifications/services")
+        finally:
+            if previous is None:
+                mock_config._config.pop("notifications", None)
+            else:
+                mock_config._config["notifications"] = previous
+
+        discord = response.json()["discord"]
+        assert discord["configured"] is False
+        assert discord["enabled"] is True
+        assert discord["active"] is False
+
+    def test_configured_but_disabled_is_not_active(self, api_client, mock_config):
+        """Credentials present but toggled off → enabled False, active False
+        ("Disabled"), a state the old enabled==configured logic couldn't show."""
+        previous = mock_config._config.get("notifications")
+        mock_config._config["notifications"] = {
+            "discord": {
+                "webhook": "https://discord.com/api/webhooks/123/secret",
+                "enabled": False,
+            },
+        }
+        try:
+            with patch("leggen.utils.config.config", mock_config):
+                response = api_client.get("/api/v1/notifications/services")
+        finally:
+            if previous is None:
+                mock_config._config.pop("notifications", None)
+            else:
+                mock_config._config["notifications"] = previous
+
+        discord = response.json()["discord"]
+        assert discord["configured"] is True
+        assert discord["enabled"] is False
+        assert discord["active"] is False
+
+    def test_configured_and_enabled_is_active(self, api_client, enabled_notifications):
+        """Credentials present and toggled on → active True ("Active")."""
+        with patch("leggen.utils.config.config", enabled_notifications):
+            response = api_client.get("/api/v1/notifications/services")
+
+        for name in ("discord", "telegram"):
+            service = response.json()[name]
+            assert service["configured"] is True
+            assert service["enabled"] is True
+            assert service["active"] is True
+
 
 @pytest.fixture
 def enabled_notifications(mock_config):
@@ -330,7 +399,8 @@ class TestNotificationTestAPI:
         assert "test-123" not in message
 
     def test_disabled_service_returns_400(self, api_client, mock_config):
-        """Testing an unconfigured service is a client error."""
+        """Testing an unconfigured service is a client error with a code that
+        the frontend can distinguish from an upstream send failure."""
         previous = mock_config._config.get("notifications")
         mock_config._config["notifications"] = {}
         try:
@@ -344,7 +414,24 @@ class TestNotificationTestAPI:
                 mock_config._config["notifications"] = previous
 
         assert response.status_code == 400
-        assert "discord" in response.json()["detail"]
+        body = response.json()
+        assert "discord" in body["detail"]
+        assert body["code"] == "NOTIFICATION_NOT_ENABLED"
+
+    def test_provider_send_failure_returns_502(self, api_client, enabled_notifications):
+        """An upstream provider failure is a 502 with its own code, distinct
+        from the 400 a misconfiguration returns."""
+        with patch(
+            "leggen.notifications.discord._post_embed",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("discord is down"),
+        ):
+            response = api_client.post(
+                "/api/v1/notifications/test", json={"service": "discord"}
+            )
+
+        assert response.status_code == 502
+        assert response.json()["code"] == "NOTIFICATION_SEND_FAILED"
 
     def test_unknown_service_returns_422(self, api_client, enabled_notifications):
         """An unsupported service name fails request validation."""

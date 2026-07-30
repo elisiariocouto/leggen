@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Send, TestTube } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient, getApiErrorMessage, MASKED_SECRET } from "../lib/api";
+import {
+  apiClient,
+  getApiError,
+  getApiErrorMessage,
+  MASKED_SECRET,
+} from "../lib/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -73,6 +78,10 @@ export default function TelegramConfigDrawer({
       toast.success("Test Telegram notification sent.");
     },
     onError: (error) => {
+      if (getApiError(error)?.code === "NOTIFICATION_NOT_ENABLED") {
+        toast.error("Enable and save Telegram before sending a test.");
+        return;
+      }
       toast.error(
         getApiErrorMessage(
           error,

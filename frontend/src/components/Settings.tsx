@@ -312,7 +312,7 @@ export default function Settings() {
                               <div className="flex items-center space-x-2">
                                 <div
                                   className={`w-2 h-2 rounded-full ${
-                                    service.enabled && service.configured
+                                    service.active
                                       ? "bg-green-500"
                                       : service.enabled
                                         ? "bg-amber-500"
@@ -320,7 +320,7 @@ export default function Settings() {
                                   }`}
                                 />
                                 <span className="text-sm text-muted-foreground">
-                                  {service.enabled && service.configured
+                                  {service.active
                                     ? "Active"
                                     : service.enabled
                                       ? "Needs Configuration"

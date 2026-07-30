@@ -151,9 +151,11 @@ export interface NotificationTest {
 
 export interface NotificationService {
   name: string;
+  // `enabled` is the on/off toggle, `configured` means credentials are present,
+  // and `active` (enabled && configured) means the service is operational.
   enabled: boolean;
   configured: boolean;
-  active?: boolean;
+  active: boolean;
 }
 
 export interface NotificationServicesResponse {

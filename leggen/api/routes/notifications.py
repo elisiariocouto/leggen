@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Literal
 
 from fastapi import APIRouter, HTTPException
 from loguru import logger
@@ -10,6 +10,7 @@ from leggen.api.models.notifications import (
     NotificationTest,
     TelegramConfig,
 )
+from leggen.errors import LeggenError
 from leggen.services.notification_service import NotificationService
 from leggen.utils.config import config
 from leggen.utils.masking import MaskedSecretError, mask_secret, resolve_secret
@@ -131,21 +132,17 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
 
 @router.post("/notifications/test")
 async def test_notification(test_request: NotificationTest) -> dict:
-    """Send a test notification"""
+    """Send a test notification.
+
+    Distinguishes a misconfiguration (``NOTIFICATION_NOT_ENABLED``, 400) from
+    an upstream provider failure (``NOTIFICATION_SEND_FAILED``, 502) — both are
+    raised as domain errors by the service and rendered by the global handler.
+    """
     try:
-        success = await NotificationService().send_test_notification(
-            test_request.service
-        )
-
-        if not success:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to send test notification to {test_request.service}",
-            )
-
+        await NotificationService().send_test_notification(test_request.service)
         return {"sent": True}
 
-    except HTTPException:
+    except (HTTPException, LeggenError):
         raise
     except Exception as e:
         logger.error(f"Failed to send test notification: {e}")
@@ -160,26 +157,31 @@ async def get_notification_services() -> dict:
     try:
         notifications_config = config.notifications_config
 
+        discord = notifications_config.get("discord", {})
+        telegram = notifications_config.get("telegram", {})
+
+        # `configured` = has credentials; `enabled` = the on/off toggle
+        # (default on); `active` = both, i.e. actually operational. Keeping the
+        # three distinct is what makes the frontend's "Needs Configuration"
+        # (enabled but not configured) and "Disabled" (toggled off) states
+        # reachable.
+        discord_configured = bool(discord.get("webhook"))
+        discord_enabled = bool(discord.get("enabled", True))
+        telegram_configured = bool(telegram.get("token") and telegram.get("chat_id"))
+        telegram_enabled = bool(telegram.get("enabled", True))
+
         services = {
             "discord": {
                 "name": "Discord",
-                "enabled": bool(notifications_config.get("discord", {}).get("webhook")),
-                "configured": bool(
-                    notifications_config.get("discord", {}).get("webhook")
-                ),
-                "active": notifications_config.get("discord", {}).get("enabled", True),
+                "enabled": discord_enabled,
+                "configured": discord_configured,
+                "active": discord_enabled and discord_configured,
             },
             "telegram": {
                 "name": "Telegram",
-                "enabled": bool(
-                    notifications_config.get("telegram", {}).get("token")
-                    and notifications_config.get("telegram", {}).get("chat_id")
-                ),
-                "configured": bool(
-                    notifications_config.get("telegram", {}).get("token")
-                    and notifications_config.get("telegram", {}).get("chat_id")
-                ),
-                "active": notifications_config.get("telegram", {}).get("enabled", True),
+                "enabled": telegram_enabled,
+                "configured": telegram_configured,
+                "active": telegram_enabled and telegram_configured,
             },
         }
 
@@ -210,14 +212,16 @@ async def delete_notification_filters() -> dict:
 
 
 @router.delete("/notifications/settings/{service}")
-async def delete_notification_service(service: str) -> dict:
-    """Delete/disable a notification service"""
-    try:
-        if service not in ["discord", "telegram"]:
-            raise HTTPException(
-                status_code=400, detail="Service must be 'discord' or 'telegram'"
-            )
+async def delete_notification_service(
+    service: Literal["discord", "telegram"],
+) -> dict:
+    """Delete/disable a notification service
 
+    The ``Literal`` path type validates the service name for us, yielding a 422
+    for anything else — consistent with the test endpoint rather than the old
+    hand-rolled 400.
+    """
+    try:
         notifications_config = config.notifications_config.copy()
         if service in notifications_config:
             del notifications_config[service]
