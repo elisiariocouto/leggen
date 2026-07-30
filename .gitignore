@@ -158,7 +158,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 data/
-docker-compose.dev.yml
 nocodb/
 sql/
 leggen.db
@@ -166,3 +165,6 @@ leggen.db
 config.toml
 .claude/
 .playwright-mcp/
+
+# TanStack Router plugin scratch directory
+frontend/.tanstack/
