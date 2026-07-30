@@ -19,6 +19,7 @@ class MigrationRepository:
         await self.migrate_add_logo_if_needed()
         await self.migrate_add_exclude_from_stats_if_needed()
         await self.migrate_transaction_date_format_if_needed()
+        await self.migrate_balances_unique_constraint_if_needed()
         await self.cleanup_orphaned_category_rows()
 
     async def migrate_transaction_date_format_if_needed(self):
@@ -485,6 +486,145 @@ class MigrationRepository:
 
         except Exception as e:
             logger.error(f"Composite key migration failed: {e}")
+            raise
+
+    # Balances unique-constraint migration methods
+    async def migrate_balances_unique_constraint_if_needed(self):
+        """Add UNIQUE(account_id, type, timestamp) to the balances table.
+
+        Without the constraint, every sync appends a fresh balance row even
+        when nothing changed, so the table grows unbounded and the
+        IntegrityError-based dedup in BalanceRepository.persist never fires.
+        """
+        try:
+            if await self._check_balances_unique_migration_needed():
+                logger.info("Balances unique-constraint migration needed, starting...")
+                await self._migrate_balances_unique_constraint()
+                logger.info("Balances unique-constraint migration completed")
+            else:
+                logger.info("Balances unique-constraint migration not needed")
+        except Exception as e:
+            logger.error(f"Balances unique-constraint migration failed: {e}")
+            raise
+
+    async def _check_balances_unique_migration_needed(self) -> bool:
+        """Check whether the balances table lacks the unique constraint"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return False
+
+        try:
+            conn = create_connection(db_path)
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='balances'"
+            )
+            if not cursor.fetchone():
+                conn.close()
+                return False
+
+            # A UNIQUE(...) table constraint surfaces as an auto-created unique
+            # index (origin 'u'). Look for one covering exactly the target
+            # columns; if present, the migration has already run.
+            target = ["account_id", "type", "timestamp"]
+            cursor.execute("PRAGMA index_list(balances)")
+            for index in cursor.fetchall():
+                index_name, is_unique, origin = index[1], index[2], index[3]
+                if not is_unique or origin != "u":
+                    continue
+                cursor.execute(f"PRAGMA index_info('{index_name}')")
+                columns = [col[2] for col in cursor.fetchall()]
+                if columns == target:
+                    conn.close()
+                    return False
+
+            conn.close()
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to check balances unique-constraint status: {e}")
+            return False
+
+    async def _migrate_balances_unique_constraint(self):
+        """Rebuild the balances table with UNIQUE(account_id, type, timestamp)"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            logger.warning("Database file not found, skipping migration")
+            return
+
+        try:
+            conn = create_connection(db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT COUNT(*) FROM balances")
+            source_count = cursor.fetchone()[0]
+
+            logger.info("Creating temporary balances table with unique constraint...")
+            cursor.execute("DROP TABLE IF EXISTS balances_temp")
+            cursor.execute(
+                """CREATE TABLE balances_temp (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    account_id TEXT,
+                    bank TEXT,
+                    status TEXT,
+                    iban TEXT,
+                    amount REAL,
+                    currency TEXT,
+                    type TEXT,
+                    timestamp DATETIME,
+                    UNIQUE(account_id, type, timestamp)
+                )"""
+            )
+
+            logger.info("Inserting deduplicated balances...")
+            cursor.execute(
+                """INSERT INTO balances_temp
+                    (account_id, bank, status, iban, amount, currency, type, timestamp)
+                SELECT
+                    account_id, bank, status, iban, amount, currency, type, timestamp
+                FROM (
+                    SELECT *,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY account_id, type, timestamp
+                               ORDER BY id DESC
+                           ) as rn
+                    FROM balances
+                )
+                WHERE rn = 1"""
+            )
+
+            rows_migrated = cursor.rowcount
+            logger.info(
+                f"Migrated {rows_migrated} of {source_count} balances "
+                f"({source_count - rows_migrated} duplicates collapsed)"
+            )
+
+            logger.info("Replacing old balances table...")
+            cursor.execute("DROP TABLE balances")
+            cursor.execute("ALTER TABLE balances_temp RENAME TO balances")
+
+            logger.info("Recreating balances indexes...")
+            cursor.execute(
+                """CREATE INDEX IF NOT EXISTS idx_balances_account_id
+                   ON balances(account_id)"""
+            )
+            cursor.execute(
+                """CREATE INDEX IF NOT EXISTS idx_balances_timestamp
+                   ON balances(timestamp)"""
+            )
+            cursor.execute(
+                """CREATE INDEX IF NOT EXISTS idx_balances_account_type_timestamp
+                   ON balances(account_id, type, timestamp)"""
+            )
+
+            conn.commit()
+            conn.close()
+
+            logger.info("Balances unique-constraint migration completed successfully")
+
+        except Exception as e:
+            logger.error(f"Balances unique-constraint migration failed: {e}")
             raise
 
     # Display name migration methods

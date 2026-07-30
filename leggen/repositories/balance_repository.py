@@ -24,7 +24,8 @@ class BalanceRepository:
                 amount REAL,
                 currency TEXT,
                 type TEXT,
-                timestamp DATETIME
+                timestamp DATETIME,
+                UNIQUE(account_id, type, timestamp)
             )"""
             )
 
