@@ -11,6 +11,9 @@ jwt_expiry_minutes = 60
 application_id = "your-application-id"
 key_path = "/path/to/private-key.pem"
 # url = "https://api.enablebanking.com"
+# Raise read_timeout if syncs fail with ReadTimeout on slow transaction pages
+# connect_timeout = 10.0
+# read_timeout = 60.0
 
 # Optional: Background sync scheduling
 [scheduler.sync]

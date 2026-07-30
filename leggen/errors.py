@@ -6,6 +6,20 @@ layer may raise them. The API turns them into responses in
 """
 
 
+def describe_exception(exc: BaseException) -> str:
+    """Return a human-readable description of an exception.
+
+    Some exceptions carry no message — notably httpx timeouts, whose ``str()``
+    is empty — which would otherwise be logged as a bare "failed: " with no
+    indication of the cause. Fall back to the class name so the failure is
+    always identifiable, and qualify it with the message when there is one.
+    """
+    detail = str(exc).strip()
+    if not detail:
+        return type(exc).__name__
+    return f"{type(exc).__name__}: {detail}"
+
+
 class LeggenError(Exception):
     """Base for domain errors that map onto an HTTP response."""
 

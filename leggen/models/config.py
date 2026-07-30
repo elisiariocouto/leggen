@@ -11,6 +11,19 @@ class EnableBankingConfig(BaseModel):
         default="https://api.enablebanking.com",
         description="EnableBanking API URL",
     )
+    connect_timeout: float = Field(
+        default=10.0,
+        gt=0,
+        description="Seconds to wait for a connection to the EnableBanking API",
+    )
+    read_timeout: float = Field(
+        default=60.0,
+        gt=0,
+        description=(
+            "Seconds to wait for each response chunk. Applies per request, so a"
+            " paginated transactions fetch allows this much time for every page."
+        ),
+    )
 
     @field_validator("key_path", mode="before")
     @classmethod

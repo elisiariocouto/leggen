@@ -120,7 +120,7 @@ class Config:
         return self._config
 
     @property
-    def enablebanking_config(self) -> Dict[str, str]:
+    def enablebanking_config(self) -> Dict[str, Any]:
         return self.config.get("enablebanking", {})
 
     @property

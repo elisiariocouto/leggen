@@ -5,7 +5,7 @@ from typing import List, Optional
 from loguru import logger
 
 from leggen.api.models.sync import SyncResult, SyncStatus
-from leggen.errors import ConflictError
+from leggen.errors import ConflictError, describe_exception
 from leggen.repositories import (
     AccountRepository,
     BalanceRepository,
@@ -251,7 +251,9 @@ class SyncService:
                     logs.append(f"Synced account {account_id} successfully")
 
                 except Exception as e:
-                    error_msg = f"Failed to sync account {account_id}: {str(e)}"
+                    error_msg = (
+                        f"Failed to sync account {account_id}: {describe_exception(e)}"
+                    )
                     errors.append(error_msg)
                     logger.error(error_msg)
                     logs.append(error_msg)
@@ -318,7 +320,7 @@ class SyncService:
             return result
 
         except Exception as e:
-            error_msg = f"Sync failed: {str(e)}"
+            error_msg = f"Sync failed: {describe_exception(e)}"
             errors.append(error_msg)
             logs.append(error_msg)
             logger.error(error_msg)

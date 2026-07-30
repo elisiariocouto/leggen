@@ -23,6 +23,7 @@ class EnableBankingService:
     def __init__(self):
         self._private_key: Optional[str] = None
         self._client: Optional[httpx.AsyncClient] = None
+        self._client_timeout: Optional[httpx.Timeout] = None
         self._jwt_token: Optional[str] = None
         self._jwt_expires_at: float = 0.0
         self._aspsps_cache: Dict[str, tuple[float, list[Dict[str, Any]]]] = {}
@@ -30,17 +31,42 @@ class EnableBankingService:
     # Config is read live via properties (not cached at construction) so
     # settings changes apply without a server restart.
     @property
-    def config(self) -> Dict[str, str]:
+    def config(self) -> Dict[str, Any]:
         return config.enablebanking_config
 
     @property
     def base_url(self) -> str:
         return self.config.get("url", "https://api.enablebanking.com")
 
+    @property
+    def timeout(self) -> httpx.Timeout:
+        """Per-request timeouts for EnableBanking calls.
+
+        Read is granted a longer budget than connect because the upstream API
+        is slow to produce large transaction pages; a single stalled page would
+        otherwise abort the whole account sync.
+        """
+        return httpx.Timeout(
+            connect=float(self.config.get("connect_timeout") or 10.0),
+            read=float(self.config.get("read_timeout") or 60.0),
+            write=10.0,
+            pool=10.0,
+        )
+
     def _get_client(self) -> httpx.AsyncClient:
-        """Return the shared HTTP client, creating it on first use."""
-        if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(timeout=30)
+        """Return the shared HTTP client, creating it on first use.
+
+        Recreated when the configured timeout changes so settings edits apply
+        without a server restart, matching the live-config properties above.
+        """
+        timeout = self.timeout
+        if (
+            self._client is None
+            or self._client.is_closed
+            or self._client_timeout != timeout
+        ):
+            self._client = httpx.AsyncClient(timeout=timeout)
+            self._client_timeout = timeout
         return self._client
 
     def _load_private_key(self) -> str:
