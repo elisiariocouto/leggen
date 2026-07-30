@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -43,6 +44,58 @@ class TestCommandDiscovery:
         assert result.exit_code == 0
         for command in ("balances", "server", "status", "sync", "transactions"):
             assert command in result.output
+
+
+@pytest.mark.cli
+class TestCommandExitCodes:
+    """Commands must exit non-zero on failure so scripts can detect it."""
+
+    def _unreachable_client(self):
+        client = MagicMock()
+        client.health_check.return_value = False
+        return client
+
+    def test_sync_exits_nonzero_when_server_unreachable(self, mock_config):
+        runner = CliRunner()
+        with patch(
+            "leggen.commands.sync.LeggenAPIClient",
+            return_value=self._unreachable_client(),
+        ):
+            result = runner.invoke(cli, ["--config", mock_config._config_path, "sync"])
+        assert result.exit_code == 1
+
+    def test_status_exits_nonzero_when_server_unreachable(self, mock_config):
+        runner = CliRunner()
+        with patch(
+            "leggen.commands.status.LeggenAPIClient",
+            return_value=self._unreachable_client(),
+        ):
+            result = runner.invoke(
+                cli, ["--config", mock_config._config_path, "status"]
+            )
+        assert result.exit_code == 1
+
+    def test_bank_delete_exits_nonzero_when_server_unreachable(self, mock_config):
+        runner = CliRunner()
+        with patch(
+            "leggen.commands.bank.delete.LeggenAPIClient",
+            return_value=self._unreachable_client(),
+        ):
+            result = runner.invoke(
+                cli, ["--config", mock_config._config_path, "bank", "delete", "abc"]
+            )
+        assert result.exit_code == 1
+
+    def test_bank_delete_exits_nonzero_when_delete_fails(self, mock_config):
+        runner = CliRunner()
+        client = MagicMock()
+        client.health_check.return_value = True
+        client.delete_bank_connection.side_effect = RuntimeError("boom")
+        with patch("leggen.commands.bank.delete.LeggenAPIClient", return_value=client):
+            result = runner.invoke(
+                cli, ["--config", mock_config._config_path, "bank", "delete", "abc"]
+            )
+        assert result.exit_code == 1
 
 
 def _run_cli_without_config(args, tmp_path, input=None):

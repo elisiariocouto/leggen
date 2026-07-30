@@ -2,7 +2,7 @@ import click
 
 from leggen.api_client import LeggenAPIClient
 from leggen.main import cli
-from leggen.utils.text import datefmt, echo, info, print_table
+from leggen.utils.text import datefmt, echo, error, info, print_table
 
 
 @cli.command()
@@ -19,10 +19,8 @@ def status(ctx: click.Context):
 
     # Check if leggen server is available
     if not api_client.health_check():
-        click.echo(
-            "Error: Cannot connect to leggen server. Please ensure it's running."
-        )
-        return
+        error("Cannot connect to leggen server. Please ensure it's running.")
+        ctx.exit(1)
 
     # Get bank connection status
     bank_connections = api_client.get_bank_status()

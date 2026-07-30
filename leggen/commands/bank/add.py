@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, urlparse
 import click
 
 from leggen.api_client import LeggenAPIClient
-from leggen.utils.text import info, print_table, success, warning
+from leggen.utils.text import error, info, print_table, success, warning
 
 
 @click.command()
@@ -20,10 +20,8 @@ def add(ctx):
 
     # Check if leggen server is available
     if not api_client.health_check():
-        click.echo(
-            "Error: Cannot connect to leggen server. Please ensure it's running."
-        )
-        return
+        error("Cannot connect to leggen server. Please ensure it's running.")
+        ctx.exit(1)
 
     try:
         # Get supported countries
@@ -81,8 +79,8 @@ def add(ctx):
         code = query_params.get("code", [None])[0]
 
         if not code:
-            click.echo("Error: No authorization code found in the callback URL.")
-            return
+            error("No authorization code found in the callback URL.")
+            ctx.exit(1)
 
         # Exchange the code for a session
         session = api_client.exchange_auth_code(code)
@@ -94,5 +92,8 @@ def add(ctx):
         info(f"Accounts: {len(accounts) if accounts else 0}")
         info("You can now sync your accounts with 'leggen sync'")
 
+    except (click.exceptions.Exit, click.Abort):
+        raise
     except Exception as e:
-        click.echo(f"Error: Failed to connect to bank: {str(e)}")
+        error(f"Failed to connect to bank: {str(e)}")
+        ctx.exit(1)

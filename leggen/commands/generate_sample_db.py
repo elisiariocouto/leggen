@@ -552,11 +552,17 @@ def generate_sample_db(
             db_path = path_manager.get_config_dir() / "leggen-dev.db"
 
     # Check if database exists and ask for confirmation
-    if db_path.exists() and not force:
-        click.echo(f"⚠️  Database already exists: {db_path}")
-        if not click.confirm("Do you want to overwrite it?"):
-            click.echo("Aborted.")
-            ctx.exit(0)
+    if db_path.exists():
+        if not force:
+            click.echo(f"⚠️  Database already exists: {db_path}")
+            if not click.confirm("Do you want to overwrite it?"):
+                click.echo("Aborted.")
+                ctx.exit(0)
+        # Truly overwrite: remove the existing database (and any SQLite
+        # sidecar files) so no stale rows survive the regeneration.
+        for suffix in ("", "-wal", "-shm", "-journal"):
+            sidecar = db_path.with_name(db_path.name + suffix)
+            sidecar.unlink(missing_ok=True)
 
     # Generate the sample database
     generator = SampleDataGenerator(db_path)
@@ -569,4 +575,4 @@ def generate_sample_db(
     click.echo("   leggen transactions")
     click.echo("")
     click.echo("To use this sample database with leggen server:")
-    click.echo(f"   leggen server --database {db_path}")
+    click.echo(f"   leggen --database {db_path} server")

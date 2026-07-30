@@ -28,7 +28,7 @@ def sync(ctx: click.Context, full: bool, accounts: tuple[str, ...]):
     # Check if leggen server is available
     if not api_client.health_check():
         error("Cannot connect to leggen server. Please ensure it's running.")
-        return
+        ctx.exit(1)
 
     try:
         info("Starting sync...")
@@ -53,7 +53,8 @@ def sync(ctx: click.Context, full: bool, accounts: tuple[str, ...]):
             if result.get("errors"):
                 for err in result["errors"]:
                     error(f"  - {err}")
+            ctx.exit(1)
 
     except Exception as e:
         error(f"Sync failed: {str(e)}")
-        return
+        ctx.exit(1)
