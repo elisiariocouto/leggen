@@ -4,8 +4,8 @@
 
 - [ ] Cleared sections are written as empty tables (`[filters]` with two empty lists, a bare `[backup]`) rather than removed from `config.toml`. Services treat empty and absent identically, so this is cosmetic; removing them needs a `delete_section` on the config singleton, since `update_section` only replaces (`utils/config.py:103`).
 - [ ] The notification services and filters have DELETE endpoints, but `PUT /notifications/settings` can also remove a service by sending an explicit null — two ways to do one thing, and the frontend uses neither for filters (it clears by sending empty lists).
-- [ ] Backup restore exists in the API (`routes/backup.py:227-243`) and the API client (`api.ts:386`), but the only wired UI action is "Backup Now" (`Settings.tsx:141,535`) — no restore UI.
-- [ ] `generate_sample_db --force` doesn't truly overwrite: `INSERT OR REPLACE` for accounts/transactions but plain `INSERT` for balances, and tables are never dropped — old rows persist (`generate_sample_db.py:333,355,380`); printed instructions still use invalid ordering `leggen server --database X` (`generate_sample_db.py:549`) — `--database` is a global option and must precede the subcommand.
+- [ ] Backup restore exists in the API (`routes/backup.py`, the `restore` branch of the backup-operation endpoint) and the API client, but the only wired UI action is "Backup Now" (`Settings.tsx`) — no restore UI.
+- [ ] `generate_sample_db --force` doesn't truly overwrite: `INSERT OR REPLACE` for accounts/transactions but plain `INSERT` for balances, and tables are never dropped — old rows persist (`generate_sample_db.py`); printed instructions still use invalid ordering `leggen server --database X` — `--database` is a global option and must precede the subcommand.
 
 ## 🎨 Consistency & code quality
 
@@ -13,7 +13,7 @@
 - [ ] `DELETE /categories/{id}` returns 400 for "not found or is a default category" (`routes/categories.py:112`), conflating two cases and disagreeing with the 404s elsewhere. Splitting them into 404 vs 409/403 is a behaviour change — `test_api_categories.py:191` asserts the 400.
 - [ ] `decode_access_token` returns None for both expired and malformed tokens (`utils/auth.py:38-44`), so the API can't tell the frontend to refresh rather than force a re-login.
 - [ ] Per-form 422 field errors: the envelope carries them and `getApiFieldErrors` exposes them, but no form maps them back to inputs — that needs a field-path-to-input registry per drawer.
-- [ ] `NotificationService.active` is the real on/off signal; `Settings.tsx:323-327` derives status from `enabled && configured` — "Needs Configuration" state unreachable.
+- [ ] "Needs Configuration" is an unreachable UI state: `GET /notifications/services` sets `enabled` and `configured` to the *same* expression per service (both `bool(webhook)` for Discord, both `bool(token and chat_id)` for Telegram), so the `enabled && configured` vs `enabled` distinction `Settings.tsx` renders can never differ. The real on/off signal is the separate `active` field the route derives from `notifications.<service>.enabled`, which the frontend ignores. Fix on the API side (make `enabled` mean "switched on", `configured` mean "has credentials") and key the frontend off all three.
 - [ ] Notification error semantics (do these together, they're one pass): `send_test_notification` returns a bare `False` for both "service not enabled" and "the provider call raised", so `POST /notifications/test` answers a misconfiguration and a network failure with an identical 400 — needs domain errors (`NOTIFICATION_NOT_ENABLED`, plus a 502 for upstream send failures) and a frontend that keys off `code`; `DELETE /notifications/settings/{service}` still hand-validates the service name and returns 400, now inconsistent with the `Literal` 422 on the test endpoint.
 - [ ] `escape_markdown` (`notifications/telegram.py:6`) never escapes backslash, and backslash must be escaped first — text containing one produces an invalid MarkdownV2 sequence and an opaque Telegram 400. Currently unreachable (only bank names and error strings flow through) but a trap for any future path that sends user-supplied text.
 - [ ] `mock_config` (`tests/conftest.py:136`) assigns to the process-global `config` singleton's `_config` without restoring it, so config a test sets leaks into every later test in the session. Note the `patch("leggen.utils.config.config", ...)` in existing tests is a no-op — modules bound `config` at import time, and the tests only pass because `Config.__new__` returns the same singleton the fixture mutates.
@@ -23,9 +23,9 @@
 
 ## 🔧 Testing & CI
 
-- [ ] Add tests for the riskiest untested code: `migration_repository.py` (zero coverage), `data_processors.py` (only indirectly patched), `enablebanking_service.py` (only mocked in API tests), repositories other than transactions. CLI commands now have basic coverage (`tests/unit/test_cli_commands.py`, `cli` marker).
+- [ ] Add tests for the riskiest untested code: `migration_repository.py` and `data_processors.py` (both effectively zero coverage — the only `data_processors` reference in tests is an import in `test_configurable_paths.py`), and repositories other than transactions (balances/accounts/sessions are only exercised as mocks through the API tests). CLI commands now have basic coverage (`tests/unit/test_cli_commands.py`, `cli` marker) and `enablebanking_service.py` has direct coverage of its timeout paths (`test_enablebanking_timeouts.py`), though the rest of that service is still only mocked.
 - [ ] Add a frontend test runner (vitest) — currently zero frontend tests, no `test` script.
-- [ ] Backend Dockerfile: non-root `USER` — deliberately deferred: compose deployments bind-mount `./data:/root/.config/leggen`, so going non-root breaks existing volume paths/ownership; needs a coordinated path change (e.g. `LEGGEN_CONFIG_DIR=/data`).
+- [ ] Backend Dockerfile: non-root `USER` — deliberately deferred. The image sets no `USER`, so it runs as root and `path_manager` resolves the config dir to `/root/.config/leggen` (`utils/paths.py`, the `~/.config/leggen` default); existing deployments bind-mount their `./data` there, so going non-root breaks those volume paths and their ownership. Needs a coordinated path change (e.g. `LEGGEN_CONFIG_DIR=/data`) plus a documented migration. Note the README's "Docker Compose" quick-start references a compose file that is no longer checked in — worth resolving alongside this, since whatever compose file gets restored should already use the new path.
 
 ## 💰 Features — Financial
 
@@ -39,7 +39,7 @@
 - [ ] Empty states & onboarding - When a user first opens the app with no bank connections, there's no guided onboarding flow. A first-run wizard or prominent call-to-action on the dashboard would help.
 - [ ] Keyboard navigation - No keyboard shortcuts for common actions (j/k to move between transactions, c to categorize, / to search). Power users managing hundreds of transactions would benefit greatly.
 - [ ] Multi-select transactions - Currently bulk operations only work by description match. Being able to select multiple transactions with checkboxes and then bulk-categorize, export, or tag them would be more flexible.
-- [ ] Pending-transaction filter/visual distinction — `transaction_status` is stored and typed (`types/api.ts:112`) but never surfaced in the transactions table or filters.
+- [ ] Pending-transaction filter/visual distinction in the transactions table — `transaction_status` is stored, typed (`types/api.ts`), and now shown in the transaction detail view (`TransactionDetail.tsx`, via `StatusBadge`), but the table rows carry no visual distinction and there's no status filter.
 - [ ] Net-worth / balance-over-time dashboard on the overview page — `/balances/history` and per-sync snapshots already exist.
 - [ ] Per-currency stats grouping (prerequisite for meaningful totals with multi-currency accounts).
 
