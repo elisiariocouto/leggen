@@ -10,8 +10,8 @@ from loguru import logger
 
 from leggen.utils.config import config
 
-# States issued by start_auth, awaiting the bank redirect. Module-level
-# because a fresh service instance is created per request via Depends().
+# States issued by start_auth, awaiting the bank redirect. Module-level so
+# they are shared across all service instances (routes and sync service).
 _pending_auth_states: Dict[str, float] = {}
 
 
@@ -187,6 +187,11 @@ class EnableBankingService:
             and time.time() - issued_at <= self.AUTH_STATE_TTL_SECONDS
         )
 
+    async def aclose(self) -> None:
+        """Close the underlying HTTP client."""
+        if self._client is not None and not self._client.is_closed:
+            await self._client.aclose()
+
     async def create_session(self, code: str) -> Dict[str, Any]:
         """Exchange authorization code for a session."""
         return await self._make_request("POST", "/sessions", json={"code": code})
@@ -222,3 +227,25 @@ class EnableBankingService:
             params["continuation_key"] = continuation_key
 
         return {"transactions": all_transactions}
+
+
+# Application-scoped instance for FastAPI routes. A per-request instance
+# (bare Depends()) would leak an unclosed httpx.AsyncClient per request and
+# defeat the JWT and ASPSP caches.
+_service: Optional[EnableBankingService] = None
+
+
+def get_enablebanking_service() -> EnableBankingService:
+    """FastAPI dependency returning the app-scoped service instance."""
+    global _service
+    if _service is None:
+        _service = EnableBankingService()
+    return _service
+
+
+async def close_enablebanking_service() -> None:
+    """Close the app-scoped service's HTTP client (lifespan shutdown)."""
+    global _service
+    if _service is not None:
+        await _service.aclose()
+        _service = None

@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from leggen.services.enablebanking_service import EnableBankingService
+from leggen.services.enablebanking_service import get_enablebanking_service
 
 
 @pytest.mark.api
@@ -17,12 +17,12 @@ class TestBanksAPI:
         """Test successful retrieval of bank institutions."""
         mock_eb = AsyncMock()
         mock_eb.get_aspsps.return_value = sample_bank_data["aspsps"]
-        fastapi_app.dependency_overrides[EnableBankingService] = lambda: mock_eb
+        fastapi_app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/banks/institutions?country=PT")
 
-        fastapi_app.dependency_overrides.pop(EnableBankingService, None)
+        fastapi_app.dependency_overrides.pop(get_enablebanking_service, None)
 
         assert response.status_code == 200
         data = response.json()
@@ -36,12 +36,12 @@ class TestBanksAPI:
         """Test institutions endpoint with invalid country code."""
         mock_eb = AsyncMock()
         mock_eb.get_aspsps.return_value = []
-        fastapi_app.dependency_overrides[EnableBankingService] = lambda: mock_eb
+        fastapi_app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/banks/institutions?country=XX")
 
-        fastapi_app.dependency_overrides.pop(EnableBankingService, None)
+        fastapi_app.dependency_overrides.pop(get_enablebanking_service, None)
 
         assert response.status_code == 200
         data = response.json()
@@ -56,7 +56,7 @@ class TestBanksAPI:
         mock_eb.start_auth.return_value = {
             "url": "https://bank.example.com/auth?state=abc"
         }
-        fastapi_app.dependency_overrides[EnableBankingService] = lambda: mock_eb
+        fastapi_app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
             request_data = {
@@ -66,7 +66,7 @@ class TestBanksAPI:
             }
             response = api_client.post("/api/v1/banks/connect", json=request_data)
 
-        fastapi_app.dependency_overrides.pop(EnableBankingService, None)
+        fastapi_app.dependency_overrides.pop(get_enablebanking_service, None)
 
         assert response.status_code == 200
         data = response.json()
@@ -84,13 +84,13 @@ class TestBanksAPI:
         mock_eb.start_auth.return_value = {
             "url": "https://bank.example.com/auth?state=abc"
         }
-        fastapi_app.dependency_overrides[EnableBankingService] = lambda: mock_eb
+        fastapi_app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
             request_data = {"aspsp_name": "Revolut", "aspsp_country": "GB"}
             response = api_client.post("/api/v1/banks/connect", json=request_data)
 
-        fastapi_app.dependency_overrides.pop(EnableBankingService, None)
+        fastapi_app.dependency_overrides.pop(get_enablebanking_service, None)
 
         assert response.status_code == 200
         assert mock_eb.start_auth.call_args.kwargs["maximum_consent_validity"] is None
@@ -107,7 +107,7 @@ class TestBanksAPI:
         mock_eb = AsyncMock()
         mock_eb.create_session.return_value = session_response
         mock_eb.consume_auth_state = MagicMock(return_value=True)
-        api_client.app.dependency_overrides[EnableBankingService] = lambda: mock_eb
+        api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.post(
@@ -115,7 +115,7 @@ class TestBanksAPI:
                 json={"code": "test-auth-code", "state": "test-state"},
             )
 
-        api_client.app.dependency_overrides.pop(EnableBankingService, None)
+        api_client.app.dependency_overrides.pop(get_enablebanking_service, None)
 
         assert response.status_code == 200
         data = response.json()
@@ -129,7 +129,7 @@ class TestBanksAPI:
         """Callback rejects a state that was never issued by start_auth."""
         mock_eb = AsyncMock()
         mock_eb.consume_auth_state = MagicMock(return_value=False)
-        api_client.app.dependency_overrides[EnableBankingService] = lambda: mock_eb
+        api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.post(
@@ -137,7 +137,7 @@ class TestBanksAPI:
                 json={"code": "test-auth-code", "state": "forged-state"},
             )
 
-        api_client.app.dependency_overrides.pop(EnableBankingService, None)
+        api_client.app.dependency_overrides.pop(get_enablebanking_service, None)
 
         assert response.status_code == 400
         mock_eb.create_session.assert_not_called()
@@ -155,7 +155,7 @@ class TestBanksAPI:
         mock_eb = AsyncMock()
         mock_eb.create_session.return_value = session_response
         mock_eb.consume_auth_state = MagicMock(return_value=True)
-        api_client.app.dependency_overrides[EnableBankingService] = lambda: mock_eb
+        api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
             api_client.post(
@@ -163,7 +163,7 @@ class TestBanksAPI:
                 json={"code": "test-code", "state": "test-state"},
             )
 
-        api_client.app.dependency_overrides.pop(EnableBankingService, None)
+        api_client.app.dependency_overrides.pop(get_enablebanking_service, None)
 
         # Now get status
         with patch("leggen.utils.config.config", mock_config):
@@ -202,7 +202,7 @@ class TestBanksAPI:
         mock_eb = AsyncMock()
         mock_eb.create_session.return_value = session_response
         mock_eb.consume_auth_state = MagicMock(return_value=True)
-        api_client.app.dependency_overrides[EnableBankingService] = lambda: mock_eb
+        api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
             api_client.post(
@@ -210,7 +210,7 @@ class TestBanksAPI:
                 json={"code": "test-code", "state": "test-state"},
             )
 
-        api_client.app.dependency_overrides.pop(EnableBankingService, None)
+        api_client.app.dependency_overrides.pop(get_enablebanking_service, None)
 
         # Delete the session
         with patch("leggen.utils.config.config", mock_config):

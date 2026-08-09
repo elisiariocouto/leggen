@@ -22,6 +22,7 @@ from leggen.api.routes import (
 )
 from leggen.background.scheduler import scheduler
 from leggen.repositories import MigrationRepository, ensure_tables
+from leggen.services.enablebanking_service import close_enablebanking_service
 from leggen.utils.config import config
 from leggen.utils.paths import path_manager
 
@@ -79,6 +80,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down leggen server...")
     scheduler.shutdown()
+    await close_enablebanking_service()
 
 
 def create_app() -> FastAPI:
