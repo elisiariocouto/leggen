@@ -135,16 +135,25 @@ class TestSyncAPI:
 
 @pytest.fixture
 def restore_config():
-    """Snapshot the global test config (memory + disk) and restore it after."""
-    # Loading via the property ensures _config_path is resolved
+    """Snapshot the global test config (memory + disk) and restore it after.
+
+    Other tests leave stale state on the config singleton, so reload from
+    the canonical test config file (LEGGEN_CONFIG_FILE, set in conftest)
+    before snapshotting.
+    """
+    original_config = copy.deepcopy(config_singleton._config)
+    original_path = config_singleton._config_path
+    config_singleton._config = None
+    config_singleton._config_model = None
+    config_singleton._config_path = None
     config_singleton.load_config()
     config_path = Path(config_singleton._config_path)
     original_bytes = config_path.read_bytes()
-    original_config = copy.deepcopy(config_singleton._config)
     yield config_singleton
     config_path.write_bytes(original_bytes)
     config_singleton._config = original_config
     config_singleton._config_model = None
+    config_singleton._config_path = original_path
 
 
 @pytest.mark.api
