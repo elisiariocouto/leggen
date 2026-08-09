@@ -31,6 +31,8 @@ Frontend dev server at `http://localhost:5173` (port 3000 is only the Docker ngi
 
 ## Build/Lint/Test Commands
 
+A `justfile` wraps the common dev commands: `just server`, `just frontend`, `just seed`, `just check`, `just test`, `just build`, `just release`. The underlying commands are listed below.
+
 ### Backend (Python)
 - **Lint**: `uv run ruff check .`
 - **Format**: `uv run ruff format .`
