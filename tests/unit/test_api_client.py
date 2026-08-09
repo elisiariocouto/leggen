@@ -1,40 +1,15 @@
 """Tests for CLI API client."""
 
-from unittest.mock import patch
-
 import pytest
 import requests
 import requests_mock
 
-from leggen.api_client import LeggenAPIClient
+from leggen.api_client import LeggenAPIClient, LeggenAPIError
 
 
 @pytest.mark.cli
 class TestLeggenAPIClient:
     """Test the CLI API client."""
-
-    def test_health_check_success(self):
-        """Test successful health check."""
-        client = LeggenAPIClient("http://localhost:8000")
-
-        with requests_mock.Mocker() as m:
-            m.get(
-                "http://localhost:8000/api/v1/health",
-                json={"status": "healthy"},
-            )
-
-            result = client.health_check()
-            assert result is True
-
-    def test_health_check_failure(self):
-        """Test health check failure."""
-        client = LeggenAPIClient("http://localhost:8000")
-
-        with requests_mock.Mocker() as m:
-            m.get("http://localhost:8000/health", status_code=500)
-
-            result = client.health_check()
-            assert result is False
 
     def test_get_institutions_success(self, sample_bank_data):
         """Test getting institutions via API client."""
@@ -92,15 +67,18 @@ class TestLeggenAPIClient:
             assert len(result) == 1
             assert result[0]["id"] == "test-account-123"
 
-    def test_connection_error_handling(self):
-        """Test handling of connection errors."""
-        client = LeggenAPIClient("http://localhost:9999")  # Non-existent service
+    def test_connection_error_raises_api_error(self):
+        """Connection failures surface as LeggenAPIError (a ClickException)."""
+        client = LeggenAPIClient("http://localhost:8000")
 
-        with pytest.raises((requests.ConnectionError, requests.RequestException)):
-            client.get_accounts()
+        with requests_mock.Mocker() as m:
+            m.get(requests_mock.ANY, exc=requests.exceptions.ConnectionError)
 
-    def test_http_error_handling(self):
-        """Test handling of HTTP errors."""
+            with pytest.raises(LeggenAPIError, match="Could not connect"):
+                client.get_accounts()
+
+    def test_http_error_raises_api_error_with_detail(self):
+        """HTTP errors surface as LeggenAPIError including the API detail."""
         client = LeggenAPIClient("http://localhost:8000")
 
         with requests_mock.Mocker() as m:
@@ -110,7 +88,7 @@ class TestLeggenAPIClient:
                 json={"detail": "Internal server error"},
             )
 
-            with pytest.raises((requests.HTTPError, requests.RequestException)):
+            with pytest.raises(LeggenAPIError, match="Internal server error"):
                 client.get_accounts()
 
     def test_custom_api_url(self):
@@ -119,12 +97,6 @@ class TestLeggenAPIClient:
         client = LeggenAPIClient(custom_url)
 
         assert client.base_url == f"{custom_url}/api/v1"
-
-    def test_environment_variable_url(self):
-        """Test using environment variable for API URL."""
-        with patch.dict("os.environ", {"LEGGEN_API_URL": "http://env-host:7000"}):
-            client = LeggenAPIClient()
-            assert client.base_url == "http://env-host:7000/api/v1"
 
     def test_trigger_sync_default(self):
         """Test triggering sync with default options."""

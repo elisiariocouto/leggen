@@ -19,41 +19,24 @@ def sync(ctx: click.Context, full: bool, accounts: tuple[str, ...]):
     """
     Sync transactions with database
     """
-    api_client = LeggenAPIClient(
-        ctx.obj.get("api_url"),
-        verify_ssl=ctx.obj.get("verify_ssl", True),
-        api_key=ctx.obj.get("api_key"),
-    )
+    api_client = LeggenAPIClient.from_context(ctx)
 
-    # Check if leggen server is available
-    if not api_client.health_check():
-        error("Cannot connect to leggen server. Please ensure it's running.")
-        return
+    info("Starting sync...")
+    result = api_client.trigger_sync(account_ids=list(accounts) or None, full_sync=full)
 
-    try:
-        info("Starting sync...")
-        result = api_client.trigger_sync(
-            account_ids=list(accounts) or None, full_sync=full
-        )
+    if not result.get("success"):
+        for err in result.get("errors", []):
+            error(f"  - {err}")
+        raise click.ClickException("Sync failed")
 
-        if result.get("success"):
-            success("Sync completed successfully!")
-            info(f"Accounts processed: {result.get('accounts_processed', 0)}")
-            info(f"Transactions added: {result.get('transactions_added', 0)}")
-            info(f"Balances updated: {result.get('balances_updated', 0)}")
-            if result.get("duration_seconds"):
-                info(f"Duration: {result['duration_seconds']:.2f} seconds")
+    success("Sync completed successfully!")
+    info(f"Accounts processed: {result.get('accounts_processed', 0)}")
+    info(f"Transactions added: {result.get('transactions_added', 0)}")
+    info(f"Balances updated: {result.get('balances_updated', 0)}")
+    if result.get("duration_seconds"):
+        info(f"Duration: {result['duration_seconds']:.2f} seconds")
 
-            if result.get("errors"):
-                error(f"Errors encountered: {len(result['errors'])}")
-                for err in result["errors"]:
-                    error(f"  - {err}")
-        else:
-            error("Sync failed")
-            if result.get("errors"):
-                for err in result["errors"]:
-                    error(f"  - {err}")
-
-    except Exception as e:
-        error(f"Sync failed: {str(e)}")
-        return
+    if result.get("errors"):
+        error(f"Errors encountered: {len(result['errors'])}")
+        for err in result["errors"]:
+            error(f"  - {err}")

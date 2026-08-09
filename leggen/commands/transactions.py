@@ -20,77 +20,59 @@ def transactions(ctx: click.Context, account: str, limit: int, full: bool):
 
     If the --account option is used, it will only list transactions for that account.
     """
-    api_client = LeggenAPIClient(
-        ctx.obj.get("api_url"),
-        verify_ssl=ctx.obj.get("verify_ssl", True),
-        api_key=ctx.obj.get("api_key"),
+    api_client = LeggenAPIClient.from_context(ctx)
+
+    if account:
+        # Get account details for display
+        accounts = api_client.get_accounts()
+        account_details = next((a for a in accounts if a["id"] == account), None)
+        if account_details:
+            info(f"Bank: {account_details['institution_id']}")
+            info(f"IBAN: {account_details.get('iban', 'N/A')}")
+
+    # Get transactions (with optional account filter)
+    transactions_data = api_client.get_all_transactions(
+        limit=limit, summary_only=not full, account_id=account
     )
 
-    # Check if leggen server is available
-    if not api_client.health_check():
-        click.echo(
-            "Error: Cannot connect to leggen server. Please ensure it's running."
-        )
-        return
+    # Format transactions for display
+    if full:
+        # Full transaction details
+        formatted_transactions = []
+        for txn in transactions_data:
+            # Handle optional internal_transaction_id
+            txn_id = txn.get("internal_transaction_id")
+            txn_id_display = txn_id[:12] + "..." if txn_id else "N/A"
 
-    try:
-        if account:
-            # Get account details for display
-            accounts = api_client.get_accounts()
-            account_details = next((a for a in accounts if a["id"] == account), None)
-            if account_details:
-                info(f"Bank: {account_details['institution_id']}")
-                info(f"IBAN: {account_details.get('iban', 'N/A')}")
+            formatted_transactions.append(
+                {
+                    "ID": txn_id_display,
+                    "Date": datefmt(txn["transaction_date"]),
+                    "Description": txn["description"][:50] + "..."
+                    if len(txn["description"]) > 50
+                    else txn["description"],
+                    "Amount": f"{txn['transaction_value']:.2f} {txn['transaction_currency']}",
+                    "Status": txn["transaction_status"].upper(),
+                    "Account": txn["account_id"][:8] + "...",
+                }
+            )
+    else:
+        # Summary view
+        formatted_transactions = []
+        for txn in transactions_data:
+            formatted_transactions.append(
+                {
+                    "Date": datefmt(txn["date"]),
+                    "Description": txn["description"][:60] + "..."
+                    if len(txn["description"]) > 60
+                    else txn["description"],
+                    "Amount": f"{txn['amount']:.2f} {txn['currency']}",
+                    "Status": txn["status"].upper(),
+                }
+            )
 
-        # Get transactions (with optional account filter)
-        transactions_data = api_client.get_all_transactions(
-            limit=limit, summary_only=not full, account_id=account
-        )
-
-        # Format transactions for display
-        if full:
-            # Full transaction details
-            formatted_transactions = []
-            for txn in transactions_data:
-                # Handle optional internal_transaction_id
-                txn_id = txn.get("internal_transaction_id")
-                txn_id_display = txn_id[:12] + "..." if txn_id else "N/A"
-
-                formatted_transactions.append(
-                    {
-                        "ID": txn_id_display,
-                        "Date": datefmt(txn["transaction_date"]),
-                        "Description": txn["description"][:50] + "..."
-                        if len(txn["description"]) > 50
-                        else txn["description"],
-                        "Amount": f"{txn['transaction_value']:.2f} {txn['transaction_currency']}",
-                        "Status": txn["transaction_status"].upper(),
-                        "Account": txn["account_id"][:8] + "...",
-                    }
-                )
-        else:
-            # Summary view
-            formatted_transactions = []
-            for txn in transactions_data:
-                # Handle optional internal_transaction_id
-                txn_id = txn.get("internal_transaction_id")
-
-                formatted_transactions.append(
-                    {
-                        "Date": datefmt(txn["date"]),
-                        "Description": txn["description"][:60] + "..."
-                        if len(txn["description"]) > 60
-                        else txn["description"],
-                        "Amount": f"{txn['amount']:.2f} {txn['currency']}",
-                        "Status": txn["status"].upper(),
-                    }
-                )
-
-        if formatted_transactions:
-            print_table(formatted_transactions)
-            info(f"Showing {len(formatted_transactions)} transactions")
-        else:
-            info("No transactions found")
-
-    except Exception as e:
-        click.echo(f"Error: Failed to get transactions: {str(e)}")
+    if formatted_transactions:
+        print_table(formatted_transactions)
+        info(f"Showing {len(formatted_transactions)} transactions")
+    else:
+        info("No transactions found")

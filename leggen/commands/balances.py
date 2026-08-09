@@ -11,18 +11,7 @@ def balances(ctx: click.Context):
     """
     List balances of all connected accounts
     """
-    api_client = LeggenAPIClient(
-        ctx.obj.get("api_url"),
-        verify_ssl=ctx.obj.get("verify_ssl", True),
-        api_key=ctx.obj.get("api_key"),
-    )
-
-    # Check if leggen server is available
-    if not api_client.health_check():
-        click.echo(
-            "Error: Cannot connect to leggen server. Please ensure it's running."
-        )
-        return
+    api_client = LeggenAPIClient.from_context(ctx)
 
     accounts = api_client.get_accounts()
 
