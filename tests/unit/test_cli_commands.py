@@ -5,6 +5,8 @@ import subprocess
 import sys
 
 import pytest
+import requests
+import requests_mock
 from click.testing import CliRunner
 
 from leggen.main import cli
@@ -43,6 +45,39 @@ class TestCommandDiscovery:
         assert result.exit_code == 0
         for command in ("balances", "server", "status", "sync", "transactions"):
             assert command in result.output
+
+
+@pytest.mark.cli
+class TestErrorExitCodes:
+    """API failures must exit non-zero with the error on stderr
+    (regression: error paths used to echo-and-return with exit code 0)."""
+
+    @pytest.mark.parametrize(
+        "command", [["status"], ["balances"], ["sync"], ["transactions"]]
+    )
+    def test_unreachable_server_exits_nonzero(self, command):
+        runner = CliRunner()
+        with requests_mock.Mocker() as m:
+            m.register_uri(
+                requests_mock.ANY,
+                requests_mock.ANY,
+                exc=requests.exceptions.ConnectionError,
+            )
+            result = runner.invoke(cli, command)
+        assert result.exit_code == 1
+        assert "Could not connect" in result.output
+
+    def test_http_error_exits_nonzero(self):
+        runner = CliRunner()
+        with requests_mock.Mocker() as m:
+            m.get(
+                requests_mock.ANY,
+                status_code=500,
+                json={"detail": "Internal server error"},
+            )
+            result = runner.invoke(cli, ["status"])
+        assert result.exit_code == 1
+        assert "Internal server error" in result.output
 
 
 def _run_cli_without_config(args, tmp_path, input=None):

@@ -15,11 +15,7 @@ def delete(ctx, session_id: str):
 
     Check `leggen status` to get the SESSION_ID
     """
-    api_client = LeggenAPIClient(
-        ctx.obj.get("api_url"),
-        verify_ssl=ctx.obj.get("verify_ssl", True),
-        api_key=ctx.obj.get("api_key"),
-    )
+    api_client = LeggenAPIClient.from_context(ctx)
 
     info(f"Deleting bank session: {session_id}")
 

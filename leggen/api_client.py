@@ -1,11 +1,17 @@
-import os
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urljoin, urlparse
 
+import click
 import requests
 import urllib3
 
-from leggen.utils.text import error
+
+class LeggenAPIError(click.ClickException):
+    """A request to the leggen server failed.
+
+    Subclasses ClickException so commands exit non-zero with the message
+    printed to stderr, without per-command error handling.
+    """
 
 
 class LeggenAPIClient:
@@ -19,11 +25,8 @@ class LeggenAPIClient:
         verify_ssl: bool = True,
         api_key: Optional[str] = None,
     ):
-        raw_url = (
-            base_url
-            or os.environ.get("LEGGEN_API_URL", "http://localhost:8000")
-            or "http://localhost:8000"
-        )
+        # Env-var resolution (LEGGEN_API_URL) happens in the CLI option
+        raw_url = base_url or "http://localhost:8000"
         # Ensure base_url includes /api/v1 path if not already present
         parsed = urlparse(raw_url)
         if not parsed.path or parsed.path == "/":
@@ -45,6 +48,15 @@ class LeggenAPIClient:
         if api_key:
             self.session.headers["X-API-Key"] = api_key
 
+    @classmethod
+    def from_context(cls, ctx: click.Context) -> "LeggenAPIClient":
+        """Build a client from the global CLI options stored on the context."""
+        return cls(
+            ctx.obj.get("api_url"),
+            verify_ssl=ctx.obj.get("verify_ssl", True),
+            api_key=ctx.obj.get("api_key"),
+        )
+
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Any:
         """Make HTTP request to the API"""
         # Construct URL by joining base_url with endpoint
@@ -62,30 +74,22 @@ class LeggenAPIClient:
             )
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.ConnectionError:
-            error("Could not connect to leggen server. Is it running?")
-            error(f"Trying to connect to: {self.base_url}")
-            raise
+        except requests.exceptions.ConnectionError as e:
+            raise LeggenAPIError(
+                f"Could not connect to the leggen server at {self.base_url}. "
+                "Is it running?"
+            ) from e
         except requests.exceptions.HTTPError as e:
-            error(f"API request failed: {e}")
-            if response.text:
-                try:
-                    error_data = response.json()
-                    error(f"Error details: {error_data.get('detail', 'Unknown error')}")
-                except Exception:
-                    error(f"Response: {response.text}")
-            raise
-        except Exception as e:
-            error(f"Unexpected error: {e}")
-            raise
-
-    def health_check(self) -> bool:
-        """Check if the leggen server is healthy"""
-        try:
-            response = self._make_request("GET", "/health")
-            return response.get("status") == "healthy"
-        except Exception:
-            return False
+            message = f"API request failed: {e}"
+            try:
+                detail = response.json().get("detail")
+            except Exception:
+                detail = response.text or None
+            if detail:
+                message = f"{message}\n{detail}"
+            raise LeggenAPIError(message) from e
+        except requests.exceptions.RequestException as e:
+            raise LeggenAPIError(f"API request failed: {e}") from e
 
     # Bank endpoints
     def get_institutions(self, country: str = "PT") -> List[Dict[str, Any]]:
