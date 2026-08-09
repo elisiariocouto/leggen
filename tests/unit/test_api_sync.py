@@ -1,6 +1,9 @@
 """Tests for the sync API route and per-account sync filtering."""
 
+import copy
+import tomllib
 from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,6 +12,7 @@ from leggen.api.models.sync import SyncResult
 from leggen.background.scheduler import scheduler
 from leggen.repositories import AccountRepository
 from leggen.services.sync_service import SyncAlreadyRunningError, SyncService
+from leggen.utils.config import config as config_singleton
 
 
 def _sync_result() -> SyncResult:
@@ -127,6 +131,53 @@ class TestSyncAPI:
 
         assert response.status_code == 500
         assert response.json()["detail"] == "Failed to run sync."
+
+
+@pytest.fixture
+def restore_config():
+    """Snapshot the global test config (memory + disk) and restore it after."""
+    # Loading via the property ensures _config_path is resolved
+    config_singleton.load_config()
+    config_path = Path(config_singleton._config_path)
+    original_bytes = config_path.read_bytes()
+    original_config = copy.deepcopy(config_singleton._config)
+    yield config_singleton
+    config_path.write_bytes(original_bytes)
+    config_singleton._config = original_config
+    config_singleton._config_model = None
+
+
+@pytest.mark.api
+class TestSyncScheduleAPI:
+    """Test PUT /sync/schedule config handling."""
+
+    def test_update_sync_schedule_preserves_backup_schedule(
+        self, api_client, restore_config
+    ):
+        """Updating the sync schedule must not reset scheduler.backup
+        to defaults (regression: update_section replaced the whole section)."""
+        custom_backup = {"enabled": False, "hour": 12, "minute": 30}
+        scheduler_section = dict(restore_config.scheduler_config)
+        scheduler_section["backup"] = custom_backup
+        restore_config.update_section("scheduler", scheduler_section)
+
+        response = api_client.put(
+            "/api/v1/sync/schedule", json={"enabled": True, "hour": 5, "minute": 15}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["hour"] == 5
+
+        backup = restore_config.scheduler_config["backup"]
+        assert backup["enabled"] is False
+        assert backup["hour"] == 12
+        assert backup["minute"] == 30
+
+        # The surviving backup schedule must also be on disk
+        with open(restore_config._config_path, "rb") as f:
+            on_disk = tomllib.load(f)
+        assert on_disk["scheduler"]["backup"] == custom_backup
+        assert on_disk["scheduler"]["sync"]["hour"] == 5
 
 
 @pytest.mark.unit

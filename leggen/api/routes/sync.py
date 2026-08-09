@@ -87,7 +87,11 @@ async def update_sync_schedule(request: SyncScheduleRequest) -> SyncScheduleResp
         if request.cron:
             sync_config["cron"] = request.cron
 
-        config.update_section("scheduler", {"sync": sync_config})
+        # Merge into the existing section: replacing it wholesale would reset
+        # the backup schedule to defaults.
+        scheduler_section = dict(config.scheduler_config)
+        scheduler_section["sync"] = sync_config
+        config.update_section("scheduler", scheduler_section)
         scheduler.reschedule_sync(sync_config)
 
         next_sync = scheduler.get_next_sync_time()
