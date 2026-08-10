@@ -47,7 +47,9 @@ class Config:
             # Validate configuration using Pydantic
             try:
                 self._config_model = ConfigModel(**raw_config)
-                self._config = self._config_model.dict(by_alias=True, exclude_none=True)
+                self._config = self._config_model.model_dump(
+                    by_alias=True, exclude_none=True
+                )
             except ValidationError as e:
                 logger.error(f"Configuration validation failed: {e}")
                 raise ValueError(f"Invalid configuration: {e}") from e
@@ -83,7 +85,9 @@ class Config:
         # Validate the configuration before saving
         try:
             validated_model = ConfigModel(**config_data)
-            validated_config = validated_model.dict(by_alias=True, exclude_none=True)
+            validated_config = validated_model.model_dump(
+                by_alias=True, exclude_none=True
+            )
         except ValidationError as e:
             logger.error(f"Configuration validation failed before save: {e}")
             raise ValueError(f"Invalid configuration: {e}") from e
