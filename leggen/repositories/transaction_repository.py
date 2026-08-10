@@ -113,44 +113,51 @@ class TransactionRepository:
         Returns (new_transactions, updated_count). Rows that already exist
         with identical content are left untouched and counted in neither.
         """
+        # Every row must belong to the account being persisted — a mismatch
+        # would write under another account's primary key while this method
+        # logs success for account_id.
+        mismatched = {txn["accountId"] for txn in transactions} - {account_id}
+        if mismatched:
+            raise ValueError(
+                f"persist() called for account {account_id} with transactions "
+                f"belonging to {sorted(mismatched)}"
+            )
+
         try:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
 
-                # Load only the batch's existing rows (chunked IN() to stay
-                # under SQLite's parameter limit) and compare in memory. An
-                # unconstrained per-account SELECT would read the whole
-                # history — including rawTransaction blobs — on every
+                # Load only the batch's existing rows (chunked, deduplicated
+                # IN() to stay under SQLite's parameter limit) and compare in
+                # memory. An unconstrained account SELECT would read the
+                # whole history — including rawTransaction blobs — on every
                 # incremental sync.
                 existing_rows: Dict[tuple[str, str], tuple] = {}
-                by_account: Dict[str, List[str]] = {}
-                for txn in transactions:
-                    by_account.setdefault(txn["accountId"], []).append(
-                        txn["transactionId"]
+                txn_ids = list(
+                    dict.fromkeys(txn["transactionId"] for txn in transactions)
+                )
+                for start in range(0, len(txn_ids), _SELECT_CHUNK_SIZE):
+                    chunk = txn_ids[start : start + _SELECT_CHUNK_SIZE]
+                    placeholders = ",".join("?" * len(chunk))
+                    cursor.execute(
+                        f"""SELECT
+                            accountId,
+                            transactionId,
+                            internalTransactionId,
+                            institutionId,
+                            iban,
+                            transactionDate,
+                            description,
+                            transactionValue,
+                            transactionCurrency,
+                            transactionStatus,
+                            rawTransaction
+                        FROM transactions
+                        WHERE accountId = ? AND transactionId IN ({placeholders})""",
+                        (account_id, *chunk),
                     )
-                for acct, txn_ids in by_account.items():
-                    for start in range(0, len(txn_ids), _SELECT_CHUNK_SIZE):
-                        chunk = txn_ids[start : start + _SELECT_CHUNK_SIZE]
-                        placeholders = ",".join("?" * len(chunk))
-                        cursor.execute(
-                            f"""SELECT
-                                accountId,
-                                transactionId,
-                                internalTransactionId,
-                                institutionId,
-                                iban,
-                                transactionDate,
-                                description,
-                                transactionValue,
-                                transactionCurrency,
-                                transactionStatus,
-                                rawTransaction
-                            FROM transactions
-                            WHERE accountId = ? AND transactionId IN ({placeholders})""",
-                            (acct, *chunk),
-                        )
-                        for row in cursor.fetchall():
-                            existing_rows[(row[0], row[1])] = tuple(row[2:])
+                    for row in cursor.fetchall():
+                        existing_rows[(row[0], row[1])] = tuple(row[2:])
 
                 new_transactions = []
                 updated_count = 0
