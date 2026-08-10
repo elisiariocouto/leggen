@@ -14,6 +14,26 @@ class LeggenAPIError(click.ClickException):
     """
 
 
+def _api_key_from_config() -> Optional[str]:
+    """Read auth.api_key from the config file, loading it on first use.
+
+    Only called when no --api-key flag or LEGGEN_API_KEY env is set, so a
+    config file is required exactly when a command actually needs the key.
+    """
+    from leggen.utils.config import config
+
+    try:
+        return config.config.get("auth", {}).get("api_key")
+    except FileNotFoundError as e:
+        raise LeggenAPIError(
+            "Configuration file not found. Provide a valid configuration file "
+            "path with leggen --config <path> or LEGGEN_CONFIG_FILE=<path> "
+            "environment variable."
+        ) from e
+    except ValueError as e:
+        raise LeggenAPIError(str(e)) from e
+
+
 class LeggenAPIClient:
     """Client for communicating with the leggen FastAPI service"""
 
@@ -50,11 +70,15 @@ class LeggenAPIClient:
 
     @classmethod
     def from_context(cls, ctx: click.Context) -> "LeggenAPIClient":
-        """Build a client from the global CLI options stored on the context."""
+        """Build a client from the global CLI options stored on the context.
+
+        The API key falls back to auth.api_key from the config file, loaded
+        lazily so commands that receive the key via flag/env need no config.
+        """
         return cls(
             ctx.obj.get("api_url"),
             verify_ssl=ctx.obj.get("verify_ssl", True),
-            api_key=ctx.obj.get("api_key"),
+            api_key=ctx.obj.get("api_key") or _api_key_from_config(),
         )
 
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Any:

@@ -1,6 +1,7 @@
 """Tests for CLI command discovery, including the bank command group."""
 
 import os
+import shutil
 import subprocess
 import sys
 
@@ -10,6 +11,9 @@ import requests_mock
 from click.testing import CliRunner
 
 from leggen.main import cli
+from leggen.utils.config import config as config_singleton
+from leggen.utils.paths import path_manager
+from tests.conftest import reset_config_singleton
 
 
 @pytest.mark.cli
@@ -82,11 +86,94 @@ class TestErrorExitCodes:
         assert "Internal server error" in result.stderr
 
 
+@pytest.mark.cli
+class TestConfigResolution:
+    """Config is loaded lazily by the singleton; path flags must reach it.
+
+    These interactions were untestable with CliRunner while config loading
+    lived in an eager option callback guarded by sys.argv checks.
+    """
+
+    @pytest.fixture(autouse=True)
+    def clean_singletons(self):
+        original_config_dir = path_manager._config_dir
+        reset_config_singleton()
+        yield
+        path_manager._config_dir = original_config_dir
+        reset_config_singleton()
+
+    def test_config_dir_flag_resolves_config_file(self, tmp_path, monkeypatch):
+        """--config-dir <dir> must find <dir>/config.toml (regression: the
+        eager --config default resolved before --config-dir applied)."""
+        shutil.copy(os.environ["LEGGEN_CONFIG_FILE"], tmp_path / "config.toml")
+        monkeypatch.delenv("LEGGEN_CONFIG_FILE", raising=False)
+
+        runner = CliRunner()
+        with requests_mock.Mocker() as m:
+            m.register_uri(
+                requests_mock.ANY,
+                requests_mock.ANY,
+                exc=requests.exceptions.ConnectionError,
+            )
+            result = runner.invoke(cli, ["--config-dir", str(tmp_path), "status"])
+
+        # Reaching the HTTP layer proves the config in --config-dir was found
+        assert "Configuration file not found" not in result.stderr
+        assert "Could not connect" in result.stderr
+
+    def test_config_flag_reaches_singleton(self, tmp_path):
+        """-c <path> must be the path the singleton loads (regression: the
+        server lifespan loaded a different config than the flag)."""
+        flag_config = tmp_path / "other.toml"
+        shutil.copy(os.environ["LEGGEN_CONFIG_FILE"], flag_config)
+
+        runner = CliRunner()
+        with requests_mock.Mocker() as m:
+            m.register_uri(requests_mock.ANY, requests_mock.ANY, json=[])
+            result = runner.invoke(cli, ["-c", str(flag_config), "status"])
+
+        assert result.exit_code == 0
+        # The flag wins over LEGGEN_CONFIG_FILE (still set by conftest)
+        assert config_singleton._config_path == str(flag_config)
+
+    def test_subcommand_help_never_touches_config(self, tmp_path, monkeypatch):
+        """Help output must not require a config file."""
+        monkeypatch.setenv("LEGGEN_CONFIG_FILE", str(tmp_path / "missing.toml"))
+
+        runner = CliRunner()
+        for args in (["bank", "--help"], ["status", "--help"]):
+            result = runner.invoke(cli, args)
+            assert result.exit_code == 0, args
+            assert "Usage" in result.output
+
+    def test_api_key_falls_back_to_config_file(self):
+        """Without --api-key, auth.api_key from the config file is sent."""
+        runner = CliRunner()
+        with requests_mock.Mocker() as m:
+            m.register_uri(requests_mock.ANY, requests_mock.ANY, json=[])
+            result = runner.invoke(cli, ["status"])
+
+        assert result.exit_code == 0
+        assert m.last_request.headers["X-API-Key"] == "lgn_test-api-key-for-testing"
+
+    def test_api_key_flag_wins_and_needs_no_config(self, tmp_path, monkeypatch):
+        """--api-key skips the config fallback entirely."""
+        monkeypatch.setenv("LEGGEN_CONFIG_FILE", str(tmp_path / "missing.toml"))
+
+        runner = CliRunner()
+        with requests_mock.Mocker() as m:
+            m.register_uri(requests_mock.ANY, requests_mock.ANY, json=[])
+            result = runner.invoke(cli, ["--api-key", "lgn_flag-key", "status"])
+
+        assert result.exit_code == 0
+        assert m.last_request.headers["X-API-Key"] == "lgn_flag-key"
+
+
 def _run_cli_without_config(args, tmp_path, input=None):
     """Run the CLI in a subprocess with a missing config file.
 
-    A subprocess is required because the no-config guards check sys.argv,
-    which CliRunner does not simulate.
+    A real process pins the full contract: exit codes, stderr wording, and
+    that no files are created in the working/config directories.
     """
     env = os.environ.copy()
     env["LEGGEN_CONFIG_FILE"] = str(tmp_path / "missing.toml")

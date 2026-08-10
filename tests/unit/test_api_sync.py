@@ -12,6 +12,7 @@ from leggen.background.scheduler import scheduler
 from leggen.repositories import AccountRepository
 from leggen.services.sync_service import SyncAlreadyRunningError, SyncService
 from leggen.utils.config import config as config_singleton
+from tests.conftest import reset_config_singleton
 
 
 def _sync_result() -> SyncResult:
@@ -135,14 +136,6 @@ class TestSyncAPI:
         assert "/secret/path" not in response.text
 
 
-def _reset_config_singleton() -> None:
-    """Clear the singleton so the next access reloads from
-    LEGGEN_CONFIG_FILE (the canonical test config set in conftest)."""
-    config_singleton._config = None
-    config_singleton._config_model = None
-    config_singleton._config_path = None
-
-
 @pytest.fixture
 def restore_config():
     """Load the canonical test config, snapshot the file, and leave the
@@ -152,13 +145,13 @@ def restore_config():
     loading — and reset again on teardown (rather than restoring the
     possibly-stale snapshot) so later tests start clean too.
     """
-    _reset_config_singleton()
+    reset_config_singleton()
     config_singleton.load_config()
     config_path = Path(config_singleton._config_path)
     original_bytes = config_path.read_bytes()
     yield config_singleton
     config_path.write_bytes(original_bytes)
-    _reset_config_singleton()
+    reset_config_singleton()
 
 
 @pytest.mark.api

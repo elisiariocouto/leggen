@@ -155,6 +155,36 @@ class TestConfig:
         assert scheduler_config["sync"]["minute"] == 30
         assert scheduler_config["sync"]["cron"] == "0 6 * * 1-5"
 
+    def test_set_config_path_wins_over_environment(
+        self, temp_config_dir, test_key_path
+    ):
+        """An explicit path (e.g. the --config flag) beats LEGGEN_CONFIG_FILE."""
+        config_data = {
+            "auth": _AUTH_CONFIG,
+            "enablebanking": {
+                "application_id": "from-flag",
+                "key_path": str(test_key_path),
+                "url": "https://api.enablebanking.com",
+            },
+        }
+        flag_config = temp_config_dir / "flag.toml"
+        with open(flag_config, "wb") as f:
+            import tomli_w
+
+            tomli_w.dump(config_data, f)
+
+        config = Config()
+        config._config = None
+        config._config_path = None
+        config._config_model = None
+
+        with patch.dict("os.environ", {"LEGGEN_CONFIG_FILE": "/nonexistent/env.toml"}):
+            config.set_config_path(str(flag_config))
+            result = config.load_config()
+
+        assert result["enablebanking"]["application_id"] == "from-flag"
+        assert config._config_path == str(flag_config)
+
     def test_environment_variable_config_path(self):
         """Test using environment variable for config path."""
         with patch.dict(

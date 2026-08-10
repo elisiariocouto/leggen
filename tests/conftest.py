@@ -157,6 +157,14 @@ def api_client(fastapi_app):
     return client
 
 
+def reset_config_singleton() -> None:
+    """Clear the config singleton so the next access reloads from
+    LEGGEN_CONFIG_FILE (the canonical test config set in this conftest)."""
+    config._config = None
+    config._config_model = None
+    config._config_path = None
+
+
 @pytest.fixture
 def raw_api_client(fastapi_app):
     """Authenticated test client that returns 500 responses instead of

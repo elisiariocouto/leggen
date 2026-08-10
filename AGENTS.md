@@ -64,7 +64,7 @@ Routes → services → repositories:
 - `leggen/repositories/` — raw SQL against SQLite via stdlib `sqlite3` (no ORM). `db.py` provides the connection context manager; `ensure_tables()` in `repositories/__init__.py` creates tables at startup; schema changes are imperative `migrate_*_if_needed()` methods in `migration_repository.py` (no Alembic — add a migration method there when changing schema)
 
 ### Config and paths are singletons
-- `leggen/utils/config.py` — `config` singleton, validated against the Pydantic model in `leggen/models/config.py`; also writes config back to disk (`update_section`)
+- `leggen/utils/config.py` — `config` singleton, validated against the Pydantic model in `leggen/models/config.py`; also writes config back to disk (`update_section`). It is the **only** config loader, and it loads lazily: `cli()` just records `--config`/`--config-dir` (via `set_config_path`/`path_manager`), and the file is first read when something needs it — the server lifespan, or the CLI's `auth.api_key` fallback in `LeggenAPIClient.from_context`. Help and the bootstrap commands therefore never require a config file.
 - `leggen/utils/paths.py` — `path_manager` singleton resolving config dir and DB path from `LEGGEN_CONFIG_DIR` / `LEGGEN_DATABASE_PATH`
 - Tests reset the `config` singleton's internal fields rather than replacing the instance (other modules hold it by reference) — see `tests/conftest.py`, which also generates a throwaway RSA keypair and test config at import time
 

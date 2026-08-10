@@ -6,7 +6,7 @@ from pathlib import Path
 import click
 from loguru import logger
 
-from leggen.utils.config import load_config
+from leggen.utils.config import config as config_singleton
 from leggen.utils.paths import path_manager
 from leggen.utils.text import error
 
@@ -80,14 +80,10 @@ class Group(click.Group):
     "-c",
     "--config",
     type=click.Path(dir_okay=False),
-    default=lambda: str(path_manager.get_config_file_path()),
-    show_default=True,
-    callback=load_config,
-    is_eager=True,
-    expose_value=False,
+    default=None,
     envvar="LEGGEN_CONFIG_FILE",
     show_envvar=True,
-    help="Path to TOML configuration file",
+    help="Path to TOML configuration file (default: <config-dir>/config.toml)",
 )
 @click.option(
     "--config-dir",
@@ -148,6 +144,7 @@ class Group(click.Group):
 @click.pass_context
 def cli(
     ctx: click.Context,
+    config: str | None,
     config_dir: Path,
     database: Path,
     api_url: str,
@@ -159,10 +156,6 @@ def cli(
     Leggen: An Open Banking CLI
     """
 
-    # Do not require authentication when printing help messages
-    if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
-        return
-
     # Configure loguru log level
     logger.remove()  # Remove default handler
     logger.add(
@@ -171,19 +164,21 @@ def cli(
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
     )
 
-    # Set up path manager with user-provided paths
+    # Record user-provided paths; nothing is loaded here. The config file is
+    # read lazily by the singleton when something actually needs it (the
+    # server lifespan or the CLI's api-key fallback), so help output and the
+    # bootstrap commands never require one.
     if config_dir:
         path_manager.set_config_dir(config_dir)
     if database:
         path_manager.set_database_path(database)
+    if config:
+        config_singleton.set_config_path(config)
 
-    # Store API URL, SSL verification, and log level in context for commands to use
+    # Store CLI options in context for commands to use. The api_key config
+    # fallback happens lazily in LeggenAPIClient.from_context.
+    ctx.ensure_object(dict)
     ctx.obj["api_url"] = api_url
     ctx.obj["verify_ssl"] = not no_verify_ssl
     ctx.obj["log_level"] = log_level.lower()
-
-    # Resolve API key: flag/env > config file
-    if not api_key:
-        auth = ctx.obj.get("auth", {})
-        api_key = auth.get("api_key") if auth else None
     ctx.obj["api_key"] = api_key

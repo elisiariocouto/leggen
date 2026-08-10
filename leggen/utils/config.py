@@ -1,17 +1,14 @@
 import os
-import sys
 import tomllib
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import click
 import tomli_w
 from loguru import logger
 from pydantic import ValidationError
 
 from leggen.models.config import Config as ConfigModel
 from leggen.utils.paths import path_manager
-from leggen.utils.text import error
 
 
 class Config:
@@ -25,12 +22,19 @@ class Config:
             cls._instance = super().__new__(cls)
         return cls._instance
 
+    def set_config_path(self, config_path: str) -> None:
+        """Record an explicit config file path (e.g. from the --config flag).
+
+        Wins over LEGGEN_CONFIG_FILE and the path manager on the next load.
+        """
+        self._config_path = str(config_path)
+
     def load_config(self, config_path: Optional[str] = None) -> Dict[str, Any]:
         if self._config is not None:
             return self._config
 
         if config_path is None:
-            config_path = os.environ.get("LEGGEN_CONFIG_FILE")
+            config_path = self._config_path or os.environ.get("LEGGEN_CONFIG_FILE")
             if not config_path:
                 config_path = str(path_manager.get_config_file_path())
 
@@ -164,46 +168,6 @@ class Config:
     def auth_config(self) -> Dict[str, Any]:
         """Get authentication configuration"""
         return self.config.get("auth", {})
-
-
-# Commands that must be able to run before a valid config file exists
-# (they are what you run to bootstrap one).
-_CONFIG_OPTIONAL_COMMANDS = {"generate_auth_config", "generate_sample_db"}
-
-
-def load_config(ctx: click.Context, _, filename):
-    # Help output must not require a config file (same guard as leggen.main.cli)
-    if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
-        return
-
-    # Argv tokens are checked dash-normalized, matching token_normalize_func
-    config_optional = bool(
-        _CONFIG_OPTIONAL_COMMANDS & {arg.replace("-", "_") for arg in sys.argv[1:]}
-    )
-
-    try:
-        with click.open_file(str(filename), "rb") as f:
-            raw_config = tomllib.load(f)
-
-        # Validate configuration using Pydantic
-        try:
-            validated_model = ConfigModel(**raw_config)
-            ctx.obj = validated_model.dict(by_alias=True, exclude_none=True)
-        except ValidationError as e:
-            if config_optional:
-                ctx.obj = {}
-                return
-            error(f"Configuration validation failed: {e}")
-            sys.exit(1)
-
-    except FileNotFoundError:
-        if config_optional:
-            ctx.obj = {}
-            return
-        error(
-            "Configuration file not found. Provide a valid configuration file path with leggen --config <path> or LEGGEN_CONFIG_FILE=<path> environment variable."
-        )
-        sys.exit(1)
 
 
 # Global singleton instance
