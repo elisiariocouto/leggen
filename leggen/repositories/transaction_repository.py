@@ -290,6 +290,104 @@ class TransactionRepository:
             cursor.execute(query, params)
             return cursor.fetchone()[0]
 
+    def get_stats_totals(
+        self,
+        account_id: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        min_amount: Optional[float] = None,
+        max_amount: Optional[float] = None,
+        search: Optional[str] = None,
+        category_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Aggregate totals for the filtered set, computed in SQL.
+
+        Transactions whose category is flagged exclude_from_stats are left
+        out. Summing amounts across currencies is meaningless, so money
+        totals cover only the dominant (most frequent) currency of the set,
+        while the counts cover every matching transaction.
+        """
+        empty: Dict[str, Any] = {
+            "total_transactions": 0,
+            "booked_transactions": 0,
+            "pending_transactions": 0,
+            "currency": None,
+            "total_income": 0,
+            "total_expenses": 0,
+            "net_change": 0,
+            "average_transaction": 0,
+            "accounts_included": 0,
+        }
+        if not db_exists():
+            return empty
+
+        with get_db_connection(row_factory=True) as conn:
+            cursor = conn.cursor()
+
+            filter_clause, params = self._build_filter_clause(
+                account_id=account_id,
+                date_from=date_from,
+                date_to=date_to,
+                min_amount=min_amount,
+                max_amount=max_amount,
+                search=search,
+                category_id=category_id,
+            )
+
+            base = (
+                """FROM transactions t
+                LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
+                LEFT JOIN categories c ON tc.categoryId = c.id
+                WHERE (c.exclude_from_stats IS NULL OR c.exclude_from_stats = 0)"""
+                + filter_clause
+            )
+
+            cursor.execute(
+                f"""SELECT t.transactionCurrency AS currency, COUNT(*) AS n
+                {base}
+                GROUP BY t.transactionCurrency ORDER BY n DESC LIMIT 1""",
+                params,
+            )
+            row = cursor.fetchone()
+            currency = row["currency"] if row else None
+            if currency is None:
+                return empty
+
+            # Placeholder order matters: the four currency parameters sit in
+            # the SELECT list, before the filter parameters from the WHERE.
+            cursor.execute(
+                f"""SELECT
+                    COUNT(*) AS total_transactions,
+                    SUM(CASE WHEN t.transactionStatus = 'booked' THEN 1 ELSE 0 END) AS booked_transactions,
+                    SUM(CASE WHEN t.transactionStatus = 'pending' THEN 1 ELSE 0 END) AS pending_transactions,
+                    COUNT(DISTINCT t.accountId) AS accounts_included,
+                    COALESCE(SUM(CASE WHEN t.transactionCurrency = ? AND t.transactionValue > 0 THEN t.transactionValue ELSE 0 END), 0) AS total_income,
+                    COALESCE(SUM(CASE WHEN t.transactionCurrency = ? AND t.transactionValue < 0 THEN ABS(t.transactionValue) ELSE 0 END), 0) AS total_expenses,
+                    COALESCE(SUM(CASE WHEN t.transactionCurrency = ? THEN t.transactionValue ELSE 0 END), 0) AS money_sum,
+                    SUM(CASE WHEN t.transactionCurrency = ? THEN 1 ELSE 0 END) AS money_count
+                {base}""",
+                [currency] * 4 + params,
+            )
+            totals = cursor.fetchone()
+
+            money_count = totals["money_count"] or 0
+            total_income = round(totals["total_income"], 2)
+            total_expenses = round(totals["total_expenses"], 2)
+
+            return {
+                "total_transactions": totals["total_transactions"],
+                "booked_transactions": totals["booked_transactions"] or 0,
+                "pending_transactions": totals["pending_transactions"] or 0,
+                "currency": currency,
+                "total_income": total_income,
+                "total_expenses": total_expenses,
+                "net_change": round(total_income - total_expenses, 2),
+                "average_transaction": round(totals["money_sum"] / money_count, 2)
+                if money_count
+                else 0,
+                "accounts_included": totals["accounts_included"],
+            }
+
     def get_transaction_by_id(
         self, account_id: str, transaction_id: str
     ) -> Optional[Dict[str, Any]]:
