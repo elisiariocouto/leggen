@@ -58,3 +58,28 @@ class TestTransactionRepositoryPersist:
         stored = repo.get_transaction_by_id("IBAN1", "tx-1")
         assert stored is not None
         assert stored["transactionStatus"] == "BOOK"
+
+    def test_mismatched_account_id_rejected(self, mock_db_path):
+        """Rows for another account must fail fast, not write under the
+        wrong primary key while reporting success for account_id."""
+        repo = TransactionRepository()
+
+        with pytest.raises(ValueError, match="IBAN2"):
+            repo.persist("IBAN1", [_make_transaction(accountId="IBAN2")])
+
+    def test_duplicate_id_in_batch_counted_once(self, mock_db_path):
+        """The same transactionId twice in one batch (e.g. a pending and a
+        booked entry in one fetch) is one insert plus one update, never two
+        inserts — double-counting meant duplicate notifications."""
+        repo = TransactionRepository()
+
+        new_transactions, updated_count = repo.persist(
+            "IBAN1",
+            [
+                _make_transaction(transactionStatus="PNDG"),
+                _make_transaction(transactionStatus="BOOK"),
+            ],
+        )
+
+        assert len(new_transactions) == 1
+        assert updated_count == 1
