@@ -51,8 +51,12 @@ class TestLeggenAPIClient:
         with requests_mock.Mocker() as m:
             m.post("http://localhost:8000/api/v1/banks/callback", json=api_response)
 
-            result = client.exchange_auth_code("test-code")
+            result = client.exchange_auth_code("test-code", "test-state")
             assert result["session_id"] == "sess-123"
+
+            # The server requires both fields to redeem the session
+            request_body = m.last_request.json()
+            assert request_body == {"code": "test-code", "state": "test-state"}
 
     def test_get_accounts_success(self, sample_account_data):
         """Test getting accounts via API client."""

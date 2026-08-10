@@ -63,16 +63,20 @@ def add(ctx):
     info("After completing the authorization, paste the callback URL here.")
     callback_url = click.prompt("Callback URL")
 
-    # Parse the code from the callback URL
+    # Parse the code and state from the callback URL; the server requires
+    # both to redeem the session (state is its CSRF check)
     parsed = urlparse(callback_url)
     query_params = parse_qs(parsed.query)
     code = query_params.get("code", [None])[0]
+    state = query_params.get("state", [None])[0]
 
-    if not code:
-        raise click.ClickException("No authorization code found in the callback URL.")
+    if not code or not state:
+        raise click.ClickException(
+            "No authorization code and state found in the callback URL."
+        )
 
     # Exchange the code for a session
-    session = api_client.exchange_auth_code(code)
+    session = api_client.exchange_auth_code(code, state)
 
     success("Bank connection established!")
     info(f"Session ID: {session['session_id']}")

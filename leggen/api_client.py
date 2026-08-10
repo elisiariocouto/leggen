@@ -115,9 +115,11 @@ class LeggenAPIClient:
         response = self._make_request("POST", "/banks/connect", json=payload)
         return response
 
-    def exchange_auth_code(self, code: str) -> Dict[str, Any]:
+    def exchange_auth_code(self, code: str, state: str) -> Dict[str, Any]:
         """Exchange authorization code for a session"""
-        response = self._make_request("POST", "/banks/callback", json={"code": code})
+        response = self._make_request(
+            "POST", "/banks/callback", json={"code": code, "state": state}
+        )
         return response
 
     def get_bank_status(self) -> List[Dict[str, Any]]:
