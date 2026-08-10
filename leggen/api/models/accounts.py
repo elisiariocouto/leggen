@@ -35,6 +35,19 @@ class AccountUpdate(BaseModel):
     display_name: Optional[str] = None
 
 
+class Balance(BaseModel):
+    """A single balance entry as returned by /balances and /balances/history"""
+
+    id: str
+    account_id: str
+    balance_amount: float
+    balance_type: str
+    currency: Optional[str] = None
+    reference_date: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
 class Transaction(BaseModel):
     """Transaction model"""
 
