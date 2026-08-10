@@ -12,7 +12,6 @@ from leggen.api.models.sync import (
 )
 from leggen.background.scheduler import scheduler
 from leggen.repositories import AccountRepository, SyncRepository
-from leggen.services.sync_service import SyncAlreadyRunningError
 from leggen.utils.config import config
 
 router = APIRouter()
@@ -38,12 +37,11 @@ async def trigger_sync(
                 detail=f"Unknown account IDs: {', '.join(unknown_ids)}",
             )
 
-    try:
-        return await scheduler.sync_service.sync_all_accounts(
-            full_sync, "api", account_ids=account_ids or None
-        )
-    except SyncAlreadyRunningError as e:
-        raise HTTPException(status_code=409, detail="Sync is already running.") from e
+    # SyncAlreadyRunningError is a ConflictError; the global handler
+    # renders it as a 409 with its own code.
+    return await scheduler.sync_service.sync_all_accounts(
+        full_sync, "api", account_ids=account_ids or None
+    )
 
 
 @router.get("/sync/schedule")

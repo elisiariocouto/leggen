@@ -1,7 +1,8 @@
-from collections import defaultdict
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from loguru import logger
+from pydantic import ValidationError
 
 from leggen.api.models.accounts import (
     AccountBalance,
@@ -16,48 +17,45 @@ from leggen.utils.paths import path_manager
 router = APIRouter()
 
 
-def _latest_balances_by_account(
-    balance_repo: BalanceRepository,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Fetch the latest balances for every account in one query."""
-    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-    for balance in balance_repo.get_balances():
-        grouped[balance["account_id"]].append(balance)
-    return grouped
-
-
 @router.get("/accounts")
 async def get_all_accounts(
     account_repo: Annotated[AccountRepository, Depends()],
     balance_repo: Annotated[BalanceRepository, Depends()],
 ) -> List[AccountDetails]:
     """Get all connected accounts from database"""
-    balances_by_account = _latest_balances_by_account(balance_repo)
+    balances_by_account = balance_repo.get_latest_balances_by_account()
 
-    return [
-        AccountDetails(
-            id=db_account["id"],
-            institution_id=db_account["institution_id"],
-            status=db_account["status"],
-            iban=db_account.get("iban"),
-            name=db_account.get("name"),
-            display_name=db_account.get("display_name"),
-            currency=db_account.get("currency"),
-            logo=db_account.get("logo"),
-            created=db_account["created"],
-            last_accessed=db_account.get("last_accessed"),
-            balances=[
-                AccountBalance(
-                    amount=balance["amount"],
-                    currency=balance["currency"],
-                    balance_type=balance["type"],
-                    last_change_date=balance.get("timestamp"),
+    accounts = []
+    for db_account in account_repo.get_accounts():
+        try:
+            accounts.append(
+                AccountDetails(
+                    id=db_account["id"],
+                    institution_id=db_account["institution_id"],
+                    status=db_account["status"],
+                    iban=db_account.get("iban"),
+                    name=db_account.get("name"),
+                    display_name=db_account.get("display_name"),
+                    currency=db_account.get("currency"),
+                    logo=db_account.get("logo"),
+                    created=db_account["created"],
+                    last_accessed=db_account.get("last_accessed"),
+                    balances=[
+                        AccountBalance(
+                            amount=balance["amount"],
+                            currency=balance["currency"],
+                            balance_type=balance["type"],
+                            last_change_date=balance.get("timestamp"),
+                        )
+                        for balance in balances_by_account.get(db_account["id"], [])
+                    ],
                 )
-                for balance in balances_by_account.get(db_account["id"], [])
-            ],
-        )
-        for db_account in account_repo.get_accounts()
-    ]
+            )
+        except (ValidationError, KeyError) as e:
+            # One malformed legacy row must not empty the whole account list
+            logger.warning(f"Skipping malformed account {db_account.get('id')}: {e}")
+
+    return accounts
 
 
 @router.get("/balances")
@@ -66,7 +64,7 @@ async def get_all_balances(
     balance_repo: Annotated[BalanceRepository, Depends()],
 ) -> List[Balance]:
     """Get all balances from all accounts in database"""
-    balances_by_account = _latest_balances_by_account(balance_repo)
+    balances_by_account = balance_repo.get_latest_balances_by_account()
 
     all_balances = []
     for db_account in account_repo.get_accounts():
@@ -89,20 +87,21 @@ async def get_all_balances(
     return all_balances
 
 
-@router.get("/balances/history")
+@router.get("/balances/history", response_model=List[Balance])
 async def get_historical_balances(
     date_from: str = Query(description="Start date (YYYY-MM-DD)"),
     date_to: str = Query(description="End date (YYYY-MM-DD)"),
     account_id: Optional[str] = Query(
         default=None, description="Filter by specific account ID"
     ),
-) -> List[Balance]:
+) -> list[dict]:
     """Get historical balance progression calculated from transaction history"""
+    # Returned as dicts; the response_model performs the single validation
+    # pass (this is the largest payload the API serves).
     db_path = path_manager.get_database_path()
-    historical_balances = calculate_historical_balances(
+    return calculate_historical_balances(
         db_path, account_id=account_id, date_from=date_from, date_to=date_to
     )
-    return [Balance(**entry) for entry in historical_balances]
 
 
 @router.delete("/accounts/{account_id}")

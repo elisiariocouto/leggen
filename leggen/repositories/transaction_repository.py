@@ -1,9 +1,18 @@
 import json
+import sqlite3
 from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
 from leggen.repositories.db import db_exists, get_db_connection
+
+# SQLite's default parameter limit is 999; keep IN() chunks safely under it.
+_SELECT_CHUNK_SIZE = 900
+
+# Shared JOIN fragment: category lookups hang off (accountId, transactionId).
+_CATEGORY_JOIN = """
+                LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
+                LEFT JOIN categories c ON tc.categoryId = c.id"""
 
 
 class TransactionRepository:
@@ -108,29 +117,40 @@ class TransactionRepository:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
 
-                # One SELECT per account in the batch instead of one per
-                # transaction: load the existing rows into memory and compare
-                # there. A full-history sync is thousands of rows, not millions.
+                # Load only the batch's existing rows (chunked IN() to stay
+                # under SQLite's parameter limit) and compare in memory. An
+                # unconstrained per-account SELECT would read the whole
+                # history — including rawTransaction blobs — on every
+                # incremental sync.
                 existing_rows: Dict[tuple[str, str], tuple] = {}
-                for acct in {txn["accountId"] for txn in transactions}:
-                    cursor.execute(
-                        """SELECT
-                            accountId,
-                            transactionId,
-                            internalTransactionId,
-                            institutionId,
-                            iban,
-                            transactionDate,
-                            description,
-                            transactionValue,
-                            transactionCurrency,
-                            transactionStatus,
-                            rawTransaction
-                        FROM transactions WHERE accountId = ?""",
-                        (acct,),
+                by_account: Dict[str, List[str]] = {}
+                for txn in transactions:
+                    by_account.setdefault(txn["accountId"], []).append(
+                        txn["transactionId"]
                     )
-                    for row in cursor.fetchall():
-                        existing_rows[(row[0], row[1])] = tuple(row[2:])
+                for acct, txn_ids in by_account.items():
+                    for start in range(0, len(txn_ids), _SELECT_CHUNK_SIZE):
+                        chunk = txn_ids[start : start + _SELECT_CHUNK_SIZE]
+                        placeholders = ",".join("?" * len(chunk))
+                        cursor.execute(
+                            f"""SELECT
+                                accountId,
+                                transactionId,
+                                internalTransactionId,
+                                institutionId,
+                                iban,
+                                transactionDate,
+                                description,
+                                transactionValue,
+                                transactionCurrency,
+                                transactionStatus,
+                                rawTransaction
+                            FROM transactions
+                            WHERE accountId = ? AND transactionId IN ({placeholders})""",
+                            (acct, *chunk),
+                        )
+                        for row in cursor.fetchall():
+                            existing_rows[(row[0], row[1])] = tuple(row[2:])
 
                 new_transactions = []
                 updated_count = 0
@@ -159,24 +179,37 @@ class TransactionRepository:
                         new_transactions.append(transaction)
                     else:
                         updated_count += 1
+                    # Record the row so a duplicate key later in the same
+                    # batch is treated as an update, not a second insert.
+                    existing_rows[key] = row_values
+
+                insert_sql = """INSERT OR REPLACE INTO transactions (
+                    accountId,
+                    transactionId,
+                    internalTransactionId,
+                    institutionId,
+                    iban,
+                    transactionDate,
+                    description,
+                    transactionValue,
+                    transactionCurrency,
+                    transactionStatus,
+                    rawTransaction
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
                 if rows_to_write:
-                    cursor.executemany(
-                        """INSERT OR REPLACE INTO transactions (
-                            accountId,
-                            transactionId,
-                            internalTransactionId,
-                            institutionId,
-                            iban,
-                            transactionDate,
-                            description,
-                            transactionValue,
-                            transactionCurrency,
-                            transactionStatus,
-                            rawTransaction
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                        rows_to_write,
-                    )
+                    try:
+                        cursor.executemany(insert_sql, rows_to_write)
+                    except sqlite3.IntegrityError:
+                        # One bad row (e.g. a NULL key) must not sink the
+                        # whole batch: retry row by row and skip offenders.
+                        for row in rows_to_write:
+                            try:
+                                cursor.execute(insert_sql, row)
+                            except sqlite3.IntegrityError as e:
+                                logger.warning(
+                                    f"Failed to insert transaction {row[1]}: {e}"
+                                )
 
                 conn.commit()
 
@@ -219,10 +252,8 @@ class TransactionRepository:
             )
 
             query = (
-                """SELECT t.*, tc.categoryId, c.name as categoryName, c.color as categoryColor
-                FROM transactions t
-                LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
-                LEFT JOIN categories c ON tc.categoryId = c.id
+                f"""SELECT t.*, tc.categoryId, c.name as categoryName, c.color as categoryColor
+                FROM transactions t{_CATEGORY_JOIN}
                 WHERE 1=1"""
                 + filter_clause
             )
@@ -278,9 +309,7 @@ class TransactionRepository:
             )
 
             query = (
-                """SELECT COUNT(*) FROM transactions t
-                LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
-                LEFT JOIN categories c ON tc.categoryId = c.id
+                f"""SELECT COUNT(*) FROM transactions t{_CATEGORY_JOIN}
                 WHERE 1=1"""
                 + filter_clause
             )
@@ -332,9 +361,7 @@ class TransactionRepository:
             )
 
             base = (
-                """FROM transactions t
-                LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
-                LEFT JOIN categories c ON tc.categoryId = c.id
+                f"""FROM transactions t{_CATEGORY_JOIN}
                 WHERE (c.exclude_from_stats IS NULL OR c.exclude_from_stats = 0)"""
                 + filter_clause
             )
@@ -346,9 +373,11 @@ class TransactionRepository:
                 params,
             )
             row = cursor.fetchone()
-            currency = row["currency"] if row else None
-            if currency is None:
+            if row is None:
                 return empty
+            # A NULL currency (legacy rows) still counts as the dominant
+            # group, hence `IS ?` below instead of `= ?`.
+            currency = row["currency"]
 
             # Placeholder order matters: the four currency parameters sit in
             # the SELECT list, before the filter parameters from the WHERE.
@@ -358,10 +387,10 @@ class TransactionRepository:
                     SUM(CASE WHEN t.transactionStatus = 'booked' THEN 1 ELSE 0 END) AS booked_transactions,
                     SUM(CASE WHEN t.transactionStatus = 'pending' THEN 1 ELSE 0 END) AS pending_transactions,
                     COUNT(DISTINCT t.accountId) AS accounts_included,
-                    COALESCE(SUM(CASE WHEN t.transactionCurrency = ? AND t.transactionValue > 0 THEN t.transactionValue ELSE 0 END), 0) AS total_income,
-                    COALESCE(SUM(CASE WHEN t.transactionCurrency = ? AND t.transactionValue < 0 THEN ABS(t.transactionValue) ELSE 0 END), 0) AS total_expenses,
-                    COALESCE(SUM(CASE WHEN t.transactionCurrency = ? THEN t.transactionValue ELSE 0 END), 0) AS money_sum,
-                    SUM(CASE WHEN t.transactionCurrency = ? THEN 1 ELSE 0 END) AS money_count
+                    COALESCE(SUM(CASE WHEN t.transactionCurrency IS ? AND t.transactionValue > 0 THEN t.transactionValue ELSE 0 END), 0) AS total_income,
+                    COALESCE(SUM(CASE WHEN t.transactionCurrency IS ? AND t.transactionValue < 0 THEN ABS(t.transactionValue) ELSE 0 END), 0) AS total_expenses,
+                    COALESCE(SUM(CASE WHEN t.transactionCurrency IS ? THEN t.transactionValue ELSE 0 END), 0) AS money_sum,
+                    SUM(CASE WHEN t.transactionCurrency IS ? THEN 1 ELSE 0 END) AS money_count
                 {base}""",
                 [currency] * 4 + params,
             )

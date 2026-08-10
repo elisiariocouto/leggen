@@ -131,18 +131,20 @@ async def get_notification_services() -> dict[str, NotificationServiceStatus]:
     notifications_config = config.notifications_config
     discord = notifications_config.get("discord", {})
     telegram = notifications_config.get("telegram", {})
+    discord_configured = bool(discord.get("webhook"))
+    telegram_configured = bool(telegram.get("token") and telegram.get("chat_id"))
 
     return {
         "discord": NotificationServiceStatus(
             name="Discord",
-            enabled=bool(discord.get("webhook")),
-            configured=bool(discord.get("webhook")),
+            enabled=discord_configured,
+            configured=discord_configured,
             active=discord.get("enabled", True),
         ),
         "telegram": NotificationServiceStatus(
             name="Telegram",
-            enabled=bool(telegram.get("token") and telegram.get("chat_id")),
-            configured=bool(telegram.get("token") and telegram.get("chat_id")),
+            enabled=telegram_configured,
+            configured=telegram_configured,
             active=telegram.get("enabled", True),
         ),
     }

@@ -50,7 +50,9 @@ class TestAccountsAPI:
         ]
 
         mock_account_repo.get_accounts.return_value = mock_accounts
-        mock_balance_repo.get_balances.return_value = mock_balances
+        mock_balance_repo.get_latest_balances_by_account.return_value = {
+            "test-account-123": mock_balances
+        }
 
         fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
         fastapi_app.dependency_overrides[BalanceRepository] = lambda: mock_balance_repo
@@ -209,7 +211,7 @@ class TestAccountsAPI:
         ]
 
         mock_account_repo.get_accounts.return_value = mock_accounts
-        mock_balance_repo.get_balances.return_value = []
+        mock_balance_repo.get_latest_balances_by_account.return_value = {}
 
         fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
         fastapi_app.dependency_overrides[BalanceRepository] = lambda: mock_balance_repo

@@ -24,13 +24,14 @@ class TestErrorEnvelope:
         assert response.status_code == 404
         _assert_envelope(response.json(), 404, "NOT_FOUND")
 
-    def test_unhandled_route_error_uses_sanitized_500(self, fastapi_app, mock_db_path):
+    def test_unhandled_route_error_uses_sanitized_500(
+        self, fastapi_app, mock_db_path, raw_api_client
+    ):
         """Routes have no blanket handlers; the global handler renders the
         sanitized 500 with a full traceback in the log."""
         from leggen.background.scheduler import scheduler
 
-        client = TestClient(fastapi_app, raise_server_exceptions=False)
-        client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
+        client = raw_api_client
 
         mock_service = MagicMock()
         mock_service.sync_all_accounts.side_effect = Exception("db is locked")
@@ -47,13 +48,10 @@ class TestErrorEnvelope:
         assert "db is locked" not in response.text
 
     def test_unhandled_exception_returns_json_not_plain_text(
-        self, fastapi_app, mock_db_path
+        self, fastapi_app, mock_db_path, raw_api_client
     ):
         """Routes without a try/except used to fall through to a plain-text 500."""
-        # raise_server_exceptions=False so TestClient returns the handler's
-        # response instead of re-raising the original exception.
-        client = TestClient(fastapi_app, raise_server_exceptions=False)
-        client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
+        client = raw_api_client
 
         with patch.object(
             SessionRepository,

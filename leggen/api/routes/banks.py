@@ -165,41 +165,42 @@ async def delete_bank_connection(
     return {"deleted": session_id}
 
 
+_COUNTRIES = [
+    Country(code="AT", name="Austria"),
+    Country(code="BE", name="Belgium"),
+    Country(code="BG", name="Bulgaria"),
+    Country(code="HR", name="Croatia"),
+    Country(code="CY", name="Cyprus"),
+    Country(code="CZ", name="Czech Republic"),
+    Country(code="DK", name="Denmark"),
+    Country(code="EE", name="Estonia"),
+    Country(code="FI", name="Finland"),
+    Country(code="FR", name="France"),
+    Country(code="DE", name="Germany"),
+    Country(code="GR", name="Greece"),
+    Country(code="HU", name="Hungary"),
+    Country(code="IS", name="Iceland"),
+    Country(code="IE", name="Ireland"),
+    Country(code="IT", name="Italy"),
+    Country(code="LV", name="Latvia"),
+    Country(code="LI", name="Liechtenstein"),
+    Country(code="LT", name="Lithuania"),
+    Country(code="LU", name="Luxembourg"),
+    Country(code="MT", name="Malta"),
+    Country(code="NL", name="Netherlands"),
+    Country(code="NO", name="Norway"),
+    Country(code="PL", name="Poland"),
+    Country(code="PT", name="Portugal"),
+    Country(code="RO", name="Romania"),
+    Country(code="SK", name="Slovakia"),
+    Country(code="SI", name="Slovenia"),
+    Country(code="ES", name="Spain"),
+    Country(code="SE", name="Sweden"),
+    Country(code="GB", name="United Kingdom"),
+]
+
+
 @router.get("/banks/countries")
 async def get_supported_countries() -> list[Country]:
     """Get list of supported countries"""
-    countries = [
-        {"code": "AT", "name": "Austria"},
-        {"code": "BE", "name": "Belgium"},
-        {"code": "BG", "name": "Bulgaria"},
-        {"code": "HR", "name": "Croatia"},
-        {"code": "CY", "name": "Cyprus"},
-        {"code": "CZ", "name": "Czech Republic"},
-        {"code": "DK", "name": "Denmark"},
-        {"code": "EE", "name": "Estonia"},
-        {"code": "FI", "name": "Finland"},
-        {"code": "FR", "name": "France"},
-        {"code": "DE", "name": "Germany"},
-        {"code": "GR", "name": "Greece"},
-        {"code": "HU", "name": "Hungary"},
-        {"code": "IS", "name": "Iceland"},
-        {"code": "IE", "name": "Ireland"},
-        {"code": "IT", "name": "Italy"},
-        {"code": "LV", "name": "Latvia"},
-        {"code": "LI", "name": "Liechtenstein"},
-        {"code": "LT", "name": "Lithuania"},
-        {"code": "LU", "name": "Luxembourg"},
-        {"code": "MT", "name": "Malta"},
-        {"code": "NL", "name": "Netherlands"},
-        {"code": "NO", "name": "Norway"},
-        {"code": "PL", "name": "Poland"},
-        {"code": "PT", "name": "Portugal"},
-        {"code": "RO", "name": "Romania"},
-        {"code": "SK", "name": "Slovakia"},
-        {"code": "SI", "name": "Slovenia"},
-        {"code": "ES", "name": "Spain"},
-        {"code": "SE", "name": "Sweden"},
-        {"code": "GB", "name": "United Kingdom"},
-    ]
-
-    return [Country(**country) for country in countries]
+    return _COUNTRIES
