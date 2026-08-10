@@ -1,85 +1,54 @@
-"""Tests for analytics fixes to ensure all transactions are used in statistics."""
+"""Regression test: statistics must cover the whole filtered history,
+not just the first page of transactions."""
 
 from datetime import datetime, timedelta
-from unittest.mock import Mock
 
 import pytest
-from fastapi.testclient import TestClient
 
-from leggen.commands.server import create_app
 from leggen.repositories import TransactionRepository
 
 
+@pytest.mark.api
 class TestAnalyticsFix:
-    """Test analytics fixes for transaction limits"""
+    """Stats aggregation covers every matching transaction."""
 
-    @pytest.fixture
-    def client(self):
-        app = create_app()
-        return TestClient(app)
+    def test_transaction_stats_uses_all_transactions(self, api_client, mock_db_path):
+        """600 transactions — well past any page size — are all aggregated."""
+        base_date = datetime(2024, 6, 1)
+        transactions = [
+            {
+                "transactionId": f"txn-{i}",
+                "internalTransactionId": f"int-{i}",
+                "institutionId": "TEST_BANK",
+                "iban": "LT313250081177977789",
+                "accountId": f"account-{i % 3}",
+                "transactionDate": (
+                    base_date + timedelta(minutes=i % (300 * 24 * 60))
+                ).isoformat(),
+                "description": f"Transaction {i}",
+                "transactionValue": 10.0 if i % 2 == 0 else -5.0,
+                "transactionCurrency": "EUR",
+                "transactionStatus": "booked",
+                "rawTransaction": {"transactionId": f"txn-{i}"},
+            }
+            for i in range(600)
+        ]
 
-    @pytest.fixture
-    def mock_transaction_repo(self):
-        return Mock()
-
-    @pytest.mark.asyncio
-    async def test_transaction_stats_uses_all_transactions(self, mock_transaction_repo):
-        """Test that transaction stats endpoint uses all transactions (not limited to 100)"""
-        # Mock data for 600 transactions (simulating the issue)
-        mock_transactions = []
-        for i in range(600):
-            mock_transactions.append(
-                {
-                    "transactionId": f"txn-{i}",
-                    "transactionDate": (
-                        datetime.now() - timedelta(days=i % 365)
-                    ).isoformat(),
-                    "description": f"Transaction {i}",
-                    "transactionValue": 10.0 if i % 2 == 0 else -5.0,
-                    "transactionCurrency": "EUR",
-                    "transactionStatus": "booked",
-                    "accountId": f"account-{i % 3}",
-                }
+        repo = TransactionRepository()
+        for account in ("account-0", "account-1", "account-2"):
+            repo.persist(
+                account,
+                [txn for txn in transactions if txn["accountId"] == account],
             )
 
-        mock_transaction_repo.get_transactions.return_value = mock_transactions
-
-        app = create_app()
-        app.dependency_overrides[TransactionRepository] = lambda: mock_transaction_repo
-        client = TestClient(app)
-        client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
-
-        response = client.get(
-            "/api/v1/transactions/stats?date_from=2024-01-01&date_to=2025-01-01"
+        response = api_client.get(
+            "/api/v1/transactions/stats?date_from=2024-01-01&date_to=2025-06-01"
         )
 
         assert response.status_code == 200
-        data = response.json()
+        stats = response.json()
 
-        # Verify that limit=None was passed to get all transactions
-        mock_transaction_repo.get_transactions.assert_called_once()
-        call_args = mock_transaction_repo.get_transactions.call_args
-        assert call_args.kwargs.get("limit") is None, (
-            "Stats endpoint should pass limit=None to get all transactions"
-        )
-
-        # Verify that the response contains stats for all 600 transactions
-        stats = data
-        assert stats["total_transactions"] == 600, (
-            "Should process all 600 transactions, not just 100"
-        )
-
-        # Verify calculations are correct for all transactions
-        expected_income = sum(
-            txn["transactionValue"]
-            for txn in mock_transactions
-            if txn["transactionValue"] > 0
-        )
-        expected_expenses = sum(
-            abs(txn["transactionValue"])
-            for txn in mock_transactions
-            if txn["transactionValue"] < 0
-        )
-
-        assert stats["total_income"] == expected_income
-        assert stats["total_expenses"] == expected_expenses
+        assert stats["total_transactions"] == 600
+        assert stats["total_income"] == 10.0 * 300
+        assert stats["total_expenses"] == 5.0 * 300
+        assert stats["accounts_included"] == 3

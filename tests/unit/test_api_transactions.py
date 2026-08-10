@@ -210,11 +210,11 @@ class TestTransactionsAPI:
     def test_get_transactions_database_error(
         self,
         fastapi_app,
-        api_client,
-        mock_config,
         mock_transaction_repo,
     ):
-        """Test handling database error when getting transactions."""
+        """A repository error surfaces as the sanitized global 500."""
+        from fastapi.testclient import TestClient
+
         mock_transaction_repo.get_transactions.side_effect = Exception(
             "Database connection failed"
         )
@@ -222,58 +222,58 @@ class TestTransactionsAPI:
         fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
             mock_transaction_repo
         )
+        client = TestClient(fastapi_app, raise_server_exceptions=False)
+        client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions")
+        response = client.get("/api/v1/transactions")
 
         fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 500
-        assert "Failed to get transactions" in response.json()["detail"]
+        assert response.json()["detail"] == "Internal server error."
 
-    def test_get_transaction_stats_success(
-        self,
-        fastapi_app,
-        api_client,
-        mock_config,
-        mock_transaction_repo,
-    ):
-        """Test successful retrieval of transaction statistics from database."""
-        mock_transactions = [
+    @staticmethod
+    def _persist_txns(rows):
+        """Insert transactions into the temp DB via the real repository.
+
+        Each row: (txn_id, account_id, date, value, currency, status).
+        """
+        repo = TransactionRepository()
+        transactions = [
             {
-                "internalTransactionId": "txn-001",
-                "transactionDate": datetime(2025, 9, 1, 9, 30),
-                "transactionValue": -10.50,
-                "transactionStatus": "booked",
-                "accountId": "test-account-123",
-            },
-            {
-                "internalTransactionId": "txn-002",
-                "transactionDate": datetime(2025, 9, 2, 14, 15),
-                "transactionValue": 100.00,
-                "transactionStatus": "pending",
-                "accountId": "test-account-123",
-            },
-            {
-                "internalTransactionId": "txn-003",
-                "transactionDate": datetime(2025, 9, 3, 16, 45),
-                "transactionValue": -25.30,
-                "transactionStatus": "booked",
-                "accountId": "other-account-456",
-            },
+                "transactionId": txn_id,
+                "internalTransactionId": f"int-{txn_id}",
+                "institutionId": "TEST_BANK",
+                "iban": "LT313250081177977789",
+                "accountId": account_id,
+                "transactionDate": date,
+                "description": f"Transaction {txn_id}",
+                "transactionValue": value,
+                "transactionCurrency": currency,
+                "transactionStatus": status,
+                "rawTransaction": {"transactionId": txn_id},
+            }
+            for txn_id, account_id, date, value, currency, status in rows
         ]
+        by_account: dict[str, list] = {}
+        for txn in transactions:
+            by_account.setdefault(txn["accountId"], []).append(txn)
+        for account_id, txns in by_account.items():
+            repo.persist(account_id, txns)
 
-        mock_transaction_repo.get_transactions.return_value = mock_transactions
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
+    def test_get_transaction_stats_success(self, api_client, mock_db_path):
+        """Stats are aggregated in SQL over the real database."""
+        self._persist_txns(
+            [
+                ("t1", "acc-1", "2025-09-01T09:30:00", -10.50, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-02T14:15:00", 100.00, "EUR", "pending"),
+                ("t3", "acc-2", "2025-09-03T16:45:00", -25.30, "EUR", "booked"),
+            ]
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get(
-                "/api/v1/transactions/stats?date_from=2025-08-01&date_to=2025-10-01"
-            )
-
-        fastapi_app.dependency_overrides.clear()
+        response = api_client.get(
+            "/api/v1/transactions/stats?date_from=2025-08-01&date_to=2025-10-01"
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -283,73 +283,118 @@ class TestTransactionsAPI:
         assert data["total_transactions"] == 3
         assert data["booked_transactions"] == 2
         assert data["pending_transactions"] == 1
+        assert data["currency"] == "EUR"
         assert data["total_income"] == 100.00
         assert data["total_expenses"] == 35.80  # abs(-10.50) + abs(-25.30)
         assert data["net_change"] == 64.20  # 100.00 - 35.80
         assert data["accounts_included"] == 2  # Two unique account IDs
+        assert data["average_transaction"] == round(64.20 / 3, 2)
 
-        # Average transaction: ((-10.50) + 100.00 + (-25.30)) / 3 = 64.20 / 3 = 21.4
-        expected_avg = round(64.20 / 3, 2)
-        assert data["average_transaction"] == expected_avg
-
-    def test_get_transaction_stats_with_account_filter(
-        self,
-        fastapi_app,
-        api_client,
-        mock_config,
-        mock_transaction_repo,
-    ):
-        """Test getting transaction stats filtered by account."""
-        mock_transactions = [
-            {
-                "internalTransactionId": "txn-001",
-                "transactionDate": datetime(2025, 9, 1, 9, 30),
-                "transactionValue": -10.50,
-                "transactionStatus": "booked",
-                "accountId": "test-account-123",
-            }
-        ]
-
-        mock_transaction_repo.get_transactions.return_value = mock_transactions
-
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
+    def test_get_transaction_stats_with_account_filter(self, api_client, mock_db_path):
+        """Stats filtered by account only aggregate that account."""
+        self._persist_txns(
+            [
+                ("t1", "acc-1", "2025-09-01T09:30:00", -10.50, "EUR", "booked"),
+                ("t2", "acc-2", "2025-09-02T14:15:00", 100.00, "EUR", "booked"),
+            ]
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get(
-                "/api/v1/transactions/stats?date_from=2025-08-01&date_to=2025-10-01&account_id=test-account-123"
-            )
-
-        fastapi_app.dependency_overrides.clear()
+        response = api_client.get(
+            "/api/v1/transactions/stats"
+            "?date_from=2025-08-01&date_to=2025-10-01&account_id=acc-1"
+        )
 
         assert response.status_code == 200
+        data = response.json()
+        assert data["total_transactions"] == 1
+        assert data["total_expenses"] == 10.50
+        assert data["total_income"] == 0
+        assert data["accounts_included"] == 1
 
-        # Verify the repository was called with account filter
-        mock_transaction_repo.get_transactions.assert_called_once()
-        call_kwargs = mock_transaction_repo.get_transactions.call_args.kwargs
-        assert call_kwargs["account_id"] == "test-account-123"
-
-    def test_get_transaction_stats_empty_result(
-        self,
-        fastapi_app,
-        api_client,
-        mock_config,
-        mock_transaction_repo,
-    ):
-        """Test getting stats when no transactions match criteria."""
-        mock_transaction_repo.get_transactions.return_value = []
-
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
+    def test_get_transaction_stats_respects_date_range(self, api_client, mock_db_path):
+        """Transactions outside the requested range are not aggregated,
+        and the inclusive end date covers the whole day."""
+        self._persist_txns(
+            [
+                ("t1", "acc-1", "2025-08-27T09:30:00", -10.00, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-01T14:15:00", -20.00, "EUR", "booked"),
+                ("t3", "acc-1", "2025-09-04T23:00:00", -40.00, "EUR", "booked"),
+                ("t4", "acc-1", "2025-09-05T00:30:00", -80.00, "EUR", "booked"),
+            ]
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get(
-                "/api/v1/transactions/stats?date_from=2025-01-01&date_to=2025-12-31"
-            )
+        response = api_client.get(
+            "/api/v1/transactions/stats?date_from=2025-08-28&date_to=2025-09-04"
+        )
 
-        fastapi_app.dependency_overrides.clear()
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_transactions"] == 2
+        assert data["total_expenses"] == 60.00  # t2 + t3; t1/t4 out of range
+
+    def test_get_transaction_stats_excludes_flagged_categories(
+        self, api_client, mock_db_path
+    ):
+        """Transactions in categories flagged exclude_from_stats are left out."""
+        from leggen.repositories.category_repository import CategoryRepository
+
+        self._persist_txns(
+            [
+                ("t1", "acc-1", "2025-09-01T09:30:00", -10.00, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-02T14:15:00", -20.00, "EUR", "booked"),
+            ]
+        )
+        category_repo = CategoryRepository()
+        cat = category_repo.create_category(
+            name="Internal transfers", color="#000000", exclude_from_stats=True
+        )
+        category_repo.assign_category(
+            account_id="acc-1",
+            transaction_id="t2",
+            category_id=cat["id"],
+            description="Transaction t2",
+            creditor_name="",
+            debtor_name="",
+        )
+
+        response = api_client.get(
+            "/api/v1/transactions/stats?date_from=2025-08-01&date_to=2025-10-01"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_transactions"] == 1
+        assert data["total_expenses"] == 10.00
+
+    def test_get_transaction_stats_uses_dominant_currency(
+        self, api_client, mock_db_path
+    ):
+        """Money totals cover only the dominant currency; counts cover all."""
+        self._persist_txns(
+            [
+                ("t1", "acc-1", "2025-09-01T09:30:00", -10.00, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-02T14:15:00", 50.00, "EUR", "booked"),
+                ("t3", "acc-1", "2025-09-03T16:45:00", -999.00, "USD", "booked"),
+            ]
+        )
+
+        response = api_client.get(
+            "/api/v1/transactions/stats?date_from=2025-08-01&date_to=2025-10-01"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_transactions"] == 3
+        assert data["currency"] == "EUR"
+        assert data["total_expenses"] == 10.00  # USD amount not mixed in
+        assert data["total_income"] == 50.00
+        assert data["average_transaction"] == 20.00  # (50 - 10) / 2 EUR txns
+
+    def test_get_transaction_stats_empty_result(self, api_client, mock_db_path):
+        """Stats over an empty database return zeroed totals."""
+        response = api_client.get(
+            "/api/v1/transactions/stats?date_from=2025-01-01&date_to=2025-12-31"
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -360,74 +405,34 @@ class TestTransactionsAPI:
         assert data["net_change"] == 0.0
         assert data["average_transaction"] == 0  # Division by zero handled
         assert data["accounts_included"] == 0
+        assert data["currency"] is None
 
     def test_get_transaction_stats_database_error(
         self,
         fastapi_app,
-        api_client,
-        mock_config,
         mock_transaction_repo,
     ):
-        """Test handling database error when getting stats."""
-        mock_transaction_repo.get_transactions.side_effect = Exception(
+        """A repository error surfaces as the sanitized global 500."""
+        from fastapi.testclient import TestClient
+
+        mock_transaction_repo.get_stats_totals.side_effect = Exception(
             "Database connection failed"
         )
 
         fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
             mock_transaction_repo
         )
+        client = TestClient(fastapi_app, raise_server_exceptions=False)
+        client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get(
-                "/api/v1/transactions/stats?date_from=2025-01-01&date_to=2025-12-31"
-            )
+        response = client.get(
+            "/api/v1/transactions/stats?date_from=2025-01-01&date_to=2025-12-31"
+        )
 
         fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 500
-        assert "Failed to get transaction stats" in response.json()["detail"]
-
-    def test_get_transaction_stats_custom_date_range(
-        self,
-        fastapi_app,
-        api_client,
-        mock_config,
-        mock_transaction_repo,
-    ):
-        """Test getting transaction stats for a custom date range."""
-        mock_transactions = [
-            {
-                "internalTransactionId": "txn-001",
-                "transactionDate": datetime(2025, 9, 1, 9, 30),
-                "transactionValue": -10.50,
-                "transactionStatus": "booked",
-                "accountId": "test-account-123",
-            }
-        ]
-
-        mock_transaction_repo.get_transactions.return_value = mock_transactions
-
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
-        )
-
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get(
-                "/api/v1/transactions/stats?date_from=2025-08-28&date_to=2025-09-04"
-            )
-
-        fastapi_app.dependency_overrides.clear()
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["date_from"] == "2025-08-28"
-        assert data["date_to"] == "2025-09-04"
-
-        # Verify the repository was called with the date range
-        mock_transaction_repo.get_transactions.assert_called_once()
-        call_kwargs = mock_transaction_repo.get_transactions.call_args.kwargs
-        assert call_kwargs["date_from"] == "2025-08-28"
-        assert call_kwargs["date_to"] == "2025-09-04"
+        assert response.json()["detail"] == "Internal server error."
 
     def test_get_transactions_invalid_per_page(self, api_client, mock_config):
         """per_page below 1 is rejected instead of dividing by zero."""
