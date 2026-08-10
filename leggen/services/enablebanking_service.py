@@ -1,3 +1,4 @@
+import threading
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -233,13 +234,17 @@ class EnableBankingService:
 # (bare Depends()) would leak an unclosed httpx.AsyncClient per request and
 # defeat the JWT and ASPSP caches.
 _service: Optional[EnableBankingService] = None
+# Sync dependencies run in FastAPI's threadpool, so creation must be locked.
+_service_lock = threading.Lock()
 
 
 def get_enablebanking_service() -> EnableBankingService:
     """FastAPI dependency returning the app-scoped service instance."""
     global _service
     if _service is None:
-        _service = EnableBankingService()
+        with _service_lock:
+            if _service is None:
+                _service = EnableBankingService()
     return _service
 
 
