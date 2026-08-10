@@ -1,27 +1,20 @@
-export interface AccountBalance {
-  amount: number;
-  currency: string;
-  balance_type: string;
-  last_change_date?: string;
-}
+// Friendly names over the generated OpenAPI types in api.gen.ts.
+// Regenerate with `just generate-api` (or `npm run generate:api` after
+// dumping openapi.json) whenever the backend API models change — CI fails
+// if the generated file is stale. Only add hand-written shapes here when
+// the schema cannot express them (e.g. generics).
+import type { components } from "./api.gen";
 
-export interface Account {
-  id: string;
-  institution_id: string;
-  status: string;
-  iban?: string;
-  name?: string;
-  display_name?: string;
-  currency?: string;
-  logo?: string;
-  created: string;
-  last_accessed?: string;
-  balances: AccountBalance[];
-}
+type Schemas = components["schemas"];
 
-export interface AccountUpdate {
-  display_name?: string;
-}
+// Accounts and balances
+export type Account = Schemas["AccountDetails"];
+export type AccountBalance = Schemas["AccountBalance"];
+export type AccountUpdate = Schemas["AccountUpdate"];
+export type Balance = Schemas["Balance"];
+
+// Transactions
+export type Transaction = Schemas["Transaction"];
 
 /**
  * Unmodified bank transaction dict as stored by the sync. Keys are
@@ -29,290 +22,60 @@ export interface AccountUpdate {
  * (GoCardless-era) data, and vary per bank — read it through
  * extractRawFields() in lib/raw-transaction.ts.
  */
-export type RawTransactionData = Record<string, unknown>;
+export type RawTransactionData = Transaction["raw_transaction"];
 
-export interface Category {
-  id: number;
-  name: string;
-  color: string;
-  icon?: string;
-  is_default: boolean;
-  exclude_from_stats: boolean;
-}
+// Categories
+export type Category = Schemas["Category"];
+export type CategoryCreate = Schemas["CategoryCreate"];
+export type CategoryUpdate = Schemas["CategoryUpdate"];
+export type CategorySuggestion = Schemas["CategorySuggestion"];
 
-export interface CategoryCreate {
-  name: string;
-  color?: string;
-  icon?: string;
-  exclude_from_stats?: boolean;
-}
+// Analytics
+export type CategoryStats = Schemas["CategoryStats"];
+export type TransactionStats = Schemas["TransactionStats"];
+export type MonthlyStats = Schemas["MonthlyStats"];
 
-export interface CategoryUpdate {
-  name?: string;
-  color?: string;
-  icon?: string;
-  exclude_from_stats?: boolean;
-}
+// OpenAPI cannot express generics, so the schema only holds concrete
+// instantiations of PaginatedResponse. Rebuild the generic from one of
+// them so envelope-field changes still flow through from the backend.
+export type PaginatedResponse<T> = Omit<
+  Schemas["PaginatedResponse_SyncOperation_"],
+  "data"
+> & { data: T[] };
 
-export interface CategorySuggestion {
-  category: Category;
-  score: number;
-  confidence: "high" | "medium" | "low";
-}
+// Notifications
+export type DiscordConfig = Schemas["DiscordConfig"];
+export type TelegramConfig = Schemas["TelegramConfig"];
+export type NotificationFilters = Schemas["NotificationFilters"];
+export type NotificationSettings = Schemas["NotificationSettings"];
+export type NotificationTest = Schemas["NotificationTest"];
+export type NotificationService = Schemas["NotificationServiceStatus"];
+export type NotificationServicesResponse = Record<string, NotificationService>;
 
-export interface CategoryStats {
-  category_id: number | null;
-  category_name: string;
-  category_color: string;
-  transaction_count: number;
-  income: number;
-  expenses: number;
-  currency?: string | null;
-}
-
-// Mirrors leggen/api/models/accounts.py Transaction/TransactionSummary
-export interface Transaction {
-  transaction_id: string; // stable bank-provided transaction ID
-  internal_transaction_id: string | null;
-  account_id: string;
-  transaction_value: number;
-  transaction_currency: string;
-  description: string;
-  transaction_date: string;
-  transaction_status: string;
-  // Only present when summary_only=false
-  institution_id?: string;
-  iban?: string;
-  category_id?: number;
-  category_name?: string;
-  category_color?: string;
-  // Raw transaction data (only present when summary_only=false)
-  raw_transaction?: RawTransactionData;
-}
-
-export interface Balance {
-  id: string;
-  account_id: string;
-  balance_amount: number | null;
-  balance_type: string;
-  currency: string | null;
-  reference_date: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-export interface Bank {
-  id: string;
-  name: string;
-  country_code: string;
-  logo_url?: string;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  per_page: number;
-  total_pages: number;
-  has_next: boolean;
-  has_prev: boolean;
-}
-
-// Notification types
-export interface DiscordConfig {
-  webhook: string;
-  enabled: boolean;
-}
-
-export interface TelegramConfig {
-  token: string;
-  chat_id: number;
-  enabled: boolean;
-}
-
-// Mirrors NotificationFilters/NotificationSettings in
-// leggen/api/models/notifications.py. On update every field is optional:
-// omitting one leaves it as stored, an empty list clears a filter list, and an
-// explicit null removes a service.
-export interface NotificationFilters {
-  case_insensitive?: string[];
-  case_sensitive?: string[];
-}
-
-export interface NotificationSettings {
-  discord?: DiscordConfig | null;
-  telegram?: TelegramConfig | null;
-  filters?: NotificationFilters;
-}
-
-export interface NotificationTest {
-  service: "discord" | "telegram";
-}
-
-export interface NotificationService {
-  name: string;
-  enabled: boolean;
-  configured: boolean;
-  active?: boolean;
-}
-
-export interface NotificationServicesResponse {
-  [serviceName: string]: NotificationService;
-}
+// Error envelope returned by every API error response
+export type ApiError = Schemas["ErrorResponse"];
+export type ApiErrorField = Schemas["ErrorField"];
 
 // Health check response data
-// Error envelope returned by every API error response.
-// Mirrors ErrorResponse/ErrorField in leggen/api/models/common.py.
-export interface ApiErrorField {
-  field: string;
-  message: string;
-  type: string;
-}
+export type HealthData = Schemas["HealthStatus"];
 
-export interface ApiError {
-  detail: string;
-  code: string;
-  status: number;
-  errors?: ApiErrorField[];
-}
+// Sync
+export type SyncOperation = Schemas["SyncOperation"];
+export type SyncResult = Schemas["SyncResult"];
+export type ScheduleSettings = Schemas["SyncScheduleResponse"];
 
-export interface HealthData {
-  status: string;
-  config_loaded?: boolean;
-  version?: string;
-  message?: string;
-}
+// Banks
+export type BankInstitution = Schemas["BankInstitution"];
+export type BankAuthResponse = Schemas["BankAuthResponse"];
+export type BankConnectionStatus = Schemas["BankConnectionStatus"];
+export type Country = Schemas["Country"];
 
-// Version information from root endpoint
-export interface VersionData {
-  message: string;
-  version: string;
-}
+// Backups
+export type S3Config = Schemas["S3Config"];
+export type BackupSettings = Schemas["BackupSettings"];
+export type BackupTest = Schemas["BackupTest"];
+export type BackupInfo = Schemas["BackupInfo"];
+export type BackupOperation = Schemas["BackupOperation"];
 
-// Analytics data types
-export interface TransactionStats {
-  date_from: string;
-  date_to: string;
-  total_transactions: number;
-  booked_transactions: number;
-  pending_transactions: number;
-  /** Money totals cover only the dominant currency of the filtered set. */
-  currency?: string | null;
-  total_income: number;
-  total_expenses: number;
-  net_change: number;
-  average_transaction: number;
-  accounts_included: number;
-}
-
-export interface MonthlyStats {
-  month: string;
-  income: number;
-  expenses: number;
-  net: number;
-  currency?: string | null;
-}
-
-// Sync operations types
-export interface SyncOperation {
-  id: number;
-  started_at: string;
-  completed_at?: string;
-  success?: boolean;
-  accounts_processed: number;
-  transactions_added: number;
-  transactions_updated: number;
-  balances_updated: number;
-  duration_seconds?: number;
-  errors: string[];
-  logs: string[];
-  trigger_type: "manual" | "scheduled" | "api";
-}
-
-export interface SyncResult {
-  success: boolean;
-  accounts_processed: number;
-  transactions_added: number;
-  transactions_updated: number;
-  balances_updated: number;
-  duration_seconds: number;
-  errors: string[];
-  started_at: string;
-  completed_at: string;
-}
-
-// Bank-related types
-export interface BankInstitution {
-  name: string;
-  country: string;
-  bic?: string;
-  logo?: string;
-  psu_types: string[];
-  maximum_consent_validity?: number;
-}
-
-export interface BankAuthResponse {
-  url: string;
-}
-
-export interface BankConnectionStatus {
-  session_id: string;
-  aspsp_name: string;
-  aspsp_country: string;
-  accounts_count: number;
-  created_at: string;
-  valid_until?: string;
-  status: string;
-  days_until_expiry?: number | null;
-}
-
-export interface Country {
-  code: string;
-  name: string;
-}
-
-// Backup types
-export interface S3Config {
-  access_key_id: string;
-  secret_access_key: string;
-  bucket_name: string;
-  region: string;
-  endpoint_url?: string;
-  path_style: boolean;
-  enabled: boolean;
-}
-
-export interface BackupSettings {
-  s3?: S3Config;
-}
-
-export interface BackupTest {
-  service: string;
-  config: S3Config;
-}
-
-export interface BackupInfo {
-  key: string;
-  last_modified: string;
-  size: number;
-}
-
-export interface BackupOperation {
-  operation: string;
-  backup_key?: string;
-}
-
-// Auth types
-export interface LoginResponse {
-  access_token: string;
-  token_type: string;
-}
-
-// Sync schedule types
-export interface ScheduleSettings {
-  enabled: boolean;
-  hour: number;
-  minute: number;
-  cron?: string | null;
-  next_sync_time?: string | null;
-}
+// Auth
+export type LoginResponse = Schemas["LoginResponse"];

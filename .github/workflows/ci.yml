@@ -42,6 +42,40 @@ jobs:
       - name: Run Python tests
         run: uv run pytest
 
+  check-api-types:
+    name: Check API Types
+    runs-on: ubuntu-latest
+    if: "startsWith(github.ref, 'refs/tags/') || !contains(github.event.head_commit.message, 'chore(ci): Bump version to')"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: ./frontend
+
+      - name: Regenerate OpenAPI schema and types
+        run: |
+          uv run python scripts/dump_openapi.py
+          npm --prefix frontend run generate:api
+
+      - name: Check for stale generated files
+        run: git diff --exit-code openapi.json frontend/src/types/api.gen.ts
+
   test-frontend:
     name: Test Frontend
     runs-on: ubuntu-latest

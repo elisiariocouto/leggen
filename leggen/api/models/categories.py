@@ -1,6 +1,6 @@
 """Pydantic models for category endpoints."""
 
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -58,4 +58,4 @@ class CategorySuggestion(BaseModel):
 
     category: Category
     score: float
-    confidence: str  # "high", "medium", "low"
+    confidence: Literal["high", "medium", "low"]

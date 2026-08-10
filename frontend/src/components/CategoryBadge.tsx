@@ -23,9 +23,9 @@ import type { Category, CategorySuggestion } from "../types/api";
 interface CategoryBadgeProps {
   accountId: string;
   transactionId: string;
-  categoryId?: number;
-  categoryName?: string;
-  categoryColor?: string;
+  categoryId?: number | null;
+  categoryName?: string | null;
+  categoryColor?: string | null;
   description?: string;
 }
 

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "VITE_API_URL=http://localhost:8000/api/v1 vite",
     "build": "tsc -b && vite build",
+    "generate:api": "openapi-typescript ../openapi.json -o src/types/api.gen.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -52,6 +53,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
+    "openapi-typescript": "^7.13.0",
     "shadcn": "^3.3.1",
     "sharp": "^0.34.3",
     "tailwindcss": "^4.3.2",

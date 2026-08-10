@@ -26,6 +26,11 @@ check:
 test *args:
     uv run pytest {{args}}
 
+# Regenerate openapi.json and the frontend API types from the backend models
+generate-api:
+    uv run python scripts/dump_openapi.py
+    cd frontend && npm run generate:api
+
 # Build the frontend for production
 build:
     cd frontend && npm run build
