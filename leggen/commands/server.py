@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from importlib import metadata
 
@@ -206,22 +207,35 @@ def create_app() -> FastAPI:
 def server(ctx: click.Context, reload: bool, host: str, port: int):
     """Start the Leggen API server"""
 
-    # Get config_dir, database, and log_level from main CLI context
+    # Get config, config_dir, database, and log_level from main CLI context
+    config_path = None
     config_dir = None
     database = None
     log_level = "info"
     if ctx.parent:
+        config_path = ctx.parent.params.get("config")
         config_dir = ctx.parent.params.get("config_dir")
         database = ctx.parent.params.get("database")
         log_level = ctx.parent.params.get("log_level", "info").lower()
 
-    # Set up path manager with user-provided paths
+    # Set up path manager and config singleton with user-provided paths
     if config_dir:
         path_manager.set_config_dir(config_dir)
     if database:
         path_manager.set_database_path(database)
+    if config_path:
+        config.set_config_path(config_path)
 
     if reload:
+        # The reload worker is a fresh process where only the environment
+        # survives, so path flags must be exported to reach it.
+        if config_path:
+            os.environ["LEGGEN_CONFIG_FILE"] = str(config_path)
+        if config_dir:
+            os.environ["LEGGEN_CONFIG_DIR"] = str(config_dir)
+        if database:
+            os.environ["LEGGEN_DATABASE_PATH"] = str(database)
+
         # Use string import for reload to work properly
         uvicorn.run(
             "leggen.commands.server:create_app",
