@@ -24,24 +24,27 @@ class TestErrorEnvelope:
         assert response.status_code == 404
         _assert_envelope(response.json(), 404, "NOT_FOUND")
 
-    def test_sanitized_500_keeps_route_message(
-        self, fastapi_app, api_client, mock_db_path
-    ):
-        """A route's own 500 message survives; the code is filled in for it."""
+    def test_unhandled_route_error_uses_sanitized_500(self, fastapi_app, mock_db_path):
+        """Routes have no blanket handlers; the global handler renders the
+        sanitized 500 with a full traceback in the log."""
         from leggen.background.scheduler import scheduler
+
+        client = TestClient(fastapi_app, raise_server_exceptions=False)
+        client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
 
         mock_service = MagicMock()
         mock_service.sync_all_accounts.side_effect = Exception("db is locked")
         scheduler.sync_service = mock_service
         try:
-            response = api_client.post("/api/v1/sync")
+            response = client.post("/api/v1/sync")
         finally:
             scheduler._sync_service = None
 
         assert response.status_code == 500
         body = response.json()
         _assert_envelope(body, 500, "INTERNAL_ERROR")
-        assert body["detail"] == "Failed to run sync."
+        assert body["detail"] == "Internal server error."
+        assert "db is locked" not in response.text
 
     def test_unhandled_exception_returns_json_not_plain_text(
         self, fastapi_app, mock_db_path

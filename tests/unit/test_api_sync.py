@@ -120,16 +120,21 @@ class TestSyncAPI:
         assert response.json()["detail"] == "Sync is already running."
 
     def test_sync_failure_returns_sanitized_500(
-        self, fastapi_app, api_client, mock_db_path, mock_sync_service
+        self, fastapi_app, mock_db_path, mock_sync_service
     ):
+        from fastapi.testclient import TestClient
+
         mock_sync_service.sync_all_accounts.side_effect = Exception(
             "sqlite3.OperationalError: /secret/path/leggen.db is locked"
         )
 
-        response = api_client.post("/api/v1/sync")
+        client = TestClient(fastapi_app, raise_server_exceptions=False)
+        client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
+        response = client.post("/api/v1/sync")
 
         assert response.status_code == 500
-        assert response.json()["detail"] == "Failed to run sync."
+        assert response.json()["detail"] == "Internal server error."
+        assert "/secret/path" not in response.text
 
 
 def _reset_config_singleton() -> None:
