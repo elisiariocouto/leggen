@@ -101,6 +101,11 @@ class BackgroundScheduler:
             self.scheduler.shutdown()
             logger.info("Background scheduler shutdown")
 
+    async def close_services(self) -> None:
+        """Close HTTP clients owned by lazily created services."""
+        if self._sync_service is not None:
+            await self._sync_service.enablebanking.aclose()
+
     def reschedule_sync(self, schedule_config: dict):
         """Reschedule the sync job with new configuration"""
         if self.scheduler.running:

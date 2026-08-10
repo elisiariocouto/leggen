@@ -65,7 +65,8 @@ class TestErrorExitCodes:
             )
             result = runner.invoke(cli, command)
         assert result.exit_code == 1
-        assert "Could not connect" in result.output
+        # ClickException output must land on stderr, not stdout
+        assert "Could not connect" in result.stderr
 
     def test_http_error_exits_nonzero(self):
         runner = CliRunner()
@@ -77,7 +78,8 @@ class TestErrorExitCodes:
             )
             result = runner.invoke(cli, ["status"])
         assert result.exit_code == 1
-        assert "Internal server error" in result.output
+        # ClickException output must land on stderr, not stdout
+        assert "Internal server error" in result.stderr
 
 
 def _run_cli_without_config(args, tmp_path, input=None):
