@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from loguru import logger
 
 from leggen.api.models.banks import (
     BankAuthResponse,
@@ -28,25 +27,19 @@ async def get_bank_institutions(
     country: str = Query(default="PT", description="Country code (e.g., PT, ES, FR)"),
 ) -> list[BankInstitution]:
     """Get available bank institutions (ASPSPs) for a country"""
-    try:
-        aspsps = await enablebanking_service.get_aspsps(country)
-        institutions = [
-            BankInstitution(
-                name=aspsp["name"],
-                country=aspsp.get("country", country),
-                bic=aspsp.get("bic"),
-                logo=aspsp.get("logo"),
-                psu_types=aspsp.get("psu_types", ["personal"]),
-                maximum_consent_validity=aspsp.get("maximum_consent_validity"),
-            )
-            for aspsp in aspsps
-        ]
-        return sorted(institutions, key=lambda institution: institution.name.casefold())
-    except Exception as e:
-        logger.error(f"Failed to get institutions for {country}: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to get institutions."
-        ) from e
+    aspsps = await enablebanking_service.get_aspsps(country)
+    institutions = [
+        BankInstitution(
+            name=aspsp["name"],
+            country=aspsp.get("country", country),
+            bic=aspsp.get("bic"),
+            logo=aspsp.get("logo"),
+            psu_types=aspsp.get("psu_types", ["personal"]),
+            maximum_consent_validity=aspsp.get("maximum_consent_validity"),
+        )
+        for aspsp in aspsps
+    ]
+    return sorted(institutions, key=lambda institution: institution.name.casefold())
 
 
 @router.post("/banks/connect")
@@ -57,33 +50,27 @@ async def connect_to_bank(
     ],
 ) -> BankAuthResponse:
     """Start bank authorization flow"""
-    try:
-        redirect_url = request.redirect_url or "http://localhost:8000/"
+    redirect_url = request.redirect_url or "http://localhost:8000/"
 
-        # Ask for the longest consent the bank supports; start_auth falls back
-        # to 90 days when the ASPSP doesn't report a maximum.
-        maximum_consent_validity = None
-        aspsps = await enablebanking_service.get_aspsps(request.aspsp_country)
-        for aspsp in aspsps:
-            if aspsp.get("name") == request.aspsp_name:
-                validity = aspsp.get("maximum_consent_validity")
-                if validity:
-                    maximum_consent_validity = int(validity)
-                break
+    # Ask for the longest consent the bank supports; start_auth falls back
+    # to 90 days when the ASPSP doesn't report a maximum.
+    maximum_consent_validity = None
+    aspsps = await enablebanking_service.get_aspsps(request.aspsp_country)
+    for aspsp in aspsps:
+        if aspsp.get("name") == request.aspsp_name:
+            validity = aspsp.get("maximum_consent_validity")
+            if validity:
+                maximum_consent_validity = int(validity)
+            break
 
-        result = await enablebanking_service.start_auth(
-            aspsp_name=request.aspsp_name,
-            aspsp_country=request.aspsp_country,
-            redirect_url=redirect_url,
-            psu_type=request.psu_type,
-            maximum_consent_validity=maximum_consent_validity,
-        )
-        return BankAuthResponse(url=result["url"])
-    except Exception as e:
-        logger.error(
-            f"Failed to start auth for {request.aspsp_name} ({request.aspsp_country}): {e}"
-        )
-        raise HTTPException(status_code=500, detail="Failed to connect to bank.") from e
+    result = await enablebanking_service.start_auth(
+        aspsp_name=request.aspsp_name,
+        aspsp_country=request.aspsp_country,
+        redirect_url=redirect_url,
+        psu_type=request.psu_type,
+        maximum_consent_validity=maximum_consent_validity,
+    )
+    return BankAuthResponse(url=result["url"])
 
 
 @router.post("/banks/callback")
@@ -101,27 +88,23 @@ async def bank_auth_callback(
             detail="Unknown or expired authorization state. Restart the bank connection flow.",
         )
 
-    try:
-        session_data = await enablebanking_service.create_session(request.code)
+    session_data = await enablebanking_service.create_session(request.code)
 
-        # Store session locally
-        aspsp = session_data.get("aspsp", {})
-        access = session_data.get("access", {})
-        session_record = {
-            "session_id": session_data["session_id"],
-            "aspsp_name": aspsp.get("name", ""),
-            "aspsp_country": aspsp.get("country", ""),
-            "accounts": session_data.get("accounts"),
-            "valid_until": access.get("valid_until"),
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "status": "active",
-        }
-        session_repo.persist(session_record)
+    # Store session locally
+    aspsp = session_data.get("aspsp", {})
+    access = session_data.get("access", {})
+    session_record = {
+        "session_id": session_data["session_id"],
+        "aspsp_name": aspsp.get("name", ""),
+        "aspsp_country": aspsp.get("country", ""),
+        "accounts": session_data.get("accounts"),
+        "valid_until": access.get("valid_until"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "status": "active",
+    }
+    session_repo.persist(session_record)
 
-        return session_record
-    except Exception as e:
-        logger.error(f"Failed to exchange auth code: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create session.") from e
+    return session_record
 
 
 @router.get("/banks/status")
@@ -129,48 +112,44 @@ async def get_bank_connections_status(
     session_repo: Annotated[SessionRepository, Depends()],
 ) -> list[BankConnectionStatus]:
     """Get status of all bank connections"""
-    try:
-        sessions = session_repo.get_sessions()
-        connections = []
-        now = datetime.now(timezone.utc)
+    sessions = session_repo.get_sessions()
+    connections = []
+    now = datetime.now(timezone.utc)
 
-        for session in sessions:
-            # Determine status based on valid_until
-            status = session.get("status", "active")
-            valid_until_str = session.get("valid_until")
-            days_until_expiry = None
-            if valid_until_str and status == "active":
-                try:
-                    valid_until = datetime.fromisoformat(valid_until_str)
-                    # Timestamps stored without an offset are UTC
-                    if valid_until.tzinfo is None:
-                        valid_until = valid_until.replace(tzinfo=timezone.utc)
-                    days_until_expiry = (valid_until - now).days
-                    if valid_until < now:
-                        status = "expired"
-                        days_until_expiry = None
-                except (ValueError, TypeError):
-                    pass
+    for session in sessions:
+        # Determine status based on valid_until
+        status = session.get("status", "active")
+        valid_until_str = session.get("valid_until")
+        days_until_expiry = None
+        if valid_until_str and status == "active":
+            try:
+                valid_until = datetime.fromisoformat(valid_until_str)
+                # Timestamps stored without an offset are UTC
+                if valid_until.tzinfo is None:
+                    valid_until = valid_until.replace(tzinfo=timezone.utc)
+                days_until_expiry = (valid_until - now).days
+                if valid_until < now:
+                    status = "expired"
+                    days_until_expiry = None
+            except (ValueError, TypeError):
+                pass
 
-            accounts = session.get("accounts", []) or []
+        accounts = session.get("accounts", []) or []
 
-            connections.append(
-                BankConnectionStatus(
-                    session_id=session["session_id"],
-                    aspsp_name=session["aspsp_name"],
-                    aspsp_country=session["aspsp_country"],
-                    accounts_count=len(accounts),
-                    created_at=session["created_at"],
-                    valid_until=valid_until_str,
-                    status=status,
-                    days_until_expiry=days_until_expiry,
-                )
+        connections.append(
+            BankConnectionStatus(
+                session_id=session["session_id"],
+                aspsp_name=session["aspsp_name"],
+                aspsp_country=session["aspsp_country"],
+                accounts_count=len(accounts),
+                created_at=session["created_at"],
+                valid_until=valid_until_str,
+                status=status,
+                days_until_expiry=days_until_expiry,
             )
+        )
 
-        return connections
-    except Exception as e:
-        logger.error(f"Failed to get bank connection status: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get bank status.") from e
+    return connections
 
 
 @router.delete("/banks/connections/{session_id}")
