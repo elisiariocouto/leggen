@@ -93,12 +93,12 @@ export interface Transaction {
 export interface Balance {
   id: string;
   account_id: string;
-  balance_amount: number;
+  balance_amount: number | null;
   balance_type: string;
-  currency: string;
-  reference_date: string;
-  created_at: string;
-  updated_at: string;
+  currency: string | null;
+  reference_date: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface Bank {

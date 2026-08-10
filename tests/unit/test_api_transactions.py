@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from leggen.repositories import TransactionRepository
+from tests.conftest import persist_transactions
 
 
 @pytest.mark.api
@@ -210,11 +211,10 @@ class TestTransactionsAPI:
     def test_get_transactions_database_error(
         self,
         fastapi_app,
+        raw_api_client,
         mock_transaction_repo,
     ):
         """A repository error surfaces as the sanitized global 500."""
-        from fastapi.testclient import TestClient
-
         mock_transaction_repo.get_transactions.side_effect = Exception(
             "Database connection failed"
         )
@@ -222,10 +222,8 @@ class TestTransactionsAPI:
         fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
             mock_transaction_repo
         )
-        client = TestClient(fastapi_app, raise_server_exceptions=False)
-        client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
 
-        response = client.get("/api/v1/transactions")
+        response = raw_api_client.get("/api/v1/transactions")
 
         fastapi_app.dependency_overrides.clear()
 
@@ -233,33 +231,8 @@ class TestTransactionsAPI:
         assert response.json()["detail"] == "Internal server error."
 
     @staticmethod
-    def _persist_txns(rows):
-        """Insert transactions into the temp DB via the real repository.
-
-        Each row: (txn_id, account_id, date, value, currency, status).
-        """
-        repo = TransactionRepository()
-        transactions = [
-            {
-                "transactionId": txn_id,
-                "internalTransactionId": f"int-{txn_id}",
-                "institutionId": "TEST_BANK",
-                "iban": "LT313250081177977789",
-                "accountId": account_id,
-                "transactionDate": date,
-                "description": f"Transaction {txn_id}",
-                "transactionValue": value,
-                "transactionCurrency": currency,
-                "transactionStatus": status,
-                "rawTransaction": {"transactionId": txn_id},
-            }
-            for txn_id, account_id, date, value, currency, status in rows
-        ]
-        by_account: dict[str, list] = {}
-        for txn in transactions:
-            by_account.setdefault(txn["accountId"], []).append(txn)
-        for account_id, txns in by_account.items():
-            repo.persist(account_id, txns)
+    def _persist_txns(rows: list[tuple]) -> None:
+        persist_transactions(rows)
 
     def test_get_transaction_stats_success(self, api_client, mock_db_path):
         """Stats are aggregated in SQL over the real database."""
@@ -410,11 +383,10 @@ class TestTransactionsAPI:
     def test_get_transaction_stats_database_error(
         self,
         fastapi_app,
+        raw_api_client,
         mock_transaction_repo,
     ):
         """A repository error surfaces as the sanitized global 500."""
-        from fastapi.testclient import TestClient
-
         mock_transaction_repo.get_stats_totals.side_effect = Exception(
             "Database connection failed"
         )
@@ -422,10 +394,8 @@ class TestTransactionsAPI:
         fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
             mock_transaction_repo
         )
-        client = TestClient(fastapi_app, raise_server_exceptions=False)
-        client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
 
-        response = client.get(
+        response = raw_api_client.get(
             "/api/v1/transactions/stats?date_from=2025-01-01&date_to=2025-12-31"
         )
 

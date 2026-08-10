@@ -74,6 +74,22 @@ class BalanceRepository:
             logger.error(f"Failed to persist balances: {e}")
             raise
 
+    def get_latest_balances_by_account(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Latest balances for every account in one query, grouped by account.
+
+        Rows with a NULL amount (possible on legacy data — the column is
+        nullable) are skipped: a balance without an amount is meaningless.
+        """
+        grouped: Dict[str, List[Dict[str, Any]]] = {}
+        for balance in self.get_balances():
+            if balance.get("amount") is None:
+                logger.warning(
+                    f"Skipping balance with NULL amount for {balance.get('account_id')}"
+                )
+                continue
+            grouped.setdefault(balance["account_id"], []).append(balance)
+        return grouped
+
     def get_balances(self, account_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get latest balances from database"""
         if not db_exists():

@@ -32,6 +32,14 @@ class BackupTest(BaseModel):
     config: S3Config = Field(..., description="S3 configuration to test")
 
 
+class BackupInfo(BaseModel):
+    """Metadata of one stored backup"""
+
+    key: str
+    last_modified: str
+    size: int
+
+
 class BackupOperation(BaseModel):
     """Backup operation request model."""
 

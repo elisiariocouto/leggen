@@ -1,8 +1,10 @@
 """API routes for backup management."""
 
 from fastapi import APIRouter, HTTPException
+from pydantic import ValidationError
 
 from leggen.api.models.backup import (
+    BackupInfo,
     BackupOperation,
     BackupSettings,
     BackupTest,
@@ -158,8 +160,8 @@ async def test_backup_connection(test_request: BackupTest) -> dict:
     return {"connected": True}
 
 
-@router.get("/backup/list")
-async def list_backups() -> list:
+@router.get("/backup/list", response_model=list[BackupInfo])
+async def list_backups() -> list[dict]:
     """List available backups."""
     backup_config = config.backup_config.get("s3", {})
 
@@ -184,7 +186,7 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
     # Convert config to model with validation
     try:
         s3_config = S3BackupConfig(**backup_config)
-    except Exception as e:
+    except ValidationError as e:
         raise HTTPException(status_code=400, detail="Invalid S3 configuration.") from e
 
     backup_service = BackupService(s3_config)

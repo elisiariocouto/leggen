@@ -158,6 +158,46 @@ def api_client(fastapi_app):
 
 
 @pytest.fixture
+def raw_api_client(fastapi_app):
+    """Authenticated test client that returns 500 responses instead of
+    re-raising unhandled route exceptions — for testing the global handlers."""
+    client = TestClient(fastapi_app, raise_server_exceptions=False)
+    client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
+    return client
+
+
+def persist_transactions(rows: list[tuple]) -> None:
+    """Insert transactions into the temp DB via the real repository.
+
+    Each row: (txn_id, account_id, date, value, currency, status).
+    """
+    from leggen.repositories import TransactionRepository
+
+    repo = TransactionRepository()
+    transactions = [
+        {
+            "transactionId": txn_id,
+            "internalTransactionId": f"int-{txn_id}",
+            "institutionId": "TEST_BANK",
+            "iban": "LT313250081177977789",
+            "accountId": account_id,
+            "transactionDate": date,
+            "description": f"Transaction {txn_id}",
+            "transactionValue": value,
+            "transactionCurrency": currency,
+            "transactionStatus": status,
+            "rawTransaction": {"transactionId": txn_id},
+        }
+        for txn_id, account_id, date, value, currency, status in rows
+    ]
+    by_account: dict[str, list] = {}
+    for txn in transactions:
+        by_account.setdefault(txn["accountId"], []).append(txn)
+    for account_id, txns in by_account.items():
+        repo.persist(account_id, txns)
+
+
+@pytest.fixture
 def mock_account_repo():
     """Create mock AccountRepository for testing."""
     from unittest.mock import MagicMock

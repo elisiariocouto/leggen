@@ -40,7 +40,9 @@ class Balance(BaseModel):
 
     id: str
     account_id: str
-    balance_amount: float
+    # Nullable: history points derive from the balances table, whose amount
+    # column legacy rows may hold as NULL.
+    balance_amount: Optional[float] = None
     balance_type: str
     currency: Optional[str] = None
     reference_date: Optional[str] = None

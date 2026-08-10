@@ -77,6 +77,12 @@ export default function BalanceChart({
   // Backend already picks the best balance type per account, so no client-side type filtering needed
   const chartData = data
     .filter((balance) => (balance.currency || currency) === currency)
+    .filter(
+      (
+        balance,
+      ): balance is Balance & { reference_date: string; balance_amount: number } =>
+        balance.reference_date !== null && balance.balance_amount !== null,
+    )
     .map((balance) => ({
       date: new Date(balance.reference_date).toLocaleDateString("en-GB"), // DD/MM/YYYY format
       balance: balance.balance_amount,
