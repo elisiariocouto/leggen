@@ -1,5 +1,4 @@
 import json
-import sqlite3
 from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
@@ -109,77 +108,75 @@ class TransactionRepository:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
 
-                select_sql = """SELECT
-                    internalTransactionId,
-                    institutionId,
-                    iban,
-                    transactionDate,
-                    description,
-                    transactionValue,
-                    transactionCurrency,
-                    transactionStatus,
-                    rawTransaction
-                FROM transactions WHERE accountId = ? AND transactionId = ?"""
-
-                insert_sql = """INSERT OR REPLACE INTO transactions (
-                    accountId,
-                    transactionId,
-                    internalTransactionId,
-                    institutionId,
-                    iban,
-                    transactionDate,
-                    description,
-                    transactionValue,
-                    transactionCurrency,
-                    transactionStatus,
-                    rawTransaction
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+                # One SELECT per account in the batch instead of one per
+                # transaction: load the existing rows into memory and compare
+                # there. A full-history sync is thousands of rows, not millions.
+                existing_rows: Dict[tuple[str, str], tuple] = {}
+                for acct in {txn["accountId"] for txn in transactions}:
+                    cursor.execute(
+                        """SELECT
+                            accountId,
+                            transactionId,
+                            internalTransactionId,
+                            institutionId,
+                            iban,
+                            transactionDate,
+                            description,
+                            transactionValue,
+                            transactionCurrency,
+                            transactionStatus,
+                            rawTransaction
+                        FROM transactions WHERE accountId = ?""",
+                        (acct,),
+                    )
+                    for row in cursor.fetchall():
+                        existing_rows[(row[0], row[1])] = tuple(row[2:])
 
                 new_transactions = []
                 updated_count = 0
+                rows_to_write = []
 
                 for transaction in transactions:
-                    try:
-                        row_values = (
-                            transaction.get("internalTransactionId"),
-                            transaction["institutionId"],
-                            transaction["iban"],
-                            transaction["transactionDate"],
-                            transaction["description"],
-                            transaction["transactionValue"],
-                            transaction["transactionCurrency"],
-                            transaction["transactionStatus"],
-                            json.dumps(transaction["rawTransaction"]),
-                        )
+                    row_values = (
+                        transaction.get("internalTransactionId"),
+                        transaction["institutionId"],
+                        transaction["iban"],
+                        transaction["transactionDate"],
+                        transaction["description"],
+                        transaction["transactionValue"],
+                        transaction["transactionCurrency"],
+                        transaction["transactionStatus"],
+                        json.dumps(transaction["rawTransaction"]),
+                    )
+                    key = (transaction["accountId"], transaction["transactionId"])
+                    existing = existing_rows.get(key)
 
-                        cursor.execute(
-                            select_sql,
-                            (transaction["accountId"], transaction["transactionId"]),
-                        )
-                        existing = cursor.fetchone()
-
-                        if existing is not None and tuple(existing) == row_values:
-                            continue
-
-                        cursor.execute(
-                            insert_sql,
-                            (
-                                transaction["accountId"],
-                                transaction["transactionId"],
-                                *row_values,
-                            ),
-                        )
-
-                        if existing is None:
-                            new_transactions.append(transaction)
-                        else:
-                            updated_count += 1
-
-                    except sqlite3.IntegrityError as e:
-                        logger.warning(
-                            f"Failed to insert transaction {transaction.get('transactionId')}: {e}"
-                        )
+                    if existing is not None and existing == row_values:
                         continue
+
+                    rows_to_write.append((*key, *row_values))
+                    if existing is None:
+                        new_transactions.append(transaction)
+                    else:
+                        updated_count += 1
+
+                if rows_to_write:
+                    cursor.executemany(
+                        """INSERT OR REPLACE INTO transactions (
+                            accountId,
+                            transactionId,
+                            internalTransactionId,
+                            institutionId,
+                            iban,
+                            transactionDate,
+                            description,
+                            transactionValue,
+                            transactionCurrency,
+                            transactionStatus,
+                            rawTransaction
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        rows_to_write,
+                    )
 
                 conn.commit()
 

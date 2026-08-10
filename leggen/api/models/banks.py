@@ -37,6 +37,13 @@ class BankCallbackRequest(BaseModel):
     state: str
 
 
+class Country(BaseModel):
+    """A supported country"""
+
+    code: str
+    name: str
+
+
 class BankConnectionStatus(BaseModel):
     """Bank connection status response"""
 

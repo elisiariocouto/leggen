@@ -10,6 +10,7 @@ from loguru import logger
 
 from leggen.api.dependencies.auth import get_current_user
 from leggen.api.errors import register_exception_handlers, use_error_schema_in_openapi
+from leggen.api.models.common import HealthStatus
 from leggen.api.routes import (
     accounts,
     auth,
@@ -152,11 +153,11 @@ def create_app() -> FastAPI:
         backup.router, prefix="/api/v1", tags=["backup"], dependencies=auth_deps
     )
 
-    @app.get("/api/v1/health")
+    @app.get("/api/v1/health", response_model=HealthStatus)
     async def health():
         """Health check endpoint for API connectivity"""
         try:
-            config_loaded = config._config is not None
+            config_loaded = config.is_loaded
 
             # Get version dynamically
             try:
@@ -164,11 +165,11 @@ def create_app() -> FastAPI:
             except metadata.PackageNotFoundError:
                 version = "dev"
 
-            return {
-                "status": "healthy",
-                "config_loaded": config_loaded,
-                "version": version,
-            }
+            return HealthStatus(
+                status="healthy",
+                config_loaded=config_loaded,
+                version=version,
+            )
         except Exception as e:
             # This endpoint is unauthenticated, so the failure reason stays in
             # the log; the status code is what callers act on.

@@ -9,6 +9,7 @@ from leggen.api.models.banks import (
     BankConnectionRequest,
     BankConnectionStatus,
     BankInstitution,
+    Country,
 )
 from leggen.repositories import SessionRepository
 from leggen.services.enablebanking_service import (
@@ -165,7 +166,7 @@ async def delete_bank_connection(
 
 
 @router.get("/banks/countries")
-async def get_supported_countries() -> list[dict]:
+async def get_supported_countries() -> list[Country]:
     """Get list of supported countries"""
     countries = [
         {"code": "AT", "name": "Austria"},
@@ -201,4 +202,4 @@ async def get_supported_countries() -> list[dict]:
         {"code": "GB", "name": "United Kingdom"},
     ]
 
-    return countries
+    return [Country(**country) for country in countries]
