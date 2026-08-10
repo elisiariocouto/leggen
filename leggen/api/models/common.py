@@ -17,6 +17,14 @@ class PaginatedResponse(BaseModel, Generic[T]):
     has_prev: bool
 
 
+class HealthStatus(BaseModel):
+    """Response of the healthy path of /health"""
+
+    status: str
+    config_loaded: bool
+    version: str
+
+
 class ErrorField(BaseModel):
     """One field-level validation problem."""
 

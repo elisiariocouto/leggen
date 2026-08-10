@@ -112,6 +112,11 @@ class Config:
         self.save_config()
 
     @property
+    def is_loaded(self) -> bool:
+        """Whether a configuration has been loaded, without triggering a load."""
+        return self._config is not None
+
+    @property
     def config(self) -> Dict[str, Any]:
         if self._config is None:
             self.load_config()

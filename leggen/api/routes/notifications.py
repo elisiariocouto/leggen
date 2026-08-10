@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from leggen.api.models.notifications import (
     DiscordConfig,
     NotificationFilters,
+    NotificationServiceStatus,
     NotificationSettings,
     NotificationTest,
     TelegramConfig,
@@ -125,29 +126,25 @@ async def test_notification(test_request: NotificationTest) -> dict:
 
 
 @router.get("/notifications/services")
-async def get_notification_services() -> dict:
+async def get_notification_services() -> dict[str, NotificationServiceStatus]:
     """Get available notification services and their status"""
     notifications_config = config.notifications_config
+    discord = notifications_config.get("discord", {})
+    telegram = notifications_config.get("telegram", {})
 
     return {
-        "discord": {
-            "name": "Discord",
-            "enabled": bool(notifications_config.get("discord", {}).get("webhook")),
-            "configured": bool(notifications_config.get("discord", {}).get("webhook")),
-            "active": notifications_config.get("discord", {}).get("enabled", True),
-        },
-        "telegram": {
-            "name": "Telegram",
-            "enabled": bool(
-                notifications_config.get("telegram", {}).get("token")
-                and notifications_config.get("telegram", {}).get("chat_id")
-            ),
-            "configured": bool(
-                notifications_config.get("telegram", {}).get("token")
-                and notifications_config.get("telegram", {}).get("chat_id")
-            ),
-            "active": notifications_config.get("telegram", {}).get("enabled", True),
-        },
+        "discord": NotificationServiceStatus(
+            name="Discord",
+            enabled=bool(discord.get("webhook")),
+            configured=bool(discord.get("webhook")),
+            active=discord.get("enabled", True),
+        ),
+        "telegram": NotificationServiceStatus(
+            name="Telegram",
+            enabled=bool(telegram.get("token") and telegram.get("chat_id")),
+            configured=bool(telegram.get("token") and telegram.get("chat_id")),
+            active=telegram.get("enabled", True),
+        ),
     }
 
 

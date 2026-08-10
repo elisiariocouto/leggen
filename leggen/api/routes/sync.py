@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from leggen.api.models.common import PaginatedResponse
 from leggen.api.models.sync import (
+    SyncOperation,
     SyncRequest,
     SyncResult,
     SyncScheduleRequest,
@@ -93,7 +94,7 @@ async def update_sync_schedule(request: SyncScheduleRequest) -> SyncScheduleResp
 async def get_sync_operations(
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     per_page: int = Query(default=50, ge=1, le=500, description="Items per page"),
-) -> PaginatedResponse[dict]:
+) -> PaginatedResponse[SyncOperation]:
     """Get sync operations history"""
     sync_repo = SyncRepository()
     operations = sync_repo.get_operations(limit=per_page, offset=(page - 1) * per_page)
@@ -101,7 +102,7 @@ async def get_sync_operations(
     total_pages = (total + per_page - 1) // per_page
 
     return PaginatedResponse(
-        data=operations,
+        data=[SyncOperation(**operation) for operation in operations],
         total=total,
         page=page,
         per_page=per_page,

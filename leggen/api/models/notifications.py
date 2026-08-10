@@ -29,6 +29,15 @@ class NotificationFilters(BaseModel):
     case_sensitive: Optional[List[str]] = None
 
 
+class NotificationServiceStatus(BaseModel):
+    """Availability and configuration state of one notification service"""
+
+    name: str
+    enabled: bool
+    configured: bool
+    active: bool
+
+
 class NotificationSettings(BaseModel):
     """Complete notification settings
 
