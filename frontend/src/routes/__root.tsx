@@ -2,38 +2,24 @@ import {
   createRootRoute,
   Link,
   Outlet,
+  redirect,
   useLocation,
-  useNavigate,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
 import { AppSidebar } from "../components/AppSidebar";
 import { SiteHeader } from "../components/SiteHeader";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { SidebarInset, SidebarProvider } from "../components/ui/sidebar";
 import { Toaster } from "../components/ui/sonner";
+import { hasValidSession } from "../lib/authToken";
+
+// Routes reachable without a session. Everything else redirects to /login.
+const PUBLIC_ROUTES = new Set(["/login", "/bank-connected"]);
 
 function RootLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
-  const isLoginPage = location.pathname === "/login";
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated && !isLoginPage) {
-      navigate({ to: "/login" });
-    }
-  }, [isLoading, isAuthenticated, isLoginPage, navigate]);
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
-
-  if (isLoginPage) {
+  // The login screen is full-bleed: no sidebar, no header.
+  if (location.pathname === "/login") {
     return (
       <>
         <ErrorBoundary>
@@ -42,10 +28,6 @@ function RootLayout() {
         <Toaster />
       </>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null;
   }
 
   return (
@@ -88,6 +70,19 @@ function NotFound() {
 }
 
 export const Route = createRootRoute({
+  // Runs before the component tree mounts, so an unauthenticated visitor
+  // never renders a frame of the app. This replaces an effect that fired
+  // after the first paint and needed a null-return guard to compensate.
+  beforeLoad: ({ location }) => {
+    if (PUBLIC_ROUTES.has(location.pathname)) return;
+    if (!hasValidSession()) {
+      throw redirect({
+        to: "/login",
+        // Come back here once signed in.
+        search: { redirect: location.href },
+      });
+    }
+  },
   component: RootLayout,
   notFoundComponent: NotFound,
 });

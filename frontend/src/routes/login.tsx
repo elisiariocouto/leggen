@@ -1,8 +1,14 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useSearch,
+} from "@tanstack/react-router";
 import { useAuth } from "../contexts/AuthContext";
 import { getApiErrorMessage } from "../lib/api";
+import { hasValidSession } from "../lib/authToken";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -21,6 +27,7 @@ function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { redirect } = useSearch({ from: "/login" });
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -29,7 +36,8 @@ function LoginPage() {
 
     try {
       await login(username, password);
-      navigate({ to: "/" });
+      // Return to whatever the guard interrupted, or the default page.
+      navigate({ to: redirect ?? "/" });
     } catch (err) {
       // Distinguishes a rejected login from the API being unreachable.
       setError(getApiErrorMessage(err, "Invalid username or password"));
@@ -85,4 +93,20 @@ function LoginPage() {
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
+  // Someone who is already signed in has no use for the form.
+  beforeLoad: ({ search }) => {
+    if (hasValidSession()) {
+      throw redirect({ to: search.redirect ?? "/" });
+    }
+  },
+  validateSearch: (search: Record<string, unknown>) => ({
+    // Where to return after signing in. Only same-origin paths are kept:
+    // a single leading slash, rejecting "//evil.com" and "/\evil.com",
+    // which browsers treat as protocol-relative and would leave the site.
+    redirect:
+      typeof search.redirect === "string" &&
+      /^\/(?![/\\])/.test(search.redirect)
+        ? search.redirect
+        : undefined,
+  }),
 });

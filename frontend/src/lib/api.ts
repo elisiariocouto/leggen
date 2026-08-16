@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearToken, getToken } from "./authToken";
 import type {
   ApiError,
   Account,
@@ -75,7 +76,7 @@ const api = axios.create({
 
 // Request interceptor: attach JWT token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("leggen_token");
+  const token = getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -91,7 +92,7 @@ api.interceptors.response.use(
       !window.location.pathname.includes("/login") &&
       !error.config?.url?.includes("/auth/")
     ) {
-      localStorage.removeItem("leggen_token");
+      clearToken();
       window.location.href = "/login";
     }
     return Promise.reject(error);
