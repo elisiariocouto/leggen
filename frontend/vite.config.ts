@@ -110,7 +110,9 @@ export default defineConfig({
             "@radix-ui/react-switch",
             "@radix-ui/react-tooltip",
           ],
-          "vendor-charts": ["recharts"],
+          // recharts is deliberately absent: it is reachable only through the
+          // lazily-imported analytics route, so Rollup keeps it in that
+          // route's own chunk instead of the initial graph.
           "vendor-utils": [
             "date-fns",
             "lucide-react",
