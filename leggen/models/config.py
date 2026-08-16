@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List, Optional
 
 from pydantic import BaseModel, Field, FilePath, field_serializer, field_validator
 
@@ -47,8 +46,8 @@ class TelegramNotificationConfig(BaseModel):
 
 
 class NotificationConfig(BaseModel):
-    discord: Optional[DiscordNotificationConfig] = None
-    telegram: Optional[TelegramNotificationConfig] = None
+    discord: DiscordNotificationConfig | None = None
+    telegram: TelegramNotificationConfig | None = None
 
 
 class S3BackupConfig(BaseModel):
@@ -56,27 +55,25 @@ class S3BackupConfig(BaseModel):
     secret_access_key: str = Field(..., description="AWS S3 secret access key")
     bucket_name: str = Field(..., description="S3 bucket name")
     region: str = Field(default="us-east-1", description="AWS S3 region")
-    endpoint_url: Optional[str] = Field(
-        default=None, description="Custom S3 endpoint URL"
-    )
+    endpoint_url: str | None = Field(default=None, description="Custom S3 endpoint URL")
     path_style: bool = Field(default=False, description="Use path-style addressing")
     enabled: bool = Field(default=True, description="Enable S3 backups")
 
 
 class BackupConfig(BaseModel):
-    s3: Optional[S3BackupConfig] = None
+    s3: S3BackupConfig | None = None
 
 
 class FilterConfig(BaseModel):
-    case_insensitive: Optional[List[str]] = Field(default_factory=list)
-    case_sensitive: Optional[List[str]] = Field(default_factory=list)
+    case_insensitive: list[str] | None = Field(default_factory=list)
+    case_sensitive: list[str] | None = Field(default_factory=list)
 
 
 class SyncScheduleConfig(BaseModel):
     enabled: bool = Field(default=True, description="Enable sync scheduling")
     hour: int = Field(default=3, ge=0, le=23, description="Hour to run sync (0-23)")
     minute: int = Field(default=0, ge=0, le=59, description="Minute to run sync (0-59)")
-    cron: Optional[str] = Field(
+    cron: str | None = Field(
         default=None, description="Custom cron expression (overrides hour/minute)"
     )
 
@@ -87,7 +84,7 @@ class BackupScheduleConfig(BaseModel):
     minute: int = Field(
         default=0, ge=0, le=59, description="Minute to run backup (0-59)"
     )
-    cron: Optional[str] = Field(
+    cron: str | None = Field(
         default=None, description="Custom cron expression (overrides hour/minute)"
     )
 
@@ -108,9 +105,9 @@ class AuthConfig(BaseModel):
 
 
 class Config(BaseModel):
-    auth: Optional[AuthConfig] = None
+    auth: AuthConfig | None = None
     enablebanking: EnableBankingConfig
-    notifications: Optional[NotificationConfig] = None
-    filters: Optional[FilterConfig] = None
+    notifications: NotificationConfig | None = None
+    filters: FilterConfig | None = None
     scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)
-    backup: Optional[BackupConfig] = None
+    backup: BackupConfig | None = None

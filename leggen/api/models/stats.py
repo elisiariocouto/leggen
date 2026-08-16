@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import BaseModel
 
 
@@ -15,7 +13,7 @@ class TransactionStats(BaseModel):
     total_transactions: int
     booked_transactions: int
     pending_transactions: int
-    currency: Optional[str] = None
+    currency: str | None = None
     total_income: float
     total_expenses: float
     net_change: float
@@ -30,16 +28,16 @@ class MonthlyStats(BaseModel):
     income: float
     expenses: float
     net: float
-    currency: Optional[str] = None
+    currency: str | None = None
 
 
 class CategoryStats(BaseModel):
     """Income/expense totals for one category"""
 
-    category_id: Optional[int] = None
+    category_id: int | None = None
     category_name: str
     category_color: str
     transaction_count: int
     income: float
     expenses: float
-    currency: Optional[str] = None
+    currency: str | None = None

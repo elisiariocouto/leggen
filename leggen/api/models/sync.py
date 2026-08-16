@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -7,15 +6,15 @@ from pydantic import BaseModel
 class SyncOperation(BaseModel):
     """Sync operation record for tracking sync history"""
 
-    id: Optional[int] = None
+    id: int | None = None
     started_at: datetime
-    completed_at: Optional[datetime] = None
-    success: Optional[bool] = None
+    completed_at: datetime | None = None
+    success: bool | None = None
     accounts_processed: int = 0
     transactions_added: int = 0
     transactions_updated: int = 0
     balances_updated: int = 0
-    duration_seconds: Optional[float] = None
+    duration_seconds: float | None = None
     errors: list[str] = []
     logs: list[str] = []
     trigger_type: str = "manual"  # manual, scheduled, retry, api
@@ -24,7 +23,7 @@ class SyncOperation(BaseModel):
 class SyncRequest(BaseModel):
     """Request to trigger a sync"""
 
-    account_ids: Optional[list[str]] = None  # If None, sync all accounts
+    account_ids: list[str] | None = None  # If None, sync all accounts
     full_sync: bool = False  # If False, only sync last 30 days of transactions
 
 
@@ -32,8 +31,8 @@ class SyncStatus(BaseModel):
     """Sync operation status"""
 
     is_running: bool
-    last_sync: Optional[datetime] = None
-    next_sync: Optional[datetime] = None
+    last_sync: datetime | None = None
+    next_sync: datetime | None = None
     accounts_synced: int = 0
     total_accounts: int = 0
     transactions_added: int = 0
@@ -46,7 +45,7 @@ class SyncScheduleRequest(BaseModel):
     enabled: bool = True
     hour: int = 3
     minute: int = 0
-    cron: Optional[str] = None
+    cron: str | None = None
 
 
 class SyncScheduleResponse(BaseModel):
@@ -55,8 +54,8 @@ class SyncScheduleResponse(BaseModel):
     enabled: bool
     hour: int
     minute: int
-    cron: Optional[str] = None
-    next_sync_time: Optional[str] = None
+    cron: str | None = None
+    next_sync_time: str | None = None
 
 
 class SyncResult(BaseModel):

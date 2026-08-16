@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 
@@ -11,8 +9,8 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(http_bearer),
-    api_key: Optional[str] = Depends(api_key_header),
+    credentials: HTTPAuthorizationCredentials | None = Depends(http_bearer),
+    api_key: str | None = Depends(api_key_header),
 ) -> str:
     """Authenticate via JWT Bearer token or X-API-Key header."""
     auth_cfg = config.auth_config

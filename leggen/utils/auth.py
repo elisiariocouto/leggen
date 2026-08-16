@@ -1,7 +1,6 @@
 import hmac
 import secrets
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
@@ -26,7 +25,7 @@ def hash_password(password: str) -> str:
 
 def create_access_token(username: str, secret: str, expires_minutes: int = 60) -> str:
     """Create a JWT access token."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": username,
         "iat": now,
@@ -35,7 +34,7 @@ def create_access_token(username: str, secret: str, expires_minutes: int = 60) -
     return jwt.encode(payload, secret, algorithm="HS256")
 
 
-def decode_access_token(token: str, secret: str) -> Optional[str]:
+def decode_access_token(token: str, secret: str) -> str | None:
     """Decode a JWT access token. Returns username or None if invalid."""
     try:
         payload = jwt.decode(token, secret, algorithms=["HS256"])

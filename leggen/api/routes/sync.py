@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -20,7 +20,7 @@ router = APIRouter()
 @router.post("/sync")
 async def trigger_sync(
     account_repo: Annotated[AccountRepository, Depends()],
-    sync_request: Optional[SyncRequest] = None,
+    sync_request: SyncRequest | None = None,
 ) -> SyncResult:
     """Run sync synchronously and return results"""
     full_sync = sync_request.full_sync if sync_request else False

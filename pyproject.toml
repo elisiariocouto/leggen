@@ -73,8 +73,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.ruff]
+# Selected explicitly rather than riding ruff's defaults, which change
+# between releases — 0.16 turned on several new rule families at once.
+lint.select = ["E", "F", "UP", "B", "C4", "I", "PIE", "T20", "SIM", "TCH"]
 lint.ignore = ["E501", "B008", "B006"]
-lint.extend-select = ["B", "C4", "I", "PIE", "T20", "SIM", "TCH"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

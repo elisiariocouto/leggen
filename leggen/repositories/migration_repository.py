@@ -284,7 +284,7 @@ class MigrationRepository:
                         existing_count = cursor.fetchone()[0]
 
                         if existing_count > 0:
-                            unique_id = f"{str(transaction_id)}_{uuid.uuid4().hex[:8]}"
+                            unique_id = f"{transaction_id!s}_{uuid.uuid4().hex[:8]}"
                             logger.debug(
                                 f"Generated unique ID for duplicate transactionId: {unique_id}"
                             )

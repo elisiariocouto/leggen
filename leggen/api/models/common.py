@@ -1,14 +1,10 @@
-from typing import Generic, List, Optional, TypeVar
-
 from pydantic import BaseModel
 
-T = TypeVar("T")
 
-
-class PaginatedResponse(BaseModel, Generic[T]):
+class PaginatedResponse[T](BaseModel):
     """Paginated response model"""
 
-    data: List[T]
+    data: list[T]
     total: int
     page: int
     per_page: int
@@ -58,5 +54,5 @@ class ErrorResponse(BaseModel):
     status: int
     """HTTP status code, duplicated here so bodies are self-describing."""
 
-    errors: Optional[List[ErrorField]] = None
+    errors: list[ErrorField] | None = None
     """Field-level problems. Populated only for validation errors (422)."""

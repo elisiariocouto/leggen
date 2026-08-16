@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from loguru import logger
 
@@ -13,11 +13,11 @@ from leggen.services.enablebanking_service import EnableBankingService
 
 
 async def enrich_account_details(
-    account_details: Dict[str, Any],
-    balances: Dict[str, Any],
+    account_details: dict[str, Any],
+    balances: dict[str, Any],
     aspsp_country: str | None = None,
     enablebanking_service: EnableBankingService | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Enrich account details with currency from balances and institution logo.
 
@@ -49,7 +49,7 @@ async def enrich_account_details(
     return enriched_account
 
 
-def _extract_currency_from_balances(balances: Dict[str, Any]) -> str | None:
+def _extract_currency_from_balances(balances: dict[str, Any]) -> str | None:
     """Extract currency from the first balance in the balances data."""
     balances_list = balances.get("balances", [])
     if not balances_list:
@@ -83,10 +83,10 @@ async def _fetch_institution_logo(
 
 def _dominant_currency(
     cursor,
-    account_id: Optional[str] = None,
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
-) -> Optional[str]:
+    account_id: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> str | None:
     """Return the most common transaction currency for the given filters.
 
     Money aggregations are restricted to one currency because summing mixed
@@ -113,10 +113,10 @@ def _dominant_currency(
 
 def calculate_historical_balances(
     db_path: Path,
-    account_id: Optional[str] = None,
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    account_id: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> list[dict[str, Any]]:
     """
     Generate historical balance progression based on transaction history.
 
@@ -235,10 +235,10 @@ def calculate_historical_balances(
 
 def calculate_monthly_stats(
     db_path: Path,
-    account_id: Optional[str] = None,
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    account_id: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> list[dict[str, Any]]:
     """
     Calculate monthly transaction statistics aggregated from database.
 
@@ -332,10 +332,10 @@ def calculate_monthly_stats(
 
 def calculate_category_stats(
     db_path: Path,
-    account_id: Optional[str] = None,
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    account_id: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> list[dict[str, Any]]:
     """
     Calculate transaction statistics grouped by category.
 
@@ -421,9 +421,9 @@ def calculate_category_stats(
 
 
 def merge_account_metadata_into_balances(
-    balances: Dict[str, Any],
-    account_details: Dict[str, Any],
-) -> Dict[str, Any]:
+    balances: dict[str, Any],
+    account_details: dict[str, Any],
+) -> dict[str, Any]:
     """Merge account metadata into balance data for proper persistence."""
     balances_with_metadata = balances.copy()
     balances_with_metadata["institution_id"] = account_details.get("institution_id")
@@ -434,8 +434,8 @@ def merge_account_metadata_into_balances(
 
 def transform_to_database_format(
     account_id: str,
-    balance_data: Dict[str, Any],
-) -> List[Tuple[Any, ...]]:
+    balance_data: dict[str, Any],
+) -> list[tuple[Any, ...]]:
     """Transform EnableBanking balance format to database row format."""
     rows = []
 
@@ -462,9 +462,9 @@ def transform_to_database_format(
 
 def process_transactions(
     account_id: str,
-    account_info: Dict[str, Any],
-    transaction_data: Dict[str, Any],
-) -> List[Dict[str, Any]]:
+    account_info: dict[str, Any],
+    transaction_data: dict[str, Any],
+) -> list[dict[str, Any]]:
     """Process raw transaction data into standardized format."""
     transactions = []
     logger.debug(transaction_data)
@@ -482,10 +482,10 @@ def process_transactions(
 
 def _process_single_transaction(
     account_id: str,
-    account_info: Dict[str, Any],
-    transaction: Dict[str, Any],
+    account_info: dict[str, Any],
+    transaction: dict[str, Any],
     status: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Process a single transaction into standardized format."""
     # Extract dates (EnableBanking uses snake_case)
     booked_date = transaction.get("booking_date")

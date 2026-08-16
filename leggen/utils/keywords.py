@@ -1,7 +1,6 @@
 """Keyword extraction utility for transaction categorization."""
 
 import re
-from typing import Optional
 
 STOP_WORDS = frozenset(
     {
@@ -108,7 +107,7 @@ STOP_WORDS = frozenset(
 )
 
 
-def extract_keywords(text: Optional[str]) -> list[str]:
+def extract_keywords(text: str | None) -> list[str]:
     """Extract meaningful keywords from transaction text.
 
     Splits on non-alphanumeric characters, lowercases, removes stop words

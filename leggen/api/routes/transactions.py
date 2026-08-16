@@ -1,4 +1,4 @@
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
 
@@ -29,28 +29,28 @@ async def get_all_transactions(
     summary_only: bool = Query(
         default=True, description="Return transaction summaries only"
     ),
-    date_from: Optional[str] = Query(
+    date_from: str | None = Query(
         default=None, description="Filter from date (YYYY-MM-DD)"
     ),
-    date_to: Optional[str] = Query(
+    date_to: str | None = Query(
         default=None, description="Filter to date (YYYY-MM-DD)"
     ),
-    min_amount: Optional[float] = Query(
+    min_amount: float | None = Query(
         default=None, description="Minimum transaction amount"
     ),
-    max_amount: Optional[float] = Query(
+    max_amount: float | None = Query(
         default=None, description="Maximum transaction amount"
     ),
-    search: Optional[str] = Query(
+    search: str | None = Query(
         default=None, description="Search in transaction descriptions"
     ),
-    account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
-    category_id: Optional[str] = Query(
+    account_id: str | None = Query(default=None, description="Filter by account ID"),
+    category_id: str | None = Query(
         default=None,
         pattern=_CATEGORY_ID_PATTERN,
         description="Filter by category ID or 'uncategorized' for transactions without a category",
     ),
-) -> PaginatedResponse[Union[TransactionSummary, Transaction]]:
+) -> PaginatedResponse[TransactionSummary | Transaction]:
     """Get all transactions from database with filtering options"""
     # Calculate offset from page and per_page
     offset = (page - 1) * per_page
@@ -138,25 +138,25 @@ async def get_transaction_stats(
     transaction_repo: Annotated[TransactionRepository, Depends()],
     date_from: str = Query(description="Start date (YYYY-MM-DD)"),
     date_to: str = Query(description="End date (YYYY-MM-DD)"),
-    account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
-    search: Optional[str] = Query(
+    account_id: str | None = Query(default=None, description="Filter by account ID"),
+    search: str | None = Query(
         default=None, description="Search in transaction descriptions"
     ),
-    min_amount: Optional[float] = Query(
+    min_amount: float | None = Query(
         default=None, description="Minimum transaction amount"
     ),
-    max_amount: Optional[float] = Query(
+    max_amount: float | None = Query(
         default=None, description="Maximum transaction amount"
     ),
-    group_by: Optional[Literal["month"]] = Query(
+    group_by: Literal["month"] | None = Query(
         default=None, description="Group results by month"
     ),
-    category_id: Optional[str] = Query(
+    category_id: str | None = Query(
         default=None,
         pattern=_CATEGORY_ID_PATTERN,
         description="Filter by category ID or 'uncategorized' for transactions without a category",
     ),
-) -> Union[TransactionStats, List[MonthlyStats]]:
+) -> TransactionStats | list[MonthlyStats]:
     """Get transaction statistics for a date range.
 
     Without group_by: returns totals (transactions, income, expenses, etc.)
@@ -188,8 +188,8 @@ async def get_transaction_stats(
 async def get_stats_by_category(
     date_from: str = Query(description="Start date (YYYY-MM-DD)"),
     date_to: str = Query(description="End date (YYYY-MM-DD)"),
-    account_id: Optional[str] = Query(default=None, description="Filter by account ID"),
-) -> List[CategoryStats]:
+    account_id: str | None = Query(default=None, description="Filter by account ID"),
+) -> list[CategoryStats]:
     """Get transaction statistics grouped by category."""
     db_path = path_manager.get_database_path()
     category_stats = calculate_category_stats(

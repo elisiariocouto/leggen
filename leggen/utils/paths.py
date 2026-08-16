@@ -3,15 +3,14 @@
 import contextlib
 import os
 from pathlib import Path
-from typing import Optional
 
 
 class PathManager:
     """Manages configurable paths for config and database files."""
 
     def __init__(self):
-        self._config_dir: Optional[Path] = None
-        self._database_path: Optional[Path] = None
+        self._config_dir: Path | None = None
+        self._database_path: Path | None = None
 
     def get_config_dir(self) -> Path:
         """Get the configuration directory."""

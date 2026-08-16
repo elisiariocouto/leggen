@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -9,10 +8,10 @@ class BankInstitution(BaseModel):
 
     name: str
     country: str
-    bic: Optional[str] = None
-    logo: Optional[str] = None
+    bic: str | None = None
+    logo: str | None = None
     psu_types: list[str] = ["personal"]
-    maximum_consent_validity: Optional[int] = None
+    maximum_consent_validity: int | None = None
 
 
 class BankConnectionRequest(BaseModel):
@@ -20,7 +19,7 @@ class BankConnectionRequest(BaseModel):
 
     aspsp_name: str
     aspsp_country: str
-    redirect_url: Optional[str] = None
+    redirect_url: str | None = None
     psu_type: str = "personal"
 
 
@@ -52,6 +51,6 @@ class BankConnectionStatus(BaseModel):
     aspsp_country: str
     accounts_count: int
     created_at: datetime
-    valid_until: Optional[datetime] = None
+    valid_until: datetime | None = None
     status: str
-    days_until_expiry: Optional[int] = None
+    days_until_expiry: int | None = None

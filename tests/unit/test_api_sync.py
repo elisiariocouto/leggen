@@ -1,7 +1,7 @@
 """Tests for the sync API route and per-account sync filtering."""
 
 import tomllib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -16,7 +16,7 @@ from tests.conftest import reset_config_singleton
 
 
 def _sync_result() -> SyncResult:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return SyncResult(
         success=True,
         accounts_processed=1,

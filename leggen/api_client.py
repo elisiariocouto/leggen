@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import click
@@ -14,7 +14,7 @@ class LeggenAPIError(click.ClickException):
     """
 
 
-def _api_key_from_config() -> Optional[str]:
+def _api_key_from_config() -> str | None:
     """Read auth.api_key from the config file, loading it on first use.
 
     Only called when no --api-key flag or LEGGEN_API_KEY env is set, so a
@@ -41,9 +41,9 @@ class LeggenAPIClient:
 
     def __init__(
         self,
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
         verify_ssl: bool = True,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
     ):
         # Env-var resolution (LEGGEN_API_URL) happens in the CLI option
         raw_url = base_url or "http://localhost:8000"
@@ -116,7 +116,7 @@ class LeggenAPIClient:
             raise LeggenAPIError(f"API request failed: {e}") from e
 
     # Bank endpoints
-    def get_institutions(self, country: str = "PT") -> List[Dict[str, Any]]:
+    def get_institutions(self, country: str = "PT") -> list[dict[str, Any]]:
         """Get bank institutions (ASPSPs) for a country"""
         response = self._make_request(
             "GET", "/banks/institutions", params={"country": country}
@@ -127,10 +127,10 @@ class LeggenAPIClient:
         self,
         aspsp_name: str,
         aspsp_country: str,
-        redirect_url: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        redirect_url: str | None = None,
+    ) -> dict[str, Any]:
         """Start bank authorization flow"""
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "aspsp_name": aspsp_name,
             "aspsp_country": aspsp_country,
         }
@@ -139,36 +139,36 @@ class LeggenAPIClient:
         response = self._make_request("POST", "/banks/connect", json=payload)
         return response
 
-    def exchange_auth_code(self, code: str, state: str) -> Dict[str, Any]:
+    def exchange_auth_code(self, code: str, state: str) -> dict[str, Any]:
         """Exchange authorization code for a session"""
         response = self._make_request(
             "POST", "/banks/callback", json={"code": code, "state": state}
         )
         return response
 
-    def get_bank_status(self) -> List[Dict[str, Any]]:
+    def get_bank_status(self) -> list[dict[str, Any]]:
         """Get bank connection status"""
         response = self._make_request("GET", "/banks/status")
         return response
 
-    def delete_bank_connection(self, session_id: str) -> Dict[str, Any]:
+    def delete_bank_connection(self, session_id: str) -> dict[str, Any]:
         """Delete a bank connection session"""
         return self._make_request("DELETE", f"/banks/connections/{session_id}")
 
-    def get_supported_countries(self) -> List[Dict[str, Any]]:
+    def get_supported_countries(self) -> list[dict[str, Any]]:
         """Get supported countries"""
         response = self._make_request("GET", "/banks/countries")
         return response
 
     # Account endpoints
-    def get_accounts(self) -> List[Dict[str, Any]]:
+    def get_accounts(self) -> list[dict[str, Any]]:
         """Get all accounts"""
         response = self._make_request("GET", "/accounts")
         return response
 
     def delete_account(
         self, account_id: str, delete_data: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Delete a bank account and optionally its associated data"""
         return self._make_request(
             "DELETE",
@@ -179,7 +179,7 @@ class LeggenAPIClient:
     # Transaction endpoints
     def get_all_transactions(
         self, limit: int = 100, summary_only: bool = True, **filters
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get all transactions with optional filters"""
         params = {"per_page": limit, "summary_only": summary_only}
         params.update(filters)
@@ -189,10 +189,10 @@ class LeggenAPIClient:
 
     # Sync endpoints
     def trigger_sync(
-        self, account_ids: Optional[List[str]] = None, full_sync: bool = False
-    ) -> Dict[str, Any]:
+        self, account_ids: list[str] | None = None, full_sync: bool = False
+    ) -> dict[str, Any]:
         """Trigger a synchronous sync"""
-        data: Dict[str, Union[bool, List[str]]] = {"full_sync": full_sync}
+        data: dict[str, bool | list[str]] = {"full_sync": full_sync}
         if account_ids:
             data["account_ids"] = account_ids
 

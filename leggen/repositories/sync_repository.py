@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List
+from typing import Any
 
 from loguru import logger
 
@@ -43,7 +43,7 @@ class SyncRepository:
 
             conn.commit()
 
-    def persist(self, sync_operation: Dict[str, Any]) -> int:
+    def persist(self, sync_operation: dict[str, Any]) -> int:
         """Persist sync operation to database and return the ID"""
         try:
             with get_db_connection() as conn:
@@ -83,7 +83,7 @@ class SyncRepository:
             logger.error(f"Failed to persist sync operation: {e}")
             raise
 
-    def get_operations(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+    def get_operations(self, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
         """Get sync operations from database"""
         try:
             with get_db_connection() as conn:

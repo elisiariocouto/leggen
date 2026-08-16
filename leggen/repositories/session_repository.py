@@ -1,6 +1,6 @@
 import json
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 from loguru import logger
 
@@ -35,7 +35,7 @@ class SessionRepository:
             """)
             conn.commit()
 
-    def persist(self, session_data: Dict[str, Any]) -> str:
+    def persist(self, session_data: dict[str, Any]) -> str:
         """Store a session in the database. Returns the session_id."""
         session_id = session_data["session_id"]
         accounts = session_data.get("accounts")
@@ -55,9 +55,7 @@ class SessionRepository:
                     session_data["aspsp_country"],
                     accounts_json,
                     session_data.get("valid_until"),
-                    session_data.get(
-                        "created_at", datetime.now(timezone.utc).isoformat()
-                    ),
+                    session_data.get("created_at", datetime.now(UTC).isoformat()),
                     session_data.get("status", "active"),
                 ),
             )
@@ -66,7 +64,7 @@ class SessionRepository:
         logger.info(f"Persisted session {session_id}")
         return session_id
 
-    def get_sessions(self) -> List[Dict[str, Any]]:
+    def get_sessions(self) -> list[dict[str, Any]]:
         """Get all sessions."""
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
@@ -112,6 +110,6 @@ class SessionRepository:
             cursor.execute(
                 """INSERT OR REPLACE INTO expiry_notifications (session_id, threshold, sent_at)
                    VALUES (?, ?, ?)""",
-                (session_id, threshold, datetime.now(timezone.utc).isoformat()),
+                (session_id, threshold, datetime.now(UTC).isoformat()),
             )
             conn.commit()

@@ -1,9 +1,9 @@
 import threading
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import httpx
 import jwt
@@ -13,7 +13,7 @@ from leggen.utils.config import config
 
 # States issued by start_auth, awaiting the bank redirect. Module-level so
 # they are shared across all service instances (routes and sync service).
-_pending_auth_states: Dict[str, float] = {}
+_pending_auth_states: dict[str, float] = {}
 
 
 class EnableBankingService:
@@ -22,17 +22,17 @@ class EnableBankingService:
     AUTH_STATE_TTL_SECONDS = 3600
 
     def __init__(self):
-        self._private_key: Optional[str] = None
-        self._client: Optional[httpx.AsyncClient] = None
-        self._client_timeout: Optional[httpx.Timeout] = None
-        self._jwt_token: Optional[str] = None
+        self._private_key: str | None = None
+        self._client: httpx.AsyncClient | None = None
+        self._client_timeout: httpx.Timeout | None = None
+        self._jwt_token: str | None = None
         self._jwt_expires_at: float = 0.0
-        self._aspsps_cache: Dict[str, tuple[float, list[Dict[str, Any]]]] = {}
+        self._aspsps_cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
     # Config is read live via properties (not cached at construction) so
     # settings changes apply without a server restart.
     @property
-    def config(self) -> Dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         return config.enablebanking_config
 
     @property
@@ -104,7 +104,7 @@ class EnableBankingService:
         self._jwt_expires_at = iat + self.JWT_TTL_SECONDS
         return self._jwt_token
 
-    async def _make_request(self, method: str, path: str, **kwargs) -> Dict[str, Any]:
+    async def _make_request(self, method: str, path: str, **kwargs) -> dict[str, Any]:
         """Make an authenticated request to the EnableBanking API."""
         token = self._generate_jwt()
         url = f"{self.base_url}{path}"
@@ -125,7 +125,7 @@ class EnableBankingService:
         logger.debug(f"{method} {url} response: {result}")
         return result
 
-    async def get_aspsps(self, country: str) -> list[Dict[str, Any]]:
+    async def get_aspsps(self, country: str) -> list[dict[str, Any]]:
         """Get available ASPSPs (banks) for a country, cached per country."""
         cached = self._aspsps_cache.get(country)
         if cached and time.time() - cached[0] < self.ASPSPS_CACHE_TTL_SECONDS:
@@ -142,22 +142,20 @@ class EnableBankingService:
         aspsp_country: str,
         redirect_url: str,
         psu_type: str = "personal",
-        valid_until: Optional[str] = None,
-        maximum_consent_validity: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        valid_until: str | None = None,
+        maximum_consent_validity: int | None = None,
+    ) -> dict[str, Any]:
         """Start user authorization flow. Returns a dict with 'url' for redirect."""
         if not valid_until:
             if maximum_consent_validity:
-                dt = datetime.now(timezone.utc) + timedelta(
-                    seconds=maximum_consent_validity
-                )
+                dt = datetime.now(UTC) + timedelta(seconds=maximum_consent_validity)
             else:
-                dt = datetime.now(timezone.utc) + timedelta(days=90)
+                dt = datetime.now(UTC) + timedelta(days=90)
             valid_until = dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
         state = str(uuid.uuid4())
         self._register_auth_state(state)
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "aspsp": {"name": aspsp_name, "country": aspsp_country},
             "state": state,
             "redirect_url": redirect_url,
@@ -193,27 +191,27 @@ class EnableBankingService:
         if self._client is not None and not self._client.is_closed:
             await self._client.aclose()
 
-    async def create_session(self, code: str) -> Dict[str, Any]:
+    async def create_session(self, code: str) -> dict[str, Any]:
         """Exchange authorization code for a session."""
         return await self._make_request("POST", "/sessions", json={"code": code})
 
-    async def get_account_details(self, account_id: str) -> Dict[str, Any]:
+    async def get_account_details(self, account_id: str) -> dict[str, Any]:
         """Get account details."""
         return await self._make_request("GET", f"/accounts/{account_id}/details")
 
-    async def get_account_balances(self, account_id: str) -> Dict[str, Any]:
+    async def get_account_balances(self, account_id: str) -> dict[str, Any]:
         """Get account balances."""
         return await self._make_request("GET", f"/accounts/{account_id}/balances")
 
     async def get_account_transactions(
-        self, account_id: str, date_from: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, account_id: str, date_from: str | None = None
+    ) -> dict[str, Any]:
         """Get account transactions with automatic pagination."""
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
         if date_from:
             params["date_from"] = date_from
 
-        all_transactions: list[Dict[str, Any]] = []
+        all_transactions: list[dict[str, Any]] = []
 
         while True:
             result = await self._make_request(
@@ -233,7 +231,7 @@ class EnableBankingService:
 # Application-scoped instance for FastAPI routes. A per-request instance
 # (bare Depends()) would leak an unclosed httpx.AsyncClient per request and
 # defeat the JWT and ASPSP caches.
-_service: Optional[EnableBankingService] = None
+_service: EnableBankingService | None = None
 # Sync dependencies run in FastAPI's threadpool, so creation must be locked.
 _service_lock = threading.Lock()
 

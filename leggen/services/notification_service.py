@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from loguru import logger
 
@@ -10,15 +10,15 @@ class NotificationService:
     # Config is read live via properties (not cached at construction) so
     # settings changes apply without a server restart.
     @property
-    def notifications_config(self) -> Dict[str, Any]:
+    def notifications_config(self) -> dict[str, Any]:
         return config.notifications_config
 
     @property
-    def filters_config(self) -> Dict[str, Any]:
+    def filters_config(self) -> dict[str, Any]:
         return config.filters_config
 
     async def send_transaction_notifications(
-        self, transactions: List[Dict[str, Any]]
+        self, transactions: list[dict[str, Any]]
     ) -> None:
         """Send notifications for new transactions that match filters."""
         if not self.filters_config:
@@ -55,7 +55,7 @@ class NotificationService:
             logger.error(f"Failed to send test notification to {service}: {e}")
             return False
 
-    async def send_expiry_notification(self, notification_data: Dict[str, Any]) -> None:
+    async def send_expiry_notification(self, notification_data: dict[str, Any]) -> None:
         """Send notification about account expiry."""
         try:
             if self._is_discord_enabled():
@@ -76,7 +76,7 @@ class NotificationService:
             logger.error(f"Failed to send Telegram expiry notification: {e}")
 
     async def send_sync_failure_notification(
-        self, notification_data: Dict[str, Any]
+        self, notification_data: dict[str, Any]
     ) -> None:
         """Send notification about sync failure."""
         try:
@@ -104,8 +104,8 @@ class NotificationService:
             logger.error(f"Failed to send Telegram sync failure notification: {e}")
 
     def _filter_transactions(
-        self, transactions: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, transactions: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Filter transactions based on notification criteria."""
         matching = []
         filters_case_insensitive = self.filters_config.get("case_insensitive", [])
@@ -156,7 +156,7 @@ class NotificationService:
         return telegram_config.get("token", ""), telegram_config.get("chat_id", "")
 
     async def _send_discord_notifications(
-        self, transactions: List[Dict[str, Any]]
+        self, transactions: list[dict[str, Any]]
     ) -> None:
         try:
             webhook_url = self._get_discord_webhook()
@@ -170,7 +170,7 @@ class NotificationService:
             logger.error(f"Failed to send Discord transaction notifications: {e}")
 
     async def _send_telegram_notifications(
-        self, transactions: List[Dict[str, Any]]
+        self, transactions: list[dict[str, Any]]
     ) -> None:
         try:
             token, chat_id = self._get_telegram_credentials()

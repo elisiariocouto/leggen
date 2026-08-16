@@ -1,6 +1,6 @@
 """Pydantic models for category endpoints."""
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ class Category(BaseModel):
     id: int
     name: str
     color: str = "#6b7280"
-    icon: Optional[str] = None
+    icon: str | None = None
     is_default: bool = False
     exclude_from_stats: bool = False
 
@@ -21,17 +21,17 @@ class CategoryCreate(BaseModel):
 
     name: str
     color: str = "#6b7280"
-    icon: Optional[str] = None
+    icon: str | None = None
     exclude_from_stats: bool = False
 
 
 class CategoryUpdate(BaseModel):
     """Model for updating a category."""
 
-    name: Optional[str] = None
-    color: Optional[str] = None
-    icon: Optional[str] = None
-    exclude_from_stats: Optional[bool] = None
+    name: str | None = None
+    color: str | None = None
+    icon: str | None = None
+    exclude_from_stats: bool | None = None
 
 
 class CategoryAssignment(BaseModel):

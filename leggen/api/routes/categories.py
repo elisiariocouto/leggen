@@ -1,6 +1,6 @@
 """API routes for transaction categorization."""
 
-from typing import Annotated, Any, Dict
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -29,7 +29,7 @@ def _get_transaction_text_fields(
     if not txn:
         return "", "", ""
     description = txn.get("description", "") or ""
-    raw: Dict[str, Any] = txn.get("rawTransaction", {}) or {}
+    raw: dict[str, Any] = txn.get("rawTransaction", {}) or {}
     creditor_name = raw.get("creditorName", "") or ""
     debtor_name = raw.get("debtorName", "") or ""
     return description, creditor_name, debtor_name

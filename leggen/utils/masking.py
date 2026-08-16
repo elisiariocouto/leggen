@@ -4,8 +4,6 @@ Settings endpoints never return stored secrets; they return MASK instead.
 Clients may echo MASK back on update to mean "keep the current value".
 """
 
-from typing import Optional
-
 MASK = "***"
 
 
@@ -17,12 +15,12 @@ class MaskedSecretError(ValueError):
     """
 
 
-def mask_secret(value: Optional[str]) -> str:
+def mask_secret(value: str | None) -> str:
     """Return the mask placeholder if a secret is set, empty string otherwise."""
     return MASK if value else ""
 
 
-def resolve_secret(incoming: str, stored: Optional[str], field_name: str) -> str:
+def resolve_secret(incoming: str, stored: str | None, field_name: str) -> str:
     """Resolve a secret submitted by a client against the stored value.
 
     An incoming MASK means the client is echoing back a masked read and wants

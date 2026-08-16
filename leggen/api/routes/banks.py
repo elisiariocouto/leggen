@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -100,7 +100,7 @@ async def bank_auth_callback(
         "aspsp_country": aspsp.get("country", ""),
         "accounts": session_data.get("accounts"),
         "valid_until": access.get("valid_until"),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "status": "active",
     }
     session_repo.persist(session_record)
@@ -115,7 +115,7 @@ async def get_bank_connections_status(
     """Get status of all bank connections"""
     sessions = session_repo.get_sessions()
     connections = []
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     for session in sessions:
         # Determine status based on valid_until
@@ -127,7 +127,7 @@ async def get_bank_connections_status(
                 valid_until = datetime.fromisoformat(valid_until_str)
                 # Timestamps stored without an offset are UTC
                 if valid_until.tzinfo is None:
-                    valid_until = valid_until.replace(tzinfo=timezone.utc)
+                    valid_until = valid_until.replace(tzinfo=UTC)
                 days_until_expiry = (valid_until - now).days
                 if valid_until < now:
                     status = "expired"

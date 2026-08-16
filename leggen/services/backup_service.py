@@ -3,9 +3,8 @@
 import asyncio
 import sqlite3
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
 
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
@@ -23,12 +22,12 @@ class BackupService:
     worker thread via asyncio.to_thread to keep the event loop responsive.
     """
 
-    def __init__(self, s3_config: Optional[S3BackupConfig] = None):
+    def __init__(self, s3_config: S3BackupConfig | None = None):
         """Initialize backup service with S3 configuration."""
         self.s3_config = s3_config
         self._s3_client = None
 
-    def _get_s3_client(self, config: Optional[S3BackupConfig] = None):
+    def _get_s3_client(self, config: S3BackupConfig | None = None):
         """Get or create S3 client with current configuration."""
         current_config = config or self.s3_config
         if not current_config:
@@ -78,7 +77,7 @@ class BackupService:
             )
             return False
         except Exception as e:
-            logger.error(f"Unexpected error during S3 connection test: {str(e)}")
+            logger.error(f"Unexpected error during S3 connection test: {e!s}")
             return False
 
     def _test_connection_sync(self, config: S3BackupConfig) -> None:
@@ -111,14 +110,14 @@ class BackupService:
             return True
 
         except Exception as e:
-            logger.error(f"Database backup failed: {str(e)}")
+            logger.error(f"Database backup failed: {e!s}")
             return False
 
     def _backup_database_sync(self, database_path: Path) -> str:
         s3_client = self._get_s3_client()
         assert self.s3_config is not None
 
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         backup_key = f"{BACKUP_PREFIX}database_backup_{timestamp}.db"
 
         logger.info(f"Starting database backup to S3: {backup_key}")
@@ -156,7 +155,7 @@ class BackupService:
         try:
             return await asyncio.to_thread(self._list_backups_sync)
         except Exception as e:
-            logger.error(f"Failed to list backups: {str(e)}")
+            logger.error(f"Failed to list backups: {e!s}")
             return []
 
     def _list_backups_sync(self) -> list[dict]:
@@ -209,7 +208,7 @@ class BackupService:
             return True
 
         except Exception as e:
-            logger.error(f"Database restore failed: {str(e)}")
+            logger.error(f"Database restore failed: {e!s}")
             return False
 
     def _restore_database_sync(self, backup_key: str, restore_path: Path) -> None:

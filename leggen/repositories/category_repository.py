@@ -1,7 +1,7 @@
 """Repository for transaction category data operations."""
 
 import sqlite3
-from typing import Any, Optional
+from typing import Any
 
 from leggen.errors import CategoryExistsError
 from leggen.repositories.db import db_exists, get_db_connection
@@ -166,7 +166,7 @@ class CategoryRepository:
             )
             return [dict(row) for row in cursor.fetchall()]
 
-    def get_category_by_id(self, category_id: int) -> Optional[dict[str, Any]]:
+    def get_category_by_id(self, category_id: int) -> dict[str, Any] | None:
         """Get a category by ID."""
         if not db_exists():
             return None
@@ -184,7 +184,7 @@ class CategoryRepository:
         self,
         name: str,
         color: str = "#6b7280",
-        icon: Optional[str] = None,
+        icon: str | None = None,
         exclude_from_stats: bool = False,
     ) -> dict[str, Any]:
         """Create a new custom category.
@@ -211,11 +211,11 @@ class CategoryRepository:
     def update_category(
         self,
         category_id: int,
-        name: Optional[str] = None,
-        color: Optional[str] = None,
-        icon: Optional[str] = None,
-        exclude_from_stats: Optional[bool] = None,
-    ) -> Optional[dict[str, Any]]:
+        name: str | None = None,
+        color: str | None = None,
+        icon: str | None = None,
+        exclude_from_stats: bool | None = None,
+    ) -> dict[str, Any] | None:
         """Update a category."""
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()

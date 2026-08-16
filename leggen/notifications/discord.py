@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -13,7 +13,7 @@ _WARNING_COLOR = 0xFFAA00
 async def _post_embed(webhook_url: str, embed: dict[str, Any]) -> None:
     """Post a single embed to a Discord webhook."""
     embed.setdefault("author", _AUTHOR)
-    embed.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
+    embed.setdefault("timestamp", datetime.now(UTC).isoformat())
 
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.post(webhook_url, json={"embeds": [embed]})

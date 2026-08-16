@@ -1,7 +1,7 @@
 import os
 import tomllib
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import tomli_w
 from loguru import logger
@@ -29,7 +29,7 @@ class Config:
         """
         self._config_path = str(config_path)
 
-    def load_config(self, config_path: Optional[str] = None) -> Dict[str, Any]:
+    def load_config(self, config_path: str | None = None) -> dict[str, Any]:
         if self._config is not None:
             return self._config
 
@@ -65,8 +65,8 @@ class Config:
 
     def save_config(
         self,
-        config_data: Optional[Dict[str, Any]] = None,
-        config_path: Optional[str] = None,
+        config_data: dict[str, Any] | None = None,
+        config_path: str | None = None,
     ) -> None:
         """Save configuration to TOML file"""
         if config_data is None:
@@ -108,7 +108,7 @@ class Config:
             logger.error(f"Error saving configuration: {e}")
             raise
 
-    def update_section(self, section: str, data: Dict[str, Any]) -> None:
+    def update_section(self, section: str, data: dict[str, Any]) -> None:
         """Update an entire configuration section"""
         if self._config is None:
             self.load_config()
@@ -125,7 +125,7 @@ class Config:
         return self._config is not None
 
     @property
-    def config(self) -> Dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         if self._config is None:
             self.load_config()
         if self._config is None:
@@ -133,19 +133,19 @@ class Config:
         return self._config
 
     @property
-    def enablebanking_config(self) -> Dict[str, Any]:
+    def enablebanking_config(self) -> dict[str, Any]:
         return self.config.get("enablebanking", {})
 
     @property
-    def notifications_config(self) -> Dict[str, Any]:
+    def notifications_config(self) -> dict[str, Any]:
         return self.config.get("notifications", {})
 
     @property
-    def filters_config(self) -> Dict[str, Any]:
+    def filters_config(self) -> dict[str, Any]:
         return self.config.get("filters", {})
 
     @property
-    def scheduler_config(self) -> Dict[str, Any]:
+    def scheduler_config(self) -> dict[str, Any]:
         """Get scheduler configuration with defaults"""
         default_schedule = {
             "sync": {
@@ -164,12 +164,12 @@ class Config:
         return self.config.get("scheduler", default_schedule)
 
     @property
-    def backup_config(self) -> Dict[str, Any]:
+    def backup_config(self) -> dict[str, Any]:
         """Get backup configuration"""
         return self.config.get("backup", {})
 
     @property
-    def auth_config(self) -> Dict[str, Any]:
+    def auth_config(self) -> dict[str, Any]:
         """Get authentication configuration"""
         return self.config.get("auth", {})
 

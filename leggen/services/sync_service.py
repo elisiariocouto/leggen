@@ -1,6 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from datetime import UTC, datetime, timedelta
 
 from loguru import logger
 
@@ -62,7 +61,7 @@ class SyncService:
         self,
         full_sync: bool = False,
         trigger_type: str = "manual",
-        account_ids: Optional[List[str]] = None,
+        account_ids: list[str] | None = None,
     ) -> SyncResult:
         """Sync connected accounts, optionally restricted to account_ids.
 
@@ -73,7 +72,7 @@ class SyncService:
             raise SyncAlreadyRunningError("Sync is already running")
         await self._sync_lock.acquire()
 
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
         self._sync_status.is_running = True
         self._sync_status.errors = []
 
@@ -151,9 +150,9 @@ class SyncService:
             self._sync_status.total_accounts = len(all_account_ids)
             logs.append(f"Found {len(all_account_ids)} accounts to sync")
 
-            date_from: Optional[str] = None
+            date_from: str | None = None
             if not full_sync:
-                date_from = (datetime.now(timezone.utc) - timedelta(days=30)).strftime(
+                date_from = (datetime.now(UTC) - timedelta(days=30)).strftime(
                     "%Y-%m-%d"
                 )
                 logs.append(f"Fetching transactions from {date_from}")
@@ -272,7 +271,7 @@ class SyncService:
                             f"Failed to send sync failure notification: {notify_err}"
                         )
 
-            end_time = datetime.now(timezone.utc)
+            end_time = datetime.now(UTC)
             duration = (end_time - start_time).total_seconds()
 
             self._sync_status.last_sync = end_time
@@ -326,7 +325,7 @@ class SyncService:
             logger.error(error_msg)
 
             # Save failed sync operation
-            end_time = datetime.now(timezone.utc)
+            end_time = datetime.now(UTC)
             duration = (end_time - start_time).total_seconds()
             sync_operation.update(
                 {
@@ -355,7 +354,7 @@ class SyncService:
             self._sync_status.is_running = False
             self._sync_lock.release()
 
-    async def _check_session_expiry(self, sessions: List[dict]) -> None:
+    async def _check_session_expiry(self, sessions: list[dict]) -> None:
         """Check sessions for expiry and send notifications.
 
         Sends a notification once when a session expires, and once per warning
@@ -365,7 +364,7 @@ class SyncService:
         Args:
             sessions: List of session dictionaries to check
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for session in sessions:
             session_id = session.get("session_id", "unknown")
             aspsp_name = session.get("aspsp_name", "unknown")
@@ -383,7 +382,7 @@ class SyncService:
                 continue
             # Timestamps stored without an offset are UTC
             if valid_until.tzinfo is None:
-                valid_until = valid_until.replace(tzinfo=timezone.utc)
+                valid_until = valid_until.replace(tzinfo=UTC)
 
             if valid_until < now:
                 status = "expired"

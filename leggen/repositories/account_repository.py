@@ -1,5 +1,5 @@
 import sqlite3
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from leggen.repositories.db import db_exists, get_db_connection
 
@@ -39,7 +39,7 @@ class AccountRepository:
 
             conn.commit()
 
-    def persist(self, account_data: Dict[str, Any]) -> Dict[str, Any]:
+    def persist(self, account_data: dict[str, Any]) -> dict[str, Any]:
         """Persist account details to database"""
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -91,9 +91,9 @@ class AccountRepository:
 
     def get_accounts(
         self,
-        account_ids: Optional[List[str]] = None,
+        account_ids: list[str] | None = None,
         include_deleted: bool = True,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get account details from database"""
         if not db_exists():
             return []
@@ -126,7 +126,7 @@ class AccountRepository:
         except sqlite3.OperationalError:
             return []
 
-    def get_account(self, account_id: str) -> Optional[Dict[str, Any]]:
+    def get_account(self, account_id: str) -> dict[str, Any] | None:
         """Get specific account details from database"""
         if not db_exists():
             return None

@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
@@ -21,7 +21,7 @@ router = APIRouter()
 async def get_all_accounts(
     account_repo: Annotated[AccountRepository, Depends()],
     balance_repo: Annotated[BalanceRepository, Depends()],
-) -> List[AccountDetails]:
+) -> list[AccountDetails]:
     """Get all connected accounts from database"""
     balances_by_account = balance_repo.get_latest_balances_by_account()
 
@@ -62,7 +62,7 @@ async def get_all_accounts(
 async def get_all_balances(
     account_repo: Annotated[AccountRepository, Depends()],
     balance_repo: Annotated[BalanceRepository, Depends()],
-) -> List[Balance]:
+) -> list[Balance]:
     """Get all balances from all accounts in database"""
     balances_by_account = balance_repo.get_latest_balances_by_account()
 
@@ -87,11 +87,11 @@ async def get_all_balances(
     return all_balances
 
 
-@router.get("/balances/history", response_model=List[Balance])
+@router.get("/balances/history", response_model=list[Balance])
 async def get_historical_balances(
     date_from: str = Query(description="Start date (YYYY-MM-DD)"),
     date_to: str = Query(description="End date (YYYY-MM-DD)"),
-    account_id: Optional[str] = Query(
+    account_id: str | None = Query(
         default=None, description="Filter by specific account ID"
     ),
 ) -> list[dict]:

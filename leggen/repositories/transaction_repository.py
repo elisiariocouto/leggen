@@ -1,6 +1,6 @@
 import json
 import sqlite3
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from loguru import logger
 
@@ -20,17 +20,17 @@ class TransactionRepository:
 
     def _build_filter_clause(
         self,
-        account_id: Optional[str] = None,
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
-        min_amount: Optional[float] = None,
-        max_amount: Optional[float] = None,
-        search: Optional[str] = None,
-        category_id: Optional[str] = None,
-    ) -> tuple[str, List[Union[str, int, float]]]:
+        account_id: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
+        search: str | None = None,
+        category_id: str | None = None,
+    ) -> tuple[str, list[str | int | float]]:
         """Build WHERE clause and params for transaction filtering."""
         clause = ""
-        params: List[Union[str, int, float]] = []
+        params: list[str | int | float] = []
 
         if account_id:
             clause += " AND t.accountId = ?"
@@ -106,8 +106,8 @@ class TransactionRepository:
             conn.commit()
 
     def persist(
-        self, account_id: str, transactions: List[Dict[str, Any]]
-    ) -> tuple[List[Dict[str, Any]], int]:
+        self, account_id: str, transactions: list[dict[str, Any]]
+    ) -> tuple[list[dict[str, Any]], int]:
         """Persist transactions to database.
 
         Returns (new_transactions, updated_count). Rows that already exist
@@ -132,7 +132,7 @@ class TransactionRepository:
                 # memory. An unconstrained account SELECT would read the
                 # whole history — including rawTransaction blobs — on every
                 # incremental sync.
-                existing_rows: Dict[tuple[str, str], tuple] = {}
+                existing_rows: dict[tuple[str, str], tuple] = {}
                 txn_ids = list(
                     dict.fromkeys(txn["transactionId"] for txn in transactions)
                 )
@@ -231,16 +231,16 @@ class TransactionRepository:
 
     def get_transactions(
         self,
-        account_id: Optional[str] = None,
-        limit: Optional[int] = 100,
+        account_id: str | None = None,
+        limit: int | None = 100,
         offset: int = 0,
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
-        min_amount: Optional[float] = None,
-        max_amount: Optional[float] = None,
-        search: Optional[str] = None,
-        category_id: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        date_from: str | None = None,
+        date_to: str | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
+        search: str | None = None,
+        category_id: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Get transactions with optional filtering"""
         if not db_exists():
             return []
@@ -290,13 +290,13 @@ class TransactionRepository:
 
     def get_count(
         self,
-        account_id: Optional[str] = None,
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
-        min_amount: Optional[float] = None,
-        max_amount: Optional[float] = None,
-        search: Optional[str] = None,
-        category_id: Optional[str] = None,
+        account_id: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
+        search: str | None = None,
+        category_id: str | None = None,
     ) -> int:
         """Get total count of transactions matching filters"""
         if not db_exists():
@@ -325,14 +325,14 @@ class TransactionRepository:
 
     def get_stats_totals(
         self,
-        account_id: Optional[str] = None,
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
-        min_amount: Optional[float] = None,
-        max_amount: Optional[float] = None,
-        search: Optional[str] = None,
-        category_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        account_id: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
+        search: str | None = None,
+        category_id: str | None = None,
+    ) -> dict[str, Any]:
         """Aggregate totals for the filtered set, computed in SQL.
 
         Transactions whose category is flagged exclude_from_stats are left
@@ -340,7 +340,7 @@ class TransactionRepository:
         totals cover only the dominant (most frequent) currency of the set,
         while the counts cover every matching transaction.
         """
-        empty: Dict[str, Any] = {
+        empty: dict[str, Any] = {
             "total_transactions": 0,
             "booked_transactions": 0,
             "pending_transactions": 0,
@@ -423,7 +423,7 @@ class TransactionRepository:
 
     def get_transaction_by_id(
         self, account_id: str, transaction_id: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get a single transaction by its primary key."""
         if not db_exists():
             return None

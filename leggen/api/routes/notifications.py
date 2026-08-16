@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
@@ -102,7 +102,7 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
     # `exclude_none` on save would drop a null list, so cleared filters are
     # written as empty lists rather than None.
     if settings.filters is not None:
-        filters_config: Dict[str, Any] = dict(config.filters_config)
+        filters_config: dict[str, Any] = dict(config.filters_config)
         for field in ("case_insensitive", "case_sensitive"):
             if field in settings.filters.model_fields_set:
                 filters_config[field] = getattr(settings.filters, field) or []

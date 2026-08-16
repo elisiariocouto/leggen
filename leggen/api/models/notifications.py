@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -25,8 +25,8 @@ class NotificationFilters(BaseModel):
     empty list clears that list, and a populated list replaces it.
     """
 
-    case_insensitive: Optional[List[str]] = None
-    case_sensitive: Optional[List[str]] = None
+    case_insensitive: list[str] | None = None
+    case_sensitive: list[str] | None = None
 
 
 class NotificationServiceStatus(BaseModel):
@@ -46,9 +46,9 @@ class NotificationSettings(BaseModel):
     `api/routes/notifications.py` for the merge semantics.
     """
 
-    discord: Optional[DiscordConfig] = None
-    telegram: Optional[TelegramConfig] = None
-    filters: Optional[NotificationFilters] = None
+    discord: DiscordConfig | None = None
+    telegram: TelegramConfig | None = None
+    filters: NotificationFilters | None = None
 
 
 class NotificationTest(BaseModel):
