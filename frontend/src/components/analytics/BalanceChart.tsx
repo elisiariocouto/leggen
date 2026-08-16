@@ -45,6 +45,31 @@ interface TooltipProps {
   label?: string;
 }
 
+// Module scope: see CategoryBreakdown. displayName is passed in rather
+// than closed over, so the component identity stays stable.
+function BalanceTooltip({
+  active,
+  payload,
+  label,
+  currency,
+  displayName,
+}: TooltipProps & {
+  currency: string;
+  displayName: (accountId: string) => string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-card p-3 border rounded shadow-lg">
+      <p className="font-medium text-foreground">Date: {label}</p>
+      {payload.map((entry, index) => (
+        <p key={index} style={{ color: entry.color }}>
+          {displayName(entry.name)}: {formatCurrency(entry.value, currency)}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export default function BalanceChart({
   data,
   accounts,
@@ -117,22 +142,6 @@ export default function BalanceChart({
       new Date(b.date.split("/").reverse().join("/")).getTime(),
   );
 
-  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-card p-3 border rounded shadow-lg">
-          <p className="font-medium text-foreground">Date: {label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} style={{ color: entry.color }}>
-              {displayName(entry.name)}: {formatCurrency(entry.value, currency)}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
   if (finalData.length === 0) {
     return (
       <div className={className}>
@@ -172,7 +181,14 @@ export default function BalanceChart({
               tick={CHART_AXIS_TICK}
               tickFormatter={(value) => formatCurrency(value, currency)}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip
+              content={
+                <BalanceTooltip
+                  currency={currency}
+                  displayName={displayName}
+                />
+              }
+            />
             <Legend />
             {Object.keys(accountBalances).map((accountId, index) => (
               <Area

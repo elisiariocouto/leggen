@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Cloud, TestTube, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -54,14 +54,15 @@ export default function S3BackupConfigDrawer({
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (settings?.s3) {
-      setConfig({ ...settings.s3 });
-    } else {
-      // Removing the configuration must not leave the old values in the form
-      setConfig(EMPTY_S3_CONFIG);
+  // Seed on open rather than mirroring props into state (see Discord).
+  // Falling back to EMPTY_S3_CONFIG also means removing the configuration
+  // does not leave the old values sitting in the form.
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setConfig(settings?.s3 ? { ...settings.s3 } : EMPTY_S3_CONFIG);
     }
-  }, [settings]);
+    setOpen(next);
+  };
 
   const updateMutation = useMutation({
     mutationFn: (s3Config: S3Config) =>
@@ -141,7 +142,7 @@ export default function S3BackupConfigDrawer({
     config.bucket_name.trim().length > 0;
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerTrigger asChild><EditButton /></DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">

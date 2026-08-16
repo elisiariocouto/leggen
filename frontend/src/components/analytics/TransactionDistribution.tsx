@@ -31,6 +31,29 @@ interface TooltipProps {
   }>;
 }
 
+// Module scope: see CategoryBreakdown — a component defined during render
+// remounts rather than updates.
+function DistributionTooltip({
+  active,
+  payload,
+  totalBalance,
+  currency,
+}: TooltipProps & { totalBalance: number; currency: string }) {
+  if (!active || !payload?.length) return null;
+  const data = payload[0].payload;
+  const percentage = ((data.value / totalBalance) * 100).toFixed(1);
+  return (
+    <div className="bg-card p-3 border rounded shadow-lg">
+      <p className="font-medium text-foreground">{data.name}</p>
+      <p className="text-primary">
+        Balance:{" "}
+        <BlurredValue>{formatCurrency(data.value, currency)}</BlurredValue>
+      </p>
+      <p className="text-muted-foreground">{percentage}% of total</p>
+    </div>
+  );
+}
+
 export default function TransactionDistribution({
   accounts,
   className,
@@ -75,24 +98,6 @@ export default function TransactionDistribution({
     );
   }
 
-  const CustomTooltip = ({ active, payload }: TooltipProps) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const percentage = ((data.value / totalBalance) * 100).toFixed(1);
-      return (
-        <div className="bg-card p-3 border rounded shadow-lg">
-          <p className="font-medium text-foreground">{data.name}</p>
-          <p className="text-primary">
-            Balance:{" "}
-            <BlurredValue>{formatCurrency(data.value, currency)}</BlurredValue>
-          </p>
-          <p className="text-muted-foreground">{percentage}% of total</p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className={className}>
       <h3 className="text-lg font-medium text-foreground mb-4">
@@ -114,7 +119,14 @@ export default function TransactionDistribution({
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip
+              content={
+                <DistributionTooltip
+                  totalBalance={totalBalance}
+                  currency={currency}
+                />
+              }
+            />
             <Legend
               formatter={(value, entry: { color?: string }) => (
                 <span style={{ color: entry.color }}>{value}</span>

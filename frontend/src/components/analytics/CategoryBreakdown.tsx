@@ -33,6 +33,35 @@ interface TooltipProps {
   }>;
 }
 
+// Defined at module scope: a component created during render is a new type
+// on every pass, which remounts the tooltip instead of updating it.
+function CategoryTooltip({
+  active,
+  payload,
+  totalExpenses,
+  currency,
+}: TooltipProps & { totalExpenses: number; currency: string }) {
+  if (!active || !payload?.length) return null;
+  const data = payload[0].payload;
+  const percentage = ((data.expenses / totalExpenses) * 100).toFixed(1);
+  return (
+    <div className="bg-card p-3 border rounded shadow-lg">
+      <p className="font-medium text-foreground">{data.category_name}</p>
+      <p style={{ color: data.category_color }}>
+        Expenses: {formatCurrency(data.expenses, currency)}
+      </p>
+      {data.income > 0 && (
+        <p className="text-positive">
+          Income: {formatCurrency(data.income, currency)}
+        </p>
+      )}
+      <p className="text-muted-foreground">
+        {percentage}% of total · {data.transaction_count} transactions
+      </p>
+    </div>
+  );
+}
+
 export default function CategoryBreakdown({
   className,
   dateFrom,
@@ -79,30 +108,6 @@ export default function CategoryBreakdown({
   const totalExpenses = chartData.reduce((sum, cat) => sum + cat.expenses, 0);
   const currency = chartData[0]?.currency ?? "EUR";
 
-  const CustomTooltip = ({ active, payload }: TooltipProps) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const percentage = ((data.expenses / totalExpenses) * 100).toFixed(1);
-      return (
-        <div className="bg-card p-3 border rounded shadow-lg">
-          <p className="font-medium text-foreground">{data.category_name}</p>
-          <p style={{ color: data.category_color }}>
-            Expenses: {formatCurrency(data.expenses, currency)}
-          </p>
-          {data.income > 0 && (
-            <p className="text-positive">
-              Income: {formatCurrency(data.income, currency)}
-            </p>
-          )}
-          <p className="text-muted-foreground">
-            {percentage}% of total · {data.transaction_count} transactions
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   // Calculate chart height based on number of categories (min 200, max 600)
   const chartHeight = Math.min(600, Math.max(200, chartData.length * 40 + 40));
 
@@ -137,7 +142,14 @@ export default function CategoryBreakdown({
               tick={CHART_AXIS_TICK}
               width={120}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip
+              content={
+                <CategoryTooltip
+                  totalExpenses={totalExpenses}
+                  currency={currency}
+                />
+              }
+            />
             <Bar dataKey="expenses" name="Expenses" radius={[0, 4, 4, 0]}>
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.category_color} />

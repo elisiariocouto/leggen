@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, TestTube } from "lucide-react";
 import { toast } from "sonner";
@@ -36,11 +36,15 @@ export default function DiscordConfigDrawer({
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (settings?.discord) {
-      setConfig({ ...settings.discord });
+  // Seed the form from the saved settings when the drawer opens, rather
+  // than mirroring props into state with an effect — that ran on every
+  // settings refetch and could overwrite what the user was typing.
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setConfig(settings?.discord ?? { webhook: "", enabled: true });
     }
-  }, [settings]);
+    setOpen(next);
+  };
 
   const updateMutation = useMutation({
     mutationFn: (discordConfig: DiscordConfig) =>
@@ -94,7 +98,7 @@ export default function DiscordConfigDrawer({
       config.webhook.includes("discord.com/api/webhooks"));
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerTrigger asChild><EditButton /></DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">

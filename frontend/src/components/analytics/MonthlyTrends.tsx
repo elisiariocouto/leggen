@@ -37,6 +37,26 @@ interface TooltipProps {
   label?: string;
 }
 
+// Module scope: see CategoryBreakdown.
+function MonthlyTooltip({
+  active,
+  payload,
+  label,
+  currency,
+}: TooltipProps & { currency: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-card p-3 border rounded shadow-lg">
+      <p className="font-medium text-foreground">{label}</p>
+      {payload.map((entry, index) => (
+        <p key={index} style={{ color: entry.color }}>
+          {entry.name}: {formatCurrency(Math.abs(entry.value), currency)}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export default function MonthlyTrends({
   className,
   dateFrom,
@@ -78,22 +98,6 @@ export default function MonthlyTrends({
 
   const currency = monthlyData[0]?.currency ?? "EUR";
 
-  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-card p-3 border rounded shadow-lg">
-          <p className="font-medium text-foreground">{label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} style={{ color: entry.color }}>
-              {entry.name}: {formatCurrency(Math.abs(entry.value), currency)}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className={className}>
       <h3 className="text-lg font-medium text-foreground mb-4">
@@ -117,7 +121,7 @@ export default function MonthlyTrends({
               tick={CHART_AXIS_TICK}
               tickFormatter={(value) => formatCurrency(value, currency)}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<MonthlyTooltip currency={currency} />} />
             <Bar dataKey="income" fill={INCOME_COLOR} name="Income" />
             <Bar dataKey="expenses" fill={EXPENSE_COLOR} name="Expenses" />
           </BarChart>

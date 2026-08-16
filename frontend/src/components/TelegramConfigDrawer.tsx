@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Send, TestTube } from "lucide-react";
 import { toast } from "sonner";
@@ -37,11 +37,13 @@ export default function TelegramConfigDrawer({
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (settings?.telegram) {
-      setConfig({ ...settings.telegram });
+  // Seed on open rather than mirroring props into state (see Discord).
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setConfig(settings?.telegram ?? { token: "", chat_id: 0, enabled: true });
     }
-  }, [settings]);
+    setOpen(next);
+  };
 
   const updateMutation = useMutation({
     mutationFn: (telegramConfig: TelegramConfig) =>
@@ -95,7 +97,7 @@ export default function TelegramConfigDrawer({
   const isConfigValid = config.token.trim().length > 0 && config.chat_id !== 0;
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerTrigger asChild><EditButton /></DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Clock } from "lucide-react";
 import { toast } from "sonner";
@@ -39,8 +39,9 @@ export default function SyncScheduleDrawer({
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (settings) {
+  // Seed on open rather than mirroring props into state (see Discord).
+  const handleOpenChange = (next: boolean) => {
+    if (next && settings) {
       setConfig({
         enabled: settings.enabled,
         hour: settings.hour,
@@ -49,7 +50,8 @@ export default function SyncScheduleDrawer({
         useCron: !!settings.cron,
       });
     }
-  }, [settings]);
+    setOpen(next);
+  };
 
   const updateMutation = useMutation({
     mutationFn: (scheduleConfig: Omit<ScheduleSettings, "next_sync_time">) =>
@@ -80,7 +82,7 @@ export default function SyncScheduleDrawer({
   };
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerTrigger asChild><EditButton /></DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">

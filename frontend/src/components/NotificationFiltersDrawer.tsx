@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
@@ -42,14 +42,16 @@ export default function NotificationFiltersDrawer({
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (settings?.filters) {
+  // Seed on open rather than mirroring props into state (see Discord).
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
       setFilters({
-        case_insensitive: [...(settings.filters.case_insensitive || [])],
-        case_sensitive: [...(settings.filters.case_sensitive || [])],
+        case_insensitive: [...(settings?.filters?.case_insensitive || [])],
+        case_sensitive: [...(settings?.filters?.case_sensitive || [])],
       });
     }
-  }, [settings]);
+    setOpen(next);
+  };
 
   const updateMutation = useMutation({
     mutationFn: (updatedFilters: NotificationFilters) =>
@@ -122,7 +124,7 @@ export default function NotificationFiltersDrawer({
   };
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerTrigger asChild><EditButton /></DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-2xl">
