@@ -1,5 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import TransactionsTable from "../components/TransactionsTable";
+import {
+  asISODate,
+  asPositiveInt,
+  asTrimmedString,
+} from "../lib/searchParams";
 
 /**
  * Filters and pagination live in the URL so a filtered view can be
@@ -16,27 +21,6 @@ export interface TransactionSearch {
   to?: string;
   page?: number;
   perPage?: number;
-}
-
-function asTrimmedString(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed === "" ? undefined : trimmed;
-}
-
-function asPositiveInt(value: unknown): number | undefined {
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 1) return undefined;
-  return parsed;
-}
-
-// Only the dates the app itself emits (yyyy-MM-dd) are accepted; anything
-// else is dropped rather than passed through to the API.
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-function asISODate(value: unknown): string | undefined {
-  const text = asTrimmedString(value);
-  return text && ISO_DATE.test(text) ? text : undefined;
 }
 
 export const Route = createFileRoute("/")({

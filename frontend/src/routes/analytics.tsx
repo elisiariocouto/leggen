@@ -1,6 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "../components/ui/skeleton";
+import { asISODate, asTrimmedString } from "../lib/searchParams";
+
+/**
+ * Date range and account filter, so an analytics view can be bookmarked
+ * and shared. Absent dates fall back to the dashboard's default window
+ * rather than being pinned here, so a bare /analytics still means
+ * "the last 365 days" whenever it is opened.
+ */
+export interface AnalyticsSearch {
+  from?: string;
+  to?: string;
+  account?: string;
+}
 
 // Recharts is ~415 kB — by far the largest dependency, and analytics is the
 // only route that draws charts. Loading it here keeps it off the critical
@@ -35,4 +48,9 @@ export const Route = createFileRoute("/analytics")({
       <AnalyticsDashboard />
     </Suspense>
   ),
+  validateSearch: (search: Record<string, unknown>): AnalyticsSearch => ({
+    from: asISODate(search.from),
+    to: asISODate(search.to),
+    account: asTrimmedString(search.account),
+  }),
 });

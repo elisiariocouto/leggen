@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { format } from "date-fns";
 import {
   CreditCard,
@@ -21,6 +22,7 @@ import { AccountCombobox } from "../filters/AccountCombobox";
 import { Card, CardContent } from "../ui/card";
 import { queryKeys } from "../../lib/queryKeys";
 import { TIME_PERIODS } from "../../lib/timePeriods";
+import type { AnalyticsSearch } from "../../routes/analytics";
 
 const analyticsPresets: DatePreset[] = TIME_PERIODS.map((p) => ({
   label: p.label,
@@ -28,17 +30,35 @@ const analyticsPresets: DatePreset[] = TIME_PERIODS.map((p) => ({
 }));
 
 export default function AnalyticsDashboard() {
-  // Default date range: last 365 days
-  const defaultRange = TIME_PERIODS.find((p) => p.value === "365d")!.getDateRange();
-  const [startDate, setStartDate] = useState(defaultRange.startDate);
-  const [endDate, setEndDate] = useState(defaultRange.endDate);
-  const [selectedAccount, setSelectedAccount] = useState("");
+  // Filters live in the URL so a view can be bookmarked and shared.
+  const search = useSearch({ from: "/analytics" });
+  const navigate = useNavigate({ from: "/analytics" });
+
+  // Absent params mean the default window, resolved on each render so a
+  // saved link stays relative to today rather than freezing a past year.
+  const defaultRange = useMemo(
+    () => TIME_PERIODS.find((p) => p.value === "365d")!.getDateRange(),
+    [],
+  );
+  const startDate = search.from ?? defaultRange.startDate;
+  const endDate = search.to ?? defaultRange.endDate;
+  const selectedAccount = search.account ?? "";
 
   const accountId = selectedAccount || undefined;
 
   const handleDateRangeChange = (start: string, end: string) => {
-    setStartDate(start);
-    setEndDate(end);
+    navigate({
+      search: (prev: AnalyticsSearch) => ({ ...prev, from: start, to: end }),
+    });
+  };
+
+  const handleAccountChange = (nextAccount: string) => {
+    navigate({
+      search: (prev: AnalyticsSearch) => ({
+        ...prev,
+        account: nextAccount || undefined,
+      }),
+    });
   };
 
   const subtitle = useMemo(() => {
@@ -76,7 +96,7 @@ export default function AnalyticsDashboard() {
         <AccountCombobox
           accounts={accounts}
           selectedAccount={selectedAccount}
-          onAccountChange={setSelectedAccount}
+          onAccountChange={handleAccountChange}
           className="w-[260px]"
         />
         <DateRangePicker
