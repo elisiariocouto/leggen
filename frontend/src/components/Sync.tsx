@@ -15,7 +15,6 @@ import { apiClient, getApiErrorMessage } from "../lib/api";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "./ui/card";
@@ -199,24 +198,24 @@ export default function Sync() {
                 <Activity className="h-5 w-5 text-primary" />
                 <span>Recent Sync Operations</span>
               </CardTitle>
-              <CardDescription className="mt-1.5">
-                <span className="flex flex-wrap items-center gap-2">
+              {/* Status chips, not prose — kept out of CardDescription,
+                  which renders a <p> and cannot legally contain them. */}
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="gap-1">
+                  <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+                  {successCount} successful
+                </Badge>
+                <Badge variant="outline" className="gap-1">
+                  <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
+                  {failedCount} failed
+                </Badge>
+                {runningCount > 0 && (
                   <Badge variant="outline" className="gap-1">
-                    <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
-                    {successCount} successful
+                    <RefreshCw className="h-3 w-3 text-blue-600 dark:text-blue-400 animate-spin" />
+                    {runningCount} running
                   </Badge>
-                  <Badge variant="outline" className="gap-1">
-                    <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
-                    {failedCount} failed
-                  </Badge>
-                  {runningCount > 0 && (
-                    <Badge variant="outline" className="gap-1">
-                      <RefreshCw className="h-3 w-3 text-blue-600 dark:text-blue-400 animate-spin" />
-                      {runningCount} running
-                    </Badge>
-                  )}
-                </span>
-              </CardDescription>
+                )}
+              </div>
             </div>
             <div className="flex">
               <Button
