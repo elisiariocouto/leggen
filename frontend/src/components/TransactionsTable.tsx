@@ -34,6 +34,24 @@ import type {
 import { queryKeys } from "../lib/queryKeys";
 import type { TransactionSearch } from "../routes/index";
 
+function EmptyState({ hasActiveFilters }: { hasActiveFilters: boolean }) {
+  return (
+    <div className="px-6 py-12 text-center">
+      <div className="text-muted-foreground mb-4">
+        <TrendingUp className="h-12 w-12 mx-auto" />
+      </div>
+      <h3 className="text-lg font-medium text-foreground mb-2">
+        No transactions found
+      </h3>
+      <p className="text-muted-foreground">
+        {hasActiveFilters
+          ? "Try adjusting your filters to see more results."
+          : "No transactions are available for the selected criteria."}
+      </p>
+    </div>
+  );
+}
+
 export default function TransactionsTable() {
   // Filters and pagination live in the URL, so a filtered view survives a
   // refresh, can be shared, and steps back through history.
@@ -381,6 +399,8 @@ export default function TransactionsTable() {
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const isEmpty = table.getRowModel().rows.length === 0;
+
   if (transactionsLoading) {
     // The filter bar is driven by its own queries, so it stays interactive
     // while the transaction page loads underneath it.
@@ -467,8 +487,12 @@ export default function TransactionsTable() {
           </div>
         )}
 
+        {/* One empty state for both layouts, rather than the same copy
+            repeated inside each breakpoint branch. */}
+        {isEmpty && <EmptyState hasActiveFilters={!!hasActiveFilters} />}
+
         {/* Desktop Table View (hidden on mobile) */}
-        <div className="hidden md:block">
+        <div className={isEmpty ? "hidden" : "hidden md:block"}>
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted/50">
               {table.getHeaderGroups().map((headerGroup) => (
@@ -490,27 +514,7 @@ export default function TransactionsTable() {
               ))}
             </thead>
             <tbody className="bg-card divide-y divide-border">
-              {table.getRowModel().rows.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="px-6 py-12 text-center"
-                  >
-                    <div className="text-muted-foreground mb-4">
-                      <TrendingUp className="h-12 w-12 mx-auto" />
-                    </div>
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      No transactions found
-                    </h3>
-                    <p className="text-muted-foreground">
-                      {hasActiveFilters
-                        ? "Try adjusting your filters to see more results."
-                        : "No transactions are available for the selected criteria."}
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                table.getRowModel().rows.map((row) => (
+              {table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
                     className="hover:bg-muted/50 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
@@ -549,31 +553,18 @@ export default function TransactionsTable() {
                       </td>
                     ))}
                   </tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
 
         {/* Mobile Card View (visible only on mobile) */}
-        <div className="md:hidden">
-          {table.getRowModel().rows.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <div className="text-muted-foreground mb-4">
-                <TrendingUp className="h-12 w-12 mx-auto" />
-              </div>
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                No transactions found
-              </h3>
-              <p className="text-muted-foreground">
-                {hasActiveFilters
-                  ? "Try adjusting your filters to see more results."
-                  : "No transactions are available for the selected criteria."}
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {table.getRowModel().rows.map((row) => {
+        <div
+          className={
+            isEmpty ? "hidden" : "md:hidden divide-y divide-border"
+          }
+        >
+          {table.getRowModel().rows.map((row) => {
                 const transaction = row.original;
                 const account = accounts?.find(
                   (acc) => acc.id === transaction.account_id,
@@ -670,8 +661,6 @@ export default function TransactionsTable() {
                   </div>
                 );
               })}
-            </div>
-          )}
         </div>
 
         {/* Pagination */}

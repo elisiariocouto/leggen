@@ -96,6 +96,69 @@ function LogsDialog({ operation }: { operation: SyncOperation }) {
   );
 }
 
+/** Round status icon. Identical in the desktop and mobile arrangements. */
+function OperationIcon({ operation }: { operation: SyncOperation }) {
+  const isRunning = !operation.completed_at;
+  return (
+    <div
+      className={`p-2 rounded-full ${
+        isRunning
+          ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+          : operation.success
+            ? "bg-positive-muted text-positive"
+            : "bg-negative-muted text-negative"
+      }`}
+    >
+      {isRunning ? (
+        <RefreshCw className="h-4 w-4 animate-spin" />
+      ) : operation.success ? (
+        <CheckCircle className="h-4 w-4" />
+      ) : (
+        <AlertCircle className="h-4 w-4" />
+      )}
+    </div>
+  );
+}
+
+function operationTitle(operation: SyncOperation): string {
+  if (!operation.completed_at) return "Sync Running";
+  return operation.success ? "Sync Completed" : "Sync Failed";
+}
+
+/** Trigger label, capitalised: "Manual", "Scheduled". */
+function TriggerBadge({ triggerType }: { triggerType: string }) {
+  return (
+    <Badge variant="outline" className="text-xs">
+      {triggerType.charAt(0).toUpperCase() + triggerType.slice(1)}
+    </Badge>
+  );
+}
+
+/**
+ * Accounts processed and transactions added. The two layouts differ only
+ * in how the pair is arranged, so each passes its own container classes.
+ */
+function OperationCounts({
+  operation,
+  className,
+}: {
+  operation: SyncOperation;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <div className="flex items-center space-x-2">
+        <User className="h-3 w-3" />
+        <span>{operation.accounts_processed} accounts</span>
+      </div>
+      <div className="flex items-center space-x-2">
+        <TrendingUp className="h-3 w-3" />
+        <span>{operation.transactions_added} new transactions</span>
+      </div>
+    </div>
+  );
+}
+
 export default function Sync() {
   const queryClient = useQueryClient();
 
@@ -280,7 +343,6 @@ export default function Sync() {
             <div className="space-y-4">
               {syncOperations.data.map((operation) => {
                 const startedAt = new Date(operation.started_at);
-                const isRunning = !operation.completed_at;
                 const duration = operation.duration_seconds
                   ? `${Math.round(operation.duration_seconds)}s`
                   : "";
@@ -293,36 +355,15 @@ export default function Sync() {
                     {/* Desktop Layout */}
                     <div className="hidden md:flex items-center justify-between p-4">
                       <div className="flex items-center space-x-4">
-                        <div
-                          className={`p-2 rounded-full ${
-                            isRunning
-                              ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                              : operation.success
-                                ? "bg-positive-muted text-positive"
-                                : "bg-negative-muted text-negative"
-                          }`}
-                        >
-                          {isRunning ? (
-                            <RefreshCw className="h-4 w-4 animate-spin" />
-                          ) : operation.success ? (
-                            <CheckCircle className="h-4 w-4" />
-                          ) : (
-                            <AlertCircle className="h-4 w-4" />
-                          )}
-                        </div>
+                        <OperationIcon operation={operation} />
                         <div>
                           <div className="flex items-center space-x-2">
                             <h4 className="text-sm font-medium text-foreground">
-                              {isRunning
-                                ? "Sync Running"
-                                : operation.success
-                                  ? "Sync Completed"
-                                  : "Sync Failed"}
+                              {operationTitle(operation)}
                             </h4>
-                            <Badge variant="outline" className="text-xs">
-                              {operation.trigger_type.charAt(0).toUpperCase() +
-                                operation.trigger_type.slice(1)}
-                            </Badge>
+                            <TriggerBadge
+                              triggerType={operation.trigger_type}
+                            />
                           </div>
                           <div className="flex items-center space-x-4 mt-1 text-xs text-muted-foreground">
                             <span className="flex items-center space-x-1">
@@ -337,18 +378,10 @@ export default function Sync() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        <div className="text-right text-sm text-muted-foreground">
-                          <div className="flex items-center space-x-2">
-                            <User className="h-3 w-3" />
-                            <span>{operation.accounts_processed} accounts</span>
-                          </div>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <TrendingUp className="h-3 w-3" />
-                            <span>
-                              {operation.transactions_added} new transactions
-                            </span>
-                          </div>
-                        </div>
+                        <OperationCounts
+                          operation={operation}
+                          className="text-right text-sm text-muted-foreground space-y-1"
+                        />
                         <LogsDialog operation={operation} />
                       </div>
                     </div>
@@ -357,35 +390,16 @@ export default function Sync() {
                     <div className="md:hidden p-4 space-y-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-3">
-                          <div
-                            className={`p-2 rounded-full ${
-                              isRunning
-                                ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                                : operation.success
-                                  ? "bg-positive-muted text-positive"
-                                  : "bg-negative-muted text-negative"
-                            }`}
-                          >
-                            {isRunning ? (
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                            ) : operation.success ? (
-                              <CheckCircle className="h-4 w-4" />
-                            ) : (
-                              <AlertCircle className="h-4 w-4" />
-                            )}
-                          </div>
+                          <OperationIcon operation={operation} />
                           <div>
                             <h4 className="text-sm font-medium text-foreground">
-                              {isRunning
-                                ? "Sync Running"
-                                : operation.success
-                                  ? "Sync Completed"
-                                  : "Sync Failed"}
+                              {operationTitle(operation)}
                             </h4>
-                            <Badge variant="outline" className="text-xs mt-1">
-                              {operation.trigger_type.charAt(0).toUpperCase() +
-                                operation.trigger_type.slice(1)}
-                            </Badge>
+                            <div className="mt-1">
+                              <TriggerBadge
+                                triggerType={operation.trigger_type}
+                              />
+                            </div>
                           </div>
                         </div>
                         <LogsDialog operation={operation} />
@@ -403,18 +417,10 @@ export default function Sync() {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="flex items-center space-x-1">
-                            <User className="h-3 w-3" />
-                            <span>{operation.accounts_processed} accounts</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <TrendingUp className="h-3 w-3" />
-                            <span>
-                              {operation.transactions_added} new transactions
-                            </span>
-                          </div>
-                        </div>
+                        <OperationCounts
+                          operation={operation}
+                          className="grid grid-cols-2 gap-2 text-xs"
+                        />
                       </div>
                     </div>
                   </div>
