@@ -1,5 +1,4 @@
 import { Skeleton } from "./ui/skeleton";
-import { Card } from "./ui/card";
 
 interface TransactionSkeletonProps {
   rows?: number;
@@ -14,7 +13,7 @@ export default function TransactionSkeleton({
 
   if (view === "mobile") {
     return (
-      <Card className="divide-y divide-border">
+      <div className="divide-y divide-border">
         {skeletonRows.map((_, index) => (
           <div key={index} className="p-4">
             <div className="flex items-start justify-between">
@@ -39,12 +38,12 @@ export default function TransactionSkeleton({
             </div>
           </div>
         ))}
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="overflow-hidden">
+    <div className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted/50">
@@ -97,6 +96,6 @@ export default function TransactionSkeleton({
           </tbody>
         </table>
       </div>
-    </Card>
+    </div>
   );
 }

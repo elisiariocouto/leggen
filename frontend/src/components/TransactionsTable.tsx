@@ -16,7 +16,6 @@ import {
 import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
 import TransactionSkeleton from "./TransactionSkeleton";
-import FiltersSkeleton from "./FiltersSkeleton";
 import TransactionDetail from "./TransactionDetail";
 import { FilterBar, type FilterState } from "./filters";
 import { DataTablePagination } from "./ui/data-table-pagination";
@@ -344,13 +343,25 @@ export default function TransactionsTable() {
   });
 
   if (transactionsLoading) {
+    // The filter bar is driven by its own queries, so it stays interactive
+    // while the transaction page loads underneath it.
     return (
-      <div className="space-y-6">
-        <FiltersSkeleton />
-        <TransactionSkeleton rows={10} view="table" />
-        <div className="md:hidden">
-          <TransactionSkeleton rows={10} view="mobile" />
-        </div>
+      <div className="max-w-full">
+        <Card>
+          <FilterBar
+            filterState={filterState}
+            onFilterChange={handleFilterChange}
+            onClearFilters={handleClearFilters}
+            accounts={accounts}
+            isSearchLoading={isSearchLoading}
+          />
+          <div className="hidden md:block">
+            <TransactionSkeleton rows={10} view="table" />
+          </div>
+          <div className="md:hidden">
+            <TransactionSkeleton rows={10} view="mobile" />
+          </div>
+        </Card>
       </div>
     );
   }

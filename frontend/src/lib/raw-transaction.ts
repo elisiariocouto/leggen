@@ -16,7 +16,6 @@ export interface RawTransactionFields {
   debtorIban?: string;
   entryReference?: string;
   bankTransactionCode?: string;
-  remittanceInfo?: string[];
   currencyExchange?: RawCurrencyExchange;
   balanceAfter?: { amount: number; currency: string };
 }
@@ -48,21 +47,6 @@ function pick(raw: Raw | undefined, ...keys: string[]): unknown {
 
 function pickString(raw: Raw | undefined, ...keys: string[]): string | undefined {
   return asString(pick(raw, ...keys));
-}
-
-function extractRemittanceInfo(raw: Raw): string[] | undefined {
-  const value = pick(
-    raw,
-    "remittance_information",
-    "remittanceInformationUnstructuredArray",
-    "remittanceInformationUnstructured",
-  );
-  if (Array.isArray(value)) {
-    const items = value.map(asString).filter((v): v is string => !!v);
-    return items.length > 0 ? items : undefined;
-  }
-  const single = asString(value);
-  return single ? [single] : undefined;
 }
 
 function extractBankTransactionCode(raw: Raw): string | undefined {
@@ -145,7 +129,6 @@ export function extractRawFields(
     debtorIban: pickString(debtorAccount, "iban"),
     entryReference: pickString(raw, "entry_reference", "entryReference"),
     bankTransactionCode: extractBankTransactionCode(raw),
-    remittanceInfo: extractRemittanceInfo(raw),
     currencyExchange: extractCurrencyExchange(raw),
     balanceAfter: extractBalanceAfter(raw),
   };

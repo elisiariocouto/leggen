@@ -22,12 +22,10 @@ import type { ScheduleSettings } from "../types/api";
 
 interface SyncScheduleDrawerProps {
   settings?: ScheduleSettings;
-  trigger?: React.ReactNode;
 }
 
 export default function SyncScheduleDrawer({
   settings,
-  trigger,
 }: SyncScheduleDrawerProps) {
   const [open, setOpen] = useState(false);
   const [config, setConfig] = useState({
@@ -82,7 +80,7 @@ export default function SyncScheduleDrawer({
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{trigger || <EditButton />}</DrawerTrigger>
+      <DrawerTrigger asChild><EditButton /></DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>

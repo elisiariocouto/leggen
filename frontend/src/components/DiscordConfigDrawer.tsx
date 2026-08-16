@@ -22,12 +22,10 @@ import type { NotificationSettings, DiscordConfig } from "../types/api";
 
 interface DiscordConfigDrawerProps {
   settings: NotificationSettings | undefined;
-  trigger?: React.ReactNode;
 }
 
 export default function DiscordConfigDrawer({
   settings,
-  trigger,
 }: DiscordConfigDrawerProps) {
   const [open, setOpen] = useState(false);
   const [config, setConfig] = useState<DiscordConfig>({
@@ -96,7 +94,7 @@ export default function DiscordConfigDrawer({
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{trigger || <EditButton />}</DrawerTrigger>
+      <DrawerTrigger asChild><EditButton /></DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader>

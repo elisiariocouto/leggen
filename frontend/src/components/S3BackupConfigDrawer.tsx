@@ -32,7 +32,6 @@ import type { BackupSettings, S3Config } from "../types/api";
 
 interface S3BackupConfigDrawerProps {
   settings?: BackupSettings;
-  trigger?: React.ReactNode;
 }
 
 const EMPTY_S3_CONFIG: S3Config = {
@@ -47,7 +46,6 @@ const EMPTY_S3_CONFIG: S3Config = {
 
 export default function S3BackupConfigDrawer({
   settings,
-  trigger,
 }: S3BackupConfigDrawerProps) {
   const [open, setOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -143,7 +141,7 @@ export default function S3BackupConfigDrawer({
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{trigger || <EditButton />}</DrawerTrigger>
+      <DrawerTrigger asChild><EditButton /></DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>

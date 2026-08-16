@@ -22,12 +22,10 @@ import type { NotificationSettings, TelegramConfig } from "../types/api";
 
 interface TelegramConfigDrawerProps {
   settings: NotificationSettings | undefined;
-  trigger?: React.ReactNode;
 }
 
 export default function TelegramConfigDrawer({
   settings,
-  trigger,
 }: TelegramConfigDrawerProps) {
   const [open, setOpen] = useState(false);
   const [config, setConfig] = useState<TelegramConfig>({
@@ -97,7 +95,7 @@ export default function TelegramConfigDrawer({
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{trigger || <EditButton />}</DrawerTrigger>
+      <DrawerTrigger asChild><EditButton /></DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader>

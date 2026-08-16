@@ -21,12 +21,10 @@ import type { NotificationSettings, NotificationFilters } from "../types/api";
 
 interface NotificationFiltersDrawerProps {
   settings: NotificationSettings | undefined;
-  trigger?: React.ReactNode;
 }
 
 export default function NotificationFiltersDrawer({
   settings,
-  trigger,
 }: NotificationFiltersDrawerProps) {
   const [open, setOpen] = useState(false);
   // Both lists are always present in local state; the API leaves them optional
@@ -124,7 +122,7 @@ export default function NotificationFiltersDrawer({
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{trigger || <EditButton />}</DrawerTrigger>
+      <DrawerTrigger asChild><EditButton /></DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-2xl">
           <DrawerHeader>

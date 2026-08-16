@@ -1,7 +1,6 @@
 import axios from "axios";
 import type {
   ApiError,
-  ApiErrorField,
   Account,
   Transaction,
   Balance,
@@ -59,11 +58,6 @@ export function getApiError(error: unknown): ApiError | null {
     status: typeof data.status === "number" ? data.status : status,
     errors: Array.isArray(data.errors) ? data.errors : undefined,
   };
-}
-
-// Field-level problems from a validation error, empty for anything else.
-export function getApiFieldErrors(error: unknown): ApiErrorField[] {
-  return getApiError(error)?.errors ?? [];
 }
 
 // Standard error message for mutation failures: prefer the backend's
