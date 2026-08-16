@@ -32,9 +32,9 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
-    "lucide-react": "^0.542.0",
+    "lucide-react": "^1.31.0",
     "react": "^19.1.1",
-    "react-day-picker": "^9.10.0",
+    "react-day-picker": "^10.0.1",
     "react-dom": "^19.1.1",
     "recharts": "^3.9.2",
     "sonner": "^2.0.7",
@@ -65,6 +65,9 @@
   },
   "overrides": {
     "sharp": "^0.35.3",
-    "js-yaml": "^4.3.1"
+    "js-yaml": "^4.3.1",
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
   }
 }
