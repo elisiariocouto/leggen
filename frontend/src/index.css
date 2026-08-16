@@ -50,9 +50,12 @@
   --color-chart-5: hsl(var(--chart-5));
 
   /* Money direction. Semantic, so income/expense read the same way in the
-     table, the detail sheet, the sidebar and the charts. */
+     table, the detail sheet, the sidebar and the charts. The -muted pair
+     is the tint behind trend icons. */
   --color-positive: hsl(var(--positive));
   --color-negative: hsl(var(--negative));
+  --color-positive-muted: hsl(var(--positive-muted));
+  --color-negative-muted: hsl(var(--negative-muted));
 
   --color-sidebar: hsl(var(--sidebar-background));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
@@ -93,6 +96,9 @@
     /* green-600 / red-600 — the values the components used longhand */
     --positive: 142.1 76.2% 36.3%;
     --negative: 0 72.2% 50.6%;
+    /* green-100 / red-100 */
+    --positive-muted: 140.6 84.2% 92.5%;
+    --negative-muted: 0 93.3% 94.1%;
     --radius: 0.5rem;
 
     /* iOS Safe Area Support for PWA */
@@ -137,6 +143,10 @@
     /* green-400 / red-400 — lighter, for contrast on the dark ground */
     --positive: 141.7 76.6% 73.1%;
     --negative: 0 90.6% 70.8%;
+    /* green-900 / red-900 at the 20% alpha the components used, flattened
+       over the dark background so the token stays a plain colour */
+    --positive-muted: 144 61% 12%;
+    --negative-muted: 0 63% 13%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;

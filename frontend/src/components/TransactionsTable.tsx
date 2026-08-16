@@ -287,14 +287,14 @@ export default function TransactionsTable() {
             <div
               className={`p-2 rounded-full ${
                 isPositive
-                  ? "bg-green-100 dark:bg-green-900/20"
-                  : "bg-red-100 dark:bg-red-900/20"
+                  ? "bg-positive-muted"
+                  : "bg-negative-muted"
               }`}
             >
               {isPositive ? (
-                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <TrendingUp className="h-4 w-4 text-positive" />
               ) : (
-                <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                <TrendingDown className="h-4 w-4 text-negative" />
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -341,8 +341,8 @@ export default function TransactionsTable() {
             <p
               className={`text-lg font-semibold ${
                 isPositive
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400"
+                  ? "text-positive"
+                  : "text-negative"
               }`}
             >
               <BlurredValue>
@@ -446,19 +446,19 @@ export default function TransactionsTable() {
               </span>
               <span className="text-muted-foreground hidden sm:inline">·</span>
               <BlurredValue>
-                <span className="text-green-600 dark:text-green-400">
+                <span className="text-positive">
                   +{formatCurrency(statsData.total_income, displayCurrency)} income
                 </span>
               </BlurredValue>
               <span className="text-muted-foreground hidden sm:inline">·</span>
               <BlurredValue>
-                <span className="text-red-600 dark:text-red-400">
+                <span className="text-negative">
                   -{formatCurrency(statsData.total_expenses, displayCurrency)} expenses
                 </span>
               </BlurredValue>
               <span className="text-muted-foreground hidden sm:inline">·</span>
               <BlurredValue>
-                <span className={statsData.net_change >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>
+                <span className={statsData.net_change >= 0 ? "text-positive" : "text-negative"}>
                   Net {statsData.net_change >= 0 ? "+" : ""}
                   {formatCurrency(statsData.net_change, displayCurrency)}
                 </span>
@@ -605,14 +605,14 @@ export default function TransactionsTable() {
                           <div
                             className={`p-2 rounded-full shrink-0 ${
                               isPositive
-                                ? "bg-green-100 dark:bg-green-900/20"
-                                : "bg-red-100 dark:bg-red-900/20"
+                                ? "bg-positive-muted"
+                                : "bg-negative-muted"
                             }`}
                           >
                             {isPositive ? (
-                              <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              <TrendingUp className="h-4 w-4 text-positive" />
                             ) : (
-                              <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                              <TrendingDown className="h-4 w-4 text-negative" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -653,8 +653,8 @@ export default function TransactionsTable() {
                         <p
                           className={`text-lg font-semibold ${
                             isPositive
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-red-600 dark:text-red-400"
+                              ? "text-positive"
+                              : "text-negative"
                           }`}
                         >
                           <BlurredValue>

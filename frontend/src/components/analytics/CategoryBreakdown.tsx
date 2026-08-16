@@ -90,7 +90,7 @@ export default function CategoryBreakdown({
             Expenses: {formatCurrency(data.expenses, currency)}
           </p>
           {data.income > 0 && (
-            <p className="text-green-600 dark:text-green-400">
+            <p className="text-positive">
               Income: {formatCurrency(data.income, currency)}
             </p>
           )}

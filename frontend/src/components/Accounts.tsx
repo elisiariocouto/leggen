@@ -509,8 +509,8 @@ export default function Accounts() {
                           <BlurredValue
                             className={`text-base sm:text-lg font-semibold ${
                               isPositive
-                                ? "text-green-600 dark:text-green-400"
-                                : "text-red-600 dark:text-red-400"
+                                ? "text-positive"
+                                : "text-negative"
                             }`}
                           >
                             {formatCurrency(balance, currency)}
@@ -648,7 +648,7 @@ export default function Accounts() {
                             {connection.status === "expired" && (
                               <Badge
                                 variant="outline"
-                                className="shrink-0 text-xs border-red-500 text-red-600 dark:text-red-400"
+                                className="shrink-0 text-xs border-red-500 text-negative"
                               >
                                 Expired
                               </Badge>

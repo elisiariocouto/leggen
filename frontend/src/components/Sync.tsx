@@ -202,11 +202,11 @@ export default function Sync() {
                   which renders a <p> and cannot legally contain them. */}
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className="gap-1">
-                  <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+                  <CheckCircle className="h-3 w-3 text-positive" />
                   {successCount} successful
                 </Badge>
                 <Badge variant="outline" className="gap-1">
-                  <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
+                  <AlertCircle className="h-3 w-3 text-negative" />
                   {failedCount} failed
                 </Badge>
                 {runningCount > 0 && (
@@ -298,8 +298,8 @@ export default function Sync() {
                             isRunning
                               ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
                               : operation.success
-                                ? "bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400"
-                                : "bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400"
+                                ? "bg-positive-muted text-positive"
+                                : "bg-negative-muted text-negative"
                           }`}
                         >
                           {isRunning ? (
@@ -362,8 +362,8 @@ export default function Sync() {
                               isRunning
                                 ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
                                 : operation.success
-                                  ? "bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400"
-                                  : "bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400"
+                                  ? "bg-positive-muted text-positive"
+                                  : "bg-negative-muted text-negative"
                             }`}
                           >
                             {isRunning ? (

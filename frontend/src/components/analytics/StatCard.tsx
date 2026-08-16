@@ -50,8 +50,8 @@ export default function StatCard({
                   className={cn(
                     "ml-2 flex items-baseline text-sm font-semibold",
                     trend.isPositive
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400",
+                      ? "text-positive"
+                      : "text-negative",
                   )}
                 >
                   {trend.isPositive ? "+" : ""}
@@ -66,9 +66,9 @@ export default function StatCard({
           <div
             className={cn(
               "p-2 rounded-full",
-              iconColor === "green" && "bg-green-100 dark:bg-green-900/20",
+              iconColor === "green" && "bg-positive-muted",
               iconColor === "blue" && "bg-blue-100 dark:bg-blue-900/20",
-              iconColor === "red" && "bg-red-100 dark:bg-red-900/20",
+              iconColor === "red" && "bg-negative-muted",
               iconColor === "purple" && "bg-purple-100 dark:bg-purple-900/20",
               iconColor === "orange" && "bg-orange-100 dark:bg-orange-900/20",
               iconColor === "default" && "bg-muted",
@@ -77,9 +77,9 @@ export default function StatCard({
             <Icon
               className={cn(
                 "h-5 w-5",
-                iconColor === "green" && "text-green-600 dark:text-green-400",
+                iconColor === "green" && "text-positive",
                 iconColor === "blue" && "text-blue-600 dark:text-blue-400",
-                iconColor === "red" && "text-red-600 dark:text-red-400",
+                iconColor === "red" && "text-negative",
                 iconColor === "purple" &&
                   "text-purple-600 dark:text-purple-400",
                 iconColor === "orange" &&

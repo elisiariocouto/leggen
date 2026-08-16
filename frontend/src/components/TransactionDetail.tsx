@@ -122,7 +122,7 @@ function RawJsonSection({ transaction }: { transaction: Transaction }) {
           <Button variant="ghost" size="sm" onClick={handleCopy}>
             {copied ? (
               <>
-                <Check className="h-4 w-4 mr-1 text-green-600 dark:text-green-400" />
+                <Check className="h-4 w-4 mr-1 text-positive" />
                 Copied!
               </>
             ) : (
@@ -165,14 +165,14 @@ function TransactionDetailContent({
         <div
           className={`p-2 rounded-full shrink-0 ${
             isPositive
-              ? "bg-green-100 dark:bg-green-900/20"
-              : "bg-red-100 dark:bg-red-900/20"
+              ? "bg-positive-muted"
+              : "bg-negative-muted"
           }`}
         >
           {isPositive ? (
-            <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <TrendingUp className="h-4 w-4 text-positive" />
           ) : (
-            <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <TrendingDown className="h-4 w-4 text-negative" />
           )}
         </div>
         <div className="flex-1 min-w-0">
@@ -182,8 +182,8 @@ function TransactionDetailContent({
           <p
             className={`text-2xl font-semibold mt-1 ${
               isPositive
-                ? "text-green-600 dark:text-green-400"
-                : "text-red-600 dark:text-red-400"
+                ? "text-positive"
+                : "text-negative"
             }`}
           >
             <BlurredValue>
