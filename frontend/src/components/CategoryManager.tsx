@@ -35,6 +35,7 @@ import {
 import { Skeleton } from "./ui/skeleton";
 import { Switch } from "./ui/switch";
 import type { Category } from "../types/api";
+import { queryKeys } from "../lib/queryKeys";
 
 const PRESET_COLORS = [
   "#22c55e", "#3b82f6", "#a855f7", "#f97316", "#ec4899",
@@ -131,7 +132,7 @@ export default function CategoryManager() {
   const queryClient = useQueryClient();
 
   const { data: categories, isLoading } = useQuery<Category[]>({
-    queryKey: ["categories"],
+    queryKey: queryKeys.categories,
     queryFn: apiClient.getCategories,
   });
 
@@ -139,7 +140,7 @@ export default function CategoryManager() {
     mutationFn: (data: { name: string; color: string; exclude_from_stats: boolean }) =>
       apiClient.createCategory(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
       setShowCreate(false);
       toast.success("Category created.");
     },
@@ -157,8 +158,8 @@ export default function CategoryManager() {
       data: { name: string; color: string; exclude_from_stats: boolean };
     }) => apiClient.updateCategory(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
       setEditingCategory(null);
       toast.success("Category updated.");
     },
@@ -170,8 +171,8 @@ export default function CategoryManager() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => apiClient.deleteCategory(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
       setDeleteTarget(null);
       toast.success("Category deleted.");
     },

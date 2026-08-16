@@ -19,6 +19,10 @@ import {
 import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner";
 import type { Category, CategorySuggestion } from "../types/api";
+import {
+  invalidateCategorizedData,
+  queryKeys,
+} from "../lib/queryKeys";
 
 interface CategoryBadgeProps {
   accountId: string;
@@ -42,32 +46,22 @@ export default function CategoryBadge({
   const queryClient = useQueryClient();
 
   const { data: categories } = useQuery<Category[]>({
-    queryKey: ["categories"],
+    queryKey: queryKeys.categories,
     queryFn: apiClient.getCategories,
   });
 
   const { data: suggestions } = useQuery<CategorySuggestion[]>({
-    queryKey: ["category-suggestions", accountId, transactionId],
+    queryKey: queryKeys.categorySuggestions(accountId, transactionId),
     queryFn: () => apiClient.getCategorySuggestions(accountId, transactionId),
     enabled: open && !categoryId,
   });
-
-  const invalidateCategoryRelatedQueries = () => {
-    queryClient.invalidateQueries({ queryKey: ["transactions"] });
-    queryClient.invalidateQueries({ queryKey: ["transactionStats"] });
-    queryClient.invalidateQueries({ queryKey: ["transaction-stats"] });
-    queryClient.invalidateQueries({ queryKey: ["monthly-stats"] });
-    queryClient.invalidateQueries({ queryKey: ["category-stats"] });
-  };
 
   const assignMutation = useMutation({
     mutationFn: (catId: number) =>
       apiClient.assignCategory(accountId, transactionId, catId),
     onSuccess: () => {
-      invalidateCategoryRelatedQueries();
-      queryClient.invalidateQueries({
-        queryKey: ["category-suggestions", accountId, transactionId],
-      });
+      // Suggestions live under the categories root, so they refetch too.
+      invalidateCategorizedData(queryClient);
       setOpen(false);
     },
     onError: (error) => {
@@ -79,7 +73,7 @@ export default function CategoryBadge({
     mutationFn: (catId: number) =>
       apiClient.bulkAssignCategoryByDescription(catId, description || ""),
     onSuccess: (data) => {
-      invalidateCategoryRelatedQueries();
+      invalidateCategorizedData(queryClient);
       toast.success(
         `Category applied to ${data.updated_count} transaction${data.updated_count !== 1 ? "s" : ""}.`,
       );
@@ -93,7 +87,7 @@ export default function CategoryBadge({
   const removeMutation = useMutation({
     mutationFn: () => apiClient.removeCategory(accountId, transactionId),
     onSuccess: () => {
-      invalidateCategoryRelatedQueries();
+      invalidateCategorizedData(queryClient);
       setOpen(false);
     },
     onError: (error) => {
@@ -105,7 +99,7 @@ export default function CategoryBadge({
     mutationFn: () =>
       apiClient.bulkRemoveCategoryByDescription(description || ""),
     onSuccess: (data) => {
-      invalidateCategoryRelatedQueries();
+      invalidateCategorizedData(queryClient);
       toast.success(
         `Category removed from ${data.removed_count} transaction${data.removed_count !== 1 ? "s" : ""}.`,
       );

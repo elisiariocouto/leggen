@@ -36,6 +36,7 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "./ui/sidebar";
+import { queryKeys } from "../lib/queryKeys";
 
 const navigation = [
   { name: "Transactions", icon: ArrowLeftRight, to: "/" },
@@ -51,7 +52,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { username, logout } = useAuth();
 
   const { data: accounts } = useQuery<Account[]>({
-    queryKey: ["accounts"],
+    queryKey: queryKeys.accounts,
     queryFn: apiClient.getAccounts,
   });
 

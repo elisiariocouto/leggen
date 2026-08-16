@@ -19,6 +19,7 @@ import {
   DrawerTrigger,
 } from "./ui/drawer";
 import type { NotificationSettings, TelegramConfig } from "../types/api";
+import { queryKeys } from "../lib/queryKeys";
 
 interface TelegramConfigDrawerProps {
   settings: NotificationSettings | undefined;
@@ -53,8 +54,8 @@ export default function TelegramConfigDrawer({
         },
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notificationSettings"] });
-      queryClient.invalidateQueries({ queryKey: ["notificationServices"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationSettings });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationServices });
       setOpen(false);
       toast.success("Telegram configuration saved.");
     },

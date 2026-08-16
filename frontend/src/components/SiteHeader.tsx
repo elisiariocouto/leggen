@@ -10,6 +10,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "./ui/tooltip";
+import { queryKeys } from "../lib/queryKeys";
 
 const navigation = [
   { name: "Transactions", to: "/" },
@@ -30,7 +31,7 @@ export function SiteHeader() {
     isLoading: healthLoading,
     isError: healthError,
   } = useQuery({
-    queryKey: ["health"],
+    queryKey: queryKeys.health,
     queryFn: apiClient.getHealth,
     refetchInterval: 30000,
   });

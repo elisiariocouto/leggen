@@ -48,6 +48,7 @@ import {
 } from "./ui/alert-dialog";
 import { Checkbox } from "./ui/checkbox";
 import type { Account, Balance, BankConnectionStatus } from "../types/api";
+import { invalidateSyncedData, queryKeys } from "../lib/queryKeys";
 
 const getStatusIndicator = (status: string) => {
   const statusLower = status.toLowerCase();
@@ -88,17 +89,17 @@ export default function Accounts() {
     error: accountsError,
     refetch: refetchAccounts,
   } = useQuery<Account[]>({
-    queryKey: ["accounts"],
+    queryKey: queryKeys.accounts,
     queryFn: apiClient.getAccounts,
   });
 
   const { data: balances } = useQuery<Balance[]>({
-    queryKey: ["balances"],
+    queryKey: queryKeys.balances,
     queryFn: () => apiClient.getBalances(),
   });
 
   const { data: bankConnections, isLoading: connectionsLoading } = useQuery({
-    queryKey: ["bankConnections"],
+    queryKey: queryKeys.bankConnections,
     queryFn: apiClient.getBankConnectionsStatus,
   });
 
@@ -106,8 +107,8 @@ export default function Accounts() {
     mutationFn: ({ id, display_name }: { id: string; display_name: string }) =>
       apiClient.updateAccount(id, { display_name }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      queryClient.invalidateQueries({ queryKey: ["balances"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.balances });
       setEditingAccountId(null);
       setEditingName("");
     },
@@ -125,9 +126,9 @@ export default function Accounts() {
       deleteData: boolean;
     }) => apiClient.deleteAccount(accountId, deleteData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      queryClient.invalidateQueries({ queryKey: ["balances"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.balances });
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
       setDeleteDialogAccount(null);
       setDeleteData(true);
       toast.success("Account deleted successfully.");
@@ -150,19 +151,7 @@ export default function Accounts() {
           `Sync finished with errors: ${result.errors.join(", ") || "Unknown error"}`,
         );
       }
-      for (const key of [
-        "accounts",
-        "balances",
-        "transactions",
-        "transactionStats",
-        "transaction-stats",
-        "monthly-stats",
-        "category-stats",
-        "historical-balances",
-        "syncOperations",
-      ]) {
-        queryClient.invalidateQueries({ queryKey: [key] });
-      }
+      invalidateSyncedData(queryClient);
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Failed to sync account."));
@@ -172,9 +161,9 @@ export default function Accounts() {
   const deleteBankConnectionMutation = useMutation({
     mutationFn: apiClient.deleteBankConnection,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      queryClient.invalidateQueries({ queryKey: ["bankConnections"] });
-      queryClient.invalidateQueries({ queryKey: ["balances"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bankConnections });
+      queryClient.invalidateQueries({ queryKey: queryKeys.balances });
       setDeleteDialogConnection(null);
       toast.success("Bank connection deleted.");
     },

@@ -14,6 +14,7 @@ import { cn, formatCurrency } from "../../lib/utils";
 import { BlurredValue } from "../ui/blurred-value";
 import { Skeleton } from "../ui/skeleton";
 import { CHART_AXIS_TICK, CHART_GRID_COLOR } from "../../lib/chartColors";
+import { queryKeys } from "../../lib/queryKeys";
 import apiClient from "../../lib/api";
 import type { CategoryStats } from "../../types/api";
 
@@ -41,7 +42,7 @@ export default function CategoryBreakdown({
   const { isBalanceVisible } = useBalanceVisibility();
 
   const { data: categoryData, isLoading } = useQuery({
-    queryKey: ["category-stats", dateFrom, dateTo, accountId],
+    queryKey: queryKeys.transactionStatsByCategory(dateFrom, dateTo, accountId),
     queryFn: () => apiClient.getStatsByCategory(dateFrom, dateTo, accountId),
     placeholderData: (previousData) => previousData,
   });

@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import type { PaginatedResponse, SyncOperation } from "../types/api";
+import { invalidateSyncedData, queryKeys } from "../lib/queryKeys";
 
 // Component for viewing sync operation logs
 function LogsDialog({ operation }: { operation: SyncOperation }) {
@@ -105,30 +106,13 @@ export default function Sync() {
     error: syncOperationsError,
     refetch: refetchSyncOperations,
   } = useQuery<PaginatedResponse<SyncOperation>>({
-    queryKey: ["syncOperations"],
+    queryKey: queryKeys.syncOperations,
     queryFn: () => apiClient.getSyncOperations(1, 10), // Get latest 10 operations
     // Keep polling while an operation is running (e.g. a scheduled sync),
     // otherwise its spinner never resolves
     refetchInterval: (query) =>
       query.state.data?.data.some((op) => !op.completed_at) ? 5000 : false,
   });
-
-  // Synced data changed — refetch everything derived from it
-  const invalidateSyncedData = () => {
-    for (const key of [
-      "syncOperations",
-      "accounts",
-      "transactions",
-      "transactionStats",
-      "transaction-stats",
-      "monthly-stats",
-      "category-stats",
-      "historical-balances",
-      "banks",
-    ]) {
-      queryClient.invalidateQueries({ queryKey: [key] });
-    }
-  };
 
   const syncMutation = useMutation({
     mutationFn: (params?: { full_sync?: boolean }) =>
@@ -143,13 +127,13 @@ export default function Sync() {
           `Sync finished with errors: ${result.errors.join(", ") || "Unknown error"}`,
         );
       }
-      invalidateSyncedData();
+      invalidateSyncedData(queryClient);
     },
     onError: (error) => {
       toast.error(
         getApiErrorMessage(error, "Failed to trigger sync. Please try again."),
       );
-      queryClient.invalidateQueries({ queryKey: ["syncOperations"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.syncOperations });
     },
   });
 
@@ -295,7 +279,7 @@ export default function Sync() {
             </div>
           ) : (
             <div className="space-y-4">
-              {syncOperations.data.slice(0, 10).map((operation) => {
+              {syncOperations.data.map((operation) => {
                 const startedAt = new Date(operation.started_at);
                 const isRunning = !operation.completed_at;
                 const duration = operation.duration_seconds

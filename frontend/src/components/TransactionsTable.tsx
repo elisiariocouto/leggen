@@ -30,6 +30,7 @@ import type {
   PaginatedResponse,
   TransactionStats,
 } from "../types/api";
+import { queryKeys } from "../lib/queryKeys";
 
 export default function TransactionsTable() {
   // Filter state consolidated into a single object
@@ -91,7 +92,7 @@ export default function TransactionsTable() {
   }, [debouncedSearchTerm]);
 
   const { data: accounts } = useQuery<Account[]>({
-    queryKey: ["accounts"],
+    queryKey: queryKeys.accounts,
     queryFn: apiClient.getAccounts,
   });
 
@@ -101,16 +102,15 @@ export default function TransactionsTable() {
     error: transactionsError,
     refetch: refetchTransactions,
   } = useQuery<PaginatedResponse<Transaction>>({
-    queryKey: [
-      "transactions",
-      filterState.selectedAccount,
-      filterState.selectedCategory,
-      filterState.startDate,
-      filterState.endDate,
-      currentPage,
+    queryKey: queryKeys.transactionList({
+      accountId: filterState.selectedAccount,
+      categoryId: filterState.selectedCategory,
+      startDate: filterState.startDate,
+      endDate: filterState.endDate,
+      page: currentPage,
       perPage,
-      debouncedSearchTerm,
-    ],
+      search: debouncedSearchTerm,
+    }),
     queryFn: () =>
       apiClient.getTransactions({
         accountId: filterState.selectedAccount || undefined,
@@ -169,37 +169,36 @@ export default function TransactionsTable() {
     [transactionsResponse],
   );
 
-  // Fetch stats from API (covers all filtered transactions, not just current page)
-  const { data: statsData } = useQuery<TransactionStats>({
-    queryKey: [
-      "transactionStats",
-      filterState.selectedAccount,
-      filterState.selectedCategory,
-      filterState.startDate,
-      filterState.endDate,
-      debouncedSearchTerm,
-    ],
-    queryFn: () => {
-      const hasDateFilter =
-        Boolean(filterState.startDate) || Boolean(filterState.endDate);
-      const startDateParam = hasDateFilter
-        ? filterState.startDate || "2000-01-01"
-        : undefined;
-      const today = format(new Date(), "yyyy-MM-dd");
-      const endDateParam = hasDateFilter
-        ? filterState.endDate || today
-        : undefined;
+  // Stats cover every transaction matching the filters, not just this page.
+  // The date bounds are derived here rather than inside queryFn so they are
+  // part of the cache key — otherwise the entry computed before midnight
+  // would keep serving a stale "today".
+  const statsRange = useMemo(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    return {
+      from: filterState.startDate || "2000-01-01",
+      to: filterState.endDate || today,
+    };
+  }, [filterState.startDate, filterState.endDate]);
 
-      return apiClient.getTransactionStats(
-        startDateParam ?? "2000-01-01",
-        endDateParam ?? today,
+  const { data: statsData } = useQuery<TransactionStats>({
+    queryKey: queryKeys.transactionStatsSummary(
+      statsRange.from,
+      statsRange.to,
+      filterState.selectedAccount,
+      debouncedSearchTerm,
+      filterState.selectedCategory,
+    ),
+    queryFn: () =>
+      apiClient.getTransactionStats(
+        statsRange.from,
+        statsRange.to,
         filterState.selectedAccount || undefined,
         debouncedSearchTerm || undefined,
         undefined,
         undefined,
         filterState.selectedCategory || undefined,
-      );
-    },
+      ),
     placeholderData: (previousData) => previousData,
   });
 

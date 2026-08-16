@@ -18,6 +18,7 @@ import {
   INCOME_COLOR,
 } from "../../lib/chartColors";
 import apiClient from "../../lib/api";
+import { queryKeys } from "../../lib/queryKeys";
 
 interface MonthlyTrendsProps {
   className?: string;
@@ -45,7 +46,7 @@ export default function MonthlyTrends({
   const { isBalanceVisible } = useBalanceVisibility();
 
   const { data: monthlyData, isLoading } = useQuery({
-    queryKey: ["monthly-stats", dateFrom, dateTo, accountId],
+    queryKey: queryKeys.transactionStatsMonthly(dateFrom, dateTo, accountId),
     queryFn: () =>
       apiClient.getTransactionStatsByMonth(dateFrom, dateTo, accountId),
     placeholderData: (previousData) => previousData,

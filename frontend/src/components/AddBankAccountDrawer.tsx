@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Alert, AlertDescription } from "./ui/alert";
+import { queryKeys } from "../lib/queryKeys";
 
 export default function AddBankAccountDrawer() {
   const [open, setOpen] = useState(false);
@@ -31,12 +32,12 @@ export default function AddBankAccountDrawer() {
   const [selectedPsuType, setSelectedPsuType] = useState("");
 
   const { data: countries } = useQuery({
-    queryKey: ["supportedCountries"],
+    queryKey: queryKeys.supportedCountries,
     queryFn: apiClient.getSupportedCountries,
   });
 
   const { data: banks, isLoading: banksLoading } = useQuery({
-    queryKey: ["bankInstitutions", selectedCountry],
+    queryKey: queryKeys.bankInstitutions(selectedCountry),
     queryFn: () => apiClient.getBankInstitutions(selectedCountry),
     enabled: !!selectedCountry,
   });

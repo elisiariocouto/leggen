@@ -18,6 +18,7 @@ import {
   DrawerTrigger,
 } from "./ui/drawer";
 import type { NotificationSettings, NotificationFilters } from "../types/api";
+import { queryKeys } from "../lib/queryKeys";
 
 interface NotificationFiltersDrawerProps {
   settings: NotificationSettings | undefined;
@@ -57,7 +58,7 @@ export default function NotificationFiltersDrawer({
         filters: updatedFilters,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notificationSettings"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationSettings });
       setOpen(false);
       toast.success("Notification filters saved.");
     },

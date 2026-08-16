@@ -6,6 +6,7 @@ import { formatDate } from "@/lib/utils";
 import { apiClient } from "../../lib/api";
 import type { FilterState } from "./FilterBar";
 import type { Account, Category } from "../../types/api";
+import { queryKeys } from "../../lib/queryKeys";
 
 export interface ActiveFilterChipsProps {
   filterState: FilterState;
@@ -21,7 +22,7 @@ export function ActiveFilterChips({
   accounts = [],
 }: ActiveFilterChipsProps) {
   const { data: categories } = useQuery<Category[]>({
-    queryKey: ["categories"],
+    queryKey: queryKeys.categories,
     queryFn: apiClient.getCategories,
     enabled: !!filterState.selectedCategory,
   });

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { apiClient } from "../../lib/api";
 import type { Category } from "../../types/api";
+import { queryKeys } from "../../lib/queryKeys";
 
 export interface CategoryComboboxProps {
   selectedCategory: string;
@@ -34,7 +35,7 @@ export function CategoryCombobox({
   const [open, setOpen] = useState(false);
 
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["categories"],
+    queryKey: queryKeys.categories,
     queryFn: apiClient.getCategories,
   });
 

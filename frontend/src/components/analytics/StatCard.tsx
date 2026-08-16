@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { BlurredValue } from "../ui/blurred-value";
+import { Skeleton } from "../ui/skeleton";
 import { cn } from "../../lib/utils";
 
 interface StatCardProps {
@@ -15,6 +16,8 @@ interface StatCardProps {
   className?: string;
   iconColor?: "green" | "blue" | "red" | "purple" | "orange" | "default";
   shouldBlur?: boolean;
+  /** Shows a placeholder in place of the value while the query resolves. */
+  isLoading?: boolean;
 }
 
 export default function StatCard({
@@ -26,6 +29,7 @@ export default function StatCard({
   className,
   iconColor = "default",
   shouldBlur = false,
+  isLoading = false,
 }: StatCardProps) {
   return (
     <Card className={cn(className)}>
@@ -34,9 +38,13 @@ export default function StatCard({
           <div>
             <p className="text-xs font-medium text-muted-foreground">{title}</p>
             <div className="flex items-baseline">
-              <p className="text-xl font-bold text-foreground">
-                {shouldBlur ? <BlurredValue>{value}</BlurredValue> : value}
-              </p>
+              {isLoading ? (
+                <Skeleton className="h-7 w-24 my-0.5" />
+              ) : (
+                <p className="text-xl font-bold text-foreground">
+                  {shouldBlur ? <BlurredValue>{value}</BlurredValue> : value}
+                </p>
+              )}
               {trend && (
                 <div
                   className={cn(

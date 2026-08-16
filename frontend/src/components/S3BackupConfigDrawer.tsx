@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import type { BackupSettings, S3Config } from "../types/api";
+import { queryKeys } from "../lib/queryKeys";
 
 interface S3BackupConfigDrawerProps {
   settings?: BackupSettings;
@@ -68,7 +69,7 @@ export default function S3BackupConfigDrawer({
         s3: s3Config,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["backupSettings"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.backupSettings });
       setOpen(false);
       toast.success("S3 backup configuration saved successfully");
     },
@@ -85,8 +86,8 @@ export default function S3BackupConfigDrawer({
   const deleteMutation = useMutation({
     mutationFn: apiClient.deleteBackupSettings,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["backupSettings"] });
-      queryClient.invalidateQueries({ queryKey: ["backups"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.backupSettings });
+      queryClient.invalidateQueries({ queryKey: queryKeys.backups });
       setConfirmRemove(false);
       setOpen(false);
       toast.success("S3 backup configuration removed.");

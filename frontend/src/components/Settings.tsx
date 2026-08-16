@@ -57,6 +57,7 @@ import type {
   BackupInfo,
   ScheduleSettings,
 } from "../types/api";
+import { queryKeys } from "../lib/queryKeys";
 
 export default function Settings() {
   const [showBackups, setShowBackups] = useState(false);
@@ -73,7 +74,7 @@ export default function Settings() {
     error: settingsError,
     refetch: refetchSettings,
   } = useQuery<NotificationSettings>({
-    queryKey: ["notificationSettings"],
+    queryKey: queryKeys.notificationSettings,
     queryFn: apiClient.getNotificationSettings,
   });
 
@@ -83,7 +84,7 @@ export default function Settings() {
     error: servicesError,
     refetch: refetchServices,
   } = useQuery<NotificationService[]>({
-    queryKey: ["notificationServices"],
+    queryKey: queryKeys.notificationServices,
     queryFn: apiClient.getNotificationServices,
   });
 
@@ -94,7 +95,7 @@ export default function Settings() {
     error: scheduleError,
     refetch: refetchSchedule,
   } = useQuery<ScheduleSettings>({
-    queryKey: ["scheduleSettings"],
+    queryKey: queryKeys.scheduleSettings,
     queryFn: apiClient.getScheduleSettings,
   });
 
@@ -105,7 +106,7 @@ export default function Settings() {
     error: backupError,
     refetch: refetchBackup,
   } = useQuery<BackupSettings>({
-    queryKey: ["backupSettings"],
+    queryKey: queryKeys.backupSettings,
     queryFn: apiClient.getBackupSettings,
   });
 
@@ -115,7 +116,7 @@ export default function Settings() {
     error: backupsError,
     refetch: refetchBackups,
   } = useQuery<BackupInfo[]>({
-    queryKey: ["backups"],
+    queryKey: queryKeys.backups,
     queryFn: apiClient.listBackups,
     enabled: showBackups,
   });
@@ -124,8 +125,8 @@ export default function Settings() {
   const deleteServiceMutation = useMutation({
     mutationFn: apiClient.deleteNotificationService,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notificationSettings"] });
-      queryClient.invalidateQueries({ queryKey: ["notificationServices"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationSettings });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationServices });
       setDeleteServiceTarget(null);
       toast.success("Notification service deleted.");
     },
@@ -142,7 +143,7 @@ export default function Settings() {
     onSuccess: (response) => {
       if (response.completed) {
         toast.success("Backup created successfully!");
-        queryClient.invalidateQueries({ queryKey: ["backups"] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.backups });
       } else {
         toast.error("Failed to create backup.");
       }

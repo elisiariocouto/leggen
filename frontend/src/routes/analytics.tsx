@@ -20,7 +20,7 @@ import { DateRangePicker } from "../components/filters/DateRangePicker";
 import type { DatePreset } from "../components/filters/DateRangePicker";
 import { AccountCombobox } from "../components/filters/AccountCombobox";
 import { Card, CardContent } from "../components/ui/card";
-import { Skeleton } from "../components/ui/skeleton";
+import { queryKeys } from "../lib/queryKeys";
 import { TIME_PERIODS } from "../lib/timePeriods";
 
 const analyticsPresets: DatePreset[] = TIME_PERIODS.map((p) => ({
@@ -51,43 +51,24 @@ function AnalyticsDashboard() {
   // Fetch analytics data; placeholderData keeps the previous results visible
   // while a filter change refetches, instead of flashing the loading state
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["transaction-stats", startDate, endDate, accountId],
+    queryKey: queryKeys.transactionStatsSummary(startDate, endDate, accountId),
     queryFn: () => apiClient.getTransactionStats(startDate, endDate, accountId),
     placeholderData: (previousData) => previousData,
   });
 
-  const { data: accounts, isLoading: accountsLoading } = useQuery({
-    queryKey: ["accounts"],
+  const { data: accounts } = useQuery({
+    queryKey: queryKeys.accounts,
     queryFn: () => apiClient.getAccounts(),
   });
 
-  const { data: balances, isLoading: balancesLoading } = useQuery({
-    queryKey: ["historical-balances", startDate, endDate, accountId],
+  const { data: balances } = useQuery({
+    queryKey: queryKeys.historicalBalances(startDate, endDate, accountId),
     queryFn: () =>
       apiClient.getHistoricalBalances(startDate, endDate, accountId),
     placeholderData: (previousData) => previousData,
   });
 
-  const isLoading = statsLoading || accountsLoading || balancesLoading;
-
   const statsCurrency = stats?.currency ?? "EUR";
-
-  if (isLoading) {
-    return (
-      <div className="space-y-8">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Skeleton className="h-96" />
-          <Skeleton className="h-96" />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">
@@ -110,6 +91,7 @@ function AnalyticsDashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatCard
+          isLoading={statsLoading}
           title="Total Transactions"
           value={stats?.total_transactions || 0}
           subtitle={subtitle}
@@ -117,6 +99,7 @@ function AnalyticsDashboard() {
           iconColor="blue"
         />
         <StatCard
+          isLoading={statsLoading}
           title="Total Income"
           value={formatCurrency(stats?.total_income || 0, statsCurrency)}
           subtitle="Inflows this period"
@@ -125,6 +108,7 @@ function AnalyticsDashboard() {
           shouldBlur={true}
         />
         <StatCard
+          isLoading={statsLoading}
           title="Total Expenses"
           value={formatCurrency(stats?.total_expenses || 0, statsCurrency)}
           subtitle="Outflows this period"
@@ -133,6 +117,7 @@ function AnalyticsDashboard() {
           shouldBlur={true}
         />
         <StatCard
+          isLoading={statsLoading}
           title="Net Change"
           value={formatCurrency(stats?.net_change || 0, statsCurrency)}
           subtitle="Income minus expenses"
@@ -141,6 +126,7 @@ function AnalyticsDashboard() {
           shouldBlur={true}
         />
         <StatCard
+          isLoading={statsLoading}
           title="Average Transaction"
           value={formatCurrency(
             Math.abs(stats?.average_transaction || 0),
@@ -152,6 +138,7 @@ function AnalyticsDashboard() {
           shouldBlur={true}
         />
         <StatCard
+          isLoading={statsLoading}
           title="Active Accounts"
           value={stats?.accounts_included || 0}
           subtitle="With recent activity"

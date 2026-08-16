@@ -19,6 +19,7 @@ import {
   DrawerTrigger,
 } from "./ui/drawer";
 import type { ScheduleSettings } from "../types/api";
+import { queryKeys } from "../lib/queryKeys";
 
 interface SyncScheduleDrawerProps {
   settings?: ScheduleSettings;
@@ -54,7 +55,7 @@ export default function SyncScheduleDrawer({
     mutationFn: (scheduleConfig: Omit<ScheduleSettings, "next_sync_time">) =>
       apiClient.updateScheduleSettings(scheduleConfig),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scheduleSettings"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.scheduleSettings });
       setOpen(false);
       toast.success("Sync schedule updated successfully");
     },

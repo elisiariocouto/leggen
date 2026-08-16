@@ -19,6 +19,7 @@ import {
   DrawerTrigger,
 } from "./ui/drawer";
 import type { NotificationSettings, DiscordConfig } from "../types/api";
+import { queryKeys } from "../lib/queryKeys";
 
 interface DiscordConfigDrawerProps {
   settings: NotificationSettings | undefined;
@@ -52,8 +53,8 @@ export default function DiscordConfigDrawer({
         },
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notificationSettings"] });
-      queryClient.invalidateQueries({ queryKey: ["notificationServices"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationSettings });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationServices });
       setOpen(false);
       toast.success("Discord configuration saved.");
     },
