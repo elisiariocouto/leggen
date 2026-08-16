@@ -94,37 +94,36 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          "vendor-router": [
-            "@tanstack/react-router",
-            "@tanstack/react-query",
-          ],
-          "vendor-ui": [
-            "@radix-ui/react-alert-dialog",
-            "@radix-ui/react-checkbox",
-            "@radix-ui/react-dialog",
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-label",
-            "@radix-ui/react-popover",
-            "@radix-ui/react-select",
-            "@radix-ui/react-switch",
-            "@radix-ui/react-tooltip",
-          ],
-          // recharts is deliberately absent: it is reachable only through the
-          // lazily-imported analytics route, so Rollup keeps it in that
-          // route's own chunk instead of the initial graph.
-          "vendor-utils": [
-            "date-fns",
-            "lucide-react",
-            "axios",
-            "cmdk",
-            "sonner",
-            "vaul",
-            "clsx",
-            "tailwind-merge",
-            "class-variance-authority",
-          ],
-          "vendor-table": ["@tanstack/react-table"],
+        // Vite 8 (rolldown) takes a function here; the object form is gone.
+        // recharts is deliberately unlisted — it is reachable only through
+        // the lazily-imported analytics route, so leaving it unassigned
+        // keeps it in that route's chunk instead of the initial graph.
+        manualChunks: (id: string) => {
+          if (!id.includes("node_modules")) return;
+          const vendors: Record<string, string[]> = {
+            "vendor-router": [
+              "@tanstack/react-router",
+              "@tanstack/react-query",
+            ],
+            "vendor-ui": ["@radix-ui/"],
+            "vendor-utils": [
+              "date-fns",
+              "lucide-react",
+              "axios",
+              "cmdk",
+              "sonner",
+              "vaul",
+              "clsx",
+              "tailwind-merge",
+              "class-variance-authority",
+            ],
+            "vendor-table": ["@tanstack/react-table"],
+          };
+          for (const [chunk, packages] of Object.entries(vendors)) {
+            if (packages.some((pkg) => id.includes(`node_modules/${pkg}`))) {
+              return chunk;
+            }
+          }
         },
       },
     },
