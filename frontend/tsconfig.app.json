@@ -15,8 +15,8 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Path mapping */
-    "baseUrl": ".",
+    /* Path mapping. TypeScript 7 removed baseUrl; paths resolve relative
+       to this file, which is what the mapping below already assumed. */
     "paths": {
       "@/*": ["./src/*"]
     },
