@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   useReactTable,
@@ -31,16 +32,27 @@ import type {
   TransactionStats,
 } from "../types/api";
 import { queryKeys } from "../lib/queryKeys";
+import type { TransactionSearch } from "../routes/index";
 
 export default function TransactionsTable() {
-  // Filter state consolidated into a single object
-  const [filterState, setFilterState] = useState<FilterState>({
-    searchTerm: "",
-    selectedAccount: "",
-    selectedCategory: "",
-    startDate: "",
-    endDate: "",
-  });
+  // Filters and pagination live in the URL, so a filtered view survives a
+  // refresh, can be shared, and steps back through history.
+  const search = useSearch({ from: "/" });
+  const navigate = useNavigate({ from: "/" });
+
+  const filterState: FilterState = useMemo(
+    () => ({
+      searchTerm: search.q ?? "",
+      selectedAccount: search.account ?? "",
+      selectedCategory: search.category ?? "",
+      startDate: search.from ?? "",
+      endDate: search.to ?? "",
+    }),
+    [search.q, search.account, search.category, search.from, search.to],
+  );
+
+  const currentPage = search.page ?? 1;
+  const perPage = search.perPage ?? 50;
 
   // Transaction detail panel state. The transaction is stored by key and
   // re-derived from the query data below, so category changes made while
@@ -51,45 +63,68 @@ export default function TransactionsTable() {
     transactionId: string;
   } | null>(null);
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [perPage, setPerPage] = useState(50);
+  // The search box stays local so typing is not throttled by navigation;
+  // the URL catches up once the debounce settles.
+  const [searchInput, setSearchInput] = useState(filterState.searchTerm);
+  const debouncedSearchTerm = filterState.searchTerm;
 
-  // Debounced search state
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(
-    filterState.searchTerm,
-  );
+  // A back/forward step changes the URL without going through the input.
+  useEffect(() => {
+    setSearchInput(search.q ?? "");
+  }, [search.q]);
 
-  // Helper function to update filter state
+  // Changing a filter always returns to page 1 — the old page number rarely
+  // exists in the new result set. Done in the same navigation as the filter
+  // itself, so only one request goes out.
   const handleFilterChange = (key: keyof FilterState, value: string) => {
-    setFilterState((prev) => ({ ...prev, [key]: value }));
-  };
-
-  // Helper function to clear all filters
-  const handleClearFilters = () => {
-    setFilterState({
-      searchTerm: "",
-      selectedAccount: "",
-      selectedCategory: "",
-      startDate: "",
-      endDate: "",
+    const paramFor: Record<keyof FilterState, keyof typeof search> = {
+      searchTerm: "q",
+      selectedAccount: "account",
+      selectedCategory: "category",
+      startDate: "from",
+      endDate: "to",
+    };
+    if (key === "searchTerm") setSearchInput(value);
+    navigate({
+      search: (prev: TransactionSearch) => ({
+        ...prev,
+        [paramFor[key]]: value || undefined,
+        page: undefined,
+      }),
+      replace: key === "searchTerm",
     });
-    setCurrentPage(1);
   };
 
-  // Debounce search term to prevent excessive API calls
+  const handleClearFilters = () => {
+    setSearchInput("");
+    navigate({ search: (prev: TransactionSearch) => ({ perPage: prev.perPage }) });
+  };
+
+  const setCurrentPage = (page: number) => {
+    navigate({ search: (prev: TransactionSearch) => ({ ...prev, page: page > 1 ? page : undefined }) });
+  };
+
+  const setPerPage = (size: number) => {
+    navigate({
+      search: (prev: TransactionSearch) => ({
+        ...prev,
+        perPage: size === 50 ? undefined : size,
+        page: undefined,
+      }),
+    });
+  };
+
+  // Push the typed term into the URL once typing settles.
   useEffect(() => {
+    if (searchInput === (search.q ?? "")) return;
     const timer = setTimeout(() => {
-      setDebouncedSearchTerm(filterState.searchTerm);
-    }, 300); // 300ms delay
-
+      handleFilterChange("searchTerm", searchInput);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [filterState.searchTerm]);
-
-  // Reset pagination when debounced search term changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearchTerm]);
+    // handleFilterChange is stable enough for this effect's purpose; it only
+    // closes over navigate, which TanStack keeps referentially stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput, search.q]);
 
   const { data: accounts } = useQuery<Account[]>({
     queryKey: queryKeys.accounts,
@@ -209,19 +244,24 @@ export default function TransactionsTable() {
     (transactions.length > 0 ? transactions[0].transaction_currency : "EUR");
 
   // Check if search is currently debouncing
-  const isSearchLoading = filterState.searchTerm !== debouncedSearchTerm;
+  // True while the typed term has not yet reached the URL and the query.
+  const isSearchLoading = searchInput !== debouncedSearchTerm;
 
-  // Reset pagination when total becomes 0 (no results)
+  // The bar shows what is being typed; everything else reflects the URL.
+  const displayedFilterState: FilterState = useMemo(
+    () => ({ ...filterState, searchTerm: searchInput }),
+    [filterState, searchInput],
+  );
+
+  // A link can point past the end of the result set — go back to page 1
+  // rather than showing an empty table. Filter changes reset the page in
+  // handleFilterChange, so this only catches the deep-link case.
   useEffect(() => {
-    if (pagination && pagination.total === 0 && currentPage > 1) {
-      setCurrentPage(1);
+    if (!pagination || currentPage === 1) return;
+    if (currentPage > pagination.total_pages) {
+      navigate({ search: (prev: TransactionSearch) => ({ ...prev, page: undefined }) });
     }
-  }, [pagination, currentPage]);
-
-  // Reset pagination when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterState.selectedAccount, filterState.selectedCategory, filterState.startDate, filterState.endDate]);
+  }, [pagination, currentPage, navigate]);
 
   const hasActiveFilters =
     filterState.searchTerm ||
@@ -348,7 +388,7 @@ export default function TransactionsTable() {
       <div className="max-w-full">
         <Card>
           <FilterBar
-            filterState={filterState}
+            filterState={displayedFilterState}
             onFilterChange={handleFilterChange}
             onClearFilters={handleClearFilters}
             accounts={accounts}
@@ -390,7 +430,7 @@ export default function TransactionsTable() {
       <Card>
         {/* Header: Filters */}
         <FilterBar
-          filterState={filterState}
+          filterState={displayedFilterState}
           onFilterChange={handleFilterChange}
           onClearFilters={handleClearFilters}
           accounts={accounts}
