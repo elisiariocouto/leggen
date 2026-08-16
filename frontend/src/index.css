@@ -49,6 +49,11 @@
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
 
+  /* Money direction. Semantic, so income/expense read the same way in the
+     table, the detail sheet, the sidebar and the charts. */
+  --color-positive: hsl(var(--positive));
+  --color-negative: hsl(var(--negative));
+
   --color-sidebar: hsl(var(--sidebar-background));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-primary: hsl(var(--sidebar-primary));
@@ -85,6 +90,9 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    /* green-600 / red-600 — the values the components used longhand */
+    --positive: 142.1 76.2% 36.3%;
+    --negative: 0 72.2% 50.6%;
     --radius: 0.5rem;
 
     /* iOS Safe Area Support for PWA */
@@ -126,6 +134,9 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    /* green-400 / red-400 — lighter, for contrast on the dark ground */
+    --positive: 141.7 76.6% 73.1%;
+    --negative: 0 90.6% 70.8%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;

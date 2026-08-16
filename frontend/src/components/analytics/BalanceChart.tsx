@@ -11,15 +11,12 @@ import {
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, dominantCurrency, formatCurrency } from "../../lib/utils";
 import { getAccountDisplayName } from "../../lib/accountDisplay";
+import {
+  CHART_AXIS_TICK,
+  CHART_GRID_COLOR,
+  chartColor,
+} from "../../lib/chartColors";
 import type { Balance, Account } from "../../types/api";
-
-const CHART_COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
-];
 
 interface BalanceChartProps {
   data: Balance[];
@@ -157,10 +154,10 @@ export default function BalanceChart({
       <div className={cn("h-80", !isBalanceVisible && "blur-md select-none")}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={finalData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+              tick={CHART_AXIS_TICK}
               tickFormatter={(value) => {
                 // Convert DD/MM/YYYY back to a proper date for formatting
                 const [day, month, year] = value.split("/");
@@ -172,7 +169,7 @@ export default function BalanceChart({
               }}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+              tick={CHART_AXIS_TICK}
               tickFormatter={(value) => formatCurrency(value, currency)}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -183,8 +180,8 @@ export default function BalanceChart({
                 type="monotone"
                 dataKey={accountId}
                 stackId="1"
-                fill={CHART_COLORS[index % CHART_COLORS.length]}
-                stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                fill={chartColor(index)}
+                stroke={chartColor(index)}
                 name={displayName(accountId)}
               />
             ))}

@@ -11,6 +11,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
 import { Skeleton } from "../ui/skeleton";
+import {
+  CHART_AXIS_TICK,
+  CHART_GRID_COLOR,
+  EXPENSE_COLOR,
+  INCOME_COLOR,
+} from "../../lib/chartColors";
 import apiClient from "../../lib/api";
 
 interface MonthlyTrendsProps {
@@ -98,31 +104,37 @@ export default function MonthlyTrends({
             data={monthlyData}
             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
             <XAxis
               dataKey="month"
-              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+              tick={CHART_AXIS_TICK}
               angle={-45}
               textAnchor="end"
               height={60}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+              tick={CHART_AXIS_TICK}
               tickFormatter={(value) => formatCurrency(value, currency)}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="income" fill="#10B981" name="Income" />
-            <Bar dataKey="expenses" fill="#EF4444" name="Expenses" />
+            <Bar dataKey="income" fill={INCOME_COLOR} name="Income" />
+            <Bar dataKey="expenses" fill={EXPENSE_COLOR} name="Expenses" />
           </BarChart>
         </ResponsiveContainer>
       </div>
       <div className="mt-4 flex justify-center space-x-6 text-sm text-foreground">
         <div className="flex items-center">
-          <div className="w-3 h-3 bg-green-500 rounded mr-2" />
+          <div
+            className="w-3 h-3 rounded mr-2"
+            style={{ backgroundColor: INCOME_COLOR }}
+          />
           <span>Income</span>
         </div>
         <div className="flex items-center">
-          <div className="w-3 h-3 bg-red-500 rounded mr-2" />
+          <div
+            className="w-3 h-3 rounded mr-2"
+            style={{ backgroundColor: EXPENSE_COLOR }}
+          />
           <span>Expenses</span>
         </div>
       </div>

@@ -13,6 +13,7 @@ import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
 import { BlurredValue } from "../ui/blurred-value";
 import { Skeleton } from "../ui/skeleton";
+import { CHART_AXIS_TICK, CHART_GRID_COLOR } from "../../lib/chartColors";
 import apiClient from "../../lib/api";
 import type { CategoryStats } from "../../types/api";
 
@@ -122,17 +123,17 @@ export default function CategoryBreakdown({
             <CartesianGrid
               strokeDasharray="3 3"
               horizontal={false}
-              stroke="hsl(var(--border))"
+              stroke={CHART_GRID_COLOR}
             />
             <XAxis
               type="number"
-              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+              tick={CHART_AXIS_TICK}
               tickFormatter={(value) => formatCurrency(value, currency)}
             />
             <YAxis
               type="category"
               dataKey="category_name"
-              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+              tick={CHART_AXIS_TICK}
               width={120}
             />
             <Tooltip content={<CustomTooltip />} />

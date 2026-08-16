@@ -9,15 +9,8 @@ import {
 import { BlurredValue } from "../ui/blurred-value";
 import { dominantCurrency, formatCurrency } from "../../lib/utils";
 import { getAccountDisplayName } from "../../lib/accountDisplay";
+import { chartColor } from "../../lib/chartColors";
 import type { Account } from "../../types/api";
-
-const CHART_COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
-];
 
 interface TransactionDistributionProps {
   accounts: Account[];
@@ -63,7 +56,7 @@ export default function TransactionDistribution({
       return {
         name: getAccountDisplayName(account),
         value: primaryBalance,
-        color: CHART_COLORS[index % CHART_COLORS.length],
+        color: chartColor(index),
       };
     });
 
