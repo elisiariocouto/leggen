@@ -146,6 +146,7 @@ export default function DiscordConfigDrawer({
                 <div className="flex items-center space-x-2">
                   <div
                     className={`w-2 h-2 rounded-full ${isConfigValid ? "bg-green-500" : "bg-red-500"}`}
+                    aria-hidden="true"
                   />
                   <span className="text-sm font-medium">
                     {isConfigValid

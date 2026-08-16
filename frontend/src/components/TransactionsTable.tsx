@@ -513,8 +513,22 @@ export default function TransactionsTable() {
                 table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="hover:bg-muted/50 cursor-pointer"
+                    className="hover:bg-muted/50 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                    // The row is the control that opens the detail panel, so
+                    // it has to be reachable and activatable from the keyboard.
+                    tabIndex={0}
+                    aria-label={`Transaction ${row.original.description}, ${formatCurrency(
+                      row.original.transaction_value,
+                      row.original.transaction_currency,
+                    )}. Open details`}
                     onClick={() => openDetail(row.original)}
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openDetail(row.original);
+                      }
+                    }}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td
@@ -569,8 +583,21 @@ export default function TransactionsTable() {
                 return (
                   <div
                     key={row.id}
-                    className="p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                    className="p-4 hover:bg-muted/50 transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Transaction ${transaction.description}, ${formatCurrency(
+                      transaction.transaction_value,
+                      transaction.transaction_currency,
+                    )}. Open details`}
                     onClick={() => openDetail(transaction)}
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openDetail(transaction);
+                      }
+                    }}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">

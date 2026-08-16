@@ -235,6 +235,7 @@ export default function Settings() {
                         ? "bg-green-500"
                         : "bg-muted-foreground"
                     }`}
+                    aria-hidden="true"
                   />
                   <span className="text-sm font-medium">
                     {scheduleSettings?.enabled ? "Enabled" : "Disabled"}
@@ -319,6 +320,7 @@ export default function Settings() {
                                         ? "bg-amber-500"
                                         : "bg-muted-foreground"
                                   }`}
+                                  aria-hidden="true"
                                 />
                                 <span className="text-sm text-muted-foreground">
                                   {service.enabled && service.configured
@@ -505,6 +507,7 @@ export default function Settings() {
                                     ? "bg-green-500"
                                     : "bg-muted-foreground"
                                 }`}
+                                aria-hidden="true"
                               />
                               <span className="text-sm text-muted-foreground">
                                 {backupSettings.s3.enabled

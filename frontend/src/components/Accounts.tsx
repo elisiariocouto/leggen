@@ -639,9 +639,11 @@ export default function Accounts() {
                             <h4 className="text-base font-medium text-foreground truncate">
                               {connection.aspsp_name}
                             </h4>
+                            {/* Colour echoes the status spelled out below,
+                                so it is decorative to a screen reader. */}
                             <div
                               className={`w-3 h-3 rounded-full ${statusColor}`}
-                              title={connection.status}
+                              aria-hidden="true"
                             />
                             {connection.status === "expired" && (
                               <Badge
