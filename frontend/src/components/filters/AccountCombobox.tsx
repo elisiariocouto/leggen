@@ -46,22 +46,24 @@ export function AccountCombobox({
   return (
     <div className={className}>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-          >
-            <div className="flex items-center">
-              <Building2 className="mr-2 h-4 w-4" />
-              {selectedAccountData
-                ? formatAccountName(selectedAccountData)
-                : "All accounts"}
-            </div>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between"
+            >
+              <div className="flex items-center">
+                <Building2 className="mr-2 h-4 w-4" />
+                {selectedAccountData
+                  ? formatAccountName(selectedAccountData)
+                  : "All accounts"}
+              </div>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          }
+        />
         <PopoverContent className="w-[300px] p-0">
           <Command>
             <CommandInput placeholder="Search accounts..." className="h-9" />

@@ -56,25 +56,27 @@ export function SiteHeader() {
 
           {/* Connection status */}
           <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                className={`w-2.5 h-2.5 rounded-full ${
-                  healthLoading
-                    ? "bg-muted-foreground animate-pulse"
-                    : healthError || healthStatus?.status !== "healthy"
-                      ? "bg-destructive"
-                      : "bg-green-500"
-                }`}
-                role="img"
-                aria-label={
-                  healthLoading
-                    ? "Checking connection"
-                    : healthError || healthStatus?.status !== "healthy"
-                      ? "Disconnected"
-                      : "Connected"
-                }
-              />
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <div
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    healthLoading
+                      ? "bg-muted-foreground animate-pulse"
+                      : healthError || healthStatus?.status !== "healthy"
+                        ? "bg-destructive"
+                        : "bg-green-500"
+                  }`}
+                  role="img"
+                  aria-label={
+                    healthLoading
+                      ? "Checking connection"
+                      : healthError || healthStatus?.status !== "healthy"
+                        ? "Disconnected"
+                        : "Connected"
+                  }
+                />
+              }
+            />
             <TooltipContent>
               {healthLoading
                 ? "Checking..."

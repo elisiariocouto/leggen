@@ -52,27 +52,29 @@ export function CategoryCombobox({
   return (
     <div className={className}>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-          >
-            <div className="flex items-center">
-              {selectedCategoryData ? (
-                <span
-                  className="mr-2 h-3 w-3 rounded-full shrink-0"
-                  style={{ backgroundColor: selectedCategoryData.color }}
-                />
-              ) : (
-                <Tag className="mr-2 h-4 w-4" />
-              )}
-              {getDisplayLabel()}
-            </div>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between"
+            >
+              <div className="flex items-center">
+                {selectedCategoryData ? (
+                  <span
+                    className="mr-2 h-3 w-3 rounded-full shrink-0"
+                    style={{ backgroundColor: selectedCategoryData.color }}
+                  />
+                ) : (
+                  <Tag className="mr-2 h-4 w-4" />
+                )}
+                {getDisplayLabel()}
+              </div>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          }
+        />
         <PopoverContent className="w-[220px] p-0">
           <Command>
             <CommandInput

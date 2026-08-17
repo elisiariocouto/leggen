@@ -348,19 +348,21 @@ export default function Settings() {
                           ) : null}
 
                           <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                onClick={() =>
-                                  setDeleteServiceTarget(service.name)
-                                }
-                                disabled={deleteServiceMutation.isPending}
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                              render={
+                                <Button
+                                  onClick={() =>
+                                    setDeleteServiceTarget(service.name)
+                                  }
+                                  disabled={deleteServiceMutation.isPending}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              }
+                            />
                             <TooltipContent>Delete service</TooltipContent>
                           </Tooltip>
                         </div>

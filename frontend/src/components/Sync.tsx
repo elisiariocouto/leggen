@@ -43,13 +43,15 @@ import { invalidateSyncedData, queryKeys } from "../lib/queryKeys";
 function LogsDialog({ operation }: { operation: SyncOperation }) {
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="shrink-0">
-          <FileText className="h-3 w-3 mr-1" />
-          <span className="hidden sm:inline">View Logs</span>
-          <span className="sm:hidden">Logs</span>
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button variant="outline" size="sm" className="shrink-0">
+            <FileText className="h-3 w-3 mr-1" />
+            <span className="hidden sm:inline">View Logs</span>
+            <span className="sm:hidden">Logs</span>
+          </Button>
+        }
+      />
       <DialogContent className="max-w-4xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Sync Operation Logs</DialogTitle>
@@ -300,15 +302,17 @@ export default function Sync() {
                 )}
               </Button>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    disabled={syncMutation.isPending}
-                    className="rounded-l-none border-l-0 px-2"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      size="sm"
+                      disabled={syncMutation.isPending}
+                      className="rounded-l-none border-l-0 px-2"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  }
+                />
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     onClick={() => syncMutation.mutate({})}

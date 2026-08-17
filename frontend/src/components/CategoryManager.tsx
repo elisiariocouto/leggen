@@ -190,12 +190,14 @@ export default function CategoryManager() {
             <span>Categories</span>
           </CardTitle>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                New
-              </Button>
-            </DialogTrigger>
+            <DialogTrigger
+              render={
+                <Button variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-1" />
+                  New
+                </Button>
+              }
+            />
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create Category</DialogTitle>
@@ -258,16 +260,18 @@ export default function CategoryManager() {
                     open={editingCategory?.id === cat.id}
                     onOpenChange={(open) => !open && setEditingCategory(null)}
                   >
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={() => setEditingCategory(cat)}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    </DialogTrigger>
+                    <DialogTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => setEditingCategory(cat)}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      }
+                    />
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Edit Category</DialogTitle>
@@ -300,16 +304,18 @@ export default function CategoryManager() {
                       open={deleteTarget?.id === cat.id}
                       onOpenChange={(open) => !open && setDeleteTarget(null)}
                     >
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          onClick={() => setDeleteTarget(cat)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </AlertDialogTrigger>
+                      <AlertDialogTrigger
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                            onClick={() => setDeleteTarget(cat)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        }
+                      />
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Category</AlertDialogTitle>

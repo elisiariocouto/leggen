@@ -104,21 +104,23 @@ export function DateRangePicker({
   return (
     <div className={cn("grid gap-2", className)}>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(
-              "justify-between text-left font-normal",
-              !dateRange && "text-muted-foreground",
-            )}
-          >
-            <div className="flex items-center">
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {formatDateRange()}
-            </div>
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="outline"
+              className={cn(
+                "justify-between text-left font-normal",
+                !dateRange && "text-muted-foreground",
+              )}
+            >
+              <div className="flex items-center">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {formatDateRange()}
+              </div>
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </Button>
+          }
+        />
         <PopoverContent className="w-auto p-0" align="start">
           <Card className="w-auto pt-4">
             <CardContent className="px-4">

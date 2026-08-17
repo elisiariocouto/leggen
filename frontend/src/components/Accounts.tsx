@@ -344,33 +344,37 @@ export default function Accounts() {
                                   autoFocus
                                 />
                                 <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      onClick={handleEditSave}
-                                      disabled={
-                                        !editingName.trim() ||
-                                        updateAccountMutation.isPending
-                                      }
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/20"
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
+                                  <TooltipTrigger
+                                    render={
+                                      <Button
+                                        onClick={handleEditSave}
+                                        disabled={
+                                          !editingName.trim() ||
+                                          updateAccountMutation.isPending
+                                        }
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/20"
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                    }
+                                  />
                                   <TooltipContent>Save changes</TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      onClick={handleEditCancel}
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-8 w-8"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
+                                  <TooltipTrigger
+                                    render={
+                                      <Button
+                                        onClick={handleEditCancel}
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    }
+                                  />
                                   <TooltipContent>Cancel editing</TooltipContent>
                                 </Tooltip>
                               </div>
@@ -397,67 +401,73 @@ export default function Accounts() {
                                 <div className="ml-auto flex items-center shrink-0">
                                   {!isDeleted && (
                                     <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          onClick={() =>
-                                            syncAccountMutation.mutate(
-                                              account.id,
-                                            )
-                                          }
-                                          disabled={
-                                            syncAccountMutation.isPending
-                                          }
-                                          size="icon"
-                                          variant="ghost"
-                                          className="h-8 w-8 shrink-0"
-                                        >
-                                          <RefreshCw
-                                            className={`h-4 w-4 ${
-                                              syncAccountMutation.isPending &&
-                                              syncAccountMutation.variables ===
-                                                account.id
-                                                ? "animate-spin"
-                                                : ""
-                                            }`}
-                                          />
-                                        </Button>
-                                      </TooltipTrigger>
+                                      <TooltipTrigger
+                                        render={
+                                          <Button
+                                            onClick={() =>
+                                              syncAccountMutation.mutate(
+                                                account.id,
+                                              )
+                                            }
+                                            disabled={
+                                              syncAccountMutation.isPending
+                                            }
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 shrink-0"
+                                          >
+                                            <RefreshCw
+                                              className={`h-4 w-4 ${
+                                                syncAccountMutation.isPending &&
+                                                syncAccountMutation.variables ===
+                                                  account.id
+                                                  ? "animate-spin"
+                                                  : ""
+                                              }`}
+                                            />
+                                          </Button>
+                                        }
+                                      />
                                       <TooltipContent>
                                         Sync this account
                                       </TooltipContent>
                                     </Tooltip>
                                   )}
                                   <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        onClick={() => handleEditStart(account)}
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-8 w-8 shrink-0"
-                                      >
-                                        <Edit2 className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                      render={
+                                        <Button
+                                          onClick={() => handleEditStart(account)}
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-8 w-8 shrink-0"
+                                        >
+                                          <Edit2 className="h-4 w-4" />
+                                        </Button>
+                                      }
+                                    />
                                     <TooltipContent>Edit account name</TooltipContent>
                                   </Tooltip>
                                   {!isDeleted && (
                                     <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          onClick={() => {
-                                            setDeleteDialogAccount(account);
-                                            setDeleteData(true);
-                                          }}
-                                          disabled={
-                                            deleteAccountMutation.isPending
-                                          }
-                                          size="icon"
-                                          variant="ghost"
-                                          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
+                                      <TooltipTrigger
+                                        render={
+                                          <Button
+                                            onClick={() => {
+                                              setDeleteDialogAccount(account);
+                                              setDeleteData(true);
+                                            }}
+                                            disabled={
+                                              deleteAccountMutation.isPending
+                                            }
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        }
+                                      />
                                       <TooltipContent>
                                         Delete account
                                       </TooltipContent>
@@ -481,13 +491,15 @@ export default function Accounts() {
                       <div className="flex items-center justify-between sm:flex-col sm:items-end sm:text-right shrink-0">
                         <div className="flex items-center space-x-2 order-1 sm:order-2">
                           <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div
-                                className={`w-3 h-3 rounded-full ${getStatusIndicator(account.status).color} cursor-help`}
-                                role="img"
-                                aria-label={`Account status: ${getStatusIndicator(account.status).tooltip}`}
-                              />
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                              render={
+                                <div
+                                  className={`w-3 h-3 rounded-full ${getStatusIndicator(account.status).color} cursor-help`}
+                                  role="img"
+                                  aria-label={`Account status: ${getStatusIndicator(account.status).tooltip}`}
+                                />
+                              }
+                            />
                             <TooltipContent>
                               {getStatusIndicator(account.status).tooltip}
                             </TooltipContent>
@@ -686,19 +698,21 @@ export default function Accounts() {
                           </p>
                         </div>
                         <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={() =>
-                                setDeleteDialogConnection(connection)
-                              }
-                              disabled={deleteBankConnectionMutation.isPending}
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                onClick={() =>
+                                  setDeleteDialogConnection(connection)
+                                }
+                                disabled={deleteBankConnectionMutation.isPending}
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
                           <TooltipContent>Delete connection</TooltipContent>
                         </Tooltip>
                       </div>

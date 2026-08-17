@@ -88,18 +88,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
-            >
-              <Link
-                to="/"
-                className="flex items-center space-x-2"
-                onClick={handleNavigationClick}
-              >
-                <Logo size={24} />
-                <span className="text-base font-semibold">Leggen</span>
-              </Link>
-            </SidebarMenuButton>
+              render={
+                <Link
+                  to="/"
+                  className="flex items-center space-x-2"
+                  onClick={handleNavigationClick}
+                >
+                  <Logo size={24} />
+                  <span className="text-base font-semibold">Leggen</span>
+                </Link>
+              }
+            />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -111,15 +111,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {navigation.map((item) => (
                 <SidebarMenuItem key={item.to}>
                   <SidebarMenuButton
-                    asChild
                     tooltip={item.name}
                     isActive={location.pathname === item.to}
-                  >
-                    <Link to={item.to} onClick={handleNavigationClick}>
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.name}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                    render={
+                      <Link to={item.to} onClick={handleNavigationClick}>
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.name}</span>
+                      </Link>
+                    }
+                  />
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -201,22 +201,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  tooltip={username ?? "User"}
-                  className="data-[state=open]:bg-sidebar-accent"
-                >
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback className="text-xs">
-                      {username
-                        ? username.slice(0, 2).toUpperCase()
-                        : "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="truncate font-medium">{username}</span>
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
+              <DropdownMenuTrigger
+                render={
+                  <SidebarMenuButton
+                    size="lg"
+                    tooltip={username ?? "User"}
+                    className="data-[state=open]:bg-sidebar-accent"
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-xs">
+                        {username
+                          ? username.slice(0, 2).toUpperCase()
+                          : "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="truncate font-medium">{username}</span>
+                  </SidebarMenuButton>
+                }
+              />
               <DropdownMenuContent
                 side="top"
                 align="start"

@@ -156,28 +156,30 @@ export default function CategoryBadge({
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        {categoryName ? (
-          <button
-            className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors hover:opacity-80 cursor-pointer border-0"
-            style={{
-              backgroundColor: `${color}20`,
-              color: color,
-            }}
-          >
-            <span
-              className="h-2 w-2 rounded-full shrink-0"
-              style={{ backgroundColor: color }}
-            />
-            {categoryName}
-          </button>
-        ) : (
-          <button className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer border border-dashed border-muted-foreground/40">
-            <Tag className="h-3.5 w-3.5" />
-            <span>Categorize</span>
-          </button>
-        )}
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          categoryName ? (
+            <button
+              className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors hover:opacity-80 cursor-pointer border-0"
+              style={{
+                backgroundColor: `${color}20`,
+                color: color,
+              }}
+            >
+              <span
+                className="h-2 w-2 rounded-full shrink-0"
+                style={{ backgroundColor: color }}
+              />
+              {categoryName}
+            </button>
+          ) : (
+            <button className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer border border-dashed border-muted-foreground/40">
+              <Tag className="h-3.5 w-3.5" />
+              <span>Categorize</span>
+            </button>
+          )
+        }
+      />
       <PopoverContent className="w-56 p-0" align="start">
         <Command>
           <CommandInput placeholder="Search categories..." />
