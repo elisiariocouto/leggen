@@ -31,7 +31,30 @@ import type {
   CategoryUpdate,
   CategorySuggestion,
   LoginResponse,
+  CashFlow,
+  NetWorth,
+  Merchants,
+  RecurringPayment,
 } from "../types/api";
+
+// Every analytics endpoint takes the same window plus an optional account.
+export interface AnalyticsParams {
+  dateFrom: string;
+  dateTo: string;
+  accountId?: string;
+}
+
+function analyticsQuery({
+  dateFrom,
+  dateTo,
+  accountId,
+}: AnalyticsParams): string {
+  const queryParams = new URLSearchParams();
+  queryParams.append("date_from", dateFrom);
+  queryParams.append("date_to", dateTo);
+  if (accountId) queryParams.append("account_id", accountId);
+  return queryParams.toString();
+}
 
 // Use VITE_API_URL for development, relative URLs for production
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api/v1";
@@ -277,6 +300,44 @@ export const apiClient = {
 
     const response = await api.get<MonthlyStats[]>(
       `/transactions/stats?${queryParams.toString()}`,
+    );
+    return response.data;
+  },
+
+  // Monthly income/expenses with a running cumulative net
+  getCashFlow: async (params: AnalyticsParams): Promise<CashFlow> => {
+    const response = await api.get<CashFlow>(
+      `/analytics/cash-flow?${analyticsQuery(params)}`,
+    );
+    return response.data;
+  },
+
+  // Net worth over time, from recorded balance snapshots
+  getNetWorth: async (params: AnalyticsParams): Promise<NetWorth> => {
+    const response = await api.get<NetWorth>(
+      `/analytics/net-worth?${analyticsQuery(params)}`,
+    );
+    return response.data;
+  },
+
+  // Top merchants by spend, compared with the preceding window
+  getMerchants: async (
+    params: AnalyticsParams & { limit?: number },
+  ): Promise<Merchants> => {
+    const query = analyticsQuery(params);
+    const suffix = params.limit ? `&limit=${params.limit}` : "";
+    const response = await api.get<Merchants>(
+      `/analytics/merchants?${query}${suffix}`,
+    );
+    return response.data;
+  },
+
+  // Charges that repeat on a regular cadence
+  getRecurring: async (
+    params: AnalyticsParams,
+  ): Promise<RecurringPayment[]> => {
+    const response = await api.get<RecurringPayment[]>(
+      `/analytics/recurring?${analyticsQuery(params)}`,
     );
     return response.data;
   },

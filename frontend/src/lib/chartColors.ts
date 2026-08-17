@@ -29,6 +29,13 @@ export function chartColor(index: number): string {
 export const INCOME_COLOR = "var(--color-positive)";
 export const EXPENSE_COLOR = "var(--color-negative)";
 
+/**
+ * For a series that carries no polarity of its own — a running total drawn
+ * over signed bars, where reusing the income/expense hues would imply the
+ * line itself is good or bad.
+ */
+export const NEUTRAL_LINE_COLOR = "var(--color-foreground)";
+
 /** Grid and axis chrome, so every chart shares one look. */
 export const CHART_GRID_COLOR = "var(--color-border)";
 export const CHART_AXIS_TICK = {

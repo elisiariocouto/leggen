@@ -56,6 +56,16 @@ export const queryKeys = {
     accountId?: string,
   ) => ["transaction-stats", "category", dateFrom, dateTo, accountId] as const,
 
+  analytics: ["analytics"] as const,
+  cashFlow: (dateFrom: string, dateTo: string, accountId?: string) =>
+    ["analytics", "cash-flow", dateFrom, dateTo, accountId] as const,
+  netWorth: (dateFrom: string, dateTo: string, accountId?: string) =>
+    ["analytics", "net-worth", dateFrom, dateTo, accountId] as const,
+  merchants: (dateFrom: string, dateTo: string, accountId?: string) =>
+    ["analytics", "merchants", dateFrom, dateTo, accountId] as const,
+  recurring: (dateFrom: string, dateTo: string, accountId?: string) =>
+    ["analytics", "recurring", dateFrom, dateTo, accountId] as const,
+
   categories: ["categories"] as const,
   categorySuggestions: (accountId: string, transactionId: string) =>
     ["categories", "suggestions", accountId, transactionId] as const,
@@ -90,6 +100,7 @@ export function invalidateSyncedData(queryClient: QueryClient): void {
     queryKeys.balances,
     queryKeys.transactions,
     queryKeys.transactionStats,
+    queryKeys.analytics,
     queryKeys.syncOperations,
     queryKeys.bankConnections,
   ];
@@ -106,6 +117,9 @@ export function invalidateCategorizedData(queryClient: QueryClient): void {
   const roots = [
     queryKeys.transactions,
     queryKeys.transactionStats,
+    // Merchant and cash-flow totals exclude flagged categories, so a
+    // category change moves them too.
+    queryKeys.analytics,
     queryKeys.categories,
   ];
   for (const queryKey of roots) {
