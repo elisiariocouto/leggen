@@ -15,6 +15,7 @@ from leggen.api.models.categories import (
 )
 from leggen.repositories.category_repository import CategoryRepository
 from leggen.repositories.transaction_repository import TransactionRepository
+from leggen.services.data_processors import counterparty_name
 
 router = APIRouter()
 
@@ -30,9 +31,11 @@ def _get_transaction_text_fields(
         return "", "", ""
     description = txn.get("description", "") or ""
     raw: dict[str, Any] = txn.get("rawTransaction", {}) or {}
-    creditor_name = raw.get("creditorName", "") or ""
-    debtor_name = raw.get("debtorName", "") or ""
-    return description, creditor_name, debtor_name
+    return (
+        description,
+        counterparty_name(raw, "creditor"),
+        counterparty_name(raw, "debtor"),
+    )
 
 
 # --- Category CRUD ---

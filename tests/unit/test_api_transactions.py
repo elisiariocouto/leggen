@@ -261,7 +261,8 @@ class TestTransactionsAPI:
         assert data["total_expenses"] == 35.80  # abs(-10.50) + abs(-25.30)
         assert data["net_change"] == 64.20  # 100.00 - 35.80
         assert data["accounts_included"] == 2  # Two unique account IDs
-        assert data["average_transaction"] == round(64.20 / 3, 2)
+        # Mean transaction *size*, not net/count: (100.00 + 10.50 + 25.30) / 3
+        assert data["average_transaction"] == round(135.80 / 3, 2)
 
     def test_get_transaction_stats_with_account_filter(self, api_client, mock_db_path):
         """Stats filtered by account only aggregate that account."""
@@ -361,7 +362,7 @@ class TestTransactionsAPI:
         assert data["currency"] == "EUR"
         assert data["total_expenses"] == 10.00  # USD amount not mixed in
         assert data["total_income"] == 50.00
-        assert data["average_transaction"] == 20.00  # (50 - 10) / 2 EUR txns
+        assert data["average_transaction"] == 30.00  # (50 + 10) / 2 EUR txns
 
     def test_get_transaction_stats_empty_result(self, api_client, mock_db_path):
         """Stats over an empty database return zeroed totals."""

@@ -1,5 +1,6 @@
 """Data processing layer for all transformation logic."""
 
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -76,6 +77,95 @@ async def _fetch_institution_logo(
     except Exception as e:
         logger.warning(f"Failed to fetch institution details for {aspsp_name}: {e}")
         return None
+
+
+# --- Counterparty identity ---
+
+
+def counterparty_name(raw_transaction: dict[str, Any], side: str) -> str:
+    """Return the counterparty name from a raw EnableBanking transaction.
+
+    EnableBanking nests these as `creditor: {name: ...}` / `debtor: {name: ...}`.
+    Earlier code read flat `creditorName`/`debtorName` keys that the provider
+    never sends, so every lookup silently returned "" — the flat form is still
+    accepted here in case a provider or fixture uses it.
+    """
+    nested = raw_transaction.get(side)
+    if isinstance(nested, dict):
+        name = nested.get("name")
+        if name:
+            return str(name)
+    return str(raw_transaction.get(f"{side}Name", "") or "")
+
+
+# Noise that real bank descriptions wrap around the merchant name: card and
+# terminal references, dates, and the payment-scheme prefixes used by the
+# Portuguese and Revolut feeds this was measured against.
+_MERCHANT_NOISE = re.compile(
+    r"""
+      \b\d{2}[-/]\d{2}(?:[-/]\d{2,4})?\b   # dates: 03-07, 12/03/24
+    | \b\d{4,}\b                            # terminal / card / reference numbers
+    | \bpending\b
+    | \bcompras?\s+c?\.?\s*deb\b            # "COMPRA", "COMPRAS C.DEB"
+    | \bpag\s+bxval\b
+    | \bbx\s+valor\b
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+# Directional prefixes ("To …", "From …") describe the leg of a transfer, not
+# who it was with, so they are stripped from the grouping key while staying in
+# the display label.
+_MERCHANT_KEY_PREFIX = re.compile(r"^(?:to|from|sent\s+to|paid\s+to)\s+", re.IGNORECASE)
+
+
+def normalize_merchant(description: str) -> str:
+    """Collapse a bank description down to a stable merchant label.
+
+    Real remittance strings wrap the merchant in reference numbers, dates and
+    scheme prefixes ("COMPRA 3007 Revolut 3600 Dublin IE"), so two charges from
+    one merchant rarely share a description. Stripping that noise groups them.
+    """
+    cleaned = _MERCHANT_NOISE.sub(" ", description or "")
+    # Punctuation carries no merchant identity but does vary between charges
+    # ("Uber * Eats" vs "Uber   *eats").
+    cleaned = re.sub(r"[^\w\s]", " ", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned or (description or "").strip() or "Unknown"
+
+
+def merchant_identity(
+    raw_transaction: dict[str, Any], description: str, is_expense: bool
+) -> tuple[str, str]:
+    """Return (grouping_key, display_name) for a transaction's counterparty.
+
+    Measured against real data, `creditor.name` is populated for only ~3.5% of
+    transactions and `creditor_account.iban` only for transfers, so the
+    description is the sole field present on every row and has to carry the
+    grouping. The structured fields are preferred where they exist because they
+    are already clean; otherwise the description is normalized.
+
+    The sample database inverts these proportions (a generated `creditor.name`
+    on ~97% of rows, a random IBAN per transaction), so it will flatter the
+    structured path and hide how much work normalization is really doing.
+    """
+    side = "creditor" if is_expense else "debtor"
+    name = counterparty_name(raw_transaction, side)
+    # Some providers only populate the opposite side; take whatever is there
+    # rather than falling straight through to the noisier description.
+    if not name:
+        name = counterparty_name(
+            raw_transaction, "debtor" if is_expense else "creditor"
+        )
+
+    # Normalize whichever field we ended up with. Running the structured name
+    # through the same pass matters: on real data the two disagree on wording
+    # for the same merchant ("FLEXIBLE CASH FUNDS" vs "To Flexible Cash Funds"),
+    # and keeping them separate splits one merchant into several.
+    display = normalize_merchant(name or description)
+    key = _MERCHANT_KEY_PREFIX.sub("", display.casefold()).strip()
+    return key or display.casefold(), display
 
 
 # --- Analytics ---

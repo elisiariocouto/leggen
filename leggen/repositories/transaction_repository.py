@@ -102,6 +102,12 @@ class TransactionRepository:
                 """CREATE INDEX IF NOT EXISTS idx_transactions_amount
                    ON transactions(transactionValue)"""
             )
+            # Merchant analytics group by description; without this the
+            # group-by full-scans the table.
+            cursor.execute(
+                """CREATE INDEX IF NOT EXISTS idx_transactions_description
+                   ON transactions(description)"""
+            )
 
             conn.commit()
 
@@ -396,7 +402,7 @@ class TransactionRepository:
                     COUNT(DISTINCT t.accountId) AS accounts_included,
                     COALESCE(SUM(CASE WHEN t.transactionCurrency IS ? AND t.transactionValue > 0 THEN t.transactionValue ELSE 0 END), 0) AS total_income,
                     COALESCE(SUM(CASE WHEN t.transactionCurrency IS ? AND t.transactionValue < 0 THEN ABS(t.transactionValue) ELSE 0 END), 0) AS total_expenses,
-                    COALESCE(SUM(CASE WHEN t.transactionCurrency IS ? THEN t.transactionValue ELSE 0 END), 0) AS money_sum,
+                    COALESCE(SUM(CASE WHEN t.transactionCurrency IS ? THEN ABS(t.transactionValue) ELSE 0 END), 0) AS money_magnitude,
                     SUM(CASE WHEN t.transactionCurrency IS ? THEN 1 ELSE 0 END) AS money_count
                 {base}""",
                 [currency] * 4 + params,
@@ -415,7 +421,10 @@ class TransactionRepository:
                 "total_income": total_income,
                 "total_expenses": total_expenses,
                 "net_change": round(total_income - total_expenses, 2),
-                "average_transaction": round(totals["money_sum"] / money_count, 2)
+                # Mean transaction *size*. Previously this divided the net sum
+                # by the count, so income and expenses cancelled out and a
+                # typical €144 transaction reported as €13.
+                "average_transaction": round(totals["money_magnitude"] / money_count, 2)
                 if money_count
                 else 0,
                 "accounts_included": totals["accounts_included"],
