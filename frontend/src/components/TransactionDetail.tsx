@@ -347,7 +347,9 @@ export default function TransactionDetail({
             Details for transaction {transaction.description}
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-4">
+        {/* SheetContent has no padding of its own — SheetHeader brings its
+            own, so the body pads itself. */}
+        <div className="px-4 pb-4">
           <TransactionDetailContent transaction={transaction} account={account} />
         </div>
       </SheetContent>
