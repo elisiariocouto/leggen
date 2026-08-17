@@ -1,4 +1,135 @@
 
+## 2026.8.0 (2026/08/17)
+
+### Bug Fixes
+
+- **api:** Preserve stored secrets when masked values are submitted. ([875802a0](https://github.com/elisiariocouto/leggen/commit/875802a0559a084e915adb21a956944e6290f8d4))
+- **api:** Preserve stored account logos when a logo fetch fails. ([5dcdb6d8](https://github.com/elisiariocouto/leggen/commit/5dcdb6d81b999513807fc878b21162e3bffe6df6))
+- **api:** Stop the composite-key migration from dropping snake_case transactions. ([30301917](https://github.com/elisiariocouto/leggen/commit/3030191791e9ebb9fdaa53eae61bf89c74673175))
+- **api:** Enforce the sync "already running" guard across all SyncService instances. ([86664dd5](https://github.com/elisiariocouto/leggen/commit/86664dd5204b1775845b4ea2aa56444f4ac63a9c))
+- **api:** Enable SQLite foreign keys, WAL mode, and busy timeout on all connections. ([94f599fd](https://github.com/elisiariocouto/leggen/commit/94f599fdd7fc448a3ecafdb6386ebda2b350c031))
+- **api:** Fix the high-priority backend bugs from the code review. ([8eaf54c9](https://github.com/elisiariocouto/leggen/commit/8eaf54c93f3058077c472bbafcebff68ba6f7b47))
+- **api:** Request the bank's maximum consent validity when connecting. ([a6dc944b](https://github.com/elisiariocouto/leggen/commit/a6dc944b89ae4aa319ac719bf0c7d6f62cfb1d04))
+- **api:** Count updated transactions during sync and skip unchanged rewrites. ([2c99ede5](https://github.com/elisiariocouto/leggen/commit/2c99ede592af5c6eaf33f6e40708c0e7395d2ddc))
+- **api:** Sanitize error responses, return 409 for concurrent syncs and paginate sync operations. ([d79d3002](https://github.com/elisiariocouto/leggen/commit/d79d3002a79b59268b753b77422a90557af0ab42))
+- **api:** Stop leaking exception details from the health endpoint. ([979a282d](https://github.com/elisiariocouto/leggen/commit/979a282db4b74088522cc5f908b84e29ca834654))
+- **api:** Let notification filters and S3 backup config be cleared. ([12599465](https://github.com/elisiariocouto/leggen/commit/12599465297daf4e41939232cda95517ad095e02))
+- **api:** Report timeout causes and make sync request timeouts configurable. ([68d93338](https://github.com/elisiariocouto/leggen/commit/68d9333837479e0a732c01a0809224b85b2ac121))
+- **api:** Preserve backup schedule when updating sync schedule. ([01142dda](https://github.com/elisiariocouto/leggen/commit/01142dda56c4a7593c94c7bb2a4738e870f8a716))
+- **api:** Make schedule regression test robust to singleton state. ([905703e4](https://github.com/elisiariocouto/leggen/commit/905703e45630035993423a57308d8e5d9295d2b7))
+- **api:** Scope EnableBanking service to the app instead of the request. ([5dde7849](https://github.com/elisiariocouto/leggen/commit/5dde784991282b0ff00d6ff5f023e93587f18b6d))
+- **api:** Address review comments on the bug sweep. ([e45fdfa6](https://github.com/elisiariocouto/leggen/commit/e45fdfa6ce5cf6e438327eaf27a05fc49cf18f8f))
+- **api:** Correct counterparty extraction and average transaction stat. ([e0c77f1c](https://github.com/elisiariocouto/leggen/commit/e0c77f1c193895831f22d3138bb92cb89f09bdcf))
+- **cli:** Restore the bank command group so bank add/delete are reachable. ([e520b73c](https://github.com/elisiariocouto/leggen/commit/e520b73c696e4ddfca5bd19bd2bed1e85db313e1))
+- **cli:** Stop help output from requiring a config file or creating a database. ([d15fca5f](https://github.com/elisiariocouto/leggen/commit/d15fca5f05980494db79ad3b3336ef0747310df9))
+- **cli:** Let generate_auth_config and generate_sample_db run without a valid config. ([5c3d72c7](https://github.com/elisiariocouto/leggen/commit/5c3d72c7c63b964318d2626046582858b9e35fbd))
+- **cli:** Exit non-zero on errors and simplify API client handling. ([ce41964a](https://github.com/elisiariocouto/leggen/commit/ce41964aa42fe6b6d6b692ab4299126ca39bdd22))
+- **cli:** Send the state parameter when redeeming a bank callback. ([7514e400](https://github.com/elisiariocouto/leggen/commit/7514e40072335f55d1f68a19325fce8229d6f8fa))
+- **cli:** Propagate path flags to server reload workers. ([a5cf3672](https://github.com/elisiariocouto/leggen/commit/a5cf3672126c3724552d28c9329207b50d9371da))
+- **frontend:** Check the actual backup response fields instead of a phantom success flag. ([e0921ab4](https://github.com/elisiariocouto/leggen/commit/e0921ab46c8562b7cf69a7ddafeee80d8d8c9b38))
+- **frontend:** Allow saving a disabled service configuration. ([02a4c38d](https://github.com/elisiariocouto/leggen/commit/02a4c38d2ad6dddb2db00684c1d3f31d05037ef9))
+- **frontend:** Fix the high-priority frontend bugs from the code review. ([03a7a6c9](https://github.com/elisiariocouto/leggen/commit/03a7a6c91a0b571848567055572e0452b6df590d))
+- **frontend:** Unify dark mode colors, confirmations, loading and error feedback. ([73fcd4a9](https://github.com/elisiariocouto/leggen/commit/73fcd4a930a292b8d57cb8b76bd1335b940690cd))
+- **frontend:** Use npm ci and Node 22 in the Docker image and CI. ([946edce8](https://github.com/elisiariocouto/leggen/commit/946edce8af6c46eefd5c8f99f4e8d5e456bad96a))
+- **frontend:** Upgrade recharts to v3 and drop the obsolete serialize-javascript override. ([911b516a](https://github.com/elisiariocouto/leggen/commit/911b516af70e49e54736f062e92f5e254657768c))
+- **frontend:** Version the package with the project CalVer and bump it on release. ([8996bdf2](https://github.com/elisiariocouto/leggen/commit/8996bdf2bb183478eedbdf3c7c180c080e8575d7))
+- **frontend:** Resolve chart colors through theme tokens. ([95da62e0](https://github.com/elisiariocouto/leggen/commit/95da62e093fbf1d5856e88d5f51046dedb8cb1ce))
+- **frontend:** Correct invalid HTML nesting in sync header. ([173e71a0](https://github.com/elisiariocouto/leggen/commit/173e71a0c3cba7598073d50469e5c10cda113440))
+- **frontend:** Make transaction rows keyboard-accessible. ([3254812a](https://github.com/elisiariocouto/leggen/commit/3254812a62dbe39d885c67fa8123a38abb47dfb6))
+- **frontend:** Pad the transaction detail sheet body. ([4551a5f1](https://github.com/elisiariocouto/leggen/commit/4551a5f197fbc1e5e57dcaba06566b5be1d22d12))
+-  Drop dev dependencies from the Docker image and fix the .dockerignore compose entry. ([a623ced7](https://github.com/elisiariocouto/leggen/commit/a623ced7741e1a25f2750a77eaaf60139e7b09f0))
+
+
+### Documentation
+
+-  Add code review checklist and refresh agent guidelines. ([7434333a](https://github.com/elisiariocouto/leggen/commit/7434333a096ecc50198a17714235a7572b7fc63b))
+-  Mark dead code and simplification review items as fixed. ([e40e93f0](https://github.com/elisiariocouto/leggen/commit/e40e93f0780dcadf2fe8f452aa1f4c3bdd13f534))
+-  Check off the fixed high-priority items in the review checklist. ([f12d760e](https://github.com/elisiariocouto/leggen/commit/f12d760ea36539688de4fa0c2777f98d8aa33dc3))
+-  Check off the fixed frontend consistency items in the review checklist. ([33b8c407](https://github.com/elisiariocouto/leggen/commit/33b8c4076d1fafa0f1ab12fe813c258f188f5005))
+-  Check off the fixed CI and dependency items in the review checklist. ([f8a8c5c3](https://github.com/elisiariocouto/leggen/commit/f8a8c5c3cc7051935fc188cbe9b514a53a90c16e))
+-  Check off the Tailwind migration in the review checklist. ([a66f72f1](https://github.com/elisiariocouto/leggen/commit/a66f72f16e5b9320e047eb2382d7b7588340001e))
+-  Check off the consent validity, deep-link, database config and updated-count items. ([5ed31b72](https://github.com/elisiariocouto/leggen/commit/5ed31b721a49cacba8ce4e7508a2416ca7869a3e))
+-  Add S3 backups to README features, require Node 20.19+ and check off review items. ([5623207d](https://github.com/elisiariocouto/leggen/commit/5623207d16492f3607a9f957722e980e8521d1fa))
+-  Add roadmap task list. ([4a382c5b](https://github.com/elisiariocouto/leggen/commit/4a382c5b79ee2410be403e9cb4caabcfe3307219))
+-  Mark API error consistency as done. ([473ae19a](https://github.com/elisiariocouto/leggen/commit/473ae19a187f27943cafc7199229abb9b5b3e046))
+-  Mark clearable settings as done. ([1fd7788e](https://github.com/elisiariocouto/leggen/commit/1fd7788e445ac08a00f5f241cf3abb7fcbd96af1))
+-  Correct roadmap items that drifted from the code. ([e627d6b3](https://github.com/elisiariocouto/leggen/commit/e627d6b30f8a4ffa65e4cf2b5e70cb09eae32aea))
+-  Ground the non-root Dockerfile item in the compose mounts. ([ec191f08](https://github.com/elisiariocouto/leggen/commit/ec191f08a9e82b20d2dcac9c7eb5433f67e52adc))
+
+
+### Features
+
+- **api:** Add scheduled S3 database backups. ([01511d66](https://github.com/elisiariocouto/leggen/commit/01511d6642c0956777c88add16b4b2bf2d074a17))
+- **api:** Support per-account sync via account_ids. ([339c2ccf](https://github.com/elisiariocouto/leggen/commit/339c2ccf1dd797a76a9c0617d084bc710ac1ab29))
+- **api:** Add unified error response schema and exception handlers. ([5de54cca](https://github.com/elisiariocouto/leggen/commit/5de54cca35b7b2ccbbfd3d17ac50bb95abb614e0))
+- **api:** Document the error schema across all OpenAPI operations. ([f422b0de](https://github.com/elisiariocouto/leggen/commit/f422b0de01643f41e494ebd77e45cd41c4fab097))
+- **api:** Add analytics endpoints for cash flow, net worth, merchants and recurring. ([fc95412d](https://github.com/elisiariocouto/leggen/commit/fc95412db11410de146cea6b5246272c5c1ecdb6))
+- **frontend:** Add a formatted transaction detail view. ([0e85575b](https://github.com/elisiariocouto/leggen/commit/0e85575b48d30e60e571f88951ebc6b8f85809fb))
+- **frontend:** Surface structured API errors. ([9c8af1a0](https://github.com/elisiariocouto/leggen/commit/9c8af1a08e7be90605c74be54a3677fb39ac7b1c))
+- **frontend:** Add a remove action for the S3 backup configuration. ([e795d9ea](https://github.com/elisiariocouto/leggen/commit/e795d9ea02c9ed1ae438fe811a78f415ad3f96ac))
+- **frontend:** Put transaction filters in the URL. ([3bdc3447](https://github.com/elisiariocouto/leggen/commit/3bdc3447d413d161d53638a0ae9642c20b3816c7))
+- **frontend:** Put analytics filters in the URL. ([b00852dd](https://github.com/elisiariocouto/leggen/commit/b00852dde35effb2da66396c4aa31a3f40879f59))
+- **frontend:** Rebuild analytics around cash flow, net worth, merchants and recurring. ([2a02e7aa](https://github.com/elisiariocouto/leggen/commit/2a02e7aa45b2241b88591b6811a16c1d02a266d3))
+-  Run ruff and mypy in CI and gate releases on tests. ([f433a084](https://github.com/elisiariocouto/leggen/commit/f433a084918ffaff7954130c49e884c45bdfda50))
+-  Generate frontend API types from the OpenAPI schema. ([889f5486](https://github.com/elisiariocouto/leggen/commit/889f548676cc60d8ce03cb254939ea143dc4d778))
+
+
+### Miscellaneous Tasks
+
+- **frontend:** Upgrade ESLint to 10 and fix what its new rules caught. ([e2c84764](https://github.com/elisiariocouto/leggen/commit/e2c84764993973b7ad2836b30c9086efc85ced02))
+- **frontend:** Upgrade Vite to 8. ([28bdb515](https://github.com/elisiariocouto/leggen/commit/28bdb5155dc6f2d44f7454846c4b5af27cc8bafe))
+- **frontend:** Upgrade TypeScript to 6. ([6996064e](https://github.com/elisiariocouto/leggen/commit/6996064ef897feea789cedafa9a9daf5f03fa436))
+- **frontend:** Upgrade lucide-react and react-day-picker. ([61703309](https://github.com/elisiariocouto/leggen/commit/61703309a125ca9d51922bab243a3e3a68355e28))
+- **frontend:** Upgrade the shadcn CLI to 4. ([c8df976a](https://github.com/elisiariocouto/leggen/commit/c8df976a0b1f58817fd0c3e5c460f6237a35038a))
+-  Bump backend dependencies. ([af5da30b](https://github.com/elisiariocouto/leggen/commit/af5da30b163b7e0d7b693a0ab897b9720d32e7be))
+-  Bump frontend dependencies. ([5ff3f2a8](https://github.com/elisiariocouto/leggen/commit/5ff3f2a84027b883880ece72b7ad1a97ba6aaf37))
+-  Cleanup roadmap. ([59a04f96](https://github.com/elisiariocouto/leggen/commit/59a04f9696baa6389e726fd096de6c6b362a4be6))
+-  Fix stale and missing ignore entries. ([aa15cc9b](https://github.com/elisiariocouto/leggen/commit/aa15cc9b4c4451fba3c97b663f298d7b86e4daea))
+-  Bump dependencies. ([69bb1417](https://github.com/elisiariocouto/leggen/commit/69bb14171822b3ca563e645b6658c50fb118990b))
+-  Add justfile consolidating dev commands. ([daeb23a3](https://github.com/elisiariocouto/leggen/commit/daeb23a3e9c2a81d7fbc36a07c5db9d3db83aa30))
+-  Upgrade Python dependencies and modernize type syntax. ([eb58522d](https://github.com/elisiariocouto/leggen/commit/eb58522d62a306f0e6712a467a840b318f654876))
+-  Add shadcn skills. ([42b45b03](https://github.com/elisiariocouto/leggen/commit/42b45b030b31606ef641b475733aa1d2318c133e))
+
+
+### Performance
+
+- **frontend:** Lazy-load the analytics route. ([3dc8eef2](https://github.com/elisiariocouto/leggen/commit/3dc8eef29e749573e5a6b36c89140d2abefee4c1))
+
+
+### Refactor
+
+- **api:** Delete dead code and Pydantic v1 config blocks. ([bd9c6e91](https://github.com/elisiariocouto/leggen/commit/bd9c6e91da69d08030e73f014134dba44d20718f))
+- **api:** Deduplicate schema creation and move keyword extraction to utils. ([02a5f8c9](https://github.com/elisiariocouto/leggen/commit/02a5f8c9c3e2afa567163f5fa4b9aa9e50c7908e))
+- **api:** Reuse the HTTP client and cache EnableBanking JWT and bank lists. ([6b3971e7](https://github.com/elisiariocouto/leggen/commit/6b3971e7e83279272a617fe4329c9d1d40afd2da))
+- **api:** Remove the always-true GET /auth/status endpoint. ([ff17e51e](https://github.com/elisiariocouto/leggen/commit/ff17e51ed9dd310e7bfce1e7889117e981d6f6a9))
+- **api:** Replace error-string matching with typed domain errors. ([ff46fe5e](https://github.com/elisiariocouto/leggen/commit/ff46fe5e5b0c7e15beb19ed988edb533830e33af))
+- **api:** Validate category_id filter with a query pattern. ([e13ec084](https://github.com/elisiariocouto/leggen/commit/e13ec08438b900ea941504fccb7f644d64fe5923))
+- **api:** Drop the unused test-notification message field. ([30d2730f](https://github.com/elisiariocouto/leggen/commit/30d2730f24dbb69f53104ec967b834830b785270))
+- **api:** Trust the global exception handlers in routes. ([4942c98d](https://github.com/elisiariocouto/leggen/commit/4942c98d5f25c677247001a2c3bfbc82ba7cf773))
+- **api:** Aggregate transaction stats in SQL. ([3c702a7c](https://github.com/elisiariocouto/leggen/commit/3c702a7cb6f6072a0f8cb30da0b2478f80a24cf7))
+- **api:** Fetch latest balances in one query. ([6debff41](https://github.com/elisiariocouto/leggen/commit/6debff4198de235a93dbc285838685120ad30540))
+- **api:** Batch transaction persistence and type remaining responses. ([9f6d2b75](https://github.com/elisiariocouto/leggen/commit/9f6d2b751f87551b94b7e84c09b6b2ea9aa24ff3))
+- **api:** Apply review findings to the backend cleanup. ([825a144f](https://github.com/elisiariocouto/leggen/commit/825a144fecb045f11999b221d0e9e78a7b46a1e7))
+- **api:** Validate account ownership in batch persistence. ([96bb601c](https://github.com/elisiariocouto/leggen/commit/96bb601c6b6411589b73de7774088882b6968652))
+- **cli:** Unify config loading through the singleton. ([76a7974d](https://github.com/elisiariocouto/leggen/commit/76a7974d32bfdb4a1cde5dc5f06d5bd7cefaa0dc))
+- **frontend:** Remove dead components and unused dependencies. ([413b1840](https://github.com/elisiariocouto/leggen/commit/413b184060854903bb66bbb28a21a8682ef4a960))
+- **frontend:** Migrate Tailwind CSS from v3 to v4. ([3708fba9](https://github.com/elisiariocouto/leggen/commit/3708fba902049af9b7025e4a610c7e9217e1bc49))
+- **frontend:** Remove dead deep-link search params from the transactions route. ([e1785324](https://github.com/elisiariocouto/leggen/commit/e17853243d001ad04f7dd50e0407ce83e98300da))
+- **frontend:** Remove dead code and stale skeleton. ([6f650670](https://github.com/elisiariocouto/leggen/commit/6f6506702f58e5d9f2ef30d95e1925fef005108e))
+- **frontend:** Centralize React Query keys and invalidation. ([82fba5b6](https://github.com/elisiariocouto/leggen/commit/82fba5b6bad3eb9289b780bd627a5856a43087fc))
+- **frontend:** Guard routes in beforeLoad instead of an effect. ([91f0eb72](https://github.com/elisiariocouto/leggen/commit/91f0eb722e81334dcf26f9068bf6a72a1822408a))
+- **frontend:** Express money direction as semantic tokens. ([b7a2bf09](https://github.com/elisiariocouto/leggen/commit/b7a2bf0926d313aebaddfbabdd4f3ef003aacb03))
+- **frontend:** Share markup between the two breakpoint layouts. ([9023bef7](https://github.com/elisiariocouto/leggen/commit/9023bef772059817fd981972c76aba69336d01ed))
+- **frontend:** Drop @tanstack/react-table. ([c6576501](https://github.com/elisiariocouto/leggen/commit/c6576501664cb3c34b4351bfdd702f8b0353cc3a))
+- **frontend:** Convert theme tokens to oklch for Base UI. ([03e76107](https://github.com/elisiariocouto/leggen/commit/03e76107c24cab04f62b6ca42c296408f6544b47))
+- **frontend:** Migrate leaf UI wrappers to Base UI. ([7eb64d8f](https://github.com/elisiariocouto/leggen/commit/7eb64d8f8389043ff5303d87ca5739e86a075850))
+- **frontend:** Migrate overlays and form controls to Base UI. ([812afb54](https://github.com/elisiariocouto/leggen/commit/812afb5432ca401190a803189205403e816a1ad1))
+- **frontend:** Drop Radix UI and switch the registry to base-nova. ([2891c6ff](https://github.com/elisiariocouto/leggen/commit/2891c6ff98b04f72789f0eaec8e424af33f160d7))
+-  Remove the no-op database config section. ([0ccd7dca](https://github.com/elisiariocouto/leggen/commit/0ccd7dca5f63dd1670132a6a49af231506a537fc))
+-  Replace deprecated Pydantic dict() calls with model_dump. ([76a8091a](https://github.com/elisiariocouto/leggen/commit/76a8091a79ad7fed1153bcbc0b488d8f9ca32c5d))
+
+
+
 ## 2026.3.5 (2026/03/16)
 
 ### Bug Fixes
