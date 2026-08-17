@@ -2,9 +2,8 @@
  * Shared chart palette.
  *
  * Uses the `--color-chart-*` custom properties that the `@theme` block in
- * index.css generates from the raw HSL triplets — those resolve to real
- * colors, unlike `hsl(var(--chart-N))`, which relies on the raw triplet
- * being re-wrapped at SVG attribute-parse time.
+ * index.css maps onto the `--chart-N` oklch tokens — those resolve to real
+ * colors at SVG attribute-parse time.
  *
  * Charts that color by entity (categories carry their own `category_color`)
  * use that value instead; this palette is for series that have no colour of
