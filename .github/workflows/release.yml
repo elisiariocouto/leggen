@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.0.1
       - name: "Set up Python"
         uses: actions/setup-python@v7
         with:
@@ -49,7 +49,7 @@ jobs:
           name: python-package-distributions
           path: dist/
       - name: Install uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.0.1
         with:
           # This job never checks out the repo, so there is no uv.lock to key
           # the cache on; only the uv binary itself is needed here.
