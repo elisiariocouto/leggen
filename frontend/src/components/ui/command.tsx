@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { type DialogProps } from "@radix-ui/react-dialog";
 import { Command as CommandPrimitive } from "cmdk";
 import { Search } from "lucide-react";
 
@@ -23,7 +22,14 @@ const Command = React.forwardRef<
 ));
 Command.displayName = CommandPrimitive.displayName;
 
-const CommandDialog = ({ children, ...props }: DialogProps) => {
+// children is narrowed to plain ReactNode: Base UI's Dialog also accepts a
+// render function, which cmdk's Command cannot take.
+const CommandDialog = ({
+  children,
+  ...props
+}: Omit<React.ComponentProps<typeof Dialog>, "children"> & {
+  children?: React.ReactNode;
+}) => {
   return (
     <Dialog {...props}>
       <DialogContent className="overflow-hidden p-0">
