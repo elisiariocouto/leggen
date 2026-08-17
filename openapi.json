@@ -3069,6 +3069,432 @@
         ]
       }
     },
+    "/api/v1/analytics/cash-flow": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Cash Flow",
+        "description": "Monthly income, expenses and cumulative net for the period.",
+        "operationId": "get_cash_flow_api_v1_analytics_cash_flow_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Start date (YYYY-MM-DD)",
+              "title": "Date From"
+            },
+            "description": "Start date (YYYY-MM-DD)"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "End date (YYYY-MM-DD)",
+              "title": "Date To"
+            },
+            "description": "End date (YYYY-MM-DD)"
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by account ID",
+              "title": "Account Id"
+            },
+            "description": "Filter by account ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/net-worth": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Net Worth",
+        "description": "Total balance over time, from recorded balance snapshots.\n\nSnapshots are written at sync time, so the series starts at the first sync\nand its resolution follows sync frequency.",
+        "operationId": "get_net_worth_api_v1_analytics_net_worth_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Start date (YYYY-MM-DD)",
+              "title": "Date From"
+            },
+            "description": "Start date (YYYY-MM-DD)"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "End date (YYYY-MM-DD)",
+              "title": "Date To"
+            },
+            "description": "End date (YYYY-MM-DD)"
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by account ID",
+              "title": "Account Id"
+            },
+            "description": "Filter by account ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetWorth"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/merchants": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Merchants",
+        "description": "Top merchants by spend, compared with the preceding window.",
+        "operationId": "get_merchants_api_v1_analytics_merchants_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Start date (YYYY-MM-DD)",
+              "title": "Date From"
+            },
+            "description": "Start date (YYYY-MM-DD)"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "End date (YYYY-MM-DD)",
+              "title": "Date To"
+            },
+            "description": "End date (YYYY-MM-DD)"
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by account ID",
+              "title": "Account Id"
+            },
+            "description": "Filter by account ID"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Merchants to return",
+              "default": 15,
+              "title": "Limit"
+            },
+            "description": "Merchants to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Merchants"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/recurring": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Recurring",
+        "description": "Charges that repeat on a regular cadence.\n\nDetection is heuristic; each result carries its cadence, typical amount and\nlast-seen date so a mis-grouped merchant is visible to the caller.",
+        "operationId": "get_recurring_api_v1_analytics_recurring_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Start date (YYYY-MM-DD)",
+              "title": "Date From"
+            },
+            "description": "Start date (YYYY-MM-DD)"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "End date (YYYY-MM-DD)",
+              "title": "Date To"
+            },
+            "description": "End date (YYYY-MM-DD)"
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by account ID",
+              "title": "Account Id"
+            },
+            "description": "Filter by account ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecurringPayment"
+                  },
+                  "title": "Response Get Recurring Api V1 Analytics Recurring Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "summary": "Health",
@@ -3653,6 +4079,93 @@
         "title": "BulkCategoryRemoval",
         "description": "Model for bulk-removing categories by transaction description."
       },
+      "CashFlow": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/CashFlowPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "total_income": {
+            "type": "number",
+            "title": "Total Income"
+          },
+          "total_expenses": {
+            "type": "number",
+            "title": "Total Expenses"
+          },
+          "net": {
+            "type": "number",
+            "title": "Net"
+          },
+          "average_monthly_net": {
+            "type": "number",
+            "title": "Average Monthly Net"
+          }
+        },
+        "type": "object",
+        "required": [
+          "points",
+          "total_income",
+          "total_expenses",
+          "net",
+          "average_monthly_net"
+        ],
+        "title": "CashFlow",
+        "description": "Cash flow over the period, answering \"am I saving or burning?\"."
+      },
+      "CashFlowPoint": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "income": {
+            "type": "number",
+            "title": "Income"
+          },
+          "expenses": {
+            "type": "number",
+            "title": "Expenses"
+          },
+          "net": {
+            "type": "number",
+            "title": "Net"
+          },
+          "cumulative_net": {
+            "type": "number",
+            "title": "Cumulative Net"
+          },
+          "transaction_count": {
+            "type": "integer",
+            "title": "Transaction Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "income",
+          "expenses",
+          "net",
+          "cumulative_net",
+          "transaction_count"
+        ],
+        "title": "CashFlowPoint",
+        "description": "One month of cash flow, with the running total to that point."
+      },
       "Category": {
         "properties": {
           "id": {
@@ -3993,6 +4506,79 @@
         ],
         "title": "LoginResponse"
       },
+      "MerchantStats": {
+        "properties": {
+          "merchant": {
+            "type": "string",
+            "title": "Merchant"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total"
+          },
+          "transaction_count": {
+            "type": "integer",
+            "title": "Transaction Count"
+          },
+          "previous_total": {
+            "type": "number",
+            "title": "Previous Total"
+          },
+          "change_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "merchant",
+          "total",
+          "transaction_count",
+          "previous_total"
+        ],
+        "title": "MerchantStats",
+        "description": "Spending with one merchant, compared to the preceding window."
+      },
+      "Merchants": {
+        "properties": {
+          "merchants": {
+            "items": {
+              "$ref": "#/components/schemas/MerchantStats"
+            },
+            "type": "array",
+            "title": "Merchants"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "uncategorized_share": {
+            "type": "number",
+            "title": "Uncategorized Share"
+          }
+        },
+        "type": "object",
+        "required": [
+          "merchants",
+          "uncategorized_share"
+        ],
+        "title": "Merchants",
+        "description": "Top merchants for the period, plus the largest movers."
+      },
       "MonthlyStats": {
         "properties": {
           "month": {
@@ -4032,6 +4618,77 @@
         ],
         "title": "MonthlyStats",
         "description": "Income/expense totals for one month"
+      },
+      "NetWorth": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/NetWorthPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "change": {
+            "type": "number",
+            "title": "Change"
+          },
+          "change_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "points",
+          "change"
+        ],
+        "title": "NetWorth",
+        "description": "Net worth over time, built from recorded balance snapshots.\n\nSnapshots are written at sync time, so resolution equals sync frequency\nand the series starts at the first sync rather than at account opening."
+      },
+      "NetWorthPoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total"
+          },
+          "accounts": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Accounts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "total",
+          "accounts"
+        ],
+        "title": "NetWorthPoint",
+        "description": "Total balance across accounts at one point in time."
       },
       "NotificationFilters": {
         "properties": {
@@ -4250,6 +4907,62 @@
           "has_prev"
         ],
         "title": "PaginatedResponse[Union[TransactionSummary, Transaction]]"
+      },
+      "RecurringPayment": {
+        "properties": {
+          "merchant": {
+            "type": "string",
+            "title": "Merchant"
+          },
+          "cadence": {
+            "type": "string",
+            "title": "Cadence"
+          },
+          "typical_amount": {
+            "type": "number",
+            "title": "Typical Amount"
+          },
+          "occurrences": {
+            "type": "integer",
+            "title": "Occurrences"
+          },
+          "last_seen": {
+            "type": "string",
+            "title": "Last Seen"
+          },
+          "next_expected": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Expected"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "merchant",
+          "cadence",
+          "typical_amount",
+          "occurrences",
+          "last_seen"
+        ],
+        "title": "RecurringPayment",
+        "description": "A charge that repeats on a regular cadence.\n\nDetection is heuristic: merchants are grouped by normalized description,\nso an unusual description may be missed or mis-grouped."
       },
       "S3Config": {
         "properties": {

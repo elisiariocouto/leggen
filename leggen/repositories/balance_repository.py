@@ -90,6 +90,78 @@ class BalanceRepository:
             grouped.setdefault(balance["account_id"], []).append(balance)
         return grouped
 
+    def get_net_worth_series(
+        self,
+        date_from: str,
+        date_to: str,
+        account_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Recorded balance snapshots per day, one row per account identity.
+
+        Balances are appended on every sync, so this reads real history rather
+        than reconstructing it from transactions. Two details matter:
+
+        - Several syncs can land on one day; only the last per day is kept.
+        - An account's `account_id` can change (this codebase has seen a
+          migration from provider UUIDs to IBANs). Grouping on the IBAN keeps
+          one real-world account as one series across that change; accounts
+          without an IBAN fall back to their id.
+        """
+        if not db_exists():
+            return []
+
+        try:
+            with get_db_connection(row_factory=True) as conn:
+                cursor = conn.cursor()
+
+                # closingBooked/CLBD is the account's settled position;
+                # interimAvailable/ITAV is the fallback when a bank omits it.
+                # Other types (e.g. authorised) would double-count.
+                query = """
+                    WITH ranked AS (
+                        SELECT
+                            COALESCE(NULLIF(b.iban, 'N/A'), b.account_id) AS series_key,
+                            b.account_id,
+                            b.amount,
+                            b.currency,
+                            date(b.timestamp) AS day,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY COALESCE(NULLIF(b.iban, 'N/A'), b.account_id),
+                                             date(b.timestamp)
+                                ORDER BY
+                                    CASE b.type
+                                        WHEN 'closingBooked' THEN 1
+                                        WHEN 'CLBD' THEN 2
+                                        WHEN 'interimAvailable' THEN 3
+                                        WHEN 'ITAV' THEN 4
+                                    END,
+                                    b.timestamp DESC
+                            ) AS rn
+                        FROM balances b
+                        WHERE b.amount IS NOT NULL
+                          AND b.type IN ('closingBooked', 'CLBD', 'interimAvailable', 'ITAV')
+                          AND date(b.timestamp) >= date(?)
+                          AND date(b.timestamp) <= date(?)
+                """
+                params: list[Any] = [date_from, date_to]
+
+                if account_id:
+                    query += " AND b.account_id = ?"
+                    params.append(account_id)
+
+                query += """
+                    )
+                    SELECT series_key, account_id, amount, currency, day
+                    FROM ranked
+                    WHERE rn = 1
+                    ORDER BY day ASC, series_key ASC
+                """
+
+                cursor.execute(query, params)
+                return [dict(row) for row in cursor.fetchall()]
+        except sqlite3.OperationalError:
+            return []
+
     def get_balances(self, account_id: str | None = None) -> list[dict[str, Any]]:
         """Get latest balances from database"""
         if not db_exists():

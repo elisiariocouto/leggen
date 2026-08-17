@@ -14,6 +14,7 @@ from leggen.api.errors import register_exception_handlers, use_error_schema_in_o
 from leggen.api.models.common import HealthStatus
 from leggen.api.routes import (
     accounts,
+    analytics,
     auth,
     backup,
     banks,
@@ -152,6 +153,9 @@ def create_app() -> FastAPI:
     )
     app.include_router(
         backup.router, prefix="/api/v1", tags=["backup"], dependencies=auth_deps
+    )
+    app.include_router(
+        analytics.router, prefix="/api/v1", tags=["analytics"], dependencies=auth_deps
     )
 
     @app.get("/api/v1/health", response_model=HealthStatus)

@@ -104,11 +104,14 @@ def counterparty_name(raw_transaction: dict[str, Any], side: str) -> str:
 _MERCHANT_NOISE = re.compile(
     r"""
       \b\d{2}[-/]\d{2}(?:[-/]\d{2,4})?\b   # dates: 03-07, 12/03/24
-    | \b\d{4,}\b                            # terminal / card / reference numbers
+    | \b[A-Z]{2}\d{18,}\b                   # IBANs embedded in transfer refs
+    | \b[\d-]{6,}\b                         # reference numbers, incl. hyphenated
+    | \b\d{4,}\b                            # terminal / card numbers
     | \bpending\b
     | \bcompras?\s+c?\.?\s*deb\b            # "COMPRA", "COMPRAS C.DEB"
     | \bpag\s+bxval\b
     | \bbx\s+valor\b
+    | \b(?:trf|cobr)\s+sepa(?:\s+inst)?\b   # SEPA transfer/collection prefixes
     """,
     re.IGNORECASE | re.VERBOSE,
 )

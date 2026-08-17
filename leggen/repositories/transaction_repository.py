@@ -430,6 +430,149 @@ class TransactionRepository:
                 "accounts_included": totals["accounts_included"],
             }
 
+    def _dominant_currency(self, cursor, base: str, params: list[Any]) -> str | None:
+        """Most frequent currency for a filtered set.
+
+        Money aggregations are restricted to one currency because summing
+        across currencies produces meaningless numbers.
+        """
+        cursor.execute(
+            f"""SELECT t.transactionCurrency AS currency, COUNT(*) AS n
+            {base}
+            GROUP BY t.transactionCurrency ORDER BY n DESC LIMIT 1""",
+            params,
+        )
+        row = cursor.fetchone()
+        return row["currency"] if row else None
+
+    def get_cash_flow(
+        self,
+        date_from: str,
+        date_to: str,
+        account_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Monthly income/expense totals with a running cumulative net."""
+        empty: dict[str, Any] = {
+            "points": [],
+            "currency": None,
+            "total_income": 0.0,
+            "total_expenses": 0.0,
+            "net": 0.0,
+            "average_monthly_net": 0.0,
+        }
+        if not db_exists():
+            return empty
+
+        with get_db_connection(row_factory=True) as conn:
+            cursor = conn.cursor()
+            filter_clause, params = self._build_filter_clause(
+                account_id=account_id, date_from=date_from, date_to=date_to
+            )
+            base = (
+                f"""FROM transactions t{_CATEGORY_JOIN}
+                WHERE (c.exclude_from_stats IS NULL OR c.exclude_from_stats = 0)"""
+                + filter_clause
+            )
+
+            currency = self._dominant_currency(cursor, base, params)
+            if currency is None:
+                return empty
+
+            cursor.execute(
+                f"""SELECT
+                    strftime('%Y-%m', t.transactionDate) AS month,
+                    COALESCE(SUM(CASE WHEN t.transactionValue > 0 THEN t.transactionValue ELSE 0 END), 0) AS income,
+                    COALESCE(SUM(CASE WHEN t.transactionValue < 0 THEN ABS(t.transactionValue) ELSE 0 END), 0) AS expenses,
+                    COUNT(*) AS transaction_count
+                {base} AND t.transactionCurrency IS ?
+                GROUP BY month ORDER BY month ASC""",
+                params + [currency],
+            )
+
+            points = []
+            cumulative = 0.0
+            total_income = 0.0
+            total_expenses = 0.0
+            for row in cursor.fetchall():
+                net = row["income"] - row["expenses"]
+                cumulative += net
+                total_income += row["income"]
+                total_expenses += row["expenses"]
+                points.append(
+                    {
+                        "month": row["month"],
+                        "income": round(row["income"], 2),
+                        "expenses": round(row["expenses"], 2),
+                        "net": round(net, 2),
+                        "cumulative_net": round(cumulative, 2),
+                        "transaction_count": row["transaction_count"],
+                    }
+                )
+
+            net = total_income - total_expenses
+            return {
+                "points": points,
+                "currency": currency,
+                "total_income": round(total_income, 2),
+                "total_expenses": round(total_expenses, 2),
+                "net": round(net, 2),
+                "average_monthly_net": round(net / len(points), 2) if points else 0.0,
+            }
+
+    def get_expense_rows(
+        self,
+        date_from: str,
+        date_to: str,
+        account_id: str | None = None,
+        currency: str | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Rows needed for merchant grouping and recurrence detection.
+
+        Merchant identity depends on the raw payload and on normalizing the
+        description, neither of which SQLite can do, so the grouping happens in
+        Python. Only the columns those two steps need are selected.
+        """
+        if not db_exists():
+            return [], None
+
+        with get_db_connection(row_factory=True) as conn:
+            cursor = conn.cursor()
+            filter_clause, params = self._build_filter_clause(
+                account_id=account_id, date_from=date_from, date_to=date_to
+            )
+            base = (
+                f"""FROM transactions t{_CATEGORY_JOIN}
+                WHERE (c.exclude_from_stats IS NULL OR c.exclude_from_stats = 0)"""
+                + filter_clause
+            )
+
+            if currency is None:
+                currency = self._dominant_currency(cursor, base, params)
+            if currency is None:
+                return [], None
+
+            cursor.execute(
+                f"""SELECT t.transactionDate, t.description, t.transactionValue,
+                           t.rawTransaction, tc.categoryId
+                {base} AND t.transactionCurrency IS ?
+                ORDER BY t.transactionDate ASC""",
+                params + [currency],
+            )
+
+            rows = []
+            for row in cursor.fetchall():
+                record = dict(row)
+                raw = record.get("rawTransaction")
+                if raw:
+                    try:
+                        record["rawTransaction"] = json.loads(raw)
+                    except (TypeError, ValueError):
+                        record["rawTransaction"] = {}
+                else:
+                    record["rawTransaction"] = {}
+                rows.append(record)
+            return rows, currency
+
     def get_transaction_by_id(
         self, account_id: str, transaction_id: str
     ) -> dict[str, Any] | None:

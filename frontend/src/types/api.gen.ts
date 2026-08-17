@@ -671,6 +671,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analytics/cash-flow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cash Flow
+         * @description Monthly income, expenses and cumulative net for the period.
+         */
+        get: operations["get_cash_flow_api_v1_analytics_cash_flow_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/net-worth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Net Worth
+         * @description Total balance over time, from recorded balance snapshots.
+         *
+         *     Snapshots are written at sync time, so the series starts at the first sync
+         *     and its resolution follows sync frequency.
+         */
+        get: operations["get_net_worth_api_v1_analytics_net_worth_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/merchants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Merchants
+         * @description Top merchants by spend, compared with the preceding window.
+         */
+        get: operations["get_merchants_api_v1_analytics_merchants_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/recurring": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Recurring
+         * @description Charges that repeat on a regular cadence.
+         *
+         *     Detection is heuristic; each result carries its cadence, typical amount and
+         *     last-seen date so a mis-grouped merchant is visible to the caller.
+         */
+        get: operations["get_recurring_api_v1_analytics_recurring_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -923,6 +1009,42 @@ export interface components {
             description: string;
         };
         /**
+         * CashFlow
+         * @description Cash flow over the period, answering "am I saving or burning?".
+         */
+        CashFlow: {
+            /** Points */
+            points: components["schemas"]["CashFlowPoint"][];
+            /** Currency */
+            currency?: string | null;
+            /** Total Income */
+            total_income: number;
+            /** Total Expenses */
+            total_expenses: number;
+            /** Net */
+            net: number;
+            /** Average Monthly Net */
+            average_monthly_net: number;
+        };
+        /**
+         * CashFlowPoint
+         * @description One month of cash flow, with the running total to that point.
+         */
+        CashFlowPoint: {
+            /** Month */
+            month: string;
+            /** Income */
+            income: number;
+            /** Expenses */
+            expenses: number;
+            /** Net */
+            net: number;
+            /** Cumulative Net */
+            cumulative_net: number;
+            /** Transaction Count */
+            transaction_count: number;
+        };
+        /**
          * Category
          * @description Category model.
          */
@@ -1083,6 +1205,34 @@ export interface components {
             token_type: string;
         };
         /**
+         * MerchantStats
+         * @description Spending with one merchant, compared to the preceding window.
+         */
+        MerchantStats: {
+            /** Merchant */
+            merchant: string;
+            /** Total */
+            total: number;
+            /** Transaction Count */
+            transaction_count: number;
+            /** Previous Total */
+            previous_total: number;
+            /** Change Pct */
+            change_pct?: number | null;
+        };
+        /**
+         * Merchants
+         * @description Top merchants for the period, plus the largest movers.
+         */
+        Merchants: {
+            /** Merchants */
+            merchants: components["schemas"]["MerchantStats"][];
+            /** Currency */
+            currency?: string | null;
+            /** Uncategorized Share */
+            uncategorized_share: number;
+        };
+        /**
          * MonthlyStats
          * @description Income/expense totals for one month
          */
@@ -1097,6 +1247,37 @@ export interface components {
             net: number;
             /** Currency */
             currency?: string | null;
+        };
+        /**
+         * NetWorth
+         * @description Net worth over time, built from recorded balance snapshots.
+         *
+         *     Snapshots are written at sync time, so resolution equals sync frequency
+         *     and the series starts at the first sync rather than at account opening.
+         */
+        NetWorth: {
+            /** Points */
+            points: components["schemas"]["NetWorthPoint"][];
+            /** Currency */
+            currency?: string | null;
+            /** Change */
+            change: number;
+            /** Change Pct */
+            change_pct?: number | null;
+        };
+        /**
+         * NetWorthPoint
+         * @description Total balance across accounts at one point in time.
+         */
+        NetWorthPoint: {
+            /** Date */
+            date: string;
+            /** Total */
+            total: number;
+            /** Accounts */
+            accounts: {
+                [key: string]: number;
+            };
         };
         /**
          * NotificationFilters
@@ -1182,6 +1363,29 @@ export interface components {
             has_next: boolean;
             /** Has Prev */
             has_prev: boolean;
+        };
+        /**
+         * RecurringPayment
+         * @description A charge that repeats on a regular cadence.
+         *
+         *     Detection is heuristic: merchants are grouped by normalized description,
+         *     so an unusual description may be missed or mis-grouped.
+         */
+        RecurringPayment: {
+            /** Merchant */
+            merchant: string;
+            /** Cadence */
+            cadence: string;
+            /** Typical Amount */
+            typical_amount: number;
+            /** Occurrences */
+            occurrences: number;
+            /** Last Seen */
+            last_seen: string;
+            /** Next Expected */
+            next_expected?: string | null;
+            /** Currency */
+            currency?: string | null;
         };
         /**
          * S3Config
@@ -3452,6 +3656,224 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_cash_flow_api_v1_analytics_cash_flow_get: {
+        parameters: {
+            query: {
+                /** @description Start date (YYYY-MM-DD) */
+                date_from: string;
+                /** @description End date (YYYY-MM-DD) */
+                date_to: string;
+                /** @description Filter by account ID */
+                account_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlow"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_net_worth_api_v1_analytics_net_worth_get: {
+        parameters: {
+            query: {
+                /** @description Start date (YYYY-MM-DD) */
+                date_from: string;
+                /** @description End date (YYYY-MM-DD) */
+                date_to: string;
+                /** @description Filter by account ID */
+                account_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetWorth"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_merchants_api_v1_analytics_merchants_get: {
+        parameters: {
+            query: {
+                /** @description Start date (YYYY-MM-DD) */
+                date_from: string;
+                /** @description End date (YYYY-MM-DD) */
+                date_to: string;
+                /** @description Filter by account ID */
+                account_id?: string | null;
+                /** @description Merchants to return */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Merchants"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_recurring_api_v1_analytics_recurring_get: {
+        parameters: {
+            query: {
+                /** @description Start date (YYYY-MM-DD) */
+                date_from: string;
+                /** @description End date (YYYY-MM-DD) */
+                date_to: string;
+                /** @description Filter by account ID */
+                account_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringPayment"][];
                 };
             };
             /** @description Not authenticated */
