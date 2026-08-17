@@ -1,13 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-} from "@tanstack/react-table";
-import type { ColumnDef } from "@tanstack/react-table";
 import {
   TrendingUp,
   TrendingDown,
@@ -33,6 +27,63 @@ import type {
 } from "../types/api";
 import { queryKeys } from "../lib/queryKeys";
 import type { TransactionSearch } from "../routes/index";
+
+const COLUMN_HEADERS = ["Description", "Category", "Amount", "Date"];
+
+/** Up/down arrow on its tinted circle, shared by both layouts. */
+function DirectionIcon({ isPositive }: { isPositive: boolean }) {
+  return (
+    <div
+      className={`p-2 rounded-full shrink-0 ${
+        isPositive ? "bg-positive-muted" : "bg-negative-muted"
+      }`}
+    >
+      {isPositive ? (
+        <TrendingUp className="h-4 w-4 text-positive" />
+      ) : (
+        <TrendingDown className="h-4 w-4 text-negative" />
+      )}
+    </div>
+  );
+}
+
+function Amount({ transaction }: { transaction: Transaction }) {
+  const isPositive = transaction.transaction_value > 0;
+  return (
+    <p
+      className={`text-lg font-semibold ${
+        isPositive ? "text-positive" : "text-negative"
+      }`}
+    >
+      <BlurredValue>
+        {isPositive ? "+" : ""}
+        {formatCurrency(
+          transaction.transaction_value,
+          transaction.transaction_currency,
+        )}
+      </BlurredValue>
+    </p>
+  );
+}
+
+function TransactionCategory({ transaction }: { transaction: Transaction }) {
+  return (
+    <CategoryBadge
+      accountId={transaction.account_id}
+      transactionId={transaction.transaction_id}
+      categoryId={transaction.category_id}
+      categoryName={transaction.category_name}
+      categoryColor={transaction.category_color}
+      description={transaction.description}
+    />
+  );
+}
+
+function transactionDate(transaction: Transaction): string {
+  return transaction.transaction_date
+    ? formatDate(transaction.transaction_date)
+    : "No date";
+}
 
 function EmptyState({ hasActiveFilters }: { hasActiveFilters: boolean }) {
   return (
@@ -80,16 +131,20 @@ export default function TransactionsTable() {
     accountId: string;
     transactionId: string;
   } | null>(null);
+  const [selectedSnapshot, setSelectedSnapshot] = useState<Transaction | null>(
+    null,
+  );
 
-  // The search box stays local so typing is not throttled by navigation;
-  // the URL catches up once the debounce settles.
-  const [searchInput, setSearchInput] = useState(filterState.searchTerm);
-  const debouncedSearchTerm = filterState.searchTerm;
-
-  // A back/forward step changes the URL without going through the input.
-  useEffect(() => {
-    setSearchInput(search.q ?? "");
-  }, [search.q]);
+  // What is being typed, held locally so keystrokes are not throttled by
+  // navigation. Stored alongside the URL value it was typed against: when
+  // the URL moves on its own (a back step, Clear All), the draft no longer
+  // matches and the URL wins, with no effect needed to resync.
+  const urlSearch = search.q ?? "";
+  const [draft, setDraft] = useState({ value: urlSearch, from: urlSearch });
+  const searchInput = draft.from === urlSearch ? draft.value : urlSearch;
+  const setSearchInput = (value: string) =>
+    setDraft({ value, from: urlSearch });
+  const debouncedSearchTerm = urlSearch;
 
   // Changing a filter always returns to page 1 — the old page number rarely
   // exists in the new result set. Done in the same navigation as the filter
@@ -183,6 +238,12 @@ export default function TransactionsTable() {
     [transactionsResponse],
   );
 
+  // One pass instead of a linear find per row per render.
+  const accountsById = useMemo(
+    () => new Map((accounts ?? []).map((account) => [account.id, account])),
+    [accounts],
+  );
+
   const selectedFromQuery = useMemo(
     () =>
       transactions.find(
@@ -192,19 +253,18 @@ export default function TransactionsTable() {
       ) ?? null,
     [transactions, selectedKey],
   );
-  // Snapshot keeps the panel populated if the row leaves the current page
-  // (e.g. a category filter is active and the transaction was just
-  // recategorized) or during the close animation.
-  const lastSelectedRef = useRef<Transaction | null>(null);
-  if (selectedFromQuery) lastSelectedRef.current = selectedFromQuery;
-  const selectedTransaction = selectedFromQuery ?? lastSelectedRef.current;
+  // Prefer the live row so edits made while the panel is open show up, and
+  // fall back to the snapshot taken when it was opened — the row leaves the
+  // page if a category filter is active and it was just recategorized, and
+  // it is also gone during the closing animation.
+  const selectedTransaction = selectedFromQuery ?? selectedSnapshot;
 
   const openDetail = (transaction: Transaction) => {
     setSelectedKey({
       accountId: transaction.account_id,
       transactionId: transaction.transaction_id,
     });
-    lastSelectedRef.current = transaction;
+    setSelectedSnapshot(transaction);
     setDetailOpen(true);
   };
   const pagination = useMemo(
@@ -288,118 +348,7 @@ export default function TransactionsTable() {
     filterState.startDate ||
     filterState.endDate;
 
-  // Define columns
-  const columns: ColumnDef<Transaction>[] = [
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => {
-        const transaction = row.original;
-        const account = accounts?.find(
-          (acc) => acc.id === transaction.account_id,
-        );
-        const isPositive = transaction.transaction_value > 0;
-
-        return (
-          <div className="flex items-start space-x-3">
-            <div
-              className={`p-2 rounded-full ${
-                isPositive
-                  ? "bg-positive-muted"
-                  : "bg-negative-muted"
-              }`}
-            >
-              {isPositive ? (
-                <TrendingUp className="h-4 w-4 text-positive" />
-              ) : (
-                <TrendingDown className="h-4 w-4 text-negative" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-foreground truncate">
-                {transaction.description}
-              </h4>
-              <div className="text-xs text-muted-foreground space-y-1">
-                {account && (
-                  <p className="truncate">
-                    {account.display_name || "Unnamed Account"}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      id: "category",
-      header: "Category",
-      cell: ({ row }) => {
-        const transaction = row.original;
-        return (
-          <CategoryBadge
-            accountId={transaction.account_id}
-            transactionId={transaction.transaction_id}
-            categoryId={transaction.category_id}
-            categoryName={transaction.category_name}
-            categoryColor={transaction.category_color}
-            description={transaction.description}
-          />
-        );
-      },
-    },
-    {
-      accessorKey: "transaction_value",
-      header: "Amount",
-      cell: ({ row }) => {
-        const transaction = row.original;
-        const isPositive = transaction.transaction_value > 0;
-        return (
-          <div className="text-right">
-            <p
-              className={`text-lg font-semibold ${
-                isPositive
-                  ? "text-positive"
-                  : "text-negative"
-              }`}
-            >
-              <BlurredValue>
-                {isPositive ? "+" : ""}
-                {formatCurrency(
-                  transaction.transaction_value,
-                  transaction.transaction_currency,
-                )}
-              </BlurredValue>
-            </p>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "transaction_date",
-      header: "Date",
-      cell: ({ row }) => {
-        const transaction = row.original;
-        return (
-          <div className="text-sm text-foreground">
-            {transaction.transaction_date
-              ? formatDate(transaction.transaction_date)
-              : "No date"}
-          </div>
-        );
-      },
-    },
-  ];
-
-  // Filtering, sorting, and pagination all happen server-side — the table
-  // only renders the current page as-is.
-  const table = useReactTable({
-    data: transactions,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  const isEmpty = table.getRowModel().rows.length === 0;
+  const isEmpty = transactions.length === 0;
 
   if (transactionsLoading) {
     // The filter bar is driven by its own queries, so it stays interactive
@@ -495,65 +444,80 @@ export default function TransactionsTable() {
         <div className={isEmpty ? "hidden" : "hidden md:block"}>
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted/50">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
+              <tr>
+                {COLUMN_HEADERS.map((header) => (
+                  <th
+                    key={header}
+                    className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
-              {table.getRowModel().rows.map((row) => (
+              {transactions.map((transaction) => {
+                const account = accountsById.get(transaction.account_id);
+                return (
                   <tr
-                    key={row.id}
+                    key={`${transaction.account_id}-${transaction.transaction_id}`}
                     className="hover:bg-muted/50 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                     // The row is the control that opens the detail panel, so
                     // it has to be reachable and activatable from the keyboard.
                     tabIndex={0}
-                    aria-label={`Transaction ${row.original.description}, ${formatCurrency(
-                      row.original.transaction_value,
-                      row.original.transaction_currency,
+                    aria-label={`Transaction ${transaction.description}, ${formatCurrency(
+                      transaction.transaction_value,
+                      transaction.transaction_currency,
                     )}. Open details`}
-                    onClick={() => openDetail(row.original)}
+                    onClick={() => openDetail(transaction)}
                     onKeyDown={(e) => {
                       if (e.target !== e.currentTarget) return;
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        openDetail(row.original);
+                        openDetail(transaction);
                       }
                     }}
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="px-6 py-4 whitespace-nowrap"
-                        // Keep category popover interactions from opening the
-                        // detail panel (Radix portals bubble in the React tree)
-                        onClick={
-                          cell.column.id === "category"
-                            ? (e) => e.stopPropagation()
-                            : undefined
-                        }
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
-                    ))}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-start space-x-3">
+                        <DirectionIcon
+                          isPositive={transaction.transaction_value > 0}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-foreground truncate">
+                            {transaction.description}
+                          </h4>
+                          <div className="text-xs text-muted-foreground space-y-1">
+                            {account && (
+                              <p className="truncate">
+                                {account.display_name || "Unnamed Account"}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td
+                      className="px-6 py-4 whitespace-nowrap"
+                      // Keep category popover interactions from opening the
+                      // detail panel (Radix portals bubble in the React tree)
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <TransactionCategory transaction={transaction} />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-right">
+                        <Amount transaction={transaction} />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-foreground">
+                        {transactionDate(transaction)}
+                      </div>
+                    </td>
                   </tr>
-                ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -564,16 +528,13 @@ export default function TransactionsTable() {
             isEmpty ? "hidden" : "md:hidden divide-y divide-border"
           }
         >
-          {table.getRowModel().rows.map((row) => {
-                const transaction = row.original;
-                const account = accounts?.find(
-                  (acc) => acc.id === transaction.account_id,
-                );
+          {transactions.map((transaction) => {
+                const account = accountsById.get(transaction.account_id);
                 const isPositive = transaction.transaction_value > 0;
 
                 return (
                   <div
-                    key={row.id}
+                    key={`${transaction.account_id}-${transaction.transaction_id}`}
                     className="p-4 hover:bg-muted/50 transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                     role="button"
                     tabIndex={0}

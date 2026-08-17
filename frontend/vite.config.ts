@@ -117,7 +117,6 @@ export default defineConfig({
               "tailwind-merge",
               "class-variance-authority",
             ],
-            "vendor-table": ["@tanstack/react-table"],
           };
           for (const [chunk, packages] of Object.entries(vendors)) {
             if (packages.some((pkg) => id.includes(`node_modules/${pkg}`))) {
