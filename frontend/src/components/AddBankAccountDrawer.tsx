@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Building2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
@@ -24,6 +24,10 @@ import {
 } from "./ui/select";
 import { Alert, AlertDescription } from "./ui/alert";
 import { queryKeys } from "../lib/queryKeys";
+
+function formatPsuType(psuType: string): string {
+  return psuType.charAt(0).toUpperCase() + psuType.slice(1);
+}
 
 export default function AddBankAccountDrawer() {
   const [open, setOpen] = useState(false);
@@ -71,6 +75,29 @@ export default function AddBankAccountDrawer() {
 
   const selectedBankData = banks?.find((b) => b.name === selectedBank);
 
+  // Base UI renders the raw value in the trigger unless `items` maps each
+  // value to its label. Both selects below store a value that differs from
+  // the text shown in the list, so without these the trigger would read
+  // "PT" instead of "Portugal", and "personal" instead of "Personal".
+  const countryItems = useMemo(
+    () =>
+      Object.fromEntries(
+        (countries ?? []).map((country) => [country.code, country.name]),
+      ),
+    [countries],
+  );
+
+  const psuTypeItems = useMemo(
+    () =>
+      Object.fromEntries(
+        (selectedBankData?.psu_types ?? []).map((psuType) => [
+          psuType,
+          formatPsuType(psuType),
+        ]),
+      ),
+    [selectedBankData],
+  );
+
   const handleCountryChange = (country: string) => {
     setSelectedCountry(country);
     setSelectedBank("");
@@ -113,12 +140,14 @@ export default function AddBankAccountDrawer() {
         }
       }}
     >
-      <DrawerTrigger asChild>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Add New Account
-        </Button>
-      </DrawerTrigger>
+      <DrawerTrigger
+        render={
+          <Button size="sm">
+            <Plus data-icon="inline-start" />
+            Add New Account
+          </Button>
+        }
+      />
       <DrawerContent className="max-h-[80vh]">
         <DrawerHeader>
           <DrawerTitle>Connect Bank Account</DrawerTitle>
@@ -131,7 +160,7 @@ export default function AddBankAccountDrawer() {
           {/* Country Selection */}
           <div className="space-y-2">
             <Label htmlFor="country">Country</Label>
-            <Select onValueChange={handleCountryChange}>
+            <Select items={countryItems} onValueChange={handleCountryChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select your country" />
               </SelectTrigger>
@@ -196,6 +225,7 @@ export default function AddBankAccountDrawer() {
               <Label htmlFor="psuType">Account Type</Label>
               <Select
                 key={`psu-${selectedBank}`}
+                items={psuTypeItems}
                 onValueChange={setSelectedPsuType}
               >
                 <SelectTrigger>
@@ -204,7 +234,7 @@ export default function AddBankAccountDrawer() {
                 <SelectContent>
                   {selectedBankData.psu_types.map((psuType) => (
                     <SelectItem key={psuType} value={psuType}>
-                      {psuType.charAt(0).toUpperCase() + psuType.slice(1)}
+                      {formatPsuType(psuType)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -241,14 +271,16 @@ export default function AddBankAccountDrawer() {
                 ? "Connecting..."
                 : "Open Bank Authorization"}
             </Button>
-            <DrawerClose asChild>
-              <Button
-                variant="outline"
-                disabled={connectBankMutation.isPending}
-              >
-                Cancel
-              </Button>
-            </DrawerClose>
+            <DrawerClose
+              render={
+                <Button
+                  variant="outline"
+                  disabled={connectBankMutation.isPending}
+                >
+                  Cancel
+                </Button>
+              }
+            />
           </div>
         </DrawerFooter>
       </DrawerContent>

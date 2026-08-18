@@ -143,7 +143,7 @@ export default function S3BackupConfigDrawer({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerTrigger asChild><EditButton /></DrawerTrigger>
+      <DrawerTrigger render={<EditButton />} />
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
@@ -317,9 +317,7 @@ export default function S3BackupConfigDrawer({
                   Remove configuration
                 </Button>
               )}
-              <DrawerClose asChild>
-                <Button variant="ghost">Cancel</Button>
-              </DrawerClose>
+              <DrawerClose render={<Button variant="ghost">Cancel</Button>} />
             </DrawerFooter>
           </form>
         </div>

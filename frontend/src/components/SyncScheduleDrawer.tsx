@@ -83,7 +83,7 @@ export default function SyncScheduleDrawer({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerTrigger asChild><EditButton /></DrawerTrigger>
+      <DrawerTrigger render={<EditButton />} />
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
@@ -181,9 +181,7 @@ export default function SyncScheduleDrawer({
               <Button type="submit" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? "Saving..." : "Save Schedule"}
               </Button>
-              <DrawerClose asChild>
-                <Button variant="ghost">Cancel</Button>
-              </DrawerClose>
+              <DrawerClose render={<Button variant="ghost">Cancel</Button>} />
             </DrawerFooter>
           </form>
         </div>

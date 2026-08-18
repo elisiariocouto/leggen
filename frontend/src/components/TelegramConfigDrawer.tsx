@@ -98,7 +98,7 @@ export default function TelegramConfigDrawer({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerTrigger asChild><EditButton /></DrawerTrigger>
+      <DrawerTrigger render={<EditButton />} />
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader>
@@ -220,9 +220,7 @@ export default function TelegramConfigDrawer({
                   </Button>
                 )}
               </div>
-              <DrawerClose asChild>
-                <Button variant="ghost">Cancel</Button>
-              </DrawerClose>
+              <DrawerClose render={<Button variant="ghost">Cancel</Button>} />
             </DrawerFooter>
           </form>
         </div>

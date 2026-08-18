@@ -125,7 +125,7 @@ export default function NotificationFiltersDrawer({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerTrigger asChild><EditButton /></DrawerTrigger>
+      <DrawerTrigger render={<EditButton />} />
       <DrawerContent>
         <div className="mx-auto w-full max-w-2xl">
           <DrawerHeader>
@@ -257,9 +257,7 @@ export default function NotificationFiltersDrawer({
               <Button type="submit" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? "Saving..." : "Save Filters"}
               </Button>
-              <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DrawerClose>
+              <DrawerClose render={<Button variant="outline">Cancel</Button>} />
             </DrawerFooter>
           </form>
         </div>

@@ -99,7 +99,7 @@ export default function DiscordConfigDrawer({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerTrigger asChild><EditButton /></DrawerTrigger>
+      <DrawerTrigger render={<EditButton />} />
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader>
@@ -197,9 +197,7 @@ export default function DiscordConfigDrawer({
                   </Button>
                 )}
               </div>
-              <DrawerClose asChild>
-                <Button variant="ghost">Cancel</Button>
-              </DrawerClose>
+              <DrawerClose render={<Button variant="ghost">Cancel</Button>} />
             </DrawerFooter>
           </form>
         </div>
