@@ -1,4 +1,14 @@
 
+## 2026.8.1 (2026/08/18)
+
+### Bug Fixes
+
+- **ci:** Bump actions off the deprecated Node 20 runtime. ([c9402ca0](https://github.com/elisiariocouto/leggen/commit/c9402ca085916c310adc5c897c42e3fe8a4b8055))
+- **ci:** Pin setup-uv to an exact tag. ([743e7ee9](https://github.com/elisiariocouto/leggen/commit/743e7ee9bf6b3dae53c834252d4d55a80967adf3))
+- **frontend:** Migrate the drawer to Base UI so selects work inside it. ([3ce8fe17](https://github.com/elisiariocouto/leggen/commit/3ce8fe17009a2c290106e61a31a415251c3c0402))
+
+
+
 ## 2026.8.0 (2026/08/17)
 
 ### Bug Fixes
