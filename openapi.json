@@ -5101,6 +5101,14 @@
             "title": "Errors",
             "default": []
           },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "default": []
+          },
           "logs": {
             "items": {
               "type": "string"
@@ -5180,6 +5188,14 @@
             },
             "type": "array",
             "title": "Errors",
+            "default": []
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
             "default": []
           },
           "started_at": {

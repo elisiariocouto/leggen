@@ -156,7 +156,7 @@ class TestSyncNotifications:
             patch.object(sync_service.balances, "persist"),
             patch(
                 "leggen.services.sync_service.process_transactions",
-                return_value=[],
+                return_value=([], 0),
             ),
             patch.object(sync_service.transactions, "persist", return_value=([], 0)),
             patch.object(sync_service.sync, "persist", return_value=1),

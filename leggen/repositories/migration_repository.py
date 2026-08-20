@@ -18,6 +18,7 @@ class MigrationRepository:
         await self.migrate_add_display_name_if_needed()
         await self.migrate_add_logo_if_needed()
         await self.migrate_add_exclude_from_stats_if_needed()
+        await self.migrate_add_sync_warnings_if_needed()
         await self.migrate_transaction_date_format_if_needed()
         await self.cleanup_orphaned_category_rows()
 
@@ -707,4 +708,73 @@ class MigrationRepository:
 
         except Exception as e:
             logger.error(f"Exclude from stats column migration failed: {e}")
+            raise
+
+    async def migrate_add_sync_warnings_if_needed(self):
+        """Check and add warnings column to sync_operations table if needed"""
+        try:
+            if await self._check_sync_warnings_migration_needed():
+                logger.info("Sync warnings column migration needed, starting...")
+                await self._migrate_add_sync_warnings()
+                logger.info("Sync warnings column migration completed")
+            else:
+                logger.info("Sync warnings column already exists")
+        except Exception as e:
+            logger.error(f"Sync warnings column migration failed: {e}")
+            raise
+
+    async def _check_sync_warnings_migration_needed(self) -> bool:
+        """Check if warnings column needs to be added to sync_operations"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            return False
+
+        try:
+            conn = create_connection(db_path)
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='sync_operations'"
+            )
+            if not cursor.fetchone():
+                conn.close()
+                return False
+
+            cursor.execute("PRAGMA table_info(sync_operations)")
+            columns = cursor.fetchall()
+
+            has_column = any(col[1] == "warnings" for col in columns)
+
+            conn.close()
+            return not has_column
+
+        except Exception as e:
+            logger.error(f"Failed to check sync warnings migration status: {e}")
+            return False
+
+    async def _migrate_add_sync_warnings(self):
+        """Add warnings column to sync_operations table"""
+        db_path = path_manager.get_database_path()
+        if not db_path.exists():
+            logger.warning("Database file not found, skipping migration")
+            return
+
+        try:
+            conn = create_connection(db_path)
+            cursor = conn.cursor()
+
+            logger.info("Adding warnings column to sync_operations table...")
+
+            cursor.execute("""
+                ALTER TABLE sync_operations
+                ADD COLUMN warnings TEXT
+            """)
+
+            conn.commit()
+            conn.close()
+
+            logger.info("Sync warnings column migration completed successfully")
+
+        except Exception as e:
+            logger.error(f"Sync warnings column migration failed: {e}")
             raise

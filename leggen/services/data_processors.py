@@ -7,6 +7,7 @@ from typing import Any
 
 from loguru import logger
 
+from leggen.errors import describe_exception
 from leggen.repositories.db import create_connection
 from leggen.services.enablebanking_service import EnableBankingService
 
@@ -557,20 +558,36 @@ def process_transactions(
     account_id: str,
     account_info: dict[str, Any],
     transaction_data: dict[str, Any],
-) -> list[dict[str, Any]]:
-    """Process raw transaction data into standardized format."""
+) -> tuple[list[dict[str, Any]], int]:
+    """Process raw transaction data into standardized format.
+
+    Returns the processed transactions and the number that could not be
+    consumed. A transaction the bank returns in a shape we cannot parse is
+    skipped rather than raised, so one bad entry does not discard the whole
+    account's batch; its raw payload is logged so it can be reported upstream.
+    """
     transactions = []
-    logger.debug(transaction_data)
+    skipped = 0
 
     for transaction in transaction_data.get("transactions", []):
         status_raw = transaction.get("status", "BOOK")
         status = "booked" if status_raw == "BOOK" else "pending"
-        processed = _process_single_transaction(
-            account_id, account_info, transaction, status
-        )
+        try:
+            processed = _process_single_transaction(
+                account_id, account_info, transaction, status
+            )
+        except ValueError as e:
+            skipped += 1
+            logger.error(
+                f"Skipping unparseable transaction for account {account_id}: "
+                f"{describe_exception(e)}. Please report this upstream — anonymise "
+                f"the payload below (IBANs, names, amounts) before sharing it. "
+                f"Raw transaction: {transaction}"
+            )
+            continue
         transactions.append(processed)
 
-    return transactions
+    return transactions, skipped
 
 
 def _process_single_transaction(
@@ -580,19 +597,25 @@ def _process_single_transaction(
     status: str,
 ) -> dict[str, Any]:
     """Process a single transaction into standardized format."""
-    # Extract dates (EnableBanking uses snake_case)
-    booked_date = transaction.get("booking_date")
-    value_date = transaction.get("value_date")
+    # Extract dates (EnableBanking uses snake_case). All three date fields are
+    # optional in the EnableBanking schema and ASPSPs differ in which they
+    # populate, so fall back across all of them rather than assuming the first
+    # two are always present.
+    candidates = []
+    for field in ("booking_date", "value_date", "transaction_date"):
+        raw_date = transaction.get(field)
+        if not raw_date:
+            continue
+        try:
+            candidates.append(datetime.fromisoformat(raw_date))
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Unparseable {field} {raw_date!r} in transaction") from e
 
-    if booked_date and value_date:
-        min_date = min(
-            datetime.fromisoformat(booked_date), datetime.fromisoformat(value_date)
-        )
-    else:
-        date_str = booked_date or value_date
-        if not date_str:
-            raise ValueError("No valid date found in transaction")
-        min_date = datetime.fromisoformat(date_str)
+    if not candidates:
+        raise ValueError("No valid date found in transaction")
+
+    # Earliest of the available dates, matching long-standing behaviour.
+    min_date = min(candidates)
 
     # Extract amount and currency (EnableBanking uses snake_case)
     transaction_amount = transaction.get("transaction_amount", {})

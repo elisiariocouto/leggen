@@ -75,6 +75,23 @@ function LogsDialog({ operation }: { operation: SyncOperation }) {
               ))
             )}
           </div>
+          {operation.warnings.length > 0 && (
+            <>
+              <div className="mt-4 mb-2 text-sm font-semibold text-amber-600 dark:text-amber-400">
+                Warnings:
+              </div>
+              <div className="space-y-2">
+                {operation.warnings.map((warning, index) => (
+                  <div
+                    key={index}
+                    className="text-sm font-mono bg-amber-500/10 border border-amber-500/20 p-2 rounded text-wrap break-all text-amber-600 dark:text-amber-400"
+                  >
+                    {warning}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
           {operation.errors.length > 0 && (
             <>
               <div className="mt-4 mb-2 text-sm font-semibold text-destructive">
@@ -183,9 +200,12 @@ export default function Sync() {
       apiClient.triggerSync(params),
     onSuccess: (result) => {
       if (result.success) {
-        toast.success(
-          `Sync completed: ${result.transactions_added} new transactions, ${result.accounts_processed} accounts processed.`,
-        );
+        const summary = `Sync completed: ${result.transactions_added} new transactions, ${result.accounts_processed} accounts processed.`;
+        if (result.warnings.length > 0) {
+          toast.warning(`${summary} ${result.warnings.join(" ")}`);
+        } else {
+          toast.success(summary);
+        }
       } else {
         toast.error(
           `Sync finished with errors: ${result.errors.join(", ") || "Unknown error"}`,

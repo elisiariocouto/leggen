@@ -81,6 +81,7 @@ class SyncService:
         transactions_updated = 0
         balances_updated = 0
         errors = []
+        warnings: list[str] = []
         logs = [f"Sync started at {start_time.isoformat()}"]
 
         # Initialize sync operation record
@@ -92,6 +93,7 @@ class SyncService:
             "transactions_updated": 0,
             "balances_updated": 0,
             "errors": [],
+            "warnings": [],
             "logs": logs,
         }
 
@@ -228,9 +230,14 @@ class SyncService:
                         account_id, date_from=date_from
                     )
                     if transactions:
-                        processed_transactions = process_transactions(
+                        processed_transactions, skipped_count = process_transactions(
                             stored_id, account_details, transactions
                         )
+                        if skipped_count:
+                            warnings.append(
+                                f"{skipped_count} transaction(s) skipped for account "
+                                f"{account_id} — see server logs"
+                            )
                         new_transactions, updated_count = self.transactions.persist(
                             stored_id, processed_transactions
                         )
@@ -287,6 +294,7 @@ class SyncService:
                     "balances_updated": balances_updated,
                     "duration_seconds": duration,
                     "errors": errors,
+                    "warnings": warnings,
                     "logs": logs,
                 }
             )
@@ -306,6 +314,7 @@ class SyncService:
                 balances_updated=balances_updated,
                 duration_seconds=duration,
                 errors=errors,
+                warnings=warnings,
                 started_at=start_time,
                 completed_at=end_time,
             )
@@ -337,6 +346,7 @@ class SyncService:
                     "balances_updated": balances_updated,
                     "duration_seconds": duration,
                     "errors": errors,
+                    "warnings": warnings,
                     "logs": logs,
                 }
             )

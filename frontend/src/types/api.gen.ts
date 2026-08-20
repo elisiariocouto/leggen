@@ -1475,6 +1475,11 @@ export interface components {
              */
             errors: string[];
             /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
+            /**
              * Logs
              * @default []
              */
@@ -1520,6 +1525,11 @@ export interface components {
              * @default []
              */
             errors: string[];
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
             /**
              * Started At
              * Format: date-time

@@ -27,7 +27,8 @@ class SyncRepository:
                     duration_seconds REAL,
                     errors TEXT,
                     logs TEXT,
-                    trigger_type TEXT DEFAULT 'manual'
+                    trigger_type TEXT DEFAULT 'manual',
+                    warnings TEXT
                 )
             """)
 
@@ -53,8 +54,8 @@ class SyncRepository:
                     """INSERT INTO sync_operations (
                         started_at, completed_at, success, accounts_processed,
                         transactions_added, transactions_updated, balances_updated,
-                        duration_seconds, errors, logs, trigger_type
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        duration_seconds, errors, logs, trigger_type, warnings
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         sync_operation.get("started_at"),
                         sync_operation.get("completed_at"),
@@ -67,6 +68,7 @@ class SyncRepository:
                         json.dumps(sync_operation.get("errors", [])),
                         json.dumps(sync_operation.get("logs", [])),
                         sync_operation.get("trigger_type", "manual"),
+                        json.dumps(sync_operation.get("warnings", [])),
                     ),
                 )
 
@@ -92,7 +94,7 @@ class SyncRepository:
                 cursor.execute(
                     """SELECT id, started_at, completed_at, success, accounts_processed,
                               transactions_added, transactions_updated, balances_updated,
-                              duration_seconds, errors, logs, trigger_type
+                              duration_seconds, errors, logs, trigger_type, warnings
                        FROM sync_operations
                        ORDER BY started_at DESC
                        LIMIT ? OFFSET ?""",
@@ -114,6 +116,7 @@ class SyncRepository:
                         "errors": json.loads(row[9]) if row[9] else [],
                         "logs": json.loads(row[10]) if row[10] else [],
                         "trigger_type": row[11],
+                        "warnings": json.loads(row[12]) if row[12] else [],
                     }
                     operations.append(operation)
 

@@ -16,6 +16,7 @@ class SyncOperation(BaseModel):
     balances_updated: int = 0
     duration_seconds: float | None = None
     errors: list[str] = []
+    warnings: list[str] = []
     logs: list[str] = []
     trigger_type: str = "manual"  # manual, scheduled, retry, api
 
@@ -68,5 +69,6 @@ class SyncResult(BaseModel):
     balances_updated: int
     duration_seconds: float
     errors: list[str] = []
+    warnings: list[str] = []
     started_at: datetime
     completed_at: datetime
