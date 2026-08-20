@@ -1,4 +1,17 @@
 
+## 2026.8.2 (2026/08/20)
+
+### Bug Fixes
+
+-  Skip unparseable transactions instead of failing the whole sync. ([6245da51](https://github.com/elisiariocouto/leggen/commit/6245da51e155f1962ba99a6c3c4b82f74c536295))
+
+
+### Miscellaneous Tasks
+
+-  Update dependencies. ([4440898b](https://github.com/elisiariocouto/leggen/commit/4440898b840d9a3c00a066326e7af0d0504a7e8a))
+
+
+
 ## 2026.8.1 (2026/08/18)
 
 ### Bug Fixes

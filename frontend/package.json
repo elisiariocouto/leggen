@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "2026.8.1",
+  "version": "2026.8.2",
   "type": "module",
   "scripts": {
     "dev": "VITE_API_URL=http://localhost:8000/api/v1 vite",
