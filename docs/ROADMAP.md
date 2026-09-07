@@ -3,13 +3,6 @@
 > Line references drift as the code moves. Verify them before starting an item —
 > and re-check the claim itself, since a refactor may already have fixed it.
 
-## 🎨 Consistency & code quality
-
-- [ ] `tests/unit/test_config.py` mutates `config._config` / `_config_path` / `_config_model` directly in ~10 places with no teardown, so running it before `test_api_auth.py` or `test_api_errors.py` fails 12-17 tests with `KeyError: 'jwt_secret'`. The default collection order never produces that sequence, so it is latent rather than breaking CI today. Needs the same `reset_config_singleton()` teardown `mock_config` now has.
-- [ ] The ~74 `patch("leggen.utils.config.config", mock_config)` calls across the `test_api_*.py` files are no-ops: modules bind `config` at import time, so the patch rebinds an attribute nobody reads, and the tests only pass because `Config.__new__` returns the singleton the fixture mutates. Harmless but misleading — removing them is a mechanical sweep over six files.
-
----
-
 ## 🗣️ To be discussed later
 
 - [ ] Account deletion is really an "archive" feature — decide the semantics and make code/UX coherent. Accounts are keyed by IBAN on purpose (stable identity across sessions), so a "deleted" account under an active bank connection comes back on the next sync — that's intended. Sync now genuinely skips DELETED accounts (`sync_service.py:130-136` subtracts them by ID), but `sync_service.py:195` still hardcodes `"status": "READY"` when persisting synced accounts; `delete_data=true` purges history that sync then partially re-imports (last 30 days), leaving a permanent hole; and there's no unarchive action or archived-accounts filter (`GET /accounts` returns them by default — `get_accounts(include_deleted=True)`, `account_repository.py:60-63`). Proposed shape: rename to Archive in UI/API, sync preserves the archived status, drop `delete_data`, hide archived accounts from default views with a toggle, add unarchive. Open question: should archived accounts keep syncing in the background (recommended) or be skipped?
