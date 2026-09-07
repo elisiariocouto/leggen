@@ -1,6 +1,7 @@
 import threading
 import time
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,19 @@ from leggen.utils.config import config
 
 # States issued by start_auth, awaiting the bank redirect. Module-level so
 # they are shared across all service instances (routes and sync service).
-_pending_auth_states: dict[str, float] = {}
+# Each entry keeps when the state was issued and, once the callback has run,
+# the session it produced -- a redirect that reaches the callback twice (a
+# reload, a PWA service-worker update, a double-submit) must not look like a
+# forged state.
+_pending_auth_states: dict[str, "AuthState"] = {}
+
+
+@dataclass
+class AuthState:
+    """A state issued to the bank, and the session it redeemed into."""
+
+    issued_at: float
+    session_id: str | None = None
 
 
 class EnableBankingService:
@@ -172,19 +185,33 @@ class EnableBankingService:
     def _register_auth_state(self, state: str) -> None:
         """Track a state issued to the bank so the callback can verify it."""
         now = time.time()
-        # Drop states that were never redeemed
-        for pending, issued_at in list(_pending_auth_states.items()):
-            if now - issued_at > self.AUTH_STATE_TTL_SECONDS:
+        # Drop states that aged out, redeemed or not
+        for pending, record in list(_pending_auth_states.items()):
+            if now - record.issued_at > self.AUTH_STATE_TTL_SECONDS:
                 del _pending_auth_states[pending]
-        _pending_auth_states[state] = now
+        _pending_auth_states[state] = AuthState(issued_at=now)
 
-    def consume_auth_state(self, state: str) -> bool:
-        """Redeem a state from a bank redirect. Each state is single-use."""
-        issued_at = _pending_auth_states.pop(state, None)
-        return (
-            issued_at is not None
-            and time.time() - issued_at <= self.AUTH_STATE_TTL_SECONDS
-        )
+    def claim_auth_state(self, state: str) -> AuthState | None:
+        """Look up a state from a bank redirect.
+
+        Returns the record for a state we issued and that hasn't aged out, or
+        None for one we never issued. The record is kept, not popped: the
+        caller marks it redeemed via `mark_auth_state_redeemed` so a repeated
+        callback can be answered with the session it already created.
+        """
+        record = _pending_auth_states.get(state)
+        if record is None:
+            return None
+        if time.time() - record.issued_at > self.AUTH_STATE_TTL_SECONDS:
+            del _pending_auth_states[state]
+            return None
+        return record
+
+    def mark_auth_state_redeemed(self, state: str, session_id: str) -> None:
+        """Record the session a state produced, so a replay can return it."""
+        record = _pending_auth_states.get(state)
+        if record is not None:
+            record.session_id = session_id
 
     async def aclose(self) -> None:
         """Close the underlying HTTP client."""

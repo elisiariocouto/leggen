@@ -29,6 +29,10 @@ function BankConnected() {
       apiClient
         .exchangeAuthCode(search.code, search.state)
         .then(() => {
+          // Drop the single-use code/state from the URL so a reload -- the
+          // service worker taking control after an update, or the user
+          // refreshing -- can't replay an exchange that already happened.
+          window.history.replaceState(null, "", window.location.pathname);
           setStatus("success");
         })
         .catch((err) => {

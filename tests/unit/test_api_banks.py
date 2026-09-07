@@ -1,10 +1,14 @@
 """Tests for banks API endpoints."""
 
+import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from leggen.services.enablebanking_service import get_enablebanking_service
+from leggen.services.enablebanking_service import (
+    AuthState,
+    get_enablebanking_service,
+)
 
 
 @pytest.mark.api
@@ -106,7 +110,10 @@ class TestBanksAPI:
 
         mock_eb = AsyncMock()
         mock_eb.create_session.return_value = session_response
-        mock_eb.consume_auth_state = MagicMock(return_value=True)
+        mock_eb.claim_auth_state = MagicMock(
+            return_value=AuthState(issued_at=time.time())
+        )
+        mock_eb.mark_auth_state_redeemed = MagicMock()
         api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
@@ -123,12 +130,50 @@ class TestBanksAPI:
         assert data["aspsp_name"] == "Revolut"
         assert data["aspsp_country"] == "GB"
 
+    def test_bank_callback_replays_session_on_repeat(
+        self, api_client, mock_config, mock_db_path
+    ):
+        """A redirect delivered twice returns the session the first call made.
+
+        The page can be remounted by a reload -- a service worker taking
+        control after an update, or the user refreshing -- and the second
+        exchange must not look like a failed connection.
+        """
+        session_response = {
+            "session_id": "sess-replay",
+            "aspsp": {"name": "Revolut", "country": "GB"},
+            "access": {"valid_until": "2026-03-24T00:00:00Z"},
+            "accounts": [{"uid": "acc-1"}],
+        }
+
+        state = AuthState(issued_at=time.time())
+        mock_eb = AsyncMock()
+        mock_eb.create_session.return_value = session_response
+        mock_eb.claim_auth_state = MagicMock(return_value=state)
+        mock_eb.mark_auth_state_redeemed = MagicMock(
+            side_effect=lambda _s, session_id: setattr(state, "session_id", session_id)
+        )
+        api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
+
+        payload = {"code": "test-auth-code", "state": "test-state"}
+        with patch("leggen.utils.config.config", mock_config):
+            first = api_client.post("/api/v1/banks/callback", json=payload)
+            second = api_client.post("/api/v1/banks/callback", json=payload)
+
+        api_client.app.dependency_overrides.pop(get_enablebanking_service, None)
+
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert second.json()["session_id"] == "sess-replay"
+        # The upstream code is single-use, so it must only be exchanged once.
+        assert mock_eb.create_session.await_count == 1
+
     def test_bank_callback_rejects_unknown_state(
         self, api_client, mock_config, mock_db_path
     ):
         """Callback rejects a state that was never issued by start_auth."""
         mock_eb = AsyncMock()
-        mock_eb.consume_auth_state = MagicMock(return_value=False)
+        mock_eb.claim_auth_state = MagicMock(return_value=None)
         api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
@@ -154,7 +199,10 @@ class TestBanksAPI:
 
         mock_eb = AsyncMock()
         mock_eb.create_session.return_value = session_response
-        mock_eb.consume_auth_state = MagicMock(return_value=True)
+        mock_eb.claim_auth_state = MagicMock(
+            return_value=AuthState(issued_at=time.time())
+        )
+        mock_eb.mark_auth_state_redeemed = MagicMock()
         api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):
@@ -201,7 +249,10 @@ class TestBanksAPI:
 
         mock_eb = AsyncMock()
         mock_eb.create_session.return_value = session_response
-        mock_eb.consume_auth_state = MagicMock(return_value=True)
+        mock_eb.claim_auth_state = MagicMock(
+            return_value=AuthState(issued_at=time.time())
+        )
+        mock_eb.mark_auth_state_redeemed = MagicMock()
         api_client.app.dependency_overrides[get_enablebanking_service] = lambda: mock_eb
 
         with patch("leggen.utils.config.config", mock_config):

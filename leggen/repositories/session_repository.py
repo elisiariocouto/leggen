@@ -80,6 +80,21 @@ class SessionRepository:
 
         return sessions
 
+    def get_session(self, session_id: str) -> dict[str, Any] | None:
+        """Get a single session by id, or None if it isn't stored."""
+        with get_db_connection(row_factory=True) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,))
+            row = cursor.fetchone()
+
+        if row is None:
+            return None
+
+        session = dict(row)
+        if session.get("accounts"):
+            session["accounts"] = json.loads(session["accounts"])
+        return session
+
     def delete_session(self, session_id: str) -> bool:
         """Delete a session. Returns True if a row was deleted."""
         with get_db_connection() as conn:

@@ -83,11 +83,20 @@ async def bank_auth_callback(
     session_repo: Annotated[SessionRepository, Depends()],
 ) -> dict:
     """Exchange authorization code for a session"""
-    if not enablebanking_service.consume_auth_state(request.state):
+    auth_state = enablebanking_service.claim_auth_state(request.state)
+    if auth_state is None:
         raise HTTPException(
             status_code=400,
             detail="Unknown or expired authorization state. Restart the bank connection flow.",
         )
+
+    # The same redirect can reach us twice -- a reload, a PWA service-worker
+    # update taking control, a double-submit. The code is single-use upstream,
+    # so replay the session the first call created instead of failing.
+    if auth_state.session_id:
+        existing = session_repo.get_session(auth_state.session_id)
+        if existing:
+            return existing
 
     session_data = await enablebanking_service.create_session(request.code)
 
@@ -104,6 +113,9 @@ async def bank_auth_callback(
         "status": "active",
     }
     session_repo.persist(session_record)
+    enablebanking_service.mark_auth_state_redeemed(
+        request.state, session_record["session_id"]
+    )
 
     return session_record
 
