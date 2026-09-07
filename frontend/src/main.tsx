@@ -36,12 +36,7 @@ registerSW({
           return;
         }
 
-        if (!navigator) {
-          console.log("[PWA] Navigator not available, skipping check");
-          return;
-        }
-
-        if ("connection" in navigator && !navigator.onLine) {
+        if (!navigator.onLine) {
           console.log("[PWA] Device is offline, skipping check");
           return;
         }
@@ -50,7 +45,6 @@ registerSW({
           const resp = await fetch(swUrl, {
             cache: "no-store",
             headers: {
-              cache: "no-store",
               "cache-control": "no-cache",
             },
           });

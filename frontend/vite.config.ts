@@ -22,24 +22,32 @@ export default defineConfig({
         theme_color: "#0b74de",
         background_color: "#ffffff",
         display: "standalone",
-        orientation: "portrait",
+        // `id` pins the install identity; without it the identity is derived
+        // from start_url, so changing start_url later installs a second app
+        // instead of updating this one. No `orientation` — the app has a full
+        // desktop layout and locking portrait is honored on Android.
+        id: "/",
         scope: "/",
         start_url: "/",
         categories: ["finance", "productivity"],
         shortcuts: [
           {
-            name: "Transactions",
-            short_name: "Transactions",
-            description: "View and manage transactions",
-            url: "/",
-            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }],
+            name: "Accounts",
+            short_name: "Accounts",
+            description: "View accounts and transactions",
+            url: "/accounts",
+            icons: [
+              { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+            ],
           },
           {
             name: "Analytics",
             short_name: "Analytics",
             description: "View financial analytics",
             url: "/analytics",
-            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }],
+            icons: [
+              { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+            ],
           },
         ],
         icons: [
@@ -69,25 +77,15 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
         runtimeCaching: [
+          // Never cache the API. Responses are per-user bank data and the
+          // cache key ignores the Authorization header, so a cached entry
+          // would outlive logout and be served to whoever opens the browser
+          // next. There is no offline story for this data anyway.
           {
-            urlPattern: /^https?:\/\/.*\/api\/v1\/health/,
+            urlPattern: /^https?:\/\/[^/]*\/api\//,
             handler: "NetworkOnly",
           },
-          {
-            urlPattern: /^https:\/\/.*\/api\//,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "api-cache",
-              networkTimeoutSeconds: 10,
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
         ],
-      },
-      devOptions: {
-        enabled: true,
       },
     }),
   ],
