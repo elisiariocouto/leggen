@@ -9,40 +9,6 @@ from leggen.repositories.db import db_exists, get_db_connection
 class BalanceRepository:
     """Repository for balance data operations"""
 
-    def create_table(self):
-        """Create balances table with indexes"""
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-
-            cursor.execute(
-                """CREATE TABLE IF NOT EXISTS balances (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                account_id TEXT,
-                bank TEXT,
-                status TEXT,
-                iban TEXT,
-                amount REAL,
-                currency TEXT,
-                type TEXT,
-                timestamp DATETIME
-            )"""
-            )
-
-            cursor.execute(
-                """CREATE INDEX IF NOT EXISTS idx_balances_account_id
-                   ON balances(account_id)"""
-            )
-            cursor.execute(
-                """CREATE INDEX IF NOT EXISTS idx_balances_timestamp
-                   ON balances(timestamp)"""
-            )
-            cursor.execute(
-                """CREATE INDEX IF NOT EXISTS idx_balances_account_type_timestamp
-                   ON balances(account_id, type, timestamp)"""
-            )
-
-            conn.commit()
-
     def persist(self, account_id: str, balance_rows: list[tuple]) -> None:
         """Persist balance rows to database"""
         try:

@@ -9,41 +9,6 @@ from leggen.repositories.db import get_db_connection
 class SyncRepository:
     """Repository for sync operation data"""
 
-    def create_table(self):
-        """Create sync_operations table with indexes"""
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS sync_operations (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    started_at DATETIME NOT NULL,
-                    completed_at DATETIME,
-                    success BOOLEAN,
-                    accounts_processed INTEGER DEFAULT 0,
-                    transactions_added INTEGER DEFAULT 0,
-                    transactions_updated INTEGER DEFAULT 0,
-                    balances_updated INTEGER DEFAULT 0,
-                    duration_seconds REAL,
-                    errors TEXT,
-                    logs TEXT,
-                    trigger_type TEXT DEFAULT 'manual',
-                    warnings TEXT
-                )
-            """)
-
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_sync_operations_started_at ON sync_operations(started_at)"
-            )
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_sync_operations_success ON sync_operations(success)"
-            )
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_sync_operations_trigger_type ON sync_operations(trigger_type)"
-            )
-
-            conn.commit()
-
     def persist(self, sync_operation: dict[str, Any]) -> int:
         """Persist sync operation to database and return the ID"""
         try:

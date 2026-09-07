@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from leggen.repositories import BalanceRepository
+from leggen.repositories import BalanceRepository, run_migrations
 from leggen.services.data_processors import transform_to_database_format
 from leggen.utils.paths import path_manager
 
@@ -108,8 +108,8 @@ class TestConfigurablePaths:
             path_manager.set_database_path(test_db_path)
 
             # Test database operations using repositories directly
+            run_migrations()
             balance_repo = BalanceRepository()
-            balance_repo.create_table()
 
             balance_data = {
                 "balances": [

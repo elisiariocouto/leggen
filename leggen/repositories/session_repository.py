@@ -10,31 +10,6 @@ from leggen.repositories.db import get_db_connection
 class SessionRepository:
     """Repository for EnableBanking session storage."""
 
-    def create_table(self):
-        """Create the sessions table if it doesn't exist."""
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS sessions (
-                    session_id TEXT PRIMARY KEY,
-                    aspsp_name TEXT NOT NULL,
-                    aspsp_country TEXT NOT NULL,
-                    accounts JSON,
-                    valid_until DATETIME,
-                    created_at DATETIME,
-                    status TEXT DEFAULT 'active'
-                )
-            """)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS expiry_notifications (
-                    session_id TEXT NOT NULL,
-                    threshold INTEGER NOT NULL,
-                    sent_at DATETIME NOT NULL,
-                    PRIMARY KEY (session_id, threshold)
-                )
-            """)
-            conn.commit()
-
     def persist(self, session_data: dict[str, Any]) -> str:
         """Store a session in the database. Returns the session_id."""
         session_id = session_data["session_id"]

@@ -239,9 +239,9 @@ def mock_db_path(temp_db_path):
     path_manager.set_database_path(temp_db_path)
 
     # Create all tables so tests can use them
-    from leggen.repositories import ensure_tables
+    from leggen.repositories import run_migrations
 
-    ensure_tables()
+    run_migrations()
 
     try:
         yield temp_db_path

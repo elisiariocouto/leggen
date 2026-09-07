@@ -8,7 +8,7 @@ from typing import Any, TypedDict
 
 import click
 
-from leggen.repositories import ensure_tables
+from leggen.repositories import run_migrations
 from leggen.repositories.db import create_connection
 from leggen.utils.keywords import extract_keywords
 from leggen.utils.paths import path_manager
@@ -114,7 +114,7 @@ class SampleDataGenerator:
     def create_tables(self):
         """Create database tables using the shared repository schema."""
         path_manager.set_database_path(self.db_path)
-        ensure_tables()
+        run_migrations()
 
     def generate_iban(self, country_code: str) -> str:
         """Generate a realistic IBAN for the given country."""
@@ -416,7 +416,7 @@ class SampleDataGenerator:
                 ),
             )
 
-        # Build category name -> id mapping (defaults are seeded by create_tables)
+        # Build category name -> id mapping (defaults are seeded by the baseline migration)
         cursor.execute("SELECT id, name FROM categories")
         category_map = {row[1]: row[0] for row in cursor.fetchall()}
 

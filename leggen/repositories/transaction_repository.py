@@ -67,50 +67,6 @@ class TransactionRepository:
 
         return clause, params
 
-    def create_table(self):
-        """Create transactions table with indexes"""
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-
-            cursor.execute(
-                """CREATE TABLE IF NOT EXISTS transactions (
-                accountId TEXT NOT NULL,
-                transactionId TEXT NOT NULL,
-                internalTransactionId TEXT,
-                institutionId TEXT,
-                iban TEXT,
-                transactionDate DATETIME,
-                description TEXT,
-                transactionValue REAL,
-                transactionCurrency TEXT,
-                transactionStatus TEXT,
-                rawTransaction JSON,
-                PRIMARY KEY (accountId, transactionId)
-            )"""
-            )
-
-            # Create indexes for better performance
-            cursor.execute(
-                """CREATE INDEX IF NOT EXISTS idx_transactions_date
-                   ON transactions(transactionDate)"""
-            )
-            cursor.execute(
-                """CREATE INDEX IF NOT EXISTS idx_transactions_account_date
-                   ON transactions(accountId, transactionDate)"""
-            )
-            cursor.execute(
-                """CREATE INDEX IF NOT EXISTS idx_transactions_amount
-                   ON transactions(transactionValue)"""
-            )
-            # Merchant analytics group by description; without this the
-            # group-by full-scans the table.
-            cursor.execute(
-                """CREATE INDEX IF NOT EXISTS idx_transactions_description
-                   ON transactions(description)"""
-            )
-
-            conn.commit()
-
     def persist(
         self, account_id: str, transactions: list[dict[str, Any]]
     ) -> tuple[list[dict[str, Any]], int]:

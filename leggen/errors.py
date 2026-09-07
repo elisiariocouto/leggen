@@ -49,3 +49,15 @@ class CategoryExistsError(ConflictError):
     """A category with the requested name already exists."""
 
     code = "CATEGORY_EXISTS"
+
+
+class UnsupportedDatabaseVersionError(LeggenError):
+    """The database predates the oldest schema this version can migrate.
+
+    Migrations older than the 2025.9.22 baseline were retired; a database that
+    never had them applied cannot be upgraded directly, because the baseline
+    schema is created with CREATE TABLE IF NOT EXISTS and would silently leave
+    the legacy tables in place.
+    """
+
+    code = "UNSUPPORTED_DATABASE_VERSION"

@@ -7,38 +7,6 @@ from leggen.repositories.db import db_exists, get_db_connection
 class AccountRepository:
     """Repository for account data operations"""
 
-    def create_table(self):
-        """Create accounts table with indexes"""
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-
-            cursor.execute(
-                """CREATE TABLE IF NOT EXISTS accounts (
-                id TEXT PRIMARY KEY,
-                institution_id TEXT,
-                status TEXT,
-                iban TEXT,
-                name TEXT,
-                currency TEXT,
-                created DATETIME,
-                last_accessed DATETIME,
-                last_updated DATETIME,
-                display_name TEXT,
-                logo TEXT
-            )"""
-            )
-
-            cursor.execute(
-                """CREATE INDEX IF NOT EXISTS idx_accounts_institution_id
-                   ON accounts(institution_id)"""
-            )
-            cursor.execute(
-                """CREATE INDEX IF NOT EXISTS idx_accounts_status
-                   ON accounts(status)"""
-            )
-
-            conn.commit()
-
     def persist(self, account_data: dict[str, Any]) -> dict[str, Any]:
         """Persist account details to database"""
         with get_db_connection() as conn:

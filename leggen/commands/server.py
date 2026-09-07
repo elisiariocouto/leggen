@@ -24,7 +24,7 @@ from leggen.api.routes import (
     transactions,
 )
 from leggen.background.scheduler import scheduler
-from leggen.repositories import MigrationRepository, ensure_tables
+from leggen.repositories import run_migrations
 from leggen.services.enablebanking_service import close_enablebanking_service
 from leggen.utils.config import config
 from leggen.utils.paths import path_manager
@@ -64,12 +64,10 @@ async def lifespan(app: FastAPI):
             "Run 'leggen generate-auth-config' to generate real values."
         )
 
-    # Ensure tables exist, then run schema/data migrations on legacy databases
+    # Create the schema on a new database, or upgrade an existing one
     try:
-        ensure_tables()
-        migrations = MigrationRepository()
-        await migrations.run_all_migrations()
-        logger.info("Database migrations completed")
+        version = run_migrations()
+        logger.info(f"Database schema at version {version}")
     except Exception as e:
         logger.error(f"Database migration failed: {e}")
         raise

@@ -11,7 +11,7 @@ from leggen.repositories import (
     SessionRepository,
     SyncRepository,
     TransactionRepository,
-    ensure_tables,
+    run_migrations,
 )
 from leggen.services.data_processors import (
     enrich_account_details,
@@ -43,8 +43,9 @@ class SyncService:
         self.enablebanking = EnableBankingService()
         self.notifications = NotificationService()
 
-        # Ensure all tables exist (for CLI usage outside FastAPI lifespan)
-        ensure_tables()
+        # Ensure the schema is present and current (for CLI use outside the
+        # FastAPI lifespan, which migrates at startup)
+        run_migrations()
 
         # Repositories
         self.accounts = AccountRepository()
