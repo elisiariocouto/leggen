@@ -14,8 +14,7 @@ class TestBackupAPI:
         # Mock empty backup config by updating the config dict
         mock_config._config["backup"] = {}
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/backup/settings")
+        response = api_client.get("/api/v1/backup/settings")
 
         assert response.status_code == 200
         data = response.json()
@@ -36,8 +35,7 @@ class TestBackupAPI:
             }
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/backup/settings")
+        response = api_client.get("/api/v1/backup/settings")
 
         assert response.status_code == 200
         data = response.json()
@@ -70,8 +68,7 @@ class TestBackupAPI:
             }
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put("/api/v1/backup/settings", json=request_data)
+        response = api_client.put("/api/v1/backup/settings", json=request_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -100,8 +97,7 @@ class TestBackupAPI:
             }
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put("/api/v1/backup/settings", json=request_data)
+        response = api_client.put("/api/v1/backup/settings", json=request_data)
 
         assert response.status_code == 400
         data = response.json()
@@ -127,8 +123,7 @@ class TestBackupAPI:
             }
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put("/api/v1/backup/settings", json=request_data)
+        response = api_client.put("/api/v1/backup/settings", json=request_data)
 
         assert response.status_code == 200
         assert response.json()["updated"] is True
@@ -156,8 +151,7 @@ class TestBackupAPI:
                 "s3": dict(stored["s3"]),
             }
 
-            with patch("leggen.utils.config.config", mock_config):
-                response = api_client.put("/api/v1/backup/settings", json=request_data)
+            response = api_client.put("/api/v1/backup/settings", json=request_data)
 
             assert response.status_code == 400
             assert "DELETE /backup/settings" in response.json()["detail"]
@@ -178,24 +172,21 @@ class TestBackupAPI:
             }
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.delete("/api/v1/backup/settings")
+        response = api_client.delete("/api/v1/backup/settings")
 
         assert response.status_code == 200
         assert response.json() == {"deleted": "s3"}
         assert not mock_config._config["backup"].get("s3")
 
         # The GET endpoint now reports nothing configured
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/backup/settings")
+        response = api_client.get("/api/v1/backup/settings")
         assert response.json()["s3"] is None
 
     def test_delete_backup_settings_with_nothing_stored(self, api_client, mock_config):
         """Deleting an absent configuration is not an error."""
         mock_config._config.pop("backup", None)
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.delete("/api/v1/backup/settings")
+        response = api_client.delete("/api/v1/backup/settings")
 
         assert response.status_code == 200
         assert response.json() == {"deleted": "s3"}
@@ -230,8 +221,7 @@ class TestBackupAPI:
             }
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put("/api/v1/backup/settings", json=request_data)
+        response = api_client.put("/api/v1/backup/settings", json=request_data)
 
         assert response.status_code == 200
         assert response.json()["updated"] is True
@@ -266,8 +256,7 @@ class TestBackupAPI:
             }
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put("/api/v1/backup/settings", json=request_data)
+        response = api_client.put("/api/v1/backup/settings", json=request_data)
 
         assert response.status_code == 400
         assert "no existing value" in response.json()["detail"]
@@ -303,8 +292,7 @@ class TestBackupAPI:
             },
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.post("/api/v1/backup/test", json=request_data)
+        response = api_client.post("/api/v1/backup/test", json=request_data)
 
         assert response.status_code == 200
         assert response.json()["connected"] is True
@@ -411,8 +399,7 @@ class TestBackupAPI:
             }
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/backup/list")
+        response = api_client.get("/api/v1/backup/list")
 
         assert response.status_code == 200
         data = response.json()
@@ -423,8 +410,7 @@ class TestBackupAPI:
         """Test backup listing with no configuration."""
         mock_config._config["backup"] = {}
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/backup/list")
+        response = api_client.get("/api/v1/backup/list")
 
         assert response.status_code == 200
         data = response.json()
@@ -453,8 +439,7 @@ class TestBackupAPI:
 
         request_data = {"operation": "backup"}
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.post("/api/v1/backup/operation", json=request_data)
+        response = api_client.post("/api/v1/backup/operation", json=request_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -470,8 +455,7 @@ class TestBackupAPI:
 
         request_data = {"operation": "backup"}
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.post("/api/v1/backup/operation", json=request_data)
+        response = api_client.post("/api/v1/backup/operation", json=request_data)
 
         assert response.status_code == 400
         data = response.json()
@@ -491,8 +475,7 @@ class TestBackupAPI:
 
         request_data = {"operation": "invalid"}
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.post("/api/v1/backup/operation", json=request_data)
+        response = api_client.post("/api/v1/backup/operation", json=request_data)
 
         assert response.status_code == 400
         data = response.json()

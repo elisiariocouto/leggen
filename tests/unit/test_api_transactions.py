@@ -1,7 +1,6 @@
 """Tests for transactions API endpoints."""
 
 from datetime import datetime
-from unittest.mock import patch
 
 import pytest
 
@@ -56,8 +55,7 @@ class TestTransactionsAPI:
             mock_transaction_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions?summary_only=true")
+        response = api_client.get("/api/v1/transactions?summary_only=true")
 
         fastapi_app.dependency_overrides.clear()
 
@@ -104,8 +102,7 @@ class TestTransactionsAPI:
             mock_transaction_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions?summary_only=false")
+        response = api_client.get("/api/v1/transactions?summary_only=false")
 
         fastapi_app.dependency_overrides.clear()
 
@@ -151,18 +148,17 @@ class TestTransactionsAPI:
             mock_transaction_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get(
-                "/api/v1/transactions?"
-                "account_id=test-account-123&"
-                "date_from=2025-09-01&"
-                "date_to=2025-09-02&"
-                "min_amount=-50.0&"
-                "max_amount=0.0&"
-                "search=Coffee&"
-                "page=2&"
-                "per_page=10"
-            )
+        response = api_client.get(
+            "/api/v1/transactions?"
+            "account_id=test-account-123&"
+            "date_from=2025-09-01&"
+            "date_to=2025-09-02&"
+            "min_amount=-50.0&"
+            "max_amount=0.0&"
+            "search=Coffee&"
+            "page=2&"
+            "per_page=10"
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -197,8 +193,7 @@ class TestTransactionsAPI:
             mock_transaction_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions")
+        response = api_client.get("/api/v1/transactions")
 
         fastapi_app.dependency_overrides.clear()
 
@@ -408,12 +403,10 @@ class TestTransactionsAPI:
 
     def test_get_transactions_invalid_per_page(self, api_client, mock_config):
         """per_page below 1 is rejected instead of dividing by zero."""
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions?per_page=0")
+        response = api_client.get("/api/v1/transactions?per_page=0")
         assert response.status_code == 422
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions?per_page=-5")
+        response = api_client.get("/api/v1/transactions?per_page=-5")
         assert response.status_code == 422
 
     def test_get_transactions_status_filter_reaches_repository(
@@ -430,8 +423,7 @@ class TestTransactionsAPI:
             mock_transaction_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions?status=pending")
+        response = api_client.get("/api/v1/transactions?status=pending")
 
         fastapi_app.dependency_overrides.clear()
 
@@ -480,19 +472,16 @@ class TestTransactionsAPI:
     def test_get_transactions_invalid_status(self, api_client, mock_config):
         """An unknown status is rejected with 422 rather than silently
         returning an empty page."""
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions?status=nonsense")
+        response = api_client.get("/api/v1/transactions?status=nonsense")
         assert response.status_code == 422
 
     def test_get_transactions_invalid_category_id(self, api_client, mock_config):
         """Non-numeric category_id is rejected with 422, not a 500."""
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/transactions?category_id=abc")
+        response = api_client.get("/api/v1/transactions?category_id=abc")
         assert response.status_code == 422
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get(
-                "/api/v1/transactions/stats"
-                "?date_from=2025-01-01&date_to=2025-01-31&category_id=abc"
-            )
+        response = api_client.get(
+            "/api/v1/transactions/stats"
+            "?date_from=2025-01-01&date_to=2025-01-31&category_id=abc"
+        )
         assert response.status_code == 422

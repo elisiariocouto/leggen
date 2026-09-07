@@ -1,7 +1,5 @@
 """Tests for accounts API endpoints."""
 
-from unittest.mock import patch
-
 import pytest
 
 from leggen.repositories import AccountRepository, BalanceRepository
@@ -57,8 +55,7 @@ class TestAccountsAPI:
         fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
         fastapi_app.dependency_overrides[BalanceRepository] = lambda: mock_balance_repo
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/accounts")
+        response = api_client.get("/api/v1/accounts")
 
         fastapi_app.dependency_overrides.clear()
 
@@ -96,11 +93,10 @@ class TestAccountsAPI:
 
         fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/accounts/test-account-123",
-                json={"display_name": "My Custom Account Name"},
-            )
+        response = api_client.put(
+            "/api/v1/accounts/test-account-123",
+            json={"display_name": "My Custom Account Name"},
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -122,11 +118,10 @@ class TestAccountsAPI:
 
         fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/accounts/nonexistent",
-                json={"display_name": "New Name"},
-            )
+        response = api_client.put(
+            "/api/v1/accounts/nonexistent",
+            json={"display_name": "New Name"},
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -145,8 +140,7 @@ class TestAccountsAPI:
 
         fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.delete("/api/v1/accounts/test-account-123")
+        response = api_client.delete("/api/v1/accounts/test-account-123")
 
         fastapi_app.dependency_overrides.clear()
 
@@ -170,8 +164,7 @@ class TestAccountsAPI:
 
         fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.delete("/api/v1/accounts/nonexistent")
+        response = api_client.delete("/api/v1/accounts/nonexistent")
 
         fastapi_app.dependency_overrides.clear()
 
@@ -216,8 +209,7 @@ class TestAccountsAPI:
         fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
         fastapi_app.dependency_overrides[BalanceRepository] = lambda: mock_balance_repo
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/accounts")
+        response = api_client.get("/api/v1/accounts")
 
         fastapi_app.dependency_overrides.clear()
 
@@ -241,10 +233,9 @@ class TestAccountsAPI:
 
         fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.delete(
-                "/api/v1/accounts/test-account-123?delete_data=false"
-            )
+        response = api_client.delete(
+            "/api/v1/accounts/test-account-123?delete_data=false"
+        )
 
         fastapi_app.dependency_overrides.clear()
 

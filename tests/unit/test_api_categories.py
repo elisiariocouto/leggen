@@ -1,6 +1,6 @@
 """Tests for categories API endpoints."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -50,8 +50,7 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/categories")
+        response = api_client.get("/api/v1/categories")
 
         fastapi_app.dependency_overrides.clear()
 
@@ -83,11 +82,10 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.post(
-                "/api/v1/categories",
-                json={"name": "Travel", "color": "#06b6d4"},
-            )
+        response = api_client.post(
+            "/api/v1/categories",
+            json={"name": "Travel", "color": "#06b6d4"},
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -117,11 +115,10 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/categories/1",
-                json={"name": "Food & Groceries"},
-            )
+        response = api_client.put(
+            "/api/v1/categories/1",
+            json={"name": "Food & Groceries"},
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -142,11 +139,10 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/categories/999",
-                json={"name": "Nonexistent"},
-            )
+        response = api_client.put(
+            "/api/v1/categories/999",
+            json={"name": "Nonexistent"},
+        )
 
         fastapi_app.dependency_overrides.clear()
         assert response.status_code == 404
@@ -165,8 +161,7 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.delete("/api/v1/categories/13")
+        response = api_client.delete("/api/v1/categories/13")
 
         fastapi_app.dependency_overrides.clear()
         assert response.status_code == 204
@@ -185,8 +180,7 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.delete("/api/v1/categories/1")
+        response = api_client.delete("/api/v1/categories/1")
 
         fastapi_app.dependency_overrides.clear()
         assert response.status_code == 400
@@ -223,11 +217,10 @@ class TestCategoriesAPI:
             mock_transaction_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/transactions/acc-001/txn-001/category",
-                json={"category_id": 1},
-            )
+        response = api_client.put(
+            "/api/v1/transactions/acc-001/txn-001/category",
+            json={"category_id": 1},
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -253,11 +246,10 @@ class TestCategoriesAPI:
             mock_transaction_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/transactions/acc-001/txn-001/category",
-                json={"category_id": 999},
-            )
+        response = api_client.put(
+            "/api/v1/transactions/acc-001/txn-001/category",
+            json={"category_id": 999},
+        )
 
         fastapi_app.dependency_overrides.clear()
         assert response.status_code == 404
@@ -287,10 +279,7 @@ class TestCategoriesAPI:
             mock_transaction_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.delete(
-                "/api/v1/transactions/acc-001/txn-001/category"
-            )
+        response = api_client.delete("/api/v1/transactions/acc-001/txn-001/category")
 
         fastapi_app.dependency_overrides.clear()
         assert response.status_code == 200
@@ -333,10 +322,9 @@ class TestCategoriesAPI:
             mock_transaction_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get(
-                "/api/v1/transactions/acc-001/txn-001/suggest-category"
-            )
+        response = api_client.get(
+            "/api/v1/transactions/acc-001/txn-001/suggest-category"
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -367,15 +355,14 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.post(
-                "/api/v1/categories",
-                json={
-                    "name": "Internal",
-                    "color": "#14b8a6",
-                    "exclude_from_stats": True,
-                },
-            )
+        response = api_client.post(
+            "/api/v1/categories",
+            json={
+                "name": "Internal",
+                "color": "#14b8a6",
+                "exclude_from_stats": True,
+            },
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -412,14 +399,13 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/transactions/bulk-categorize",
-                json={
-                    "category_id": 1,
-                    "description": "To Flexible Cash Funds",
-                },
-            )
+        response = api_client.put(
+            "/api/v1/transactions/bulk-categorize",
+            json={
+                "category_id": 1,
+                "description": "To Flexible Cash Funds",
+            },
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -446,14 +432,13 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/transactions/bulk-categorize",
-                json={
-                    "category_id": 999,
-                    "description": "Some description",
-                },
-            )
+        response = api_client.put(
+            "/api/v1/transactions/bulk-categorize",
+            json={
+                "category_id": 999,
+                "description": "Some description",
+            },
+        )
 
         fastapi_app.dependency_overrides.clear()
         assert response.status_code == 404
@@ -480,14 +465,13 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/transactions/bulk-categorize",
-                json={
-                    "category_id": 1,
-                    "description": "Nonexistent description",
-                },
-            )
+        response = api_client.put(
+            "/api/v1/transactions/bulk-categorize",
+            json={
+                "category_id": 1,
+                "description": "Nonexistent description",
+            },
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -510,12 +494,11 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.request(
-                "DELETE",
-                "/api/v1/transactions/bulk-categorize",
-                json={"description": "To Flexible Cash Funds"},
-            )
+        response = api_client.request(
+            "DELETE",
+            "/api/v1/transactions/bulk-categorize",
+            json={"description": "To Flexible Cash Funds"},
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -541,12 +524,11 @@ class TestCategoriesAPI:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.request(
-                "DELETE",
-                "/api/v1/transactions/bulk-categorize",
-                json={"description": "Nonexistent"},
-            )
+        response = api_client.request(
+            "DELETE",
+            "/api/v1/transactions/bulk-categorize",
+            json={"description": "Nonexistent"},
+        )
 
         fastapi_app.dependency_overrides.clear()
 
@@ -575,11 +557,10 @@ class TestDuplicateCategory:
             mock_category_repo
         )
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.post(
-                "/api/v1/categories",
-                json={"name": "Travel", "color": "#06b6d4"},
-            )
+        response = api_client.post(
+            "/api/v1/categories",
+            json={"name": "Travel", "color": "#06b6d4"},
+        )
 
         fastapi_app.dependency_overrides.clear()
 

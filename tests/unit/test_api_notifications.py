@@ -13,8 +13,7 @@ class TestNotificationSettingsAPI:
         """Settings without configured services return null services."""
         mock_config._config["notifications"] = {}
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/notifications/settings")
+        response = api_client.get("/api/v1/notifications/settings")
 
         assert response.status_code == 200
         data = response.json()
@@ -31,8 +30,7 @@ class TestNotificationSettingsAPI:
             "telegram": {"token": "123456:real-token", "chat_id": 42, "enabled": True},
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.get("/api/v1/notifications/settings")
+        response = api_client.get("/api/v1/notifications/settings")
 
         assert response.status_code == 200
         data = response.json()
@@ -58,10 +56,7 @@ class TestNotificationSettingsAPI:
             "filters": {"case_insensitive": ["rent"], "case_sensitive": None},
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/notifications/settings", json=request_data
-            )
+        response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
         assert response.json()["updated"] is True
@@ -88,10 +83,7 @@ class TestNotificationSettingsAPI:
             "filters": {"case_insensitive": [], "case_sensitive": None},
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/notifications/settings", json=request_data
-            )
+        response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
         notifications = mock_config._config["notifications"]
@@ -109,10 +101,7 @@ class TestNotificationSettingsAPI:
             "filters": {"case_insensitive": [], "case_sensitive": None},
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/notifications/settings", json=request_data
-            )
+        response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 400
         assert "no existing value" in response.json()["detail"]
@@ -149,10 +138,7 @@ class TestNotificationFiltersUpdateAPI:
 
         request_data = {"filters": {"case_insensitive": [], "case_sensitive": []}}
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/notifications/settings", json=request_data
-            )
+        response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
         assert mock_config._config["filters"]["case_insensitive"] == []
@@ -167,10 +153,7 @@ class TestNotificationFiltersUpdateAPI:
 
         request_data = {"filters": {"case_insensitive": ["rent", "gym"]}}
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/notifications/settings", json=request_data
-            )
+        response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
         assert mock_config._config["filters"]["case_insensitive"] == ["rent", "gym"]
@@ -188,10 +171,7 @@ class TestNotificationFiltersUpdateAPI:
             }
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/notifications/settings", json=request_data
-            )
+        response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
         assert mock_config._config["filters"]["case_insensitive"] == ["rent"]
@@ -212,10 +192,7 @@ class TestNotificationFiltersUpdateAPI:
             }
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/notifications/settings", json=request_data
-            )
+        response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
         notifications = mock_config._config["notifications"]
@@ -234,10 +211,7 @@ class TestNotificationFiltersUpdateAPI:
 
         request_data = {"telegram": None}
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.put(
-                "/api/v1/notifications/settings", json=request_data
-            )
+        response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
         notifications = mock_config._config["notifications"]
@@ -251,8 +225,7 @@ class TestNotificationFiltersUpdateAPI:
             "case_sensitive": ["ACME"],
         }
 
-        with patch("leggen.utils.config.config", mock_config):
-            response = api_client.delete("/api/v1/notifications/settings/filters")
+        response = api_client.delete("/api/v1/notifications/settings/filters")
 
         assert response.status_code == 200
         assert response.json() == {"deleted": "filters"}
