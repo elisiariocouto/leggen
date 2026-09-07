@@ -46,7 +46,13 @@ Preview what a release will say with `git-cliff --unreleased`.
 
 ## Release new version
 
-Run script `scripts/release.sh <type_of_release>`
+Run `scripts/release.sh`. It takes no arguments.
 
-Types supported are `major`, `minor` and `patch`. Semver practices must be followed.
-This release process deals with updating everything, including changelog generation.
+Versions are CalVer, `YEAR.MONTH.MICRO` — the year and month come from today's
+date and the micro auto-increments from the last tag in the same month, so the
+first release of a month is `.0`. The script bumps `pyproject.toml` and
+`frontend/package.json`, regenerates `CHANGELOG.md` with git-cliff, locks
+dependencies, commits, and tags; it then asks before pushing. Pushing the tag is
+what triggers the PyPI and Docker publishing workflows.
+
+Requires `git-cliff`, `uv`, and `npm` on PATH.
