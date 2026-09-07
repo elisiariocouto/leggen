@@ -106,6 +106,14 @@ def test_key_path():
     return _test_key_path
 
 
+def reset_config_singleton() -> None:
+    """Clear the config singleton so the next access reloads from
+    LEGGEN_CONFIG_FILE (the canonical test config set in this conftest)."""
+    config._config = None
+    config._config_model = None
+    config._config_path = None
+
+
 @pytest.fixture
 def mock_config(temp_config_dir, test_key_path):
     """Mock configuration for testing."""
@@ -129,13 +137,18 @@ def mock_config(temp_config_dir, test_key_path):
     with open(config_file, "wb") as f:
         tomli_w.dump(config_data, f)
 
-    # Mock the config path
+    # Mock the config path. `Config()` returns the process-global singleton, so
+    # the assignments below mutate shared state — always restore it afterwards,
+    # or whatever a test stores here leaks into every later test in the session.
     with patch.object(Config, "load_config") as mock_load:
         mock_load.return_value = config_data
         config = Config()
         config._config = config_data
         config._config_path = str(config_file)
-        yield config
+        try:
+            yield config
+        finally:
+            reset_config_singleton()
 
 
 @pytest.fixture
@@ -155,14 +168,6 @@ def api_client(fastapi_app):
     client = TestClient(fastapi_app)
     client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
     return client
-
-
-def reset_config_singleton() -> None:
-    """Clear the config singleton so the next access reloads from
-    LEGGEN_CONFIG_FILE (the canonical test config set in this conftest)."""
-    config._config = None
-    config._config_model = None
-    config._config_path = None
 
 
 @pytest.fixture
