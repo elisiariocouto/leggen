@@ -5,19 +5,8 @@
 
 ## 🎨 Consistency & code quality
 
-- [ ] `decode_access_token` (`utils/auth.py:37-43`) catches expired and malformed tokens in one `except` and returns `None` for both, so the API can't tell the frontend to refresh rather than force a re-login.
-- [ ] The `active` field on the notification status model (`api/models/notifications.py:38`) is the real on/off signal, but `Settings.tsx:342-354` derives status from `enabled && configured` — the "Needs Configuration" state is unreachable.
-- [ ] Notification error semantics (do these together, they're one pass): `send_test_notification` (`services/notification_service.py:40-56`) returns a bare `False` for both "service not enabled" and "the provider call raised", so `POST /notifications/test` answers a misconfiguration and a network failure with an identical 400 — needs domain errors (`NOTIFICATION_NOT_ENABLED`, plus a 502 for upstream send failures) and a frontend that keys off `code`; `DELETE /notifications/settings/{service}` (`api/routes/notifications.py:163-169`) still hand-validates the service name and returns 400, now inconsistent with the `Literal` 422 on the test endpoint.
-- [ ] `escape_markdown` (`notifications/telegram.py:6`) never escapes backslash, and backslash must be escaped first — text containing one produces an invalid MarkdownV2 sequence and an opaque Telegram 400. Currently unreachable (only bank names and error strings flow through) but a trap for any future path that sends user-supplied text.
-- [ ] `mock_config` (`tests/conftest.py:110`) assigns to the process-global `config` singleton at `conftest.py:136-137` and never restores it, so config a test sets leaks into every later test in the session. `reset_config_singleton()` (`conftest.py:160`) already does the cleanup — the fixture just needs to call it after the `yield`. Note the `patch("leggen.utils.config.config", ...)` in existing tests is a no-op: modules bound `config` at import time, and the tests only pass because `Config.__new__` (`utils/config.py:20-23`) returns the same singleton the fixture mutates.
-
-## 🔧 Testing & CI
-
-- [ ] Raise coverage on the least-tested modules. Overall is 73%; the weak spots are `sync_repository.py` (20%), `category_repository.py` (29%), `account_repository.py` (44%), `data_processors.py` (48%) and `enablebanking_service.py` (57%). Measure with `uv run --with pytest-cov pytest --cov=leggen --cov-report=term-missing` before picking targets. Already well covered: the migration runner (100%), `db.py` (100%), `session_repository.py` (98%), `transaction_repository.py` (84%), and CLI commands (`tests/unit/test_cli_commands.py`, `cli` marker).
-
-## 🖥️ Features — UI/UX
-
-- [ ] Surface pending transactions in the transactions table and filters. `transaction_status` is stored and typed (`frontend/src/types/api.gen.ts:1625`) and already rendered as a `<StatusBadge>` in `TransactionDetail.tsx:198`, but the table shows no visual distinction and there is no filter for it.
+- [ ] `tests/unit/test_config.py` mutates `config._config` / `_config_path` / `_config_model` directly in ~10 places with no teardown, so running it before `test_api_auth.py` or `test_api_errors.py` fails 12-17 tests with `KeyError: 'jwt_secret'`. The default collection order never produces that sequence, so it is latent rather than breaking CI today. Needs the same `reset_config_singleton()` teardown `mock_config` now has.
+- [ ] The ~74 `patch("leggen.utils.config.config", mock_config)` calls across the `test_api_*.py` files are no-ops: modules bind `config` at import time, so the patch rebinds an attribute nobody reads, and the tests only pass because `Config.__new__` returns the singleton the fixture mutates. Harmless but misleading — removing them is a mechanical sweep over six files.
 
 ---
 
