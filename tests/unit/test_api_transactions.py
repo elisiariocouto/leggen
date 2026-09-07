@@ -179,6 +179,7 @@ class TestTransactionsAPI:
             max_amount=0.0,
             search="Coffee",
             category_id=None,
+            status=None,
         )
 
     def test_get_transactions_empty_result(
@@ -413,6 +414,74 @@ class TestTransactionsAPI:
 
         with patch("leggen.utils.config.config", mock_config):
             response = api_client.get("/api/v1/transactions?per_page=-5")
+        assert response.status_code == 422
+
+    def test_get_transactions_status_filter_reaches_repository(
+        self,
+        fastapi_app,
+        api_client,
+        mock_config,
+        mock_transaction_repo,
+    ):
+        """A status filter is forwarded to both repository calls."""
+        mock_transaction_repo.get_transactions.return_value = []
+        mock_transaction_repo.get_count.return_value = 0
+        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
+            mock_transaction_repo
+        )
+
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.get("/api/v1/transactions?status=pending")
+
+        fastapi_app.dependency_overrides.clear()
+
+        assert response.status_code == 200
+        assert mock_transaction_repo.get_transactions.call_args.kwargs["status"] == (
+            "pending"
+        )
+        assert mock_transaction_repo.get_count.call_args.kwargs["status"] == "pending"
+
+    def test_get_transactions_filtered_by_status(self, api_client, mock_db_path):
+        """Only transactions in the requested status come back, and the
+        pagination total counts the filtered set."""
+        persist_transactions(
+            [
+                ("t1", "acc-1", "2025-09-01T09:30:00", -10.50, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-02T14:15:00", -20.00, "EUR", "pending"),
+                ("t3", "acc-1", "2025-09-03T16:45:00", -30.00, "EUR", "booked"),
+            ]
+        )
+
+        response = api_client.get("/api/v1/transactions?status=pending")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert [txn["transaction_id"] for txn in data["data"]] == ["t2"]
+        assert data["data"][0]["status"] == "pending"
+
+    def test_get_transactions_without_status_filter_returns_all(
+        self, api_client, mock_db_path
+    ):
+        """Omitting the status filter leaves both statuses in the result."""
+        persist_transactions(
+            [
+                ("t1", "acc-1", "2025-09-01T09:30:00", -10.50, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-02T14:15:00", -20.00, "EUR", "pending"),
+            ]
+        )
+
+        response = api_client.get("/api/v1/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 2
+
+    def test_get_transactions_invalid_status(self, api_client, mock_config):
+        """An unknown status is rejected with 422 rather than silently
+        returning an empty page."""
+        with patch("leggen.utils.config.config", mock_config):
+            response = api_client.get("/api/v1/transactions?status=nonsense")
         assert response.status_code == 422
 
     def test_get_transactions_invalid_category_id(self, api_client, mock_config):

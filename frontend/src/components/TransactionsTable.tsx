@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Button } from "./ui/button";
 import { BlurredValue } from "./ui/blurred-value";
 import CategoryBadge from "./CategoryBadge";
+import TransactionStatusBadge from "./TransactionStatusBadge";
 import type {
   Account,
   Transaction,
@@ -114,10 +115,18 @@ export default function TransactionsTable() {
       searchTerm: search.q ?? "",
       selectedAccount: search.account ?? "",
       selectedCategory: search.category ?? "",
+      selectedStatus: search.status ?? "",
       startDate: search.from ?? "",
       endDate: search.to ?? "",
     }),
-    [search.q, search.account, search.category, search.from, search.to],
+    [
+      search.q,
+      search.account,
+      search.category,
+      search.status,
+      search.from,
+      search.to,
+    ],
   );
 
   const currentPage = search.page ?? 1;
@@ -154,6 +163,7 @@ export default function TransactionsTable() {
       searchTerm: "q",
       selectedAccount: "account",
       selectedCategory: "category",
+      selectedStatus: "status",
       startDate: "from",
       endDate: "to",
     };
@@ -213,6 +223,7 @@ export default function TransactionsTable() {
     queryKey: queryKeys.transactionList({
       accountId: filterState.selectedAccount,
       categoryId: filterState.selectedCategory,
+      status: filterState.selectedStatus,
       startDate: filterState.startDate,
       endDate: filterState.endDate,
       page: currentPage,
@@ -229,6 +240,7 @@ export default function TransactionsTable() {
         search: debouncedSearchTerm || undefined,
         summaryOnly: false,
         categoryId: filterState.selectedCategory || undefined,
+        status: filterState.selectedStatus || undefined,
       }),
     placeholderData: (previousData) => previousData,
   });
@@ -345,6 +357,7 @@ export default function TransactionsTable() {
     filterState.searchTerm ||
     filterState.selectedAccount ||
     filterState.selectedCategory ||
+    filterState.selectedStatus ||
     filterState.startDate ||
     filterState.endDate;
 
@@ -487,12 +500,20 @@ export default function TransactionsTable() {
                           <h4 className="text-sm font-medium text-foreground truncate">
                             {transaction.description}
                           </h4>
-                          <div className="text-xs text-muted-foreground space-y-1">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             {account && (
-                              <p className="truncate">
+                              <span className="truncate">
                                 {account.display_name || "Unnamed Account"}
-                              </p>
+                              </span>
                             )}
+                            {/* Booked is the norm and says nothing useful, so
+                                only pending rows are marked — a chip on the
+                                row rather than a column of mostly-blank cells. */}
+                            <TransactionStatusBadge
+                              status={transaction.transaction_status}
+                              pendingOnly
+                              className="shrink-0"
+                            />
                           </div>
                         </div>
                       </div>
@@ -577,11 +598,18 @@ export default function TransactionsTable() {
                                   {account.display_name || "Unnamed Account"}
                                 </p>
                               )}
-                              <p className="text-muted-foreground">
-                                {transaction.transaction_date
-                                  ? formatDate(transaction.transaction_date)
-                                  : "No date"}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">
+                                  {transaction.transaction_date
+                                    ? formatDate(transaction.transaction_date)
+                                    : "No date"}
+                                </span>
+                                <TransactionStatusBadge
+                                  status={transaction.transaction_status}
+                                  pendingOnly
+                                  className="shrink-0"
+                                />
+                              </div>
                               <div
                                 className="mt-1"
                                 // Keep category popover interactions from

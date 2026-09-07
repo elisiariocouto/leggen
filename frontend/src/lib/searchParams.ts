@@ -35,3 +35,19 @@ export function asISODate(value: unknown): string | undefined {
   ).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
   return roundTrip === text ? text : undefined;
 }
+
+/**
+ * Transaction status filter. Only the two values the API accepts get
+ * through — anything else falls back to the unfiltered view rather than
+ * reaching the backend and coming back a 422.
+ */
+const TRANSACTION_STATUSES = ["booked", "pending"] as const;
+
+export type TransactionStatusFilter = (typeof TRANSACTION_STATUSES)[number];
+
+export function asTransactionStatus(
+  value: unknown,
+): TransactionStatusFilter | undefined {
+  const text = asTrimmedString(value)?.toLowerCase();
+  return TRANSACTION_STATUSES.find((status) => status === text);
+}

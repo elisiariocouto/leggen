@@ -20,6 +20,9 @@ router = APIRouter()
 # carries field-level errors and the constraint shows up in the schema.
 _CATEGORY_ID_PATTERN = r"^(\d+|uncategorized)$"
 
+# The two statuses EnableBanking reports for a transaction.
+TransactionStatusFilter = Literal["booked", "pending"]
+
 
 @router.get("/transactions")
 async def get_all_transactions(
@@ -50,6 +53,9 @@ async def get_all_transactions(
         pattern=_CATEGORY_ID_PATTERN,
         description="Filter by category ID or 'uncategorized' for transactions without a category",
     ),
+    status: TransactionStatusFilter | None = Query(
+        default=None, description="Filter by transaction status"
+    ),
 ) -> PaginatedResponse[TransactionSummary | Transaction]:
     """Get all transactions from database with filtering options"""
     # Calculate offset from page and per_page
@@ -67,6 +73,7 @@ async def get_all_transactions(
         max_amount=max_amount,
         search=search,
         category_id=category_id,
+        status=status,
     )
 
     # Get total count for pagination info (respecting the same filters)
@@ -78,6 +85,7 @@ async def get_all_transactions(
         max_amount=max_amount,
         search=search,
         category_id=category_id,
+        status=status,
     )
 
     if summary_only:

@@ -1022,6 +1022,28 @@
               "title": "Category Id"
             },
             "description": "Filter by category ID or 'uncategorized' for transactions without a category"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "booked",
+                    "pending"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by transaction status",
+              "title": "Status"
+            },
+            "description": "Filter by transaction status"
           }
         ],
         "responses": {

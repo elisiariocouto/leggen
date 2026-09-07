@@ -27,6 +27,7 @@ class TransactionRepository:
         max_amount: float | None = None,
         search: str | None = None,
         category_id: str | None = None,
+        status: str | None = None,
     ) -> tuple[str, list[str | int | float]]:
         """Build WHERE clause and params for transaction filtering."""
         clause = ""
@@ -64,6 +65,12 @@ class TransactionRepository:
             else:
                 clause += " AND tc.categoryId = ?"
                 params.append(int(category_id))
+
+        if status:
+            # Banks are inconsistent about the case they report, so compare
+            # case-insensitively rather than trusting the stored spelling.
+            clause += " AND LOWER(t.transactionStatus) = ?"
+            params.append(status.lower())
 
         return clause, params
 
@@ -202,6 +209,7 @@ class TransactionRepository:
         max_amount: float | None = None,
         search: str | None = None,
         category_id: str | None = None,
+        status: str | None = None,
     ) -> list[dict[str, Any]]:
         """Get transactions with optional filtering"""
         if not db_exists():
@@ -218,6 +226,7 @@ class TransactionRepository:
                 max_amount=max_amount,
                 search=search,
                 category_id=category_id,
+                status=status,
             )
 
             query = (
@@ -259,6 +268,7 @@ class TransactionRepository:
         max_amount: float | None = None,
         search: str | None = None,
         category_id: str | None = None,
+        status: str | None = None,
     ) -> int:
         """Get total count of transactions matching filters"""
         if not db_exists():
@@ -275,6 +285,7 @@ class TransactionRepository:
                 max_amount=max_amount,
                 search=search,
                 category_id=category_id,
+                status=status,
             )
 
             query = (

@@ -2347,6 +2347,8 @@ export interface operations {
                 account_id?: string | null;
                 /** @description Filter by category ID or 'uncategorized' for transactions without a category */
                 category_id?: string | null;
+                /** @description Filter by transaction status */
+                status?: ("booked" | "pending") | null;
             };
             header?: never;
             path?: never;

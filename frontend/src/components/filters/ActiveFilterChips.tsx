@@ -75,6 +75,18 @@ export function ActiveFilterChips({
     });
   }
 
+  // Status chip
+  if (filterState.selectedStatus) {
+    chips.push({
+      key: "selectedStatus",
+      label: `Status: ${
+        filterState.selectedStatus.charAt(0).toUpperCase() +
+        filterState.selectedStatus.slice(1)
+      }`,
+      value: filterState.selectedStatus,
+    });
+  }
+
   // Date range chip
   if (filterState.startDate || filterState.endDate) {
     let dateLabel = "Date: ";

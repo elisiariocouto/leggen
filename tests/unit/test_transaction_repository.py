@@ -83,3 +83,46 @@ class TestTransactionRepositoryPersist:
 
         assert len(new_transactions) == 1
         assert updated_count == 1
+
+
+@pytest.mark.unit
+class TestTransactionRepositoryStatusFilter:
+    """Test the status filter shared by get_transactions() and get_count()."""
+
+    @staticmethod
+    def _seed(repo: TransactionRepository) -> None:
+        repo.persist(
+            "IBAN1",
+            [
+                _make_transaction(transactionId="tx-1", transactionStatus="booked"),
+                _make_transaction(transactionId="tx-2", transactionStatus="pending"),
+                _make_transaction(transactionId="tx-3", transactionStatus="booked"),
+            ],
+        )
+
+    def test_filters_transactions_by_status(self, mock_db_path):
+        repo = TransactionRepository()
+        self._seed(repo)
+
+        pending = repo.get_transactions(status="pending")
+
+        assert [t["transactionId"] for t in pending] == ["tx-2"]
+
+    def test_count_respects_status(self, mock_db_path):
+        repo = TransactionRepository()
+        self._seed(repo)
+
+        assert repo.get_count(status="booked") == 2
+        assert repo.get_count(status="pending") == 1
+        assert repo.get_count() == 3
+
+    def test_status_match_is_case_insensitive(self, mock_db_path):
+        """Banks are inconsistent about case, so a stored "Pending" must
+        still match the "pending" filter."""
+        repo = TransactionRepository()
+        repo.persist(
+            "IBAN1",
+            [_make_transaction(transactionId="tx-1", transactionStatus="Pending")],
+        )
+
+        assert repo.get_count(status="pending") == 1

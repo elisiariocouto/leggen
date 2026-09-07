@@ -3,8 +3,10 @@ import TransactionsTable from "../components/TransactionsTable";
 import {
   asISODate,
   asPositiveInt,
+  asTransactionStatus,
   asTrimmedString,
 } from "../lib/searchParams";
+import type { TransactionStatusFilter } from "../lib/searchParams";
 
 /**
  * Filters and pagination live in the URL so a filtered view can be
@@ -17,6 +19,7 @@ export interface TransactionSearch {
   q?: string;
   account?: string;
   category?: string;
+  status?: TransactionStatusFilter;
   from?: string;
   to?: string;
   page?: number;
@@ -29,6 +32,7 @@ export const Route = createFileRoute("/")({
     q: asTrimmedString(search.q),
     account: asTrimmedString(search.account),
     category: asTrimmedString(search.category),
+    status: asTransactionStatus(search.status),
     from: asISODate(search.from),
     to: asISODate(search.to),
     page: asPositiveInt(search.page),

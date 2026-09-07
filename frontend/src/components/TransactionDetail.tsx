@@ -12,7 +12,7 @@ import { useIsMobile } from "../hooks/use-mobile";
 import { formatCurrency, formatDate } from "../lib/utils";
 import { extractRawFields } from "../lib/raw-transaction";
 import CategoryBadge from "./CategoryBadge";
-import { Badge } from "./ui/badge";
+import TransactionStatusBadge from "./TransactionStatusBadge";
 import { Button } from "./ui/button";
 import { BlurredValue } from "./ui/blurred-value";
 import { Separator } from "./ui/separator";
@@ -37,27 +37,6 @@ interface TransactionDetailProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   accounts?: Account[];
-}
-
-function StatusBadge({ status }: { status: string }) {
-  if (status === "pending") {
-    return (
-      <Badge
-        variant="outline"
-        className="border-amber-500/50 text-amber-600 dark:text-amber-400"
-      >
-        Pending
-      </Badge>
-    );
-  }
-  if (status === "booked") {
-    return <Badge variant="secondary">Booked</Badge>;
-  }
-  return (
-    <Badge variant="secondary">
-      {status.charAt(0).toUpperCase() + status.slice(1)}
-    </Badge>
-  );
 }
 
 function DetailRow({
@@ -195,7 +174,7 @@ function TransactionDetailContent({
             </BlurredValue>
           </p>
           <div className="flex items-center gap-2 mt-2">
-            <StatusBadge status={transaction.transaction_status} />
+            <TransactionStatusBadge status={transaction.transaction_status} />
             <span className="text-sm text-muted-foreground">
               {transaction.transaction_date
                 ? formatDate(transaction.transaction_date)

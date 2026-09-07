@@ -23,6 +23,7 @@ export const queryKeys = {
     categoryId: string;
     startDate: string;
     endDate: string;
+    status: string;
     page: number;
     perPage: number;
     search: string;

@@ -6,6 +6,7 @@ import { DateRangePicker } from "./DateRangePicker";
 import type { DatePreset } from "./DateRangePicker";
 import { AccountCombobox } from "./AccountCombobox";
 import { CategoryCombobox } from "./CategoryCombobox";
+import { StatusSelect } from "./StatusSelect";
 import { ActiveFilterChips } from "./ActiveFilterChips";
 import { TIME_PERIODS } from "../../lib/timePeriods";
 import type { Account } from "../../types/api";
@@ -19,6 +20,7 @@ export interface FilterState {
   searchTerm: string;
   selectedAccount: string;
   selectedCategory: string;
+  selectedStatus: string;
   startDate: string;
   endDate: string;
 }
@@ -46,6 +48,7 @@ export function FilterBar({
     filterState.searchTerm ||
     filterState.selectedAccount ||
     filterState.selectedCategory ||
+    filterState.selectedStatus ||
     filterState.startDate ||
     filterState.endDate;
 
@@ -95,6 +98,14 @@ export function FilterBar({
                 onFilterChange("selectedCategory", categoryId)
               }
               className="w-[180px]"
+            />
+
+            <StatusSelect
+              selectedStatus={filterState.selectedStatus}
+              onStatusChange={(status) =>
+                onFilterChange("selectedStatus", status)
+              }
+              className="w-[150px]"
             />
           </div>
 
@@ -148,7 +159,14 @@ export function FilterBar({
             className="w-full"
           />
 
-          {/* Fourth Row: Date Range */}
+          {/* Fourth Row: Status (Full Width) */}
+          <StatusSelect
+            selectedStatus={filterState.selectedStatus}
+            onStatusChange={(status) => onFilterChange("selectedStatus", status)}
+            className="w-full"
+          />
+
+          {/* Fifth Row: Date Range */}
           <DateRangePicker
             startDate={filterState.startDate}
             endDate={filterState.endDate}
