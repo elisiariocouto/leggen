@@ -23,23 +23,28 @@ def echo(msg=""):
     sys.stdout.flush()
 
 
-def echo_error(msg, color: str, prefix="> ", bold=True, nl=True):
+def echo_status(msg, color: str, prefix="> "):
+    """Write a status line to stderr, so stdout stays pipeable data.
+
+    Color is left to click, which drops it when stderr is not a terminal;
+    forcing it would leak escape codes into pipes and log files.
+    """
     padded_msg = "\n".join(f"{prefix}{line}" for line in msg.splitlines())
-    click.secho(f"{padded_msg}", fg=color, err=True, color=True, bold=True)
+    click.secho(padded_msg, fg=color, err=True, bold=True)
     sys.stderr.flush()
 
 
 def success(msg):
-    echo_error(msg, "green")
+    echo_status(msg, "green")
 
 
 def info(msg):
-    echo_error(msg, "blue")
+    echo_status(msg, "blue")
 
 
 def warning(msg):
-    echo_error(msg, "yellow")
+    echo_status(msg, "yellow")
 
 
 def error(msg):
-    echo_error(msg, "red")
+    echo_status(msg, "red")

@@ -2,7 +2,6 @@
 
 ## 🎨 Consistency & code quality
 
-- [ ] CLI: exit non-zero on failure everywhere — `sync.py:58-59` and `status.py:24` catch and `return` → exit 0; `bank/delete.py` has no health check and no error handling (`delete.py:26`), unlike its siblings; unify stderr `error()` vs stdout `click.echo`.
 - [ ] `decode_access_token` returns None for both expired and malformed tokens (`utils/auth.py:38-44`), so the API can't tell the frontend to refresh rather than force a re-login.
 - [ ] `NotificationService.active` is the real on/off signal; `Settings.tsx:323-327` derives status from `enabled && configured` — "Needs Configuration" state unreachable.
 - [ ] Notification error semantics (do these together, they're one pass): `send_test_notification` returns a bare `False` for both "service not enabled" and "the provider call raised", so `POST /notifications/test` answers a misconfiguration and a network failure with an identical 400 — needs domain errors (`NOTIFICATION_NOT_ENABLED`, plus a 502 for upstream send failures) and a frontend that keys off `code`; `DELETE /notifications/settings/{service}` still hand-validates the service name and returns 400, now inconsistent with the `Literal` 422 on the test endpoint.

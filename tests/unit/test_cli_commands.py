@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 
+import click
 import pytest
 import requests
 import requests_mock
@@ -13,6 +14,7 @@ from click.testing import CliRunner
 from leggen.main import cli
 from leggen.utils.config import config as config_singleton
 from leggen.utils.paths import path_manager
+from leggen.utils.text import echo, error, info, success, warning
 from tests.conftest import reset_config_singleton
 
 
@@ -57,7 +59,15 @@ class TestErrorExitCodes:
     (regression: error paths used to echo-and-return with exit code 0)."""
 
     @pytest.mark.parametrize(
-        "command", [["status"], ["balances"], ["sync"], ["transactions"]]
+        "command",
+        [
+            ["status"],
+            ["balances"],
+            ["sync"],
+            ["transactions"],
+            ["bank", "add"],
+            ["bank", "delete", "some-session-id"],
+        ],
     )
     def test_unreachable_server_exits_nonzero(self, command):
         runner = CliRunner()
@@ -84,6 +94,51 @@ class TestErrorExitCodes:
         assert result.exit_code == 1
         # ClickException output must land on stderr, not stdout
         assert "Internal server error" in result.stderr
+
+
+@pytest.mark.cli
+class TestOutputStreams:
+    """stdout carries data, stderr carries status - so `leggen transactions`
+    stays pipeable while progress still reaches the terminal."""
+
+    def test_status_helpers_write_to_stderr(self):
+        runner = CliRunner()
+
+        @click.command()
+        def cmd():
+            echo("DATA")
+            info("INFO")
+            success("OK")
+            warning("WARN")
+            error("ERR")
+
+        result = runner.invoke(cmd)
+        assert result.stdout == "DATA\n"
+        for line in ("INFO", "OK", "WARN", "ERR"):
+            assert line in result.stderr
+
+    def test_status_lines_are_not_colored_when_piped(self):
+        """Regression: color was forced on, so escape codes leaked into
+        pipes and log files."""
+        runner = CliRunner()
+
+        @click.command()
+        def cmd():
+            info("INFO")
+
+        result = runner.invoke(cmd, color=False)
+        assert "\x1b[" not in result.stderr
+        assert "> INFO" in result.stderr
+
+    def test_status_lines_are_colored_for_a_terminal(self):
+        runner = CliRunner()
+
+        @click.command()
+        def cmd():
+            info("INFO")
+
+        result = runner.invoke(cmd, color=True)
+        assert "\x1b[" in result.stderr
 
 
 @pytest.mark.cli
