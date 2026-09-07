@@ -515,6 +515,11 @@ export interface paths {
         /**
          * Test Notification
          * @description Send a test notification
+         *
+         *     The service raises `NotificationNotEnabledError` (400) when the service is
+         *     unconfigured or switched off, and `UpstreamServiceError` (502) when the
+         *     provider itself refuses the message, so clients can tell a settings problem
+         *     apart from a transient delivery failure.
          */
         post: operations["test_notification_api_v1_notifications_test_post"];
         delete?: never;
@@ -576,6 +581,9 @@ export interface paths {
         /**
          * Delete Notification Service
          * @description Delete/disable a notification service
+         *
+         *     The service name is validated by FastAPI against the Literal, so an unknown
+         *     one is a 422 in the same envelope as the test endpoint's.
          */
         delete: operations["delete_notification_service_api_v1_notifications_settings__service__delete"];
         options?: never;
@@ -3376,7 +3384,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                service: string;
+                service: "discord" | "telegram";
             };
             cookie?: never;
         };

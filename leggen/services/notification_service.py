@@ -2,6 +2,11 @@ from typing import Any
 
 from loguru import logger
 
+from leggen.errors import (
+    NotificationNotEnabledError,
+    UpstreamServiceError,
+    describe_exception,
+)
 from leggen.notifications import discord, telegram
 from leggen.utils.config import config
 
@@ -37,23 +42,40 @@ class NotificationService:
         if self._is_telegram_enabled():
             await self._send_telegram_notifications(matching_transactions)
 
-    async def send_test_notification(self, service: str) -> bool:
-        """Send a test notification."""
+    async def send_test_notification(self, service: str) -> None:
+        """Send a test notification, raising a domain error if it does not arrive.
+
+        The two failure modes are deliberately distinct: a service that is not
+        configured or is switched off never reaches the provider
+        (`NotificationNotEnabledError`, a 400 the user fixes in settings), while
+        a provider that rejects or times out is an upstream failure
+        (`UpstreamServiceError`, a 502 worth retrying).
+        """
+        senders = {
+            "discord": (self._is_discord_enabled, self._send_discord_test),
+            "telegram": (self._is_telegram_enabled, self._send_telegram_test),
+        }
+        entry = senders.get(service)
+
+        # The API validates the name against a Literal before we get here; this
+        # guards direct callers.
+        if entry is None:
+            raise NotificationNotEnabledError(
+                f"Unknown notification service '{service}'."
+            )
+
+        is_enabled, send = entry
+        if not is_enabled():
+            raise NotificationNotEnabledError(
+                f"Notification service '{service}' is not configured or is disabled."
+            )
+
         try:
-            if service == "discord" and self._is_discord_enabled():
-                await self._send_discord_test()
-                return True
-            elif service == "telegram" and self._is_telegram_enabled():
-                await self._send_telegram_test()
-                return True
-            else:
-                logger.error(
-                    f"Notification service '{service}' not enabled or not found"
-                )
-                return False
+            await send()
         except Exception as e:
-            logger.error(f"Failed to send test notification to {service}: {e}")
-            return False
+            raise UpstreamServiceError(
+                f"Failed to send test notification to {service}: {describe_exception(e)}"
+            ) from e
 
     async def send_expiry_notification(self, notification_data: dict[str, Any]) -> None:
         """Send notification about account expiry."""

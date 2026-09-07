@@ -20,6 +20,7 @@ import {
 } from "./ui/drawer";
 import type { NotificationSettings, DiscordConfig } from "../types/api";
 import { queryKeys } from "../lib/queryKeys";
+import { getTestNotificationErrorMessage } from "../lib/notification-errors";
 
 interface DiscordConfigDrawerProps {
   settings: NotificationSettings | undefined;
@@ -75,9 +76,7 @@ export default function DiscordConfigDrawer({
       toast.success("Test Discord notification sent.");
     },
     onError: (error) => {
-      toast.error(
-        getApiErrorMessage(error, "Failed to send test Discord notification."),
-      );
+      toast.error(getTestNotificationErrorMessage(error, "Discord"));
     },
   });
 

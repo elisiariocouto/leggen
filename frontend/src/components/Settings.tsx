@@ -339,18 +339,22 @@ export default function Settings() {
                               <div className="flex items-center space-x-2">
                                 <div
                                   className={`w-2 h-2 rounded-full ${
-                                    service.enabled && service.configured
+                                    service.active
                                       ? "bg-green-500"
-                                      : service.enabled
+                                      : !service.configured
                                         ? "bg-amber-500"
                                         : "bg-muted-foreground"
                                   }`}
                                   aria-hidden="true"
                                 />
                                 <span className="text-sm text-muted-foreground">
-                                  {service.enabled && service.configured
+                                  {/* `active` is the real on/off signal: the
+                                      service is both switched on and holds
+                                      credentials. Missing credentials outrank
+                                      the switch in what the user must fix. */}
+                                  {service.active
                                     ? "Active"
-                                    : service.enabled
+                                    : !service.configured
                                       ? "Needs Configuration"
                                       : "Disabled"}
                                 </span>

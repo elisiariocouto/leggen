@@ -329,8 +329,9 @@ class TestNotificationTestAPI:
         assert "Leggen notifications are configured correctly\\." in message
         assert "test-123" not in message
 
-    def test_disabled_service_returns_400(self, api_client, mock_config):
-        """Testing an unconfigured service is a client error."""
+    def test_unconfigured_service_returns_not_enabled(self, api_client, mock_config):
+        """A service with no credentials is a configuration error, not a
+        delivery failure."""
         previous = mock_config._config.get("notifications")
         mock_config._config["notifications"] = {}
         try:
@@ -344,7 +345,57 @@ class TestNotificationTestAPI:
                 mock_config._config["notifications"] = previous
 
         assert response.status_code == 400
-        assert "discord" in response.json()["detail"]
+        body = response.json()
+        assert body["code"] == "NOTIFICATION_NOT_ENABLED"
+        assert body["status"] == 400
+        assert "discord" in body["detail"]
+
+    def test_switched_off_service_returns_not_enabled(
+        self, api_client, enabled_notifications
+    ):
+        """Credentials present but `enabled = false` is still not enabled."""
+        enabled_notifications._config["notifications"]["telegram"]["enabled"] = False
+
+        response = api_client.post(
+            "/api/v1/notifications/test", json={"service": "telegram"}
+        )
+
+        assert response.status_code == 400
+        assert response.json()["code"] == "NOTIFICATION_NOT_ENABLED"
+
+    def test_provider_failure_returns_502(self, api_client, enabled_notifications):
+        """A provider that refuses the message is an upstream failure, kept
+        distinct from a misconfiguration."""
+        with patch(
+            "leggen.notifications.discord._post_embed",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("webhook rejected"),
+        ):
+            response = api_client.post(
+                "/api/v1/notifications/test", json={"service": "discord"}
+            )
+
+        assert response.status_code == 502
+        body = response.json()
+        assert body["code"] == "UPSTREAM_ERROR"
+        assert body["status"] == 502
+        assert "discord" in body["detail"]
+
+    def test_timeout_without_a_message_still_names_the_cause(
+        self, api_client, enabled_notifications
+    ):
+        """An exception with an empty str() still yields an identifiable detail."""
+        with patch(
+            "leggen.notifications.telegram._send_message",
+            new_callable=AsyncMock,
+            side_effect=TimeoutError(),
+        ):
+            response = api_client.post(
+                "/api/v1/notifications/test", json={"service": "telegram"}
+            )
+
+        assert response.status_code == 502
+        assert "TimeoutError" in response.json()["detail"]
 
     def test_unknown_service_returns_422(self, api_client, enabled_notifications):
         """An unsupported service name fails request validation."""
@@ -369,3 +420,88 @@ class TestNotificationTestAPI:
 
         assert response.status_code == 200
         assert "custom text" not in str(post_embed.call_args[0][1])
+
+
+@pytest.mark.api
+class TestNotificationServiceDeletionAPI:
+    """Test DELETE /notifications/settings/{service}."""
+
+    def test_delete_removes_the_service(self, api_client, enabled_notifications):
+        """Deleting a service drops its whole section from the config."""
+        response = api_client.delete("/api/v1/notifications/settings/discord")
+
+        assert response.status_code == 200
+        assert response.json() == {"deleted": "discord"}
+        assert "discord" not in enabled_notifications._config["notifications"]
+        # The other service is untouched.
+        assert "telegram" in enabled_notifications._config["notifications"]
+
+    def test_unknown_service_returns_422(self, api_client, enabled_notifications):
+        """An unsupported service name fails path validation, matching the
+        envelope the test endpoint returns rather than a hand-rolled 400."""
+        response = api_client.delete("/api/v1/notifications/settings/slack")
+
+        assert response.status_code == 422
+        body = response.json()
+        assert body["code"] == "VALIDATION_ERROR"
+        assert any("service" in error["field"] for error in body["errors"])
+
+    def test_filters_route_still_wins_over_the_service_route(
+        self, api_client, mock_config
+    ):
+        """`/settings/filters` must not be swallowed by the service path."""
+        mock_config._config["filters"] = {"case_insensitive": ["rent"]}
+
+        response = api_client.delete("/api/v1/notifications/settings/filters")
+
+        assert response.status_code == 200
+        assert response.json() == {"deleted": "filters"}
+
+
+@pytest.mark.api
+class TestNotificationServicesStatusAPI:
+    """Test GET /notifications/services."""
+
+    def test_configured_and_switched_on_is_active(
+        self, api_client, enabled_notifications
+    ):
+        response = api_client.get("/api/v1/notifications/services")
+
+        assert response.status_code == 200
+        discord = response.json()["discord"]
+        assert discord == {
+            "name": "Discord",
+            "enabled": True,
+            "configured": True,
+            "active": True,
+        }
+
+    def test_missing_credentials_are_not_configured(self, api_client, mock_config):
+        """`enabled` reflects the config switch, so an unconfigured service is
+        reported as enabled-but-not-configured and is not active."""
+        previous = mock_config._config.get("notifications")
+        mock_config._config["notifications"] = {}
+        try:
+            response = api_client.get("/api/v1/notifications/services")
+        finally:
+            if previous is None:
+                mock_config._config.pop("notifications", None)
+            else:
+                mock_config._config["notifications"] = previous
+
+        telegram = response.json()["telegram"]
+        assert telegram["enabled"] is True
+        assert telegram["configured"] is False
+        assert telegram["active"] is False
+
+    def test_switched_off_service_is_configured_but_inactive(
+        self, api_client, enabled_notifications
+    ):
+        enabled_notifications._config["notifications"]["discord"]["enabled"] = False
+
+        response = api_client.get("/api/v1/notifications/services")
+
+        discord = response.json()["discord"]
+        assert discord["enabled"] is False
+        assert discord["configured"] is True
+        assert discord["active"] is False

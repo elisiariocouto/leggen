@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException
 
@@ -113,14 +113,14 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
 
 @router.post("/notifications/test")
 async def test_notification(test_request: NotificationTest) -> dict:
-    """Send a test notification"""
-    success = await NotificationService().send_test_notification(test_request.service)
+    """Send a test notification
 
-    if not success:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Failed to send test notification to {test_request.service}",
-        )
+    The service raises `NotificationNotEnabledError` (400) when the service is
+    unconfigured or switched off, and `UpstreamServiceError` (502) when the
+    provider itself refuses the message, so clients can tell a settings problem
+    apart from a transient delivery failure.
+    """
+    await NotificationService().send_test_notification(test_request.service)
 
     return {"sent": True}
 
@@ -133,19 +133,24 @@ async def get_notification_services() -> dict[str, NotificationServiceStatus]:
     telegram = notifications_config.get("telegram", {})
     discord_configured = bool(discord.get("webhook"))
     telegram_configured = bool(telegram.get("token") and telegram.get("chat_id"))
+    discord_enabled = bool(discord.get("enabled", True))
+    telegram_enabled = bool(telegram.get("enabled", True))
 
+    # `enabled` is the user's on/off switch and `configured` says whether the
+    # credentials are present; `active` is the conjunction, and matches what
+    # NotificationService actually requires before sending.
     return {
         "discord": NotificationServiceStatus(
             name="Discord",
-            enabled=discord_configured,
+            enabled=discord_enabled,
             configured=discord_configured,
-            active=discord.get("enabled", True),
+            active=discord_enabled and discord_configured,
         ),
         "telegram": NotificationServiceStatus(
             name="Telegram",
-            enabled=telegram_configured,
+            enabled=telegram_enabled,
             configured=telegram_configured,
-            active=telegram.get("enabled", True),
+            active=telegram_enabled and telegram_configured,
         ),
     }
 
@@ -161,13 +166,14 @@ async def delete_notification_filters() -> dict:
 
 
 @router.delete("/notifications/settings/{service}")
-async def delete_notification_service(service: str) -> dict:
-    """Delete/disable a notification service"""
-    if service not in ["discord", "telegram"]:
-        raise HTTPException(
-            status_code=400, detail="Service must be 'discord' or 'telegram'"
-        )
+async def delete_notification_service(
+    service: Literal["discord", "telegram"],
+) -> dict:
+    """Delete/disable a notification service
 
+    The service name is validated by FastAPI against the Literal, so an unknown
+    one is a 422 in the same envelope as the test endpoint's.
+    """
     notifications_config = config.notifications_config.copy()
     if service in notifications_config:
         del notifications_config[service]

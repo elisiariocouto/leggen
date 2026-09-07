@@ -2456,7 +2456,7 @@
           "notifications"
         ],
         "summary": "Test Notification",
-        "description": "Send a test notification",
+        "description": "Send a test notification\n\nThe service raises `NotificationNotEnabledError` (400) when the service is\nunconfigured or switched off, and `UpstreamServiceError` (502) when the\nprovider itself refuses the message, so clients can tell a settings problem\napart from a transient delivery failure.",
         "operationId": "test_notification_api_v1_notifications_test_post",
         "requestBody": {
           "content": {
@@ -2634,7 +2634,7 @@
           "notifications"
         ],
         "summary": "Delete Notification Service",
-        "description": "Delete/disable a notification service",
+        "description": "Delete/disable a notification service\n\nThe service name is validated by FastAPI against the Literal, so an unknown\none is a 422 in the same envelope as the test endpoint's.",
         "operationId": "delete_notification_service_api_v1_notifications_settings__service__delete",
         "security": [
           {
@@ -2650,6 +2650,10 @@
             "in": "path",
             "required": true,
             "schema": {
+              "enum": [
+                "discord",
+                "telegram"
+              ],
               "type": "string",
               "title": "Service"
             }

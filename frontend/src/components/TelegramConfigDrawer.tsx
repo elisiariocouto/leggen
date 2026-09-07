@@ -20,6 +20,7 @@ import {
 } from "./ui/drawer";
 import type { NotificationSettings, TelegramConfig } from "../types/api";
 import { queryKeys } from "../lib/queryKeys";
+import { getTestNotificationErrorMessage } from "../lib/notification-errors";
 
 interface TelegramConfigDrawerProps {
   settings: NotificationSettings | undefined;
@@ -74,12 +75,7 @@ export default function TelegramConfigDrawer({
       toast.success("Test Telegram notification sent.");
     },
     onError: (error) => {
-      toast.error(
-        getApiErrorMessage(
-          error,
-          "Failed to send test Telegram notification.",
-        ),
-      );
+      toast.error(getTestNotificationErrorMessage(error, "Telegram"));
     },
   });
 
