@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from leggen.utils.config import Config
+from tests.conftest import reset_config_singleton
 
 _AUTH_CONFIG = {
     "username": "testuser",
@@ -18,6 +19,16 @@ _AUTH_CONFIG = {
 @pytest.mark.unit
 class TestConfig:
     """Test configuration management."""
+
+    @pytest.fixture(autouse=True)
+    def _restore_config_singleton(self):
+        """`Config()` is a process-global singleton, so every test below that
+        pokes at `config._config*` leaks into the rest of the session. Clear it
+        afterwards so the next access reloads the canonical test config."""
+        try:
+            yield
+        finally:
+            reset_config_singleton()
 
     def test_singleton_behavior(self):
         """Test that Config is a singleton."""
