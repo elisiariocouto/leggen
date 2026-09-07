@@ -2,29 +2,17 @@ import httpx
 
 from leggen.utils.text import info
 
+# MarkdownV2 special characters, per https://core.telegram.org/bots/api#markdownv2-style.
+# The backslash is escaped first so the escapes added below are not re-escaped.
+_MARKDOWN_V2_SPECIAL_CHARS = "\\_*[]()~`>#+-=|{}.!"
+
 
 def escape_markdown(text: str) -> str:
-    return (
-        str(text)
-        .replace("_", "\\_")
-        .replace("*", "\\*")
-        .replace("[", "\\[")
-        .replace("]", "\\]")
-        .replace("(", "\\(")
-        .replace(")", "\\)")
-        .replace("~", "\\~")
-        .replace("`", "\\`")
-        .replace(">", "\\>")
-        .replace("#", "\\#")
-        .replace("+", "\\+")
-        .replace("-", "\\-")
-        .replace("=", "\\=")
-        .replace("|", "\\|")
-        .replace("{", "\\{")
-        .replace("}", "\\}")
-        .replace(".", "\\.")
-        .replace("!", "\\!")
-    )
+    """Escape every MarkdownV2 special character in ``text``."""
+    result = str(text)
+    for char in _MARKDOWN_V2_SPECIAL_CHARS:
+        result = result.replace(char, f"\\{char}")
+    return result
 
 
 async def _send_message(token: str, chat_id: str, message: str) -> None:
