@@ -111,6 +111,17 @@ class SampleDataGenerator:
         """Ensure database directory exists."""
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
+    def remove_existing_database(self):
+        """Delete any existing database so the sample data starts from scratch.
+
+        Inserting over an existing file would leave old rows behind: only some
+        tables are keyed in a way that lets a re-insert replace them. A leftover
+        WAL would also be replayed over the new file on the next connection.
+        """
+        self.db_path.unlink(missing_ok=True)
+        for suffix in ("-wal", "-shm"):
+            self.db_path.with_name(self.db_path.name + suffix).unlink(missing_ok=True)
+
     def create_tables(self):
         """Create database tables using the shared repository schema."""
         path_manager.set_database_path(self.db_path)
@@ -466,6 +477,7 @@ class SampleDataGenerator:
         click.echo(f"🗄️  Creating sample database at: {self.db_path}")
 
         self.ensure_database_dir()
+        self.remove_existing_database()
         self.create_tables()
 
         click.echo(f"👥 Generating {num_accounts} sample accounts...")
@@ -569,4 +581,4 @@ def generate_sample_db(
     click.echo("   leggen transactions")
     click.echo("")
     click.echo("To use this sample database with leggen server:")
-    click.echo(f"   leggen server --database {db_path}")
+    click.echo(f"   leggen --database {db_path} server")

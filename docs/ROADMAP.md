@@ -1,9 +1,5 @@
 # Roadmap
 
-## 🐛 Bugs & half-implemented features
-
-- [ ] `generate_sample_db --force` doesn't truly overwrite: `INSERT OR REPLACE` for accounts/transactions but plain `INSERT` for balances, and tables are never dropped — old rows persist (`generate_sample_db.py:333,355,380`); printed instructions still use invalid ordering `leggen server --database X` (`generate_sample_db.py:549`) — `--database` is a global option and must precede the subcommand.
-
 ## 🎨 Consistency & code quality
 
 - [ ] CLI: exit non-zero on failure everywhere — `sync.py:58-59` and `status.py:24` catch and `return` → exit 0; `bank/delete.py` has no health check and no error handling (`delete.py:26`), unlike its siblings; unify stderr `error()` vs stdout `click.echo`.
