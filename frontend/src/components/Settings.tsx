@@ -12,6 +12,7 @@ import {
   Cloud,
   Archive,
   Eye,
+  History,
   Clock,
 } from "lucide-react";
 import {
@@ -57,13 +58,14 @@ import type {
   BackupInfo,
   ScheduleSettings,
 } from "../types/api";
-import { queryKeys } from "../lib/queryKeys";
+import { invalidateSyncedData, queryKeys } from "../lib/queryKeys";
 
 export default function Settings() {
   const [showBackups, setShowBackups] = useState(false);
   const [deleteServiceTarget, setDeleteServiceTarget] = useState<string | null>(
     null,
   );
+  const [restoreTarget, setRestoreTarget] = useState<BackupInfo | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -155,6 +157,29 @@ export default function Settings() {
           "Failed to create backup. Please check your S3 configuration.",
         ),
       );
+    },
+  });
+
+  const restoreBackupMutation = useMutation({
+    mutationFn: (backupKey: string) =>
+      apiClient.performBackupOperation({
+        operation: "restore",
+        backup_key: backupKey,
+      }),
+    onSuccess: (response) => {
+      if (response.completed) {
+        // The restore swapped the whole database, so everything derived from
+        // it is stale — categories included, which a sync would not touch.
+        invalidateSyncedData(queryClient);
+        queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+        setRestoreTarget(null);
+        toast.success("Database restored successfully!");
+      } else {
+        toast.error("Failed to restore backup.");
+      }
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to restore backup."));
     },
   });
 
@@ -593,13 +618,23 @@ export default function Settings() {
                               key={backup.key || index}
                               className="flex items-center justify-between p-3 border rounded bg-muted/50"
                             >
-                              <div>
-                                <p className="text-sm font-medium">{backup.key}</p>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{backup.key}</p>
                                 <div className="flex items-center space-x-4 text-xs text-muted-foreground mt-1">
                                   <span>Modified: {formatDate(backup.last_modified)}</span>
                                   <span>Size: {(backup.size / 1024 / 1024).toFixed(2)} MB</span>
                                 </div>
                               </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="shrink-0 ml-4"
+                                onClick={() => setRestoreTarget(backup)}
+                                disabled={restoreBackupMutation.isPending}
+                              >
+                                <History className="h-4 w-4 mr-2" />
+                                Restore
+                              </Button>
                             </div>
                           ))}
                         </div>
@@ -645,6 +680,52 @@ export default function Settings() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restore Backup Dialog */}
+      <AlertDialog
+        open={!!restoreTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRestoreTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Database</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                This replaces the current database with the backup taken on{" "}
+                <span className="font-medium text-foreground">
+                  {restoreTarget ? formatDate(restoreTarget.last_modified) : ""}
+                </span>
+                . Accounts, transactions and categories recorded since then will
+                be lost.
+              </span>
+              <span className="block break-all text-xs">
+                {restoreTarget?.key}
+              </span>
+              <span className="block font-medium text-foreground">
+                This cannot be undone. Consider running a backup first.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (restoreTarget?.key) {
+                  restoreBackupMutation.mutate(restoreTarget.key);
+                }
+              }}
+              disabled={restoreBackupMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {restoreBackupMutation.isPending ? "Restoring..." : "Restore"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -2,8 +2,6 @@
 
 ## 🐛 Bugs & half-implemented features
 
-- [ ] Settings can't be cleared: empty notification filter lists are skipped on save — truthiness checks on the filter lists and on `filters_config` (`routes/notifications.py:100-108`); S3 backup config has no DELETE endpoint and PUT only acts `if settings.s3:` (`routes/backup.py` — copy the notifications DELETE at `routes/notifications.py:185`).
-- [ ] Backup restore exists in the API (`routes/backup.py:227-243`) and the API client (`api.ts:386`), but the only wired UI action is "Backup Now" (`Settings.tsx:141,535`) — no restore UI.
 - [ ] `generate_sample_db --force` doesn't truly overwrite: `INSERT OR REPLACE` for accounts/transactions but plain `INSERT` for balances, and tables are never dropped — old rows persist (`generate_sample_db.py:333,355,380`); printed instructions still use invalid ordering `leggen server --database X` (`generate_sample_db.py:549`) — `--database` is a global option and must precede the subcommand.
 
 ## 🎨 Consistency & code quality
