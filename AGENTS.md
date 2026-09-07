@@ -98,6 +98,7 @@ APScheduler (`leggen/background/scheduler.py`, cron from config, live-reschedula
   - Scopes: `cli`, `api`, `frontend` (optional); types: `feat`, `fix`, `refactor` (avoid too many different types)
   - Example: `feat(frontend): Add support for S3 backups.`
   - Avoid specific numbers/counts or data-dependent information that may become outdated
+- Breaking changes: mark with `!` after the scope (`refactor(api)!:`) **and** a one-line `BREAKING CHANGE:` footer carrying the upgrade instructions. git-cliff renders only the subject line plus that footer, so anything the user must act on — a new minimum supported version, a removed config key, a manual step — is invisible in the release notes without it. Preview with `git-cliff --unreleased`
 - Pre-commit hooks (`pre-commit install`) run ruff check/format and mypy; when pre-commit fails, the commit is canceled
 - Releases: `scripts/release.sh` (CalVer `YEAR.MONTH.MICRO`, git-cliff changelog, tag push triggers PyPI + Docker publishing)
 - Never log sensitive data; use environment variables for secrets
