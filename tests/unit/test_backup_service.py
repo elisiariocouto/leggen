@@ -264,6 +264,70 @@ class TestBackupService:
                 assert restore_path.read_text() == "db payload"
 
     @pytest.mark.asyncio
+    async def test_restore_database_discards_stale_wal(self):
+        """A leftover WAL from the replaced database must not survive.
+
+        The database runs in WAL mode, so a `-wal` left next to the restored
+        file is replayed on the next connection and silently reinstates the
+        pre-restore contents.
+        """
+        s3_config = S3BackupConfig(
+            access_key_id="test-key",
+            secret_access_key="test-secret",
+            bucket_name="test-bucket",
+            region="us-east-1",
+        )
+        service = BackupService(s3_config)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            restore_path = Path(tmpdir) / "leggen.db"
+
+            # A live WAL-mode database whose last write is still in the WAL
+            live = sqlite3.connect(str(restore_path))
+            try:
+                live.execute("PRAGMA journal_mode=WAL")
+                live.execute("CREATE TABLE t (v TEXT)")
+                live.execute("INSERT INTO t VALUES ('before-restore')")
+                live.commit()
+                assert restore_path.with_name(restore_path.name + "-wal").exists()
+
+                # The backup being restored holds different contents
+                snapshot = Path(tmpdir) / "snapshot.db"
+                source = sqlite3.connect(str(snapshot))
+                try:
+                    source.execute("CREATE TABLE t (v TEXT)")
+                    source.execute("INSERT INTO t VALUES ('after-restore')")
+                    source.commit()
+                finally:
+                    source.close()
+                payload = snapshot.read_bytes()
+
+                with patch("boto3.Session") as mock_session:
+                    mock_client = MagicMock()
+                    mock_session.return_value.client.return_value = mock_client
+                    mock_client.download_file.side_effect = lambda bucket, key, dest: (
+                        Path(dest).write_bytes(payload)
+                    )
+
+                    result = await service.restore_database(
+                        "leggen_backups/database_backup_x.db", restore_path
+                    )
+            finally:
+                live.close()
+
+            assert result is True
+            for suffix in ("-wal", "-shm"):
+                assert not restore_path.with_name(restore_path.name + suffix).exists()
+
+            restored = sqlite3.connect(str(restore_path))
+            try:
+                assert restored.execute("SELECT v FROM t").fetchall() == [
+                    ("after-restore",)
+                ]
+            finally:
+                restored.close()
+
+    @pytest.mark.asyncio
     async def test_list_backups_success(self):
         """Test successful backup listing."""
         s3_config = S3BackupConfig(

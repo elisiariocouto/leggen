@@ -235,3 +235,9 @@ class BackupService:
         except BaseException:
             temp_path.unlink(missing_ok=True)
             raise
+
+        # The restored file carries its own state. A leftover WAL from the
+        # previous database would be replayed over it on the next connection,
+        # silently undoing the restore.
+        for suffix in ("-wal", "-shm"):
+            restore_path.with_name(restore_path.name + suffix).unlink(missing_ok=True)
