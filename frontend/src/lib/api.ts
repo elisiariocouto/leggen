@@ -1,5 +1,5 @@
 import axios from "axios";
-import { clearToken, getToken } from "./authToken";
+import { clearToken, getToken, setLogoutReason } from "./authToken";
 import type {
   ApiError,
   Account,
@@ -115,6 +115,12 @@ api.interceptors.response.use(
       !window.location.pathname.includes("/login") &&
       !error.config?.url?.includes("/auth/")
     ) {
+      // TOKEN_EXPIRED means the session simply ran out, which is worth
+      // saying plainly; anything else is a credential the user cannot fix
+      // by knowing more about it.
+      setLogoutReason(
+        getApiError(error)?.code === "TOKEN_EXPIRED" ? "expired" : "invalid",
+      );
       clearToken();
       window.location.href = "/login";
     }
@@ -186,6 +192,7 @@ export const apiClient = {
     minAmount?: number;
     maxAmount?: number;
     categoryId?: string;
+    status?: string;
   }): Promise<PaginatedResponse<Transaction>> => {
     const queryParams = new URLSearchParams();
 
@@ -207,6 +214,7 @@ export const apiClient = {
     }
     if (params?.categoryId)
       queryParams.append("category_id", params.categoryId);
+    if (params?.status) queryParams.append("status", params.status);
 
     const response = await api.get<PaginatedResponse<Transaction>>(
       `/transactions?${queryParams.toString()}`,

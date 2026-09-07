@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 from pydantic import BaseModel
 
+from leggen.errors import AuthenticationError
 from leggen.utils.auth import create_access_token, verify_password
 from leggen.utils.config import config
 
@@ -25,10 +26,7 @@ async def login(request: LoginRequest) -> LoginResponse:
     if request.username != auth_cfg["username"] or not verify_password(
         request.password, auth_cfg["password_hash"]
     ):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-        )
+        raise AuthenticationError("Invalid username or password.")
 
     token = create_access_token(
         username=request.username,

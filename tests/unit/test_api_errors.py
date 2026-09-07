@@ -75,7 +75,7 @@ class TestErrorEnvelope:
         response = client.get("/api/v1/accounts")
 
         assert response.status_code == 401
-        _assert_envelope(response.json(), 401, "UNAUTHORIZED")
+        _assert_envelope(response.json(), 401, "INVALID_CREDENTIALS")
         assert response.headers["www-authenticate"] == "Bearer"
 
     def test_unknown_route_returns_envelope(self, fastapi_app, mock_db_path):

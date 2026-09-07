@@ -26,6 +26,9 @@ class LeggenError(Exception):
     status_code: int = 500
     code: str = "INTERNAL_ERROR"
 
+    headers: dict[str, str] | None = None
+    """Response headers the error requires, e.g. WWW-Authenticate on a 401."""
+
     def __init__(self, detail: str) -> None:
         super().__init__(detail)
         self.detail = detail
@@ -61,3 +64,44 @@ class UnsupportedDatabaseVersionError(LeggenError):
     """
 
     code = "UNSUPPORTED_DATABASE_VERSION"
+
+
+class AuthenticationError(LeggenError):
+    """The request carried no usable credentials."""
+
+    status_code = 401
+    code = "INVALID_CREDENTIALS"
+    headers = {"WWW-Authenticate": "Bearer"}
+
+
+class TokenExpiredError(AuthenticationError):
+    """The bearer token was well-formed and correctly signed, but has lapsed.
+
+    Distinguished from a plainly invalid token so the frontend can tell the
+    user their session expired and send them back to the login form, rather
+    than reporting a credential failure they cannot act on.
+    """
+
+    code = "TOKEN_EXPIRED"
+
+
+class NotificationNotEnabledError(LeggenError):
+    """The notification service is missing credentials or switched off.
+
+    Distinct from a delivery failure: nothing was attempted, and the fix is a
+    configuration change rather than a retry.
+    """
+
+    status_code = 400
+    code = "NOTIFICATION_NOT_ENABLED"
+
+
+class UpstreamServiceError(LeggenError):
+    """A third-party service the request depends on failed or was unreachable.
+
+    The request itself was well-formed, so this is a 502 rather than a 4xx: the
+    caller can retry once the upstream recovers.
+    """
+
+    status_code = 502
+    code = "UPSTREAM_ERROR"

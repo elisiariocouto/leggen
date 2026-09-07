@@ -52,3 +52,34 @@ export function hasValidSession(): boolean {
   if (typeof exp !== "number") return true;
   return exp * 1000 > Date.now();
 }
+
+/**
+ * Why the session ended, stashed for the login page to explain.
+ *
+ * sessionStorage rather than a router param: the 401 interceptor navigates
+ * with a full page load, so React state does not survive the trip, and the
+ * reason is per-tab and disposable.
+ */
+const LOGOUT_REASON_KEY = "leggen_logout_reason";
+
+export type LogoutReason = "expired" | "invalid";
+
+export function setLogoutReason(reason: LogoutReason): void {
+  try {
+    sessionStorage.setItem(LOGOUT_REASON_KEY, reason);
+  } catch {
+    // Storage can be unavailable (private mode, blocked cookies); the login
+    // page simply falls back to its default message.
+  }
+}
+
+/** Read and clear the reason, so it is shown once. */
+export function takeLogoutReason(): LogoutReason | null {
+  try {
+    const reason = sessionStorage.getItem(LOGOUT_REASON_KEY);
+    sessionStorage.removeItem(LOGOUT_REASON_KEY);
+    return reason === "expired" || reason === "invalid" ? reason : null;
+  } catch {
+    return null;
+  }
+}

@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { useAuth } from "../contexts/AuthContext";
 import { getApiErrorMessage } from "../lib/api";
-import { hasValidSession } from "../lib/authToken";
+import { hasValidSession, takeLogoutReason } from "../lib/authToken";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -25,6 +25,14 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Read once on mount, and consumed in the process, so a later re-render
+  // or a failed sign-in attempt does not resurrect the message.
+  const [notice, setNotice] = useState(() => {
+    const reason = takeLogoutReason();
+    if (reason === "expired") return "Your session expired, please sign in again.";
+    if (reason === "invalid") return "Your session is no longer valid, please sign in again.";
+    return "";
+  });
   const { login } = useAuth();
   const navigate = useNavigate();
   const { redirect } = useSearch({ from: "/login" });
@@ -32,6 +40,7 @@ function LoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setNotice("");
     setIsSubmitting(true);
 
     try {
@@ -58,6 +67,11 @@ function LoginPage() {
             {error && (
               <div className="text-sm text-destructive text-center">
                 {error}
+              </div>
+            )}
+            {!error && notice && (
+              <div className="text-sm text-muted-foreground text-center">
+                {notice}
               </div>
             )}
             <div className="space-y-2">

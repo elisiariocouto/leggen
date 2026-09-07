@@ -21,15 +21,23 @@ from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from leggen.api.models.common import ErrorField, ErrorResponse
-from leggen.errors import ConflictError, LeggenError, NotFoundError
+from leggen.errors import (
+    AuthenticationError,
+    ConflictError,
+    LeggenError,
+    NotFoundError,
+    TokenExpiredError,
+)
 
 if TYPE_CHECKING:
     from starlette.requests import Request
 
 __all__ = [
+    "AuthenticationError",
     "ConflictError",
     "LeggenError",
     "NotFoundError",
+    "TokenExpiredError",
     "code_for_status",
     "error_response",
     "register_exception_handlers",
@@ -81,8 +89,10 @@ def error_response(
 
 
 async def leggen_error_handler(request: "Request", exc: LeggenError) -> JSONResponse:
-    """Render a domain error using the status and code it declares."""
-    return error_response(exc.status_code, exc.detail, code=exc.code)
+    """Render a domain error using the status, code and headers it declares."""
+    return error_response(
+        exc.status_code, exc.detail, code=exc.code, headers=exc.headers
+    )
 
 
 async def http_exception_handler(
