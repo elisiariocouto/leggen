@@ -1,4 +1,67 @@
 
+## 2026.9.0 (2026/09/08)
+
+### ⚠ Breaking Changes
+
+- **api:** 401 responses now carry code INVALID_CREDENTIALS or TOKEN_EXPIRED instead of UNAUTHORIZED. Clients matching on the old code must be updated; the detail field and status are unchanged. ([ee75c6bb](https://github.com/elisiariocouto/leggen/commit/ee75c6bbd24dd06da256105c9551283633cc00d0))
+- **api:** Databases older than release 2025.9.22 are no longer upgraded and leggen refuses to start on one. Upgrade to a release between 2025.9.22 and 2026.8.x, start leggen once so it migrates, then upgrade to this version. ([2e15c216](https://github.com/elisiariocouto/leggen/commit/2e15c2166466532fa333fa5c10c4dc9ca3bf2769))
+
+
+### Features
+
+- **frontend:** Add an all-time option to the transaction date range. ([b72c0b82](https://github.com/elisiariocouto/leggen/commit/b72c0b825e4d8105ec6a3f2bab8a14afcaf3edeb))
+- **frontend:** Sort the transaction list and filter it by amount. ([ca25972d](https://github.com/elisiariocouto/leggen/commit/ca25972d2c0362438f445c19f80126bc3c2c185c))
+- **frontend:** Add a command palette for search and navigation. ([a64a328c](https://github.com/elisiariocouto/leggen/commit/a64a328c2520eb0df36d896f1e6869681f7738f9))
+- **frontend:** Surface pending transactions in the table and filters. ([6f27d967](https://github.com/elisiariocouto/leggen/commit/6f27d967a97ad7f38e28013f61f792e878ef4d63))
+- **frontend:** Add a restore action to the backup list. ([37cacc17](https://github.com/elisiariocouto/leggen/commit/37cacc173569aa74878154e94974f7f121ed2377))
+
+
+### Bug Fixes
+
+- **api:** Allow the nearby Vite dev ports through CORS. ([42da86f6](https://github.com/elisiariocouto/leggen/commit/42da86f68ddaee32100ac619f919fd42c420c6ab))
+- **api:** Distinguish notification misconfiguration from delivery failure. ([81247e19](https://github.com/elisiariocouto/leggen/commit/81247e19386cb6b7dda5f6d8a9c3d577cd372f27))
+- **api:** Tell an expired session apart from an invalid credential. ([ee75c6bb](https://github.com/elisiariocouto/leggen/commit/ee75c6bbd24dd06da256105c9551283633cc00d0))
+  - **BREAKING**: 401 responses now carry code INVALID_CREDENTIALS or TOKEN_EXPIRED instead of UNAUTHORIZED. Clients matching on the old code must be updated; the detail field and status are unchanged.
+- **api:** Escape backslashes in Telegram MarkdownV2 messages. ([3e6004a5](https://github.com/elisiariocouto/leggen/commit/3e6004a54cefc3c9bba398ea5132aa0734f7e3ac))
+- **api:** Restore the config singleton after each test. ([981d1393](https://github.com/elisiariocouto/leggen/commit/981d1393ab0a34df64ca9877c320d0c0909131b6))
+- **api:** Drop stale WAL files when restoring a database backup. ([e3c9392d](https://github.com/elisiariocouto/leggen/commit/e3c9392d99120188acc0159f70c6a6d0b1b6755d))
+- **cli:** Restore the config singleton after each config test. ([679046f3](https://github.com/elisiariocouto/leggen/commit/679046f331306b48817031558ac27cb969012830))
+- **cli:** Stop forcing ANSI color on status output. ([1a6c4fde](https://github.com/elisiariocouto/leggen/commit/1a6c4fde12e7719a9296da1957731cbf2bf0c8a0))
+- **cli:** Make generate_sample_db overwrite the database properly. ([8ef4e54e](https://github.com/elisiariocouto/leggen/commit/8ef4e54e4ada698dac5d1f42b3fb49c3e2623a71))
+- **frontend:** Stop the page scrolling sideways beside the sidebar. ([96d56acc](https://github.com/elisiariocouto/leggen/commit/96d56accff76ca3d1cbd454192e649b6ca361f88))
+- **frontend:** Hide the account summary on the collapsed sidebar rail. ([1fc7dfb5](https://github.com/elisiariocouto/leggen/commit/1fc7dfb5f4c33c2aa9bb557aa5d6bd3dd09d8d76))
+- **frontend:** Tighten the transaction filter bar spacing. ([48827f5a](https://github.com/elisiariocouto/leggen/commit/48827f5aa2ebc8a3c0094d245c02674ac7bc4afe))
+- **frontend:** Correct the pagination controls for an empty result set. ([f9f88ab0](https://github.com/elisiariocouto/leggen/commit/f9f88ab066fb778d0fa3892c48b325b1757b77bb))
+- **frontend:** Stop caching API responses in the service worker. ([e497151e](https://github.com/elisiariocouto/leggen/commit/e497151eace2f171f798c548ca4eac9deed9b9ad))
+- Put breaking changes at the top of the changelog. ([af1aa590](https://github.com/elisiariocouto/leggen/commit/af1aa59074648d79c642e0fe2f9456ea698c39a4))
+- Don't fail the bank callback when the redirect is delivered twice. ([11aabe73](https://github.com/elisiariocouto/leggen/commit/11aabe73ee239307b46320c6693c36f5ce2b9fb3))
+
+
+### Refactor
+
+- **api:** Drop the no-op config patches from the API tests. ([c115f569](https://github.com/elisiariocouto/leggen/commit/c115f569c2aabe3c6081ac63bcb3563737561a49))
+- **api:** Replace ad-hoc migrations with a versioned migration runner. ([2e15c216](https://github.com/elisiariocouto/leggen/commit/2e15c2166466532fa333fa5c10c4dc9ca3bf2769))
+  - **BREAKING**: Databases older than release 2025.9.22 are no longer upgraded and leggen refuses to start on one. Upgrade to a release between 2025.9.22 and 2026.8.x, start leggen once so it migrates, then upgrade to this version.
+- **frontend:** Rebuild the transaction table on the shadcn primitives. ([d1874b75](https://github.com/elisiariocouto/leggen/commit/d1874b7534244ab2eb6b70e8ddd44f50b3111571))
+
+
+### Documentation
+
+- Add dashboard, triage queue, comparison and PWA items. ([41da3f9f](https://github.com/elisiariocouto/leggen/commit/41da3f9fdefaed3de6faa7845f106a6bbe5aa79d))
+- Retire the consistency items cleared in this pass. ([cfb84511](https://github.com/elisiariocouto/leggen/commit/cfb84511dc09b835e30dd4ff1ce76018a9b2ef5c))
+- Retire the roadmap items cleared in this pass. ([d9740d6a](https://github.com/elisiariocouto/leggen/commit/d9740d6a72f0d77f38f5cdeb437c991ca0511b0f))
+- Correct stale references in the roadmap. ([303b40ff](https://github.com/elisiariocouto/leggen/commit/303b40ffc66fba19ad636417280dacab87662762))
+- Correct the release instructions in CONTRIBUTING. ([0d252cfe](https://github.com/elisiariocouto/leggen/commit/0d252cfe9be941158d90043f20b86353b5fdf8f9))
+- Document how to mark breaking changes for the changelog. ([11bb1cc6](https://github.com/elisiariocouto/leggen/commit/11bb1cc6eccb8c48f8ad85189b16bf476b443427))
+
+
+### Miscellaneous Tasks
+
+- Bump dependencies. ([d73384c8](https://github.com/elisiariocouto/leggen/commit/d73384c8f99d06da850850871f3b3e14fe611682))
+- Update roadmap. ([36a228bc](https://github.com/elisiariocouto/leggen/commit/36a228bcf6fc96781cf01b590e46eef1e98b562c))
+
+
+
 ## 2026.8.2 (2026/08/20)
 
 ### Bug Fixes
