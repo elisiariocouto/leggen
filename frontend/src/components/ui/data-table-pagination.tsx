@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -23,6 +24,7 @@ interface DataTablePaginationProps {
   hasPrev: boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
+  className?: string;
 }
 
 export function DataTablePagination({
@@ -34,9 +36,10 @@ export function DataTablePagination({
   hasPrev,
   onPageChange,
   onPageSizeChange,
+  className,
 }: DataTablePaginationProps) {
   return (
-    <div className="flex items-center justify-between px-2 py-4">
+    <div className={cn("flex items-center justify-between px-2 py-4", className)}>
       <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
         <div className="flex items-center space-x-6 lg:space-x-8">
           <div className="flex items-center space-x-2">
@@ -61,7 +64,7 @@ export function DataTablePagination({
             </Select>
           </div>
           <div className="flex w-[100px] items-center justify-center text-sm font-medium text-foreground">
-            Page {currentPage} of {totalPages}
+            Page {currentPage} of {Math.max(totalPages, 1)}
           </div>
           <div className="flex items-center space-x-2">
             <Button
@@ -94,8 +97,11 @@ export function DataTablePagination({
             <Button
               variant="outline"
               className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() => onPageChange(totalPages)}
-              disabled={currentPage === totalPages}
+              onClick={() => onPageChange(Math.max(totalPages, 1))}
+              // `hasNext` rather than a page comparison: with no results
+              // totalPages is 0, and `currentPage === totalPages` would leave
+              // this enabled and jump to a page 0.
+              disabled={!hasNext}
             >
               <span className="sr-only">Go to last page</span>
               <ChevronsRight className="h-4 w-4" />
@@ -103,15 +109,19 @@ export function DataTablePagination({
           </div>
         </div>
         <div className="text-sm text-muted-foreground">
-          Showing {(currentPage - 1) * pageSize + 1} to{" "}
-          {Math.min(currentPage * pageSize, total)} of {total} entries
+          {total === 0
+            ? "No entries"
+            : `Showing ${(currentPage - 1) * pageSize + 1} to ${Math.min(
+                currentPage * pageSize,
+                total,
+              )} of ${total} entries`}
         </div>
       </div>
 
       {/* Mobile view */}
       <div className="flex w-full items-center justify-between space-x-4 sm:hidden">
         <div className="text-sm text-muted-foreground">
-          Page {currentPage} of {totalPages}
+          Page {currentPage} of {Math.max(totalPages, 1)}
         </div>
         <div className="flex items-center space-x-2">
           <Button
