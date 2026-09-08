@@ -113,7 +113,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarGroup>
+        {/* The summary is balances and account names, none of which fit the
+            icon rail — left visible it wraps and spills over the page. The
+            sidebar's own parts hide the same way when collapsed. */}
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
           <SidebarGroupLabel>Account Summary</SidebarGroupLabel>
           <div className="bg-muted rounded-lg p-1">
             <div className="p-3">
@@ -182,7 +185,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             )}
           </div>
         </SidebarGroup>
-        <SidebarSeparator />
+        {/* Divides the summary from the user menu, so it goes when the
+            summary does — otherwise it floats above the avatar alone. */}
+        <SidebarSeparator className="group-data-[collapsible=icon]:hidden" />
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
