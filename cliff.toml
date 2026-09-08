@@ -9,8 +9,16 @@ body = """
 {% else %}\
     ## Unreleased
 {% endif %}\
+{% set breaking = commits | filter(attribute="breaking", value=true) %}\
+{% if breaking | length > 0 %}
+    ### ⚠ Breaking Changes
+    {% for commit in breaking %}
+        - {% if commit.scope %}**{{ commit.scope }}:** {% endif %}{{ commit.breaking_description | upper_first }} ([{{ commit.id | truncate(length=8, end="") }}](https://github.com/elisiariocouto/leggen/commit/{{ commit.id }}))
+    {%- endfor %}
+    {% raw %}\n{% endraw %}\
+{% endif %}\
 {% for group, commits in commits | group_by(attribute="group") %}
-    ### {{ group | upper_first }}
+    ### {{ group | striptags | trim | upper_first }}
     {% for commit in commits
     | filter(attribute="scope")
     | sort(attribute="scope") %}
@@ -22,7 +30,7 @@ body = """
     {% for commit in commits %}
         {%- if commit.scope -%}
         {% else -%}
-            -  {{ commit.message | upper_first }} ([{{ commit.id | truncate(length=8, end="") }}](https://github.com/elisiariocouto/leggen/commit/{{ commit.id }}))
+            - {{ commit.message | upper_first }} ([{{ commit.id | truncate(length=8, end="") }}](https://github.com/elisiariocouto/leggen/commit/{{ commit.id }}))
             {% if commit.breaking -%}
             {% raw %}  {% endraw %}- **BREAKING**: {{commit.breaking_description}}
             {% endif -%}
@@ -40,22 +48,22 @@ filter_unconventional = true
 split_commits = false
 commit_preprocessors = []
 commit_parsers = [
-    { message = "^[Ff]eat(ure)?", group = "Features" },
-    { message = "^[Ff]ix", group = "Bug Fixes" },
-    { message = "^[Dd]oc(s)?(umentation)?", group = "Documentation" },
-    { message = "^[Pp]erf(ormance)?", group = "Performance" },
-    { message = "^[Rr]efactor", group = "Refactor" },
-    { message = "^[Ss]tyle", group = "Styling" },
-    { message = "^[Tt]est(s)?", group = "Testing" },
+    { body = ".*security", group = "<!-- 0 -->Security" },
+    { message = "^[Ff]eat(ure)?", group = "<!-- 1 -->Features" },
+    { message = "^[Ff]ix", group = "<!-- 2 -->Bug Fixes" },
+    { message = "^[Rr]efactor", group = "<!-- 3 -->Refactor" },
+    { message = "^[Pp]erf(ormance)?", group = "<!-- 4 -->Performance" },
+    { message = "^[Ss]tyle", group = "<!-- 5 -->Styling" },
+    { message = "^[Tt]est(s)?", group = "<!-- 6 -->Testing" },
+    { message = "^[Dd]oc(s)?(umentation)?", group = "<!-- 7 -->Documentation" },
     { message = "^[Cc]hore\\(ci\\): Bump version to", skip = true },
-    { message = "^[Cc]hore", group = "Miscellaneous Tasks" },
-    { body = ".*security", group = "Security" },
+    { message = "^[Cc]hore", group = "<!-- 8 -->Miscellaneous Tasks" },
 ]
-protect_breaking_commits = false
+protect_breaking_commits = true
 filter_commits = false
 tag_pattern = ""
 skip_tags = ""
 ignore_tags = ""
 topo_order = false
-sort_commits = "oldest"
+sort_commits = "newest"
 # limit_commits = 42
