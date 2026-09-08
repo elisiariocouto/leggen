@@ -68,13 +68,15 @@ export function FilterBar({
   };
 
   return (
-    <div className={cn("px-6 py-4", className)}>
-      {/* Primary Filters Row */}
-      <div className={cn("space-y-4", hasActiveFilters && "mb-4")}>
+    <div className={cn("px-4 py-2.5", className)}>
+      {/* Only one of the two layouts below is ever rendered — they are
+          `hidden lg:flex` and `lg:hidden` — so this wrapper needs no
+          child spacing, just the gap to the chips row when it is shown. */}
+      <div className={cn(hasActiveFilters && "mb-2.5")}>
         {/* Desktop Layout */}
-        <div className="hidden lg:flex items-center justify-between gap-6">
+        <div className="hidden lg:flex items-center gap-2">
           {/* Left Side: Search & Account */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="relative w-[300px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -133,12 +135,12 @@ export function FilterBar({
             endDate={filterState.endDate}
             onDateRangeChange={handleDateRangeChange}
             presets={transactionPresets}
-            className="w-[220px]"
+            className="ml-auto w-[220px]"
           />
         </div>
 
         {/* Mobile Layout */}
-        <div className="lg:hidden space-y-3">
+        <div className="space-y-2 lg:hidden">
           {/* First Row: Search Input (Full Width) */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
