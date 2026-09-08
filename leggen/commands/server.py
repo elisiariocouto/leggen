@@ -104,11 +104,10 @@ def create_app() -> FastAPI:
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:3000",
-            "http://localhost:5173",
-            "http://frontend:80",
-        ],  # Frontend container and dev servers
+        # Frontend container and dev servers. Vite falls through to the next
+        # free port when 5173 is taken, so the nearby ports are allowed too.
+        allow_origin_regex=r"http://localhost:(3000|517[0-9]|518[0-9])",
+        allow_origins=["http://frontend:80"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
