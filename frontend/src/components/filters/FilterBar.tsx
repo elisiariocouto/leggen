@@ -12,10 +12,24 @@ import { ActiveFilterChips } from "./ActiveFilterChips";
 import { TIME_PERIODS } from "../../lib/timePeriods";
 import type { Account } from "../../types/api";
 
-const transactionPresets: DatePreset[] = TIME_PERIODS.map((p) => ({
-  label: p.label,
-  getValue: p.getDateRange,
-}));
+/**
+ * Date presets for the transaction list.
+ *
+ * "All time" leads, because it is the unfiltered default the list opens on
+ * and there was otherwise no way back to it from inside the picker — only
+ * the chip's ✕ or Clear All. Empty bounds mean unset, as everywhere else in
+ * `FilterState`.
+ *
+ * It is added here rather than to the shared `TIME_PERIODS`, since the
+ * analytics charts plot a time axis and need a bounded window.
+ */
+const transactionPresets: DatePreset[] = [
+  { label: "All time", getValue: () => ({ startDate: "", endDate: "" }) },
+  ...TIME_PERIODS.map((p) => ({
+    label: p.label,
+    getValue: p.getDateRange,
+  })),
+];
 
 export interface FilterState {
   searchTerm: string;

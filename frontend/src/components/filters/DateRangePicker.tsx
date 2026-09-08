@@ -83,12 +83,14 @@ export function DateRangePicker({
   })?.label;
 
   const formatDateRange = () => {
-    if (!startDate || !endDate) {
-      return "Select date range";
-    }
-
+    // Before the empty-bounds check: a preset may legitimately have no
+    // bounds ("All time"), and its label should win over the placeholder.
     if (matchingPresetLabel) {
       return matchingPresetLabel;
+    }
+
+    if (!startDate || !endDate) {
+      return "Select date range";
     }
 
     const start = parseISO(startDate);
