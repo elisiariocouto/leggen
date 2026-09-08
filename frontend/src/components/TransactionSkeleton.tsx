@@ -1,40 +1,63 @@
 import { Skeleton } from "./ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table";
+import { TRANSACTION_COLUMNS } from "./transactions/columns";
+import { cn } from "@/lib/utils";
+import {
+  DENSITY_CELL_CLASS,
+  DEFAULT_DENSITY,
+  type Density,
+} from "@/lib/density";
 
 interface TransactionSkeletonProps {
   rows?: number;
   view?: "table" | "mobile";
+  density?: Density;
 }
 
+/** Placeholder width per column, so the shapes suggest the real content. */
+const CELL_SKELETON: Record<string, string> = {
+  date: "w-24",
+  description: "w-3/4",
+  category: "w-20",
+  amount: "w-24",
+};
+
+/**
+ * Loading placeholder for the transaction list.
+ *
+ * Driven by `TRANSACTION_COLUMNS` and the same `Table` primitive as the real
+ * thing, so it cannot fall out of step with it — the previous version
+ * hand-rolled its own markup and had drifted to a different column order.
+ */
 export default function TransactionSkeleton({
   rows = 5,
   view = "table",
+  density = DEFAULT_DENSITY,
 }: TransactionSkeletonProps) {
   const skeletonRows = Array.from({ length: rows }, (_, index) => index);
 
   if (view === "mobile") {
     return (
       <div className="divide-y divide-border">
-        {skeletonRows.map((_, index) => (
+        {skeletonRows.map((index) => (
           <div key={index} className="p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-start space-x-3">
-                  <Skeleton className="h-10 w-10 rounded-full shrink-0" />
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <Skeleton className="h-4 w-3/4" />
-                    <div className="space-y-1">
-                      <Skeleton className="h-3 w-1/2" />
-                      <Skeleton className="h-3 w-2/3" />
-                      <Skeleton className="h-3 w-1/3" />
-                    </div>
-                  </div>
-                </div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
               </div>
-              <div className="text-right ml-3 shrink-0 space-y-2">
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-4 w-16 ml-auto" />
-                <Skeleton className="h-6 w-12 ml-auto" />
-              </div>
+              <Skeleton className="h-5 w-20 shrink-0" />
+            </div>
+            <div className="mt-3 flex items-center justify-between">
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-3 w-16" />
             </div>
           </div>
         ))}
@@ -43,59 +66,39 @@ export default function TransactionSkeleton({
   }
 
   return (
-    <div className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-border">
-          <thead className="bg-muted/50">
-            <tr>
-              <th className="px-6 py-3 text-left">
-                <Skeleton className="h-4 w-20" />
-              </th>
-              <th className="px-6 py-3 text-left">
-                <Skeleton className="h-4 w-16" />
-              </th>
-              <th className="px-6 py-3 text-left">
-                <Skeleton className="h-4 w-12" />
-              </th>
-              <th className="px-6 py-3 text-left">
-                <Skeleton className="h-4 w-8" />
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-card divide-y divide-border">
-            {skeletonRows.map((_, index) => (
-              <tr key={index}>
-                <td className="px-6 py-4">
-                  <div className="flex items-start space-x-3">
-                    <Skeleton className="h-10 w-10 rounded-full shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-3/4" />
-                      <div className="space-y-1">
-                        <Skeleton className="h-3 w-1/2" />
-                        <Skeleton className="h-3 w-2/3" />
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-right">
-                    <Skeleton className="h-6 w-24 ml-auto mb-1" />
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="space-y-1">
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-3 w-16" />
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <Skeleton className="h-6 w-12" />
-                </td>
-              </tr>
+    <Table>
+      <TableHeader className="bg-muted/50">
+        <TableRow className="hover:bg-transparent">
+          {TRANSACTION_COLUMNS.map((column) => (
+            <TableHead
+              key={column.id}
+              className={cn("px-4", column.className)}
+            >
+              <Skeleton className="h-4 w-16" />
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {skeletonRows.map((index) => (
+          <TableRow key={index} className="hover:bg-transparent">
+            {TRANSACTION_COLUMNS.map((column) => (
+              <TableCell
+                key={column.id}
+                className={cn("px-4", DENSITY_CELL_CLASS[density])}
+              >
+                <Skeleton
+                  className={cn(
+                    "h-4",
+                    CELL_SKELETON[column.id] ?? "w-16",
+                    column.align === "right" && "ml-auto",
+                  )}
+                />
+              </TableCell>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
