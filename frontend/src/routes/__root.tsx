@@ -45,7 +45,12 @@ function RootLayout() {
       }
     >
       <AppSidebar />
-      <SidebarInset>
+      {/* `min-w-0` because a flex item defaults to `min-width: auto`, which
+          floors it at its content's max-content width. The inset then stayed
+          wider than the space left beside the sidebar and pushed its right
+          edge off-screen, scrolling the page sideways and clipping the last
+          table columns. */}
+      <SidebarInset className="min-w-0">
         <SiteHeader onOpenCommandPalette={() => setPaletteOpen(true)} />
         <main className="flex-1 p-6 min-w-0">
           <ErrorBoundary>
