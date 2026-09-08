@@ -23,6 +23,12 @@ _CATEGORY_ID_PATTERN = r"^(\d+|uncategorized)$"
 # The two statuses EnableBanking reports for a transaction.
 TransactionStatusFilter = Literal["booked", "pending"]
 
+# Columns the transaction list can be ordered by. Declaring these as Literals
+# lets FastAPI reject anything else with a 422 and publish the allowed values
+# in the OpenAPI schema, and keeps arbitrary strings away from the ORDER BY.
+TransactionSortField = Literal["date", "amount", "description"]
+TransactionSortOrder = Literal["asc", "desc"]
+
 
 @router.get("/transactions")
 async def get_all_transactions(
@@ -56,6 +62,22 @@ async def get_all_transactions(
     status: TransactionStatusFilter | None = Query(
         default=None, description="Filter by transaction status"
     ),
+    min_magnitude: float | None = Query(
+        default=None,
+        ge=0,
+        description="Minimum transaction size, ignoring sign (matches income and expenses alike)",
+    ),
+    max_magnitude: float | None = Query(
+        default=None,
+        ge=0,
+        description="Maximum transaction size, ignoring sign (matches income and expenses alike)",
+    ),
+    sort_by: TransactionSortField = Query(
+        default="date", description="Column to order results by"
+    ),
+    sort_order: TransactionSortOrder = Query(
+        default="desc", description="Order direction"
+    ),
 ) -> PaginatedResponse[TransactionSummary | Transaction]:
     """Get all transactions from database with filtering options"""
     # Calculate offset from page and per_page
@@ -74,6 +96,10 @@ async def get_all_transactions(
         search=search,
         category_id=category_id,
         status=status,
+        min_magnitude=min_magnitude,
+        max_magnitude=max_magnitude,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
 
     # Get total count for pagination info (respecting the same filters)
@@ -86,6 +112,8 @@ async def get_all_transactions(
         search=search,
         category_id=category_id,
         status=status,
+        min_magnitude=min_magnitude,
+        max_magnitude=max_magnitude,
     )
 
     if summary_only:
@@ -156,6 +184,16 @@ async def get_transaction_stats(
     max_amount: float | None = Query(
         default=None, description="Maximum transaction amount"
     ),
+    min_magnitude: float | None = Query(
+        default=None,
+        ge=0,
+        description="Minimum transaction size, ignoring sign (matches income and expenses alike)",
+    ),
+    max_magnitude: float | None = Query(
+        default=None,
+        ge=0,
+        description="Maximum transaction size, ignoring sign (matches income and expenses alike)",
+    ),
     group_by: Literal["month"] | None = Query(
         default=None, description="Group results by month"
     ),
@@ -188,6 +226,8 @@ async def get_transaction_stats(
         max_amount=max_amount,
         search=search,
         category_id=category_id,
+        min_magnitude=min_magnitude,
+        max_magnitude=max_magnitude,
     )
     return TransactionStats(date_from=date_from, date_to=date_to, **totals)
 

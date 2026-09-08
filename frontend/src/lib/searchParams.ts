@@ -51,3 +51,47 @@ export function asTransactionStatus(
   const text = asTrimmedString(value)?.toLowerCase();
   return TRANSACTION_STATUSES.find((status) => status === text);
 }
+
+/**
+ * Sort field and direction for the transaction list.
+ *
+ * The values mirror the API's own enums; anything else falls back to the
+ * default ordering rather than reaching the backend and coming back a 422.
+ */
+const TRANSACTION_SORT_FIELDS = ["date", "amount", "description"] as const;
+const SORT_DIRECTIONS = ["asc", "desc"] as const;
+
+export type TransactionSortField = (typeof TRANSACTION_SORT_FIELDS)[number];
+export type SortDirection = (typeof SORT_DIRECTIONS)[number];
+
+export function asTransactionSortField(
+  value: unknown,
+): TransactionSortField | undefined {
+  const text = asTrimmedString(value)?.toLowerCase();
+  return TRANSACTION_SORT_FIELDS.find((field) => field === text);
+}
+
+export function asSortDirection(value: unknown): SortDirection | undefined {
+  const text = asTrimmedString(value)?.toLowerCase();
+  return SORT_DIRECTIONS.find((direction) => direction === text);
+}
+
+/**
+ * A transaction magnitude bound. Unlike `asPositiveInt` this accepts 0 and
+ * decimals — amounts are money, and "from 0" is a meaningful lower bound —
+ * but rejects negatives, since a magnitude is a size and not a signed value.
+ */
+export function asNonNegativeNumber(value: unknown): number | undefined {
+  // Both shapes arrive here: a string when the param is read off the URL,
+  // and a number once the router has already parsed it (or when a handler
+  // writes one back). `asTrimmedString` rejects the latter, so it cannot be
+  // the front of this check.
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value >= 0 ? value : undefined;
+  }
+  const text = asTrimmedString(value);
+  if (text === undefined) return undefined;
+  const parsed = Number(text);
+  if (!Number.isFinite(parsed) || parsed < 0) return undefined;
+  return parsed;
+}

@@ -7,6 +7,7 @@ import type { DatePreset } from "./DateRangePicker";
 import { AccountCombobox } from "./AccountCombobox";
 import { CategoryCombobox } from "./CategoryCombobox";
 import { StatusSelect } from "./StatusSelect";
+import { AmountRangeFilter } from "./AmountRangeFilter";
 import { ActiveFilterChips } from "./ActiveFilterChips";
 import { TIME_PERIODS } from "../../lib/timePeriods";
 import type { Account } from "../../types/api";
@@ -23,6 +24,10 @@ export interface FilterState {
   selectedStatus: string;
   startDate: string;
   endDate: string;
+  // Kept as strings like every other field ("" means unset) so the whole
+  // shape stays uniform; parsed to numbers at the API boundary.
+  minAmount: string;
+  maxAmount: string;
 }
 
 export interface FilterBarProps {
@@ -31,6 +36,8 @@ export interface FilterBarProps {
   onClearFilters: () => void;
   accounts?: Account[];
   isSearchLoading?: boolean;
+  /** Labels the amount inputs; the dominant currency of the current set. */
+  currency?: string;
   className?: string;
 }
 
@@ -40,6 +47,7 @@ export function FilterBar({
   onClearFilters,
   accounts,
   isSearchLoading = false,
+  currency,
   className,
 }: FilterBarProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -50,7 +58,9 @@ export function FilterBar({
     filterState.selectedCategory ||
     filterState.selectedStatus ||
     filterState.startDate ||
-    filterState.endDate;
+    filterState.endDate ||
+    filterState.minAmount ||
+    filterState.maxAmount;
 
   const handleDateRangeChange = (startDate: string, endDate: string) => {
     onFilterChange("startDate", startDate);
@@ -105,6 +115,14 @@ export function FilterBar({
               onStatusChange={(status) =>
                 onFilterChange("selectedStatus", status)
               }
+              className="w-[150px]"
+            />
+
+            <AmountRangeFilter
+              minAmount={filterState.minAmount}
+              maxAmount={filterState.maxAmount}
+              onAmountChange={onFilterChange}
+              currency={currency}
               className="w-[150px]"
             />
           </div>
@@ -166,7 +184,16 @@ export function FilterBar({
             className="w-full"
           />
 
-          {/* Fifth Row: Date Range */}
+          {/* Fifth Row: Amount range (Full Width) */}
+          <AmountRangeFilter
+            minAmount={filterState.minAmount}
+            maxAmount={filterState.maxAmount}
+            onAmountChange={onFilterChange}
+            currency={currency}
+            className="w-full"
+          />
+
+          {/* Sixth Row: Date Range */}
           <DateRangePicker
             startDate={filterState.startDate}
             endDate={filterState.endDate}

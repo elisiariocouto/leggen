@@ -2349,6 +2349,14 @@ export interface operations {
                 category_id?: string | null;
                 /** @description Filter by transaction status */
                 status?: ("booked" | "pending") | null;
+                /** @description Minimum transaction size, ignoring sign (matches income and expenses alike) */
+                min_magnitude?: number | null;
+                /** @description Maximum transaction size, ignoring sign (matches income and expenses alike) */
+                max_magnitude?: number | null;
+                /** @description Column to order results by */
+                sort_by?: "date" | "amount" | "description";
+                /** @description Order direction */
+                sort_order?: "asc" | "desc";
             };
             header?: never;
             path?: never;
@@ -2409,6 +2417,10 @@ export interface operations {
                 min_amount?: number | null;
                 /** @description Maximum transaction amount */
                 max_amount?: number | null;
+                /** @description Minimum transaction size, ignoring sign (matches income and expenses alike) */
+                min_magnitude?: number | null;
+                /** @description Maximum transaction size, ignoring sign (matches income and expenses alike) */
+                max_magnitude?: number | null;
                 /** @description Group results by month */
                 group_by?: "month" | null;
                 /** @description Filter by category ID or 'uncategorized' for transactions without a category */

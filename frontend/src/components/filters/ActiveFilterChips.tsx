@@ -109,12 +109,28 @@ export function ActiveFilterChips({
     });
   }
 
+  if (filterState.minAmount || filterState.maxAmount) {
+    const from = filterState.minAmount || "0";
+    const to = filterState.maxAmount || "∞";
+    chips.push({
+      // Clears both bounds, like the combined date chip above.
+      key: "minAmount",
+      label: `Amount: ${from} - ${to}`,
+      value: `${filterState.minAmount}-${filterState.maxAmount}`,
+    });
+  }
+
   const handleRemoveChip = (key: keyof FilterState) => {
     switch (key) {
       case "startDate":
         // Clear both start and end date
         onFilterChange("startDate", "");
         onFilterChange("endDate", "");
+        break;
+      case "minAmount":
+        // Clear both amount bounds
+        onFilterChange("minAmount", "");
+        onFilterChange("maxAmount", "");
         break;
       default:
         onFilterChange(key, "");

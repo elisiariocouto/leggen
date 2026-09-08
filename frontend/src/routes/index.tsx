@@ -2,11 +2,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import TransactionsTable from "../components/TransactionsTable";
 import {
   asISODate,
+  asNonNegativeNumber,
   asPositiveInt,
+  asSortDirection,
+  asTransactionSortField,
   asTransactionStatus,
   asTrimmedString,
 } from "../lib/searchParams";
-import type { TransactionStatusFilter } from "../lib/searchParams";
+import type {
+  SortDirection,
+  TransactionSortField,
+  TransactionStatusFilter,
+} from "../lib/searchParams";
 
 /**
  * Filters and pagination live in the URL so a filtered view can be
@@ -24,6 +31,10 @@ export interface TransactionSearch {
   to?: string;
   page?: number;
   perPage?: number;
+  minAmount?: number;
+  maxAmount?: number;
+  sort?: TransactionSortField;
+  dir?: SortDirection;
 }
 
 export const Route = createFileRoute("/")({
@@ -37,5 +48,9 @@ export const Route = createFileRoute("/")({
     to: asISODate(search.to),
     page: asPositiveInt(search.page),
     perPage: asPositiveInt(search.perPage),
+    minAmount: asNonNegativeNumber(search.minAmount),
+    maxAmount: asNonNegativeNumber(search.maxAmount),
+    sort: asTransactionSortField(search.sort),
+    dir: asSortDirection(search.dir),
   }),
 });

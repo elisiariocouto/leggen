@@ -7,12 +7,16 @@ import {
   TrendingDown,
   RefreshCw,
   AlertCircle,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  Loader2,
 } from "lucide-react";
 import { apiClient } from "../lib/api";
 import { formatCurrency, formatDate } from "../lib/utils";
 import TransactionSkeleton from "./TransactionSkeleton";
 import TransactionDetail from "./TransactionDetail";
-import { FilterBar, type FilterState } from "./filters";
+import { FilterBar, SortSelect, type FilterState } from "./filters";
 import { DataTablePagination } from "./ui/data-table-pagination";
 import { Card } from "./ui/card";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
@@ -27,9 +31,56 @@ import type {
   TransactionStats,
 } from "../types/api";
 import { queryKeys } from "../lib/queryKeys";
+import { asNonNegativeNumber } from "../lib/searchParams";
+import type { SortDirection, TransactionSortField } from "../lib/searchParams";
 import type { TransactionSearch } from "../routes/index";
 
-const COLUMN_HEADERS = ["Description", "Category", "Amount", "Date"];
+/**
+ * Table columns. `sortKey` is the API's sort field; a column without one is
+ * not sortable (Category comes from a join and has no backend sort field).
+ */
+const COLUMNS: Array<{
+  id: string;
+  label: string;
+  sortKey?: TransactionSortField;
+  align?: "right";
+}> = [
+  { id: "description", label: "Description", sortKey: "description" },
+  { id: "category", label: "Category" },
+  { id: "amount", label: "Amount", sortKey: "amount", align: "right" },
+  { id: "date", label: "Date", sortKey: "date" },
+];
+
+/**
+ * Sort arrow for a column header.
+ *
+ * `placeholderData` keeps the previous rows on screen while a re-sort is in
+ * flight, so without a pending state the table would sit in the old order
+ * with nothing to show the click registered.
+ */
+function SortIndicator({
+  isSorted,
+  direction,
+  isPending,
+}: {
+  isSorted: boolean;
+  direction: SortDirection;
+  isPending: boolean;
+}) {
+  if (isPending) {
+    return (
+      <Loader2 className="h-3 w-3 animate-spin" aria-label="Sorting" />
+    );
+  }
+  if (!isSorted) {
+    return <ArrowUpDown className="h-3 w-3 opacity-40" aria-hidden="true" />;
+  }
+  return direction === "asc" ? (
+    <ArrowUp className="h-3 w-3" aria-hidden="true" />
+  ) : (
+    <ArrowDown className="h-3 w-3" aria-hidden="true" />
+  );
+}
 
 /** Up/down arrow on its tinted circle, shared by both layouts. */
 function DirectionIcon({ isPositive }: { isPositive: boolean }) {
@@ -118,6 +169,8 @@ export default function TransactionsTable() {
       selectedStatus: search.status ?? "",
       startDate: search.from ?? "",
       endDate: search.to ?? "",
+      minAmount: search.minAmount?.toString() ?? "",
+      maxAmount: search.maxAmount?.toString() ?? "",
     }),
     [
       search.q,
@@ -126,8 +179,15 @@ export default function TransactionsTable() {
       search.status,
       search.from,
       search.to,
+      search.minAmount,
+      search.maxAmount,
     ],
   );
+
+  // Sort is a view preference rather than a filter: it has no chip, and it
+  // survives Clear All. Absent params mean the default ordering.
+  const sortBy = search.sort ?? "date";
+  const sortOrder = search.dir ?? "desc";
 
   const currentPage = search.page ?? 1;
   const perPage = search.perPage ?? 50;
@@ -166,21 +226,62 @@ export default function TransactionsTable() {
       selectedStatus: "status",
       startDate: "from",
       endDate: "to",
+      minAmount: "minAmount",
+      maxAmount: "maxAmount",
     };
     if (key === "searchTerm") setSearchInput(value);
+    // The amount bounds are numbers in the URL schema; everything else is a
+    // string. An unparseable or negative entry drops the bound rather than
+    // writing a value validateSearch would reject on the next read.
+    const isAmount = key === "minAmount" || key === "maxAmount";
+    const nextValue = isAmount
+      ? asNonNegativeNumber(value)
+      : value || undefined;
     navigate({
       search: (prev: TransactionSearch) => ({
         ...prev,
-        [paramFor[key]]: value || undefined,
+        [paramFor[key]]: nextValue,
         page: undefined,
       }),
-      replace: key === "searchTerm",
+      replace: key === "searchTerm" || isAmount,
     });
   };
 
   const handleClearFilters = () => {
     setSearchInput("");
-    navigate({ search: (prev: TransactionSearch) => ({ perPage: prev.perPage }) });
+    // Sort and page size are view preferences, not filters, so they survive.
+    navigate({
+      search: (prev: TransactionSearch) => ({
+        perPage: prev.perPage,
+        sort: prev.sort,
+        dir: prev.dir,
+      }),
+    });
+  };
+
+  const handleSortChange = (
+    nextSort: TransactionSortField,
+    nextDir: SortDirection,
+  ) => {
+    navigate({
+      search: (prev: TransactionSearch) => ({
+        ...prev,
+        // Omit the defaults so a plain "/" stays the canonical URL.
+        sort: nextSort === "date" ? undefined : nextSort,
+        dir: nextDir === "desc" ? undefined : nextDir,
+        page: undefined,
+      }),
+    });
+  };
+
+  // Clicking the active column flips direction; a new column starts
+  // descending, which is the useful default for both dates and amounts.
+  const handleSortColumn = (column: TransactionSortField) => {
+    if (column === sortBy) {
+      handleSortChange(column, sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      handleSortChange(column, "desc");
+    }
   };
 
   const setCurrentPage = (page: number) => {
@@ -217,6 +318,7 @@ export default function TransactionsTable() {
   const {
     data: transactionsResponse,
     isLoading: transactionsLoading,
+    isFetching,
     error: transactionsError,
     refetch: refetchTransactions,
   } = useQuery<PaginatedResponse<Transaction>>({
@@ -229,6 +331,10 @@ export default function TransactionsTable() {
       page: currentPage,
       perPage,
       search: debouncedSearchTerm,
+      minAmount: search.minAmount,
+      maxAmount: search.maxAmount,
+      sortBy,
+      sortOrder,
     }),
     queryFn: () =>
       apiClient.getTransactions({
@@ -241,6 +347,10 @@ export default function TransactionsTable() {
         summaryOnly: false,
         categoryId: filterState.selectedCategory || undefined,
         status: filterState.selectedStatus || undefined,
+        minMagnitude: search.minAmount,
+        maxMagnitude: search.maxAmount,
+        sortBy,
+        sortOrder,
       }),
     placeholderData: (previousData) => previousData,
   });
@@ -307,13 +417,17 @@ export default function TransactionsTable() {
   }, [filterState.startDate, filterState.endDate]);
 
   const { data: statsData } = useQuery<TransactionStats>({
-    queryKey: queryKeys.transactionStatsSummary(
-      statsRange.from,
-      statsRange.to,
-      filterState.selectedAccount,
-      debouncedSearchTerm,
-      filterState.selectedCategory,
-    ),
+    queryKey: [
+      ...queryKeys.transactionStatsSummary(
+        statsRange.from,
+        statsRange.to,
+        filterState.selectedAccount,
+        debouncedSearchTerm,
+        filterState.selectedCategory,
+      ),
+      search.minAmount,
+      search.maxAmount,
+    ],
     queryFn: () =>
       apiClient.getTransactionStats(
         statsRange.from,
@@ -323,6 +437,10 @@ export default function TransactionsTable() {
         undefined,
         undefined,
         filterState.selectedCategory || undefined,
+        {
+          minMagnitude: search.minAmount,
+          maxMagnitude: search.maxAmount,
+        },
       ),
     placeholderData: (previousData) => previousData,
   });
@@ -375,6 +493,7 @@ export default function TransactionsTable() {
             onClearFilters={handleClearFilters}
             accounts={accounts}
             isSearchLoading={isSearchLoading}
+            currency={displayCurrency}
           />
           <div className="hidden md:block">
             <TransactionSkeleton rows={10} view="table" />
@@ -417,6 +536,7 @@ export default function TransactionsTable() {
           onClearFilters={handleClearFilters}
           accounts={accounts}
           isSearchLoading={isSearchLoading}
+          currency={displayCurrency}
         />
 
         {/* Stats Bar */}
@@ -458,14 +578,46 @@ export default function TransactionsTable() {
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted/50">
               <tr>
-                {COLUMN_HEADERS.map((header) => (
-                  <th
-                    key={header}
-                    className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
-                  >
-                    {header}
-                  </th>
-                ))}
+                {COLUMNS.map((column) => {
+                  const isSorted = column.sortKey === sortBy;
+                  const alignment =
+                    column.align === "right" ? "text-right" : "text-left";
+                  return (
+                    <th
+                      key={column.id}
+                      scope="col"
+                      // Announces the sort state to screen readers; the
+                      // arrow alone is only available visually.
+                      aria-sort={
+                        isSorted
+                          ? sortOrder === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : undefined
+                      }
+                      className={`px-6 py-3 ${alignment} text-xs font-medium text-muted-foreground uppercase tracking-wider`}
+                    >
+                      {column.sortKey ? (
+                        <button
+                          type="button"
+                          onClick={() => handleSortColumn(column.sortKey!)}
+                          className={`inline-flex items-center gap-1 uppercase tracking-wider hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring rounded-sm ${
+                            column.align === "right" ? "flex-row-reverse" : ""
+                          } ${isSorted ? "text-foreground" : ""}`}
+                        >
+                          {column.label}
+                          <SortIndicator
+                            isSorted={isSorted}
+                            direction={sortOrder}
+                            isPending={isSorted && isFetching}
+                          />
+                        </button>
+                      ) : (
+                        column.label
+                      )}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
@@ -541,6 +693,26 @@ export default function TransactionsTable() {
               })}
             </tbody>
           </table>
+        </div>
+
+        {/* The card layout has no header row to click, so sorting gets its
+            own control here. */}
+        <div
+          className={
+            isEmpty
+              ? "hidden"
+              : "md:hidden flex items-center justify-between gap-3 border-t px-4 py-3"
+          }
+        >
+          <span className="text-xs text-muted-foreground uppercase tracking-wider">
+            Sort
+          </span>
+          <SortSelect
+            sort={sortBy}
+            dir={sortOrder}
+            onSortChange={handleSortChange}
+            className="w-[190px]"
+          />
         </div>
 
         {/* Mobile Card View (visible only on mobile) */}

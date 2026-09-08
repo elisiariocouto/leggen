@@ -18,6 +18,9 @@ export const queryKeys = {
     ["balances", "history", dateFrom, dateTo, accountId] as const,
 
   transactions: ["transactions"] as const,
+  // Every field is required: an optional one could be left out at a call
+  // site, letting two differently-sorted or differently-filtered views share
+  // a single cache entry.
   transactionList: (params: {
     accountId: string;
     categoryId: string;
@@ -27,6 +30,10 @@ export const queryKeys = {
     page: number;
     perPage: number;
     search: string;
+    minAmount: number | undefined;
+    maxAmount: number | undefined;
+    sortBy: string;
+    sortOrder: string;
   }) => ["transactions", "list", params] as const,
 
   // Command-palette lookahead: a short, unpaginated peek at matches for the

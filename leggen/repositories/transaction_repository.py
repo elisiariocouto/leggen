@@ -14,6 +14,33 @@ _CATEGORY_JOIN = """
                 LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
                 LEFT JOIN categories c ON tc.categoryId = c.id"""
 
+# Sortable columns, keyed by the snake_case name the API exposes. SQLite
+# cannot bind an ORDER BY column, so the column has to be interpolated into
+# the SQL — this mapping is what keeps user input out of the query. Every
+# entry is backed by an index (see migrations/_steps.py).
+_SORT_COLUMNS = {
+    "date": "t.transactionDate",
+    "amount": "t.transactionValue",
+    "description": "t.description",
+}
+_DEFAULT_SORT_BY = "date"
+_DEFAULT_SORT_ORDER = "desc"
+
+
+def _build_order_clause(sort_by: str | None, sort_order: str | None) -> str:
+    """Build a validated ORDER BY, falling back to the default on anything
+    unrecognised so a bad value can never reach the SQL.
+
+    Always ends with transactionId: the sort keys all have ties (many rows
+    share a date, an amount, or a description), and without a deterministic
+    tiebreaker the order of tied rows is left to the query plan — which means
+    a row can repeat on one page and be missed on the next as the planner
+    switches between a table scan and an index scan.
+    """
+    column = _SORT_COLUMNS.get(sort_by or "", _SORT_COLUMNS[_DEFAULT_SORT_BY])
+    direction = "ASC" if (sort_order or "").lower() == "asc" else "DESC"
+    return f" ORDER BY {column} {direction}, t.transactionId {direction}"
+
 
 class TransactionRepository:
     """Repository for transaction data operations"""
@@ -28,6 +55,8 @@ class TransactionRepository:
         search: str | None = None,
         category_id: str | None = None,
         status: str | None = None,
+        min_magnitude: float | None = None,
+        max_magnitude: float | None = None,
     ) -> tuple[str, list[str | int | float]]:
         """Build WHERE clause and params for transaction filtering."""
         clause = ""
@@ -54,6 +83,19 @@ class TransactionRepository:
         if max_amount is not None:
             clause += " AND t.transactionValue <= ?"
             params.append(max_amount)
+
+        # Magnitude filters ignore the sign, matching how the app presents
+        # amounts: expenses are shown as positive figures (see the ABS() in
+        # get_stats_totals), so "40 to 50" should catch a -45 payment and a
+        # +45 refund alike. ABS() rules out idx_transactions_amount, but this
+        # is a filter bounded by the other predicates, not a sort.
+        if min_magnitude is not None:
+            clause += " AND ABS(t.transactionValue) >= ?"
+            params.append(min_magnitude)
+
+        if max_magnitude is not None:
+            clause += " AND ABS(t.transactionValue) <= ?"
+            params.append(max_magnitude)
 
         if search:
             clause += " AND t.description LIKE ?"
@@ -210,8 +252,12 @@ class TransactionRepository:
         search: str | None = None,
         category_id: str | None = None,
         status: str | None = None,
+        min_magnitude: float | None = None,
+        max_magnitude: float | None = None,
+        sort_by: str | None = None,
+        sort_order: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Get transactions with optional filtering"""
+        """Get transactions with optional filtering and ordering"""
         if not db_exists():
             return []
 
@@ -227,6 +273,8 @@ class TransactionRepository:
                 search=search,
                 category_id=category_id,
                 status=status,
+                min_magnitude=min_magnitude,
+                max_magnitude=max_magnitude,
             )
 
             query = (
@@ -235,7 +283,9 @@ class TransactionRepository:
                 WHERE 1=1"""
                 + filter_clause
             )
-            query += " ORDER BY t.transactionDate DESC"
+            # Contributes no bound parameters, so the LIMIT/OFFSET values
+            # appended below stay in position.
+            query += _build_order_clause(sort_by, sort_order)
 
             if limit:
                 query += " LIMIT ?"
@@ -269,6 +319,8 @@ class TransactionRepository:
         search: str | None = None,
         category_id: str | None = None,
         status: str | None = None,
+        min_magnitude: float | None = None,
+        max_magnitude: float | None = None,
     ) -> int:
         """Get total count of transactions matching filters"""
         if not db_exists():
@@ -286,6 +338,8 @@ class TransactionRepository:
                 search=search,
                 category_id=category_id,
                 status=status,
+                min_magnitude=min_magnitude,
+                max_magnitude=max_magnitude,
             )
 
             query = (
@@ -305,6 +359,8 @@ class TransactionRepository:
         max_amount: float | None = None,
         search: str | None = None,
         category_id: str | None = None,
+        min_magnitude: float | None = None,
+        max_magnitude: float | None = None,
     ) -> dict[str, Any]:
         """Aggregate totals for the filtered set, computed in SQL.
 
@@ -338,6 +394,8 @@ class TransactionRepository:
                 max_amount=max_amount,
                 search=search,
                 category_id=category_id,
+                min_magnitude=min_magnitude,
+                max_magnitude=max_magnitude,
             )
 
             base = (

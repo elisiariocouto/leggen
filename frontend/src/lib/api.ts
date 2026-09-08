@@ -193,6 +193,10 @@ export const apiClient = {
     maxAmount?: number;
     categoryId?: string;
     status?: string;
+    minMagnitude?: number;
+    maxMagnitude?: number;
+    sortBy?: string;
+    sortOrder?: string;
   }): Promise<PaginatedResponse<Transaction>> => {
     const queryParams = new URLSearchParams();
 
@@ -215,6 +219,15 @@ export const apiClient = {
     if (params?.categoryId)
       queryParams.append("category_id", params.categoryId);
     if (params?.status) queryParams.append("status", params.status);
+    // `!== undefined` rather than a truthiness test: 0 is a valid bound.
+    if (params?.minMagnitude !== undefined) {
+      queryParams.append("min_magnitude", params.minMagnitude.toString());
+    }
+    if (params?.maxMagnitude !== undefined) {
+      queryParams.append("max_magnitude", params.maxMagnitude.toString());
+    }
+    if (params?.sortBy) queryParams.append("sort_by", params.sortBy);
+    if (params?.sortOrder) queryParams.append("sort_order", params.sortOrder);
 
     const response = await api.get<PaginatedResponse<Transaction>>(
       `/transactions?${queryParams.toString()}`,
@@ -276,6 +289,9 @@ export const apiClient = {
     minAmount?: number,
     maxAmount?: number,
     categoryId?: string,
+    // Trailing options object: the positional list is already long enough
+    // that callers pass literal `undefined`s to skip arguments.
+    options?: { minMagnitude?: number; maxMagnitude?: number },
   ): Promise<TransactionStats> => {
     const queryParams = new URLSearchParams();
     queryParams.append("date_from", dateFrom);
@@ -287,6 +303,10 @@ export const apiClient = {
     if (maxAmount !== undefined)
       queryParams.append("max_amount", maxAmount.toString());
     if (categoryId) queryParams.append("category_id", categoryId);
+    if (options?.minMagnitude !== undefined)
+      queryParams.append("min_magnitude", options.minMagnitude.toString());
+    if (options?.maxMagnitude !== undefined)
+      queryParams.append("max_magnitude", options.maxMagnitude.toString());
 
     const response = await api.get<TransactionStats>(
       `/transactions/stats?${queryParams.toString()}`,

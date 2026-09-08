@@ -126,3 +126,175 @@ class TestTransactionRepositoryStatusFilter:
         )
 
         assert repo.get_count(status="pending") == 1
+
+
+@pytest.mark.unit
+class TestTransactionRepositorySorting:
+    """Test the sort_by/sort_order arguments of get_transactions()."""
+
+    @staticmethod
+    def _seed(repo: TransactionRepository) -> None:
+        repo.persist(
+            "IBAN1",
+            [
+                _make_transaction(
+                    transactionId="tx-old-small",
+                    transactionDate="2026-07-01T10:00:00",
+                    transactionValue=-5.0,
+                    description="Almonds",
+                ),
+                _make_transaction(
+                    transactionId="tx-mid-large",
+                    transactionDate="2026-07-02T10:00:00",
+                    transactionValue=-100.0,
+                    description="Cutlery",
+                ),
+                _make_transaction(
+                    transactionId="tx-new-medium",
+                    transactionDate="2026-07-03T10:00:00",
+                    transactionValue=-50.0,
+                    description="Beans",
+                ),
+            ],
+        )
+
+    def test_defaults_to_newest_first(self, mock_db_path):
+        repo = TransactionRepository()
+        self._seed(repo)
+
+        rows = repo.get_transactions()
+
+        assert [t["transactionId"] for t in rows] == [
+            "tx-new-medium",
+            "tx-mid-large",
+            "tx-old-small",
+        ]
+
+    def test_sorts_by_date_ascending(self, mock_db_path):
+        repo = TransactionRepository()
+        self._seed(repo)
+
+        rows = repo.get_transactions(sort_by="date", sort_order="asc")
+
+        assert [t["transactionId"] for t in rows] == [
+            "tx-old-small",
+            "tx-mid-large",
+            "tx-new-medium",
+        ]
+
+    def test_sorts_by_amount(self, mock_db_path):
+        """Amounts are signed, so descending puts the smallest expense first."""
+        repo = TransactionRepository()
+        self._seed(repo)
+
+        descending = repo.get_transactions(sort_by="amount", sort_order="desc")
+        ascending = repo.get_transactions(sort_by="amount", sort_order="asc")
+
+        assert [t["transactionValue"] for t in descending] == [-5.0, -50.0, -100.0]
+        assert [t["transactionValue"] for t in ascending] == [-100.0, -50.0, -5.0]
+
+    def test_sorts_by_description(self, mock_db_path):
+        repo = TransactionRepository()
+        self._seed(repo)
+
+        rows = repo.get_transactions(sort_by="description", sort_order="asc")
+
+        assert [t["description"] for t in rows] == ["Almonds", "Beans", "Cutlery"]
+
+    def test_unknown_sort_field_falls_back_to_the_default(self, mock_db_path):
+        """An unrecognised column must never reach the SQL — the route
+        rejects one first, but the repository is not allowed to interpolate
+        whatever it is handed."""
+        repo = TransactionRepository()
+        self._seed(repo)
+
+        rows = repo.get_transactions(sort_by="t.transactionValue; DROP TABLE")
+
+        assert [t["transactionId"] for t in rows] == [
+            "tx-new-medium",
+            "tx-mid-large",
+            "tx-old-small",
+        ]
+
+    def test_paging_is_stable_when_the_sort_key_ties(self, mock_db_path):
+        """Every sort key has ties. Without a deterministic tiebreaker the
+        order of tied rows is left to the query plan, and a row can repeat on
+        one page while another is skipped."""
+        repo = TransactionRepository()
+        repo.persist(
+            "IBAN1",
+            [
+                _make_transaction(
+                    transactionId=f"tx-{index}",
+                    transactionDate="2026-07-01T00:00:00",
+                    transactionValue=-10.0,
+                )
+                for index in range(6)
+            ],
+        )
+
+        first = repo.get_transactions(limit=3, offset=0)
+        second = repo.get_transactions(limit=3, offset=3)
+        seen = [t["transactionId"] for t in first + second]
+
+        # Every row appears exactly once across the two pages, in the order
+        # the tiebreaker fixes rather than whatever the plan happens to emit.
+        assert seen == ["tx-5", "tx-4", "tx-3", "tx-2", "tx-1", "tx-0"]
+        assert repo.get_count() == 6
+
+    def test_ties_break_with_the_sort_direction(self, mock_db_path):
+        repo = TransactionRepository()
+        repo.persist(
+            "IBAN1",
+            [
+                _make_transaction(
+                    transactionId=f"tx-{index}",
+                    transactionDate="2026-07-01T00:00:00",
+                )
+                for index in range(3)
+            ],
+        )
+
+        rows = repo.get_transactions(sort_order="asc")
+
+        assert [t["transactionId"] for t in rows] == ["tx-0", "tx-1", "tx-2"]
+
+
+@pytest.mark.unit
+class TestTransactionRepositoryMagnitudeFilter:
+    """Test the sign-insensitive amount filter."""
+
+    @staticmethod
+    def _seed(repo: TransactionRepository) -> None:
+        repo.persist(
+            "IBAN1",
+            [
+                _make_transaction(transactionId="tx-expense", transactionValue=-45.30),
+                _make_transaction(transactionId="tx-income", transactionValue=45.00),
+                _make_transaction(transactionId="tx-small", transactionValue=-5.00),
+                _make_transaction(transactionId="tx-large", transactionValue=-500.00),
+            ],
+        )
+
+    def test_matches_income_and_expenses_of_the_same_size(self, mock_db_path):
+        repo = TransactionRepository()
+        self._seed(repo)
+
+        rows = repo.get_transactions(min_magnitude=40, max_magnitude=50)
+
+        assert sorted(t["transactionId"] for t in rows) == ["tx-expense", "tx-income"]
+
+    def test_count_respects_the_magnitude_filter(self, mock_db_path):
+        repo = TransactionRepository()
+        self._seed(repo)
+
+        assert repo.get_count(min_magnitude=40, max_magnitude=50) == 2
+        assert repo.get_count(min_magnitude=100) == 1
+        assert repo.get_count(max_magnitude=10) == 1
+
+    def test_zero_lower_bound_is_not_treated_as_absent(self, mock_db_path):
+        """0 is falsy; the clause has to test for None, not truthiness."""
+        repo = TransactionRepository()
+        self._seed(repo)
+
+        assert repo.get_count(min_magnitude=0, max_magnitude=10) == 1

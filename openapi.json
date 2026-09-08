@@ -1044,6 +1044,77 @@
               "title": "Status"
             },
             "description": "Filter by transaction status"
+          },
+          {
+            "name": "min_magnitude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Minimum transaction size, ignoring sign (matches income and expenses alike)",
+              "title": "Min Magnitude"
+            },
+            "description": "Minimum transaction size, ignoring sign (matches income and expenses alike)"
+          },
+          {
+            "name": "max_magnitude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum transaction size, ignoring sign (matches income and expenses alike)",
+              "title": "Max Magnitude"
+            },
+            "description": "Maximum transaction size, ignoring sign (matches income and expenses alike)"
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "date",
+                "amount",
+                "description"
+              ],
+              "type": "string",
+              "description": "Column to order results by",
+              "default": "date",
+              "title": "Sort By"
+            },
+            "description": "Column to order results by"
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "description": "Order direction",
+              "default": "desc",
+              "title": "Sort Order"
+            },
+            "description": "Order direction"
           }
         ],
         "responses": {
@@ -1200,6 +1271,44 @@
               "title": "Max Amount"
             },
             "description": "Maximum transaction amount"
+          },
+          {
+            "name": "min_magnitude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Minimum transaction size, ignoring sign (matches income and expenses alike)",
+              "title": "Min Magnitude"
+            },
+            "description": "Minimum transaction size, ignoring sign (matches income and expenses alike)"
+          },
+          {
+            "name": "max_magnitude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum transaction size, ignoring sign (matches income and expenses alike)",
+              "title": "Max Magnitude"
+            },
+            "description": "Maximum transaction size, ignoring sign (matches income and expenses alike)"
           },
           {
             "name": "group_by",
