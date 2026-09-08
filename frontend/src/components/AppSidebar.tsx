@@ -1,13 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import {
-  ArrowLeftRight,
-  BarChart3,
-  Building2,
-  LogOut,
-  RefreshCw,
-  Settings,
-  TrendingUp,
-} from "lucide-react";
+import { Building2, LogOut, TrendingUp } from "lucide-react";
 import { Logo } from "./ui/logo";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../lib/api";
@@ -37,14 +29,7 @@ import {
   useSidebar,
 } from "./ui/sidebar";
 import { queryKeys } from "../lib/queryKeys";
-
-const navigation = [
-  { name: "Transactions", icon: ArrowLeftRight, to: "/" },
-  { name: "Analytics", icon: BarChart3, to: "/analytics" },
-  { name: "Accounts", icon: Building2, to: "/accounts" },
-  { name: "Sync", icon: RefreshCw, to: "/sync" },
-  { name: "Settings", icon: Settings, to: "/settings" },
-];
+import { navigation } from "../lib/navigation";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();

@@ -10,6 +10,8 @@ import { SiteHeader } from "../components/SiteHeader";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { SidebarInset, SidebarProvider } from "../components/ui/sidebar";
 import { Toaster } from "../components/ui/sonner";
+import { CommandPalette } from "../components/CommandPalette";
+import { useCommandPalette } from "../hooks/use-command-palette";
 import { hasValidSession } from "../lib/authToken";
 
 // Routes reachable without a session. Everything else redirects to /login.
@@ -17,6 +19,9 @@ const PUBLIC_ROUTES = new Set(["/login", "/bank-connected"]);
 
 function RootLayout() {
   const location = useLocation();
+  // Called before the login early-return because hooks cannot be
+  // conditional; the palette itself is only rendered once past it.
+  const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
 
   // The login screen is full-bleed: no sidebar, no header.
   if (location.pathname === "/login") {
@@ -41,13 +46,15 @@ function RootLayout() {
     >
       <AppSidebar />
       <SidebarInset>
-        <SiteHeader />
+        <SiteHeader onOpenCommandPalette={() => setPaletteOpen(true)} />
         <main className="flex-1 p-6 min-w-0">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
         </main>
       </SidebarInset>
+
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
 
       {/* Toast Notifications */}
       <Toaster />

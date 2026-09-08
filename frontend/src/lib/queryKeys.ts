@@ -29,6 +29,12 @@ export const queryKeys = {
     search: string;
   }) => ["transactions", "list", params] as const,
 
+  // Command-palette lookahead: a short, unpaginated peek at matches for the
+  // term being typed. Kept under the "transactions" root so the existing
+  // invalidation helpers reach it too.
+  transactionSearch: (search: string) =>
+    ["transactions", "search", search] as const,
+
   transactionStats: ["transaction-stats"] as const,
   transactionStatsSummary: (
     dateFrom: string,

@@ -1,6 +1,9 @@
 import { useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Search } from "lucide-react";
 import { apiClient } from "../lib/api";
+import { Button } from "./ui/button";
+import { CommandShortcut } from "./ui/command";
 import { ThemeToggle } from "./ui/theme-toggle";
 import { BalanceToggle } from "./ui/balance-toggle";
 import { Separator } from "./ui/separator";
@@ -11,16 +14,13 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { queryKeys } from "../lib/queryKeys";
+import { navigation } from "../lib/navigation";
 
-const navigation = [
-  { name: "Transactions", to: "/" },
-  { name: "Analytics", to: "/analytics" },
-  { name: "Accounts", to: "/accounts" },
-  { name: "Sync", to: "/sync" },
-  { name: "Settings", to: "/settings" },
-];
+export interface SiteHeaderProps {
+  onOpenCommandPalette: () => void;
+}
 
-export function SiteHeader() {
+export function SiteHeader({ onOpenCommandPalette }: SiteHeaderProps) {
   const location = useLocation();
   const currentPage =
     navigation.find((item) => item.to === location.pathname)?.name ||
@@ -49,6 +49,19 @@ export function SiteHeader() {
         </h1>
 
         <div className="ml-auto flex items-center space-x-3">
+          {/* Makes the palette discoverable without knowing the shortcut.
+              On narrow screens the label collapses to the icon. */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenCommandPalette}
+            className="text-muted-foreground font-normal"
+          >
+            <Search className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Search...</span>
+            <CommandShortcut className="hidden sm:inline">⌘K</CommandShortcut>
+          </Button>
+
           {/* Version display */}
           <span className="text-xs text-muted-foreground">
             v{healthStatus?.version || "?"}
