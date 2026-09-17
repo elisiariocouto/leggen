@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Tag, Sparkles, X, Check } from "lucide-react";
+import { Tag, Sparkles, X, Check, WandSparkles } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { apiClient, getApiErrorMessage } from "../lib/api";
 import {
   Popover,
@@ -18,7 +19,12 @@ import {
 } from "./ui/command";
 import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner";
-import type { Category, CategorySuggestion } from "../types/api";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "./ui/tooltip";
+import type { Category, CategoryRule, CategorySuggestion } from "../types/api";
 import {
   invalidateCategorizedData,
   queryKeys,
@@ -30,7 +36,41 @@ interface CategoryBadgeProps {
   categoryId?: number | null;
   categoryName?: string | null;
   categoryColor?: string | null;
+  categorySource?: string | null;
+  categoryRuleId?: number | null;
   description?: string;
+}
+
+/**
+ * Wand beside a category a rule assigned, naming the rule on hover. Rule
+ * names are read from the rules query the Rules page already caches.
+ */
+function RuleProvenance({ ruleId }: { ruleId: number | null | undefined }) {
+  const { data: rules } = useQuery<CategoryRule[]>({
+    queryKey: queryKeys.categoryRules,
+    queryFn: apiClient.getCategoryRules,
+    staleTime: 60_000,
+  });
+  const rule = rules?.find((r) => r.id === ruleId);
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Link
+            to="/rules"
+            className="inline-flex"
+            aria-label="Assigned by a rule"
+            onClick={(event) => event.stopPropagation()}
+          />
+        }
+      >
+        <WandSparkles className="h-3 w-3 opacity-70" />
+      </TooltipTrigger>
+      <TooltipContent>
+        {rule ? `Assigned by rule “${rule.name}”` : "Assigned by a rule"}
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 export default function CategoryBadge({
@@ -39,6 +79,8 @@ export default function CategoryBadge({
   categoryId,
   categoryName,
   categoryColor,
+  categorySource,
+  categoryRuleId,
   description,
 }: CategoryBadgeProps) {
   const [open, setOpen] = useState(false);
@@ -155,6 +197,7 @@ export default function CategoryBadge({
     bulkRemoveMutation.isPending;
 
   return (
+    <span className="inline-flex items-center gap-1">
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         render={
@@ -278,5 +321,11 @@ export default function CategoryBadge({
         </Command>
       </PopoverContent>
     </Popover>
+    {categoryName && categorySource === "rule" && (
+      <span style={{ color }}>
+        <RuleProvenance ruleId={categoryRuleId} />
+      </span>
+    )}
+    </span>
   );
 }

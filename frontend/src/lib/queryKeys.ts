@@ -81,6 +81,8 @@ export const queryKeys = {
     ["analytics", "recurring", dateFrom, dateTo, accountId] as const,
 
   categories: ["categories"] as const,
+  categoryRules: ["category-rules"] as const,
+  ruleReference: ["category-rules", "reference"] as const,
   categorySuggestions: (accountId: string, transactionId: string) =>
     ["categories", "suggestions", accountId, transactionId] as const,
 
@@ -140,4 +142,13 @@ export function invalidateCategorizedData(queryClient: QueryClient): void {
   for (const queryKey of roots) {
     queryClient.invalidateQueries({ queryKey });
   }
+}
+
+/**
+ * A rule change affects the rule list and, once applied, every category
+ * on every transaction and the statistics built from them.
+ */
+export function invalidateRuleData(queryClient: QueryClient): void {
+  queryClient.invalidateQueries({ queryKey: queryKeys.categoryRules });
+  invalidateCategorizedData(queryClient);
 }

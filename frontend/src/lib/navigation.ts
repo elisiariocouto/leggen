@@ -4,6 +4,7 @@ import {
   Building2,
   RefreshCw,
   Settings,
+  WandSparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -24,6 +25,7 @@ export const navigation: NavigationItem[] = [
   { name: "Transactions", icon: ArrowLeftRight, to: "/" },
   { name: "Analytics", icon: BarChart3, to: "/analytics" },
   { name: "Accounts", icon: Building2, to: "/accounts" },
+  { name: "Rules", icon: WandSparkles, to: "/rules" },
   { name: "Sync", icon: RefreshCw, to: "/sync" },
   { name: "Settings", icon: Settings, to: "/settings" },
 ];

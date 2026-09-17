@@ -5,6 +5,13 @@ import type {
   Account,
   Transaction,
   TransactionUpdate,
+  CategoryRule,
+  CategoryRuleCreate,
+  CategoryRuleUpdate,
+  RuleTestResult,
+  RulePreviewResponse,
+  RuleRunReport,
+  RuleReference,
   Balance,
   PaginatedResponse,
   NotificationSettings,
@@ -601,6 +608,66 @@ export const apiClient = {
   ): Promise<CategorySuggestion[]> => {
     const response = await api.get<CategorySuggestion[]>(
       `/transactions/${accountId}/${transactionId}/suggest-category`,
+    );
+    return response.data;
+  },
+
+  // Category rule endpoints
+  getCategoryRules: async (): Promise<CategoryRule[]> => {
+    const response = await api.get<CategoryRule[]>("/category-rules");
+    return response.data;
+  },
+
+  createCategoryRule: async (data: CategoryRuleCreate): Promise<CategoryRule> => {
+    const response = await api.post<CategoryRule>("/category-rules", data);
+    return response.data;
+  },
+
+  updateCategoryRule: async (
+    id: number,
+    data: CategoryRuleUpdate,
+  ): Promise<CategoryRule> => {
+    const response = await api.put<CategoryRule>(`/category-rules/${id}`, data);
+    return response.data;
+  },
+
+  deleteCategoryRule: async (id: number): Promise<void> => {
+    await api.delete(`/category-rules/${id}`);
+  },
+
+  getRuleReference: async (): Promise<RuleReference> => {
+    const response = await api.get<RuleReference>("/category-rules/reference");
+    return response.data;
+  },
+
+  testRuleScript: async (
+    luaScript: string,
+    accountId: string,
+    transactionId: string,
+  ): Promise<RuleTestResult> => {
+    const response = await api.post<RuleTestResult>("/category-rules/test", {
+      lua_script: luaScript,
+      account_id: accountId,
+      transaction_id: transactionId,
+    });
+    return response.data;
+  },
+
+  previewRuleScript: async (
+    luaScript: string,
+    page = 1,
+    perPage = 50,
+  ): Promise<RulePreviewResponse> => {
+    const response = await api.post<RulePreviewResponse>(
+      "/category-rules/preview",
+      { lua_script: luaScript, page, per_page: perPage },
+    );
+    return response.data;
+  },
+
+  applyCategoryRules: async (dryRun: boolean): Promise<RuleRunReport> => {
+    const response = await api.post<RuleRunReport>(
+      `/category-rules/apply?dry_run=${dryRun}`,
     );
     return response.data;
   },

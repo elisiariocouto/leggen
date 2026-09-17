@@ -14,6 +14,7 @@ import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as BankConnectedRouteImport } from './routes/bank-connected'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as RulesRouteImport } from './routes/rules'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SyncRouteImport } from './routes/sync'
 
@@ -42,6 +43,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RulesRoute = RulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/bank-connected': typeof BankConnectedRoute
   '/login': typeof LoginRoute
+  '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
   '/sync': typeof SyncRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/bank-connected': typeof BankConnectedRoute
   '/login': typeof LoginRoute
+  '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
   '/sync': typeof SyncRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/bank-connected': typeof BankConnectedRoute
   '/login': typeof LoginRoute
+  '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
   '/sync': typeof SyncRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/bank-connected'
     | '/login'
+    | '/rules'
     | '/settings'
     | '/sync'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/bank-connected'
     | '/login'
+    | '/rules'
     | '/settings'
     | '/sync'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/bank-connected'
     | '/login'
+    | '/rules'
     | '/settings'
     | '/sync'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   BankConnectedRoute: typeof BankConnectedRoute
   LoginRoute: typeof LoginRoute
+  RulesRoute: typeof RulesRoute
   SettingsRoute: typeof SettingsRoute
   SyncRoute: typeof SyncRoute
 }
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rules': {
+      id: '/rules'
+      path: '/rules'
+      fullPath: '/rules'
+      preLoaderRoute: typeof RulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   BankConnectedRoute: BankConnectedRoute,
   LoginRoute: LoginRoute,
+  RulesRoute: RulesRoute,
   SettingsRoute: SettingsRoute,
   SyncRoute: SyncRoute,
 }

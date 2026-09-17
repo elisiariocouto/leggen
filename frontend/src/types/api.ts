@@ -31,6 +31,17 @@ export type CategoryCreate = Schemas["CategoryCreate"];
 export type CategoryUpdate = Schemas["CategoryUpdate"];
 export type CategorySuggestion = Schemas["CategorySuggestion"];
 
+// Category rules
+export type CategoryRule = Schemas["CategoryRule"];
+export type CategoryRuleCreate = Schemas["CategoryRuleCreate"];
+export type CategoryRuleUpdate = Schemas["CategoryRuleUpdate"];
+export type RuleTestResult = Schemas["RuleTestResult"];
+export type RuleMatch = Schemas["RuleMatch"];
+export type RulePreviewResponse = Schemas["RulePreviewResponse"];
+export type RuleRunReport = Schemas["RuleRunReport"];
+export type RuleChange = Schemas["RuleChange"];
+export type RuleReference = Schemas["RuleReference"];
+
 // Analytics
 export type CategoryStats = Schemas["CategoryStats"];
 export type TransactionStats = Schemas["TransactionStats"];

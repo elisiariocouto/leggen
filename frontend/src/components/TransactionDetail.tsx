@@ -264,6 +264,8 @@ function TransactionDetailContent({
           categoryId={transaction.category_id}
           categoryName={transaction.category_name}
           categoryColor={transaction.category_color}
+      categorySource={transaction.category_source}
+      categoryRuleId={transaction.category_rule_id}
           description={transaction.description}
         />
       </div>
