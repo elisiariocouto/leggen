@@ -434,6 +434,160 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/category-rules/reference": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Rule Reference
+         * @description The rule-scripting reference: every `tx` field, every stdlib function,
+         *     the sandbox rules, and example scripts.
+         *
+         *     Fetch this before writing a rule. It is generated from the runtime's own
+         *     definitions, so it is always current for this server.
+         */
+        get: operations["get_rule_reference_api_v1_category_rules_reference_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/category-rules/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Rule Script
+         * @description Run a script against one existing transaction and see the result and
+         *     its log() output.
+         *
+         *     Rejects a script that does not compile with 422; a runtime error inside
+         *     the script comes back in `error` with a 200.
+         */
+        post: operations["test_rule_script_api_v1_category_rules_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/category-rules/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Rule Script
+         * @description List every transaction a script matches, without saving anything.
+         *
+         *     Manually categorized transactions are included and flagged `manual`:
+         *     the engine would leave them alone, but they show the rule's true reach.
+         *     Use this to check a rule's precision before creating or activating it.
+         */
+        post: operations["preview_rule_script_api_v1_category_rules_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/category-rules/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Rules
+         * @description Run every active rule over all transactions without a manual category.
+         *
+         *     Rules also run automatically over new transactions on every sync; this
+         *     re-evaluates history, which is what a new or edited rule needs. Manual
+         *     assignments are never changed. Rule-made assignments no active rule
+         *     reproduces any more are cleared.
+         */
+        post: operations["apply_rules_api_v1_category_rules_apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/category-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Rules
+         * @description All rules in evaluation order: ascending priority, then id.
+         */
+        get: operations["list_rules_api_v1_category_rules_get"];
+        put?: never;
+        /**
+         * Create Rule
+         * @description Create a rule. The script is compiled first and rejected with 422 if
+         *     it has a syntax error. Creating a rule does not run it: call
+         *     POST /category-rules/apply, or wait for the next sync to categorize new
+         *     transactions.
+         */
+        post: operations["create_rule_api_v1_category_rules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/category-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Rule
+         * @description One rule by id.
+         */
+        get: operations["get_rule_api_v1_category_rules__rule_id__get"];
+        /**
+         * Update Rule
+         * @description Update the fields sent; the others keep their value. A changed script
+         *     is compiled first. Editing does not re-run the engine.
+         */
+        put: operations["update_rule_api_v1_category_rules__rule_id__put"];
+        post?: never;
+        /**
+         * Delete Rule
+         * @description Delete a rule. The categories it assigned are removed with it;
+         *     manual assignments are untouched.
+         */
+        delete: operations["delete_rule_api_v1_category_rules__rule_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sync": {
         parameters: {
             query?: never;
@@ -1132,6 +1286,98 @@ export interface components {
             exclude_from_stats: boolean;
         };
         /**
+         * CategoryRule
+         * @description A rule that assigns a category to the transactions its script matches.
+         */
+        CategoryRule: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** Category Id */
+            category_id: number;
+            /** Category Name */
+            category_name?: string | null;
+            /**
+             * Lua Script
+             * @description Body of a Lua function receiving the transaction as `tx`; return true to apply the rule. See GET /category-rules/reference for the fields and functions available.
+             */
+            lua_script: string;
+            /**
+             * Priority
+             * @description Evaluation order, ascending; the first matching rule wins.
+             */
+            priority: number;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Is Default
+             * @description Shipped with leggen. Editable, but a future version may replace it.
+             */
+            is_default: boolean;
+            /**
+             * Exclude From Stats
+             * @description Statistics flag set on the transactions this rule categorizes: true excludes them, false includes them, null leaves the category's default in force.
+             */
+            exclude_from_stats: boolean | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * CategoryRuleCreate
+         * @description Request body for creating a rule.
+         */
+        CategoryRuleCreate: {
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** Category Id */
+            category_id: number;
+            /**
+             * Lua Script
+             * @description Body of a Lua function receiving the transaction as `tx`; return true to apply the rule. See GET /category-rules/reference for the fields and functions available.
+             */
+            lua_script: string;
+            /**
+             * Priority
+             * @default 100
+             */
+            priority: number;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /** Exclude From Stats */
+            exclude_from_stats?: boolean | null;
+        };
+        /**
+         * CategoryRuleUpdate
+         * @description Request body for updating a rule. Only the fields sent are changed;
+         *     send `description` or `exclude_from_stats` as null to clear them.
+         */
+        CategoryRuleUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Category Id */
+            category_id?: number | null;
+            /** Lua Script */
+            lua_script?: string | null;
+            /** Priority */
+            priority?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Exclude From Stats */
+            exclude_from_stats?: boolean | null;
+        };
+        /**
          * CategoryStats
          * @description Income/expense totals for one category
          */
@@ -1420,6 +1666,247 @@ export interface components {
             currency?: string | null;
         };
         /**
+         * RuleChange
+         * @description One assignment a run made, or would make.
+         */
+        RuleChange: {
+            /** Account Id */
+            account_id: string;
+            /** Transaction Id */
+            transaction_id: string;
+            /** Description */
+            description: string;
+            /** Amount */
+            amount: number | null;
+            /** Currency */
+            currency: string | null;
+            /** Date */
+            date: string | null;
+            /**
+             * Action
+             * @description "assign" or "clear".
+             */
+            action: string;
+            /** Category Id */
+            category_id: number | null;
+            /** Rule Id */
+            rule_id: number | null;
+            /** Exclude From Stats */
+            exclude_from_stats: boolean | null;
+            /** Previous Category Id */
+            previous_category_id: number | null;
+            /** Previous Rule Id */
+            previous_rule_id: number | null;
+        };
+        /** RuleErrors */
+        RuleErrors: {
+            /** Rule Id */
+            rule_id: number;
+            /** Rule Name */
+            rule_name: string;
+            /** Count */
+            count: number;
+            /** Samples */
+            samples: string[];
+        };
+        /** RuleField */
+        RuleField: {
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+            /** Description */
+            description: string;
+        };
+        /** RuleFieldGroup */
+        RuleFieldGroup: {
+            /** Title */
+            title: string;
+            /** Fields */
+            fields: components["schemas"]["RuleField"][];
+        };
+        /** RuleFunction */
+        RuleFunction: {
+            /** Signature */
+            signature: string;
+            /** Description */
+            description: string;
+        };
+        /** RuleFunctionGroup */
+        RuleFunctionGroup: {
+            /** Title */
+            title: string;
+            /** Functions */
+            functions: components["schemas"]["RuleFunction"][];
+        };
+        /**
+         * RuleMatch
+         * @description A transaction a script matched.
+         */
+        RuleMatch: {
+            /** Account Id */
+            account_id: string;
+            /** Transaction Id */
+            transaction_id: string;
+            /** Description */
+            description: string;
+            /** Amount */
+            amount: number | null;
+            /** Currency */
+            currency: string | null;
+            /** Date */
+            date: string | null;
+            /** Category Id */
+            category_id?: number | null;
+            /** Category Name */
+            category_name?: string | null;
+            /**
+             * Manual
+             * @description The transaction has a manually chosen category, which the engine never overrides; the rule matches it but would not change it.
+             */
+            manual: boolean;
+            /** Logs */
+            logs?: string[];
+        };
+        /**
+         * RulePreviewResponse
+         * @description The transactions a script matches, paginated, with run statistics.
+         */
+        RulePreviewResponse: {
+            /** Data */
+            data: components["schemas"]["RuleMatch"][];
+            /**
+             * Total
+             * @description Transactions matched.
+             */
+            total: number;
+            /** Page */
+            page: number;
+            /** Per Page */
+            per_page: number;
+            /** Total Pages */
+            total_pages: number;
+            /** Has Next */
+            has_next: boolean;
+            /** Has Prev */
+            has_prev: boolean;
+            /**
+             * Evaluated
+             * @description Transactions the script was run against.
+             */
+            evaluated: number;
+            /**
+             * Errors
+             * @description Evaluations that raised a runtime error.
+             */
+            errors: number;
+            /** Error Samples */
+            error_samples?: string[];
+        };
+        /**
+         * RuleReference
+         * @description Everything a script can use: the `tx` fields and the stdlib.
+         */
+        RuleReference: {
+            /** Stdlib */
+            stdlib: components["schemas"]["RuleFunctionGroup"][];
+            /** Fields */
+            fields: components["schemas"]["RuleFieldGroup"][];
+            /** Notes */
+            notes: string[];
+            /** Max Instructions */
+            max_instructions: number;
+            /**
+             * Examples
+             * @description Small, complete scripts showing common shapes of rule.
+             */
+            examples: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * RuleRunReport
+         * @description Report of a rule engine pass.
+         */
+        RuleRunReport: {
+            /** Dry Run */
+            dry_run: boolean;
+            /** Rules Evaluated */
+            rules_evaluated: number;
+            /** Transactions Evaluated */
+            transactions_evaluated: number;
+            /** Assigned */
+            assigned: number;
+            /** Cleared */
+            cleared: number;
+            /** Changes */
+            changes: components["schemas"]["RuleChange"][];
+            /**
+             * Skipped Rules
+             * @description Active rules that did not compile and were left out.
+             */
+            skipped_rules: components["schemas"]["SkippedRule"][];
+            /**
+             * Errors
+             * @description Rules that raised runtime errors on some transactions.
+             */
+            errors: components["schemas"]["RuleErrors"][];
+        };
+        /**
+         * RuleScriptPreview
+         * @description Find every transaction a script matches.
+         */
+        RuleScriptPreview: {
+            /**
+             * Lua Script
+             * @description Body of a Lua function receiving the transaction as `tx`; return true to apply the rule. See GET /category-rules/reference for the fields and functions available.
+             */
+            lua_script: string;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Per Page
+             * @default 50
+             */
+            per_page: number;
+        };
+        /**
+         * RuleScriptTest
+         * @description Evaluate a script against one existing transaction.
+         */
+        RuleScriptTest: {
+            /**
+             * Lua Script
+             * @description Body of a Lua function receiving the transaction as `tx`; return true to apply the rule. See GET /category-rules/reference for the fields and functions available.
+             */
+            lua_script: string;
+            /** Account Id */
+            account_id: string;
+            /** Transaction Id */
+            transaction_id: string;
+        };
+        /**
+         * RuleTestResult
+         * @description Outcome of evaluating a script against one transaction.
+         */
+        RuleTestResult: {
+            /** Matched */
+            matched: boolean;
+            /**
+             * Error
+             * @description Runtime error raised by the script, if any. A script that does not compile is rejected with 422 instead.
+             */
+            error?: string | null;
+            /**
+             * Logs
+             * @description Lines the script passed to log().
+             */
+            logs?: string[];
+        };
+        /**
          * S3Config
          * @description S3 backup configuration model for API.
          */
@@ -1462,6 +1949,13 @@ export interface components {
              * @default true
              */
             enabled: boolean;
+        };
+        /** SkippedRule */
+        SkippedRule: {
+            /** Rule Id */
+            rule_id: number;
+            /** Error */
+            error: string;
         };
         /**
          * SyncOperation
@@ -3059,6 +3553,476 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_rule_reference_api_v1_category_rules_reference_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleReference"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    test_rule_script_api_v1_category_rules_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleScriptTest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleTestResult"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    preview_rule_script_api_v1_category_rules_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleScriptPreview"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RulePreviewResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    apply_rules_api_v1_category_rules_apply_post: {
+        parameters: {
+            query?: {
+                /** @description Report what would change without writing anything. */
+                dry_run?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleRunReport"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_rules_api_v1_category_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryRule"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_rule_api_v1_category_rules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryRuleCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryRule"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Category not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule with this name already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The script does not compile */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_rule_api_v1_category_rules__rule_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryRule"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rule not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    update_rule_api_v1_category_rules__rule_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryRuleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryRule"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rule or category not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule with this name already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The script does not compile */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_rule_api_v1_category_rules__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rule not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

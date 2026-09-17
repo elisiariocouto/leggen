@@ -19,6 +19,7 @@ from leggen.api.routes import (
     backup,
     banks,
     categories,
+    category_rules,
     notifications,
     sync,
     transactions,
@@ -85,6 +86,50 @@ async def lifespan(app: FastAPI):
     await close_enablebanking_service()
 
 
+# Rendered at the top of the OpenAPI document. Written for a reader — human
+# or agent — arriving with nothing but this URL and an API key.
+API_DESCRIPTION = """\
+Leggen syncs bank accounts and transactions from EnableBanking into a local
+database and serves them, with categories, statistics and notifications.
+
+## Authentication
+
+Every endpoint except `/auth/login` and `/health` needs one of:
+
+- `Authorization: Bearer <jwt>` — from `POST /auth/login` (the web app's flow)
+- `X-API-Key: <key>` — the `auth.api_key` from the server's config, for the
+  CLI and programmatic access
+
+## Categorizing transactions with rules
+
+Categories can be assigned by hand, or by **rules**: small Lua scripts that
+receive a transaction as `tx` and return `true` when the category applies.
+Rules run in priority order over every transaction without a manual category;
+the first match wins. They run over new transactions on every sync and over
+history on demand. Manual assignments are never overridden by a rule.
+
+The loop for writing a rule, whether by hand or by an agent working this API:
+
+1. `GET /category-rules/reference` — the `tx` fields, the stdlib and examples.
+2. `GET /transactions?search=...` — find transactions the rule should cover.
+3. `POST /category-rules/test` — run a draft against one of them; `log()`
+   output comes back, so the script can print what it sees.
+4. `POST /category-rules/preview` — every transaction the draft matches.
+   Check this for false positives before going further.
+5. `POST /category-rules` — save it, then `POST /category-rules/apply`
+   (with `dry_run=true` first) to categorize history.
+
+A rule can also set `exclude_from_stats` on the transactions it categorizes,
+for things like transfers between the user's own accounts.
+
+## Errors
+
+Every error is `{detail, code, status, errors?}`: `detail` is a human-readable
+string on every status including 422, `code` is machine-readable
+(`NOT_FOUND`, `INVALID_RULE_SCRIPT`, ...).
+"""
+
+
 def create_app() -> FastAPI:
     # Get version dynamically from package metadata
     try:
@@ -94,7 +139,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="Leggen API",
-        description="Open Banking API for Leggen",
+        description=API_DESCRIPTION,
         version=version,
         lifespan=lifespan,
         docs_url="/api/v1/docs",
@@ -137,6 +182,12 @@ def create_app() -> FastAPI:
         categories.router,
         prefix="/api/v1",
         tags=["categories"],
+        dependencies=auth_deps,
+    )
+    app.include_router(
+        category_rules.router,
+        prefix="/api/v1",
+        tags=["category-rules"],
         dependencies=auth_deps,
     )
     app.include_router(
