@@ -21,8 +21,9 @@ from leggen.repositories.migrations._helpers import (
 from leggen.repositories.migrations._steps import Migration
 
 # The schema as shipped in 2025.9.22, the oldest release that can be upgraded:
-# everything the baseline creates except `categories.exclude_from_stats` and
-# `sync_operations.warnings`, which later migrations add.
+# everything the baseline creates except the columns later migrations add
+# (`categories.exclude_from_stats`, `sync_operations.warnings`,
+# `transactions.exclude_from_stats`).
 _LEGACY_SCHEMA = (
     """CREATE TABLE accounts (
         id TEXT PRIMARY KEY, institution_id TEXT, status TEXT, iban TEXT, name TEXT,
@@ -241,6 +242,7 @@ class TestLegacyDatabase:
             cursor = conn.cursor()
             assert column_exists(cursor, "categories", "exclude_from_stats")
             assert column_exists(cursor, "sync_operations", "warnings")
+            assert column_exists(cursor, "transactions", "exclude_from_stats")
         finally:
             conn.close()
 

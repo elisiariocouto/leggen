@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AccountBalance(BaseModel):
@@ -67,6 +67,11 @@ class Transaction(BaseModel):
     category_id: int | None = None
     category_name: str | None = None
     category_color: str | None = None
+    exclude_from_stats: bool | None = Field(
+        default=None,
+        description="Per-transaction statistics override: true keeps it out of "
+        "totals, false keeps it in, null inherits the category's flag.",
+    )
 
 
 class TransactionSummary(BaseModel):
@@ -83,3 +88,15 @@ class TransactionSummary(BaseModel):
     category_id: int | None = None
     category_name: str | None = None
     category_color: str | None = None
+    exclude_from_stats: bool | None = None
+
+
+class TransactionUpdate(BaseModel):
+    """User-editable transaction fields."""
+
+    exclude_from_stats: bool | None = Field(
+        ...,
+        description="true excludes the transaction from statistics, false "
+        "includes it even if its category is excluded, null clears the "
+        "override so the category's flag applies.",
+    )

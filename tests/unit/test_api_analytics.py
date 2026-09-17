@@ -112,6 +112,36 @@ class TestCashFlow:
         assert response.status_code == 200
         assert response.json()["total_expenses"] == 50.00  # t1 excluded
 
+    def test_cash_flow_honours_transaction_overrides(self, api_client, mock_db_path):
+        """A transaction's own flag beats its category's: an uncategorized
+        transaction can be excluded, and one in an excluded category kept."""
+        from leggen.repositories import CategoryRepository, TransactionRepository
+
+        persist_transactions(
+            [
+                ("t1", "acc-1", "2025-09-05T10:00:00", -100.00, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-06T10:00:00", -50.00, "EUR", "booked"),
+                ("t3", "acc-1", "2025-09-07T10:00:00", -20.00, "EUR", "booked"),
+            ]
+        )
+        categories = CategoryRepository()
+        excluded = next(
+            c for c in categories.get_all_categories() if c["exclude_from_stats"]
+        )
+        categories.assign_category("acc-1", "t1", excluded["id"])
+        transactions = TransactionRepository()
+        transactions.set_exclude_from_stats(
+            "acc-1", "t1", False
+        )  # keep despite category
+        transactions.set_exclude_from_stats("acc-1", "t2", True)  # drop despite none
+
+        response = api_client.get(
+            "/api/v1/analytics/cash-flow?date_from=2025-09-01&date_to=2025-09-30"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["total_expenses"] == 120.00  # t1 + t3
+
     def test_cash_flow_uses_dominant_currency(self, api_client, mock_db_path):
         persist_transactions(
             [

@@ -86,6 +86,51 @@ class TestTransactionRepositoryPersist:
 
 
 @pytest.mark.unit
+class TestTransactionRepositoryExcludeFromStats:
+    """The per-transaction override is user-owned state on a bank-owned row."""
+
+    def test_defaults_to_inheriting(self, mock_db_path):
+        repo = TransactionRepository()
+        repo.persist("IBAN1", [_make_transaction()])
+
+        stored = repo.get_transaction_by_id("IBAN1", "tx-1")
+        assert stored is not None
+        assert stored["exclude_from_stats"] is None
+
+    def test_set_and_clear(self, mock_db_path):
+        repo = TransactionRepository()
+        repo.persist("IBAN1", [_make_transaction()])
+
+        assert repo.set_exclude_from_stats("IBAN1", "tx-1", True) is True
+        assert repo.get_transaction_by_id("IBAN1", "tx-1")["exclude_from_stats"] == 1
+
+        assert repo.set_exclude_from_stats("IBAN1", "tx-1", False) is True
+        assert repo.get_transaction_by_id("IBAN1", "tx-1")["exclude_from_stats"] == 0
+
+        assert repo.set_exclude_from_stats("IBAN1", "tx-1", None) is True
+        assert repo.get_transaction_by_id("IBAN1", "tx-1")["exclude_from_stats"] is None
+
+    def test_missing_transaction_reports_false(self, mock_db_path):
+        repo = TransactionRepository()
+
+        assert repo.set_exclude_from_stats("IBAN1", "nope", True) is False
+
+    def test_survives_a_bank_update(self, mock_db_path):
+        """A pending transaction becoming booked must not reset the flag.
+        INSERT OR REPLACE would have deleted and re-inserted the row."""
+        repo = TransactionRepository()
+        repo.persist("IBAN1", [_make_transaction(transactionStatus="PNDG")])
+        repo.set_exclude_from_stats("IBAN1", "tx-1", True)
+
+        repo.persist("IBAN1", [_make_transaction(transactionStatus="BOOK")])
+
+        stored = repo.get_transaction_by_id("IBAN1", "tx-1")
+        assert stored is not None
+        assert stored["transactionStatus"] == "BOOK"
+        assert stored["exclude_from_stats"] == 1
+
+
+@pytest.mark.unit
 class TestTransactionRepositoryStatusFilter:
     """Test the status filter shared by get_transactions() and get_count()."""
 

@@ -1,10 +1,15 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Query
 
-from leggen.api.models.accounts import Transaction, TransactionSummary
+from leggen.api.models.accounts import (
+    Transaction,
+    TransactionSummary,
+    TransactionUpdate,
+)
 from leggen.api.models.common import PaginatedResponse
 from leggen.api.models.stats import CategoryStats, MonthlyStats, TransactionStats
+from leggen.errors import NotFoundError
 from leggen.repositories import TransactionRepository
 from leggen.services.data_processors import (
     calculate_category_stats,
@@ -28,6 +33,45 @@ TransactionStatusFilter = Literal["booked", "pending"]
 # in the OpenAPI schema, and keeps arbitrary strings away from the ORDER BY.
 TransactionSortField = Literal["date", "amount", "description"]
 TransactionSortOrder = Literal["asc", "desc"]
+
+
+def _to_summary(txn: dict[str, Any]) -> TransactionSummary:
+    """Shape a repository row as a list-view summary."""
+    return TransactionSummary(
+        transaction_id=txn["transactionId"],
+        internal_transaction_id=txn.get("internalTransactionId"),
+        date=txn["transactionDate"],
+        description=txn["description"],
+        amount=txn["transactionValue"],
+        currency=txn["transactionCurrency"],
+        status=txn["transactionStatus"],
+        account_id=txn["accountId"],
+        category_id=txn.get("categoryId"),
+        category_name=txn.get("categoryName"),
+        category_color=txn.get("categoryColor"),
+        exclude_from_stats=txn.get("exclude_from_stats"),
+    )
+
+
+def _to_transaction(txn: dict[str, Any]) -> Transaction:
+    """Shape a repository row as the full transaction model."""
+    return Transaction(
+        transaction_id=txn["transactionId"],
+        internal_transaction_id=txn.get("internalTransactionId"),
+        institution_id=txn["institutionId"],
+        iban=txn["iban"],
+        account_id=txn["accountId"],
+        transaction_date=txn["transactionDate"],
+        description=txn["description"],
+        transaction_value=txn["transactionValue"],
+        transaction_currency=txn["transactionCurrency"],
+        transaction_status=txn["transactionStatus"],
+        raw_transaction=txn["rawTransaction"],
+        category_id=txn.get("categoryId"),
+        category_name=txn.get("categoryName"),
+        category_color=txn.get("categoryColor"),
+        exclude_from_stats=txn.get("exclude_from_stats"),
+    )
 
 
 @router.get("/transactions")
@@ -116,45 +160,11 @@ async def get_all_transactions(
         max_magnitude=max_magnitude,
     )
 
+    data: list[TransactionSummary | Transaction]
     if summary_only:
-        # Return simplified transaction summaries
-        data: list[TransactionSummary | Transaction] = [
-            TransactionSummary(
-                transaction_id=txn["transactionId"],  # NEW: stable bank-provided ID
-                internal_transaction_id=txn.get("internalTransactionId"),
-                date=txn["transactionDate"],
-                description=txn["description"],
-                amount=txn["transactionValue"],
-                currency=txn["transactionCurrency"],
-                status=txn["transactionStatus"],
-                account_id=txn["accountId"],
-                category_id=txn.get("categoryId"),
-                category_name=txn.get("categoryName"),
-                category_color=txn.get("categoryColor"),
-            )
-            for txn in db_transactions
-        ]
+        data = [_to_summary(txn) for txn in db_transactions]
     else:
-        # Return full transaction details
-        data = [
-            Transaction(
-                transaction_id=txn["transactionId"],  # NEW: stable bank-provided ID
-                internal_transaction_id=txn.get("internalTransactionId"),
-                institution_id=txn["institutionId"],
-                iban=txn["iban"],
-                account_id=txn["accountId"],
-                transaction_date=txn["transactionDate"],
-                description=txn["description"],
-                transaction_value=txn["transactionValue"],
-                transaction_currency=txn["transactionCurrency"],
-                transaction_status=txn["transactionStatus"],
-                raw_transaction=txn["rawTransaction"],
-                category_id=txn.get("categoryId"),
-                category_name=txn.get("categoryName"),
-                category_color=txn.get("categoryColor"),
-            )
-            for txn in db_transactions
-        ]
+        data = [_to_transaction(txn) for txn in db_transactions]
 
     total_pages = (total_transactions + per_page - 1) // per_page
 
@@ -167,6 +177,33 @@ async def get_all_transactions(
         has_next=page < total_pages,
         has_prev=page > 1,
     )
+
+
+@router.patch(
+    "/transactions/{account_id}/{transaction_id}",
+    response_model=Transaction,
+    responses={404: {"description": "Transaction not found"}},
+)
+async def update_transaction(
+    account_id: str,
+    transaction_id: str,
+    body: TransactionUpdate,
+    transaction_repo: Annotated[TransactionRepository, Depends()],
+) -> Transaction:
+    """Update a transaction's user-editable fields.
+
+    Only `exclude_from_stats` is editable; everything else is owned by the
+    bank feed and overwritten on sync. Pass `null` to clear the override so
+    the category's own flag applies again.
+    """
+    if not transaction_repo.set_exclude_from_stats(
+        account_id, transaction_id, body.exclude_from_stats
+    ):
+        raise NotFoundError("Transaction not found.")
+    txn = transaction_repo.get_transaction_by_id(account_id, transaction_id)
+    if txn is None:
+        raise NotFoundError("Transaction not found.")
+    return _to_transaction(txn)
 
 
 @router.get("/transactions/stats")

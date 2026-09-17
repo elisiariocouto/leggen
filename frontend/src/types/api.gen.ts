@@ -248,6 +248,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transactions/{account_id}/{transaction_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Transaction
+         * @description Update a transaction's user-editable fields.
+         *
+         *     Only `exclude_from_stats` is editable; everything else is owned by the
+         *     bank feed and overwritten on sync. Pass `null` to clear the override so
+         *     the category's own flag applies again.
+         */
+        patch: operations["update_transaction_api_v1_transactions__account_id___transaction_id__patch"];
+        trace?: never;
+    };
     "/api/v1/transactions/stats": {
         parameters: {
             query?: never;
@@ -1641,6 +1665,11 @@ export interface components {
             category_name?: string | null;
             /** Category Color */
             category_color?: string | null;
+            /**
+             * Exclude From Stats
+             * @description Per-transaction statistics override: true keeps it out of totals, false keeps it in, null inherits the category's flag.
+             */
+            exclude_from_stats?: boolean | null;
         };
         /**
          * TransactionStats
@@ -1703,6 +1732,19 @@ export interface components {
             category_name?: string | null;
             /** Category Color */
             category_color?: string | null;
+            /** Exclude From Stats */
+            exclude_from_stats?: boolean | null;
+        };
+        /**
+         * TransactionUpdate
+         * @description User-editable transaction fields.
+         */
+        TransactionUpdate: {
+            /**
+             * Exclude From Stats
+             * @description true excludes the transaction from statistics, false includes it even if its category is excluded, null clears the override so the category's flag applies.
+             */
+            exclude_from_stats: boolean | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -2381,6 +2423,67 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    update_transaction_api_v1_transactions__account_id___transaction_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+                transaction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransactionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transaction"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Transaction not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

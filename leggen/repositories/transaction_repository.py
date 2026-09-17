@@ -14,6 +14,11 @@ _CATEGORY_JOIN = """
                 LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
                 LEFT JOIN categories c ON tc.categoryId = c.id"""
 
+# A transaction counts towards statistics unless excluded — by its own flag,
+# or by its category's when it carries none (NULL). An explicit 0 keeps it in
+# even when the category is excluded.
+_INCLUDED_IN_STATS = "COALESCE(t.exclude_from_stats, c.exclude_from_stats, 0) = 0"
+
 # Sortable columns, keyed by the snake_case name the API exposes. SQLite
 # cannot bind an ORDER BY column, so the column has to be interpolated into
 # the SQL — this mapping is what keeps user input out of the query. Every
@@ -201,7 +206,11 @@ class TransactionRepository:
                     # batch is treated as an update, not a second insert.
                     existing_rows[key] = row_values
 
-                insert_sql = """INSERT OR REPLACE INTO transactions (
+                # An upsert, not INSERT OR REPLACE: REPLACE deletes and
+                # re-inserts the row, which would wipe user-owned columns
+                # (exclude_from_stats) every time the bank updates a
+                # transaction. Only the provider-sourced columns are written.
+                insert_sql = """INSERT INTO transactions (
                     accountId,
                     transactionId,
                     internalTransactionId,
@@ -213,7 +222,17 @@ class TransactionRepository:
                     transactionCurrency,
                     transactionStatus,
                     rawTransaction
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(accountId, transactionId) DO UPDATE SET
+                    internalTransactionId = excluded.internalTransactionId,
+                    institutionId = excluded.institutionId,
+                    iban = excluded.iban,
+                    transactionDate = excluded.transactionDate,
+                    description = excluded.description,
+                    transactionValue = excluded.transactionValue,
+                    transactionCurrency = excluded.transactionCurrency,
+                    transactionStatus = excluded.transactionStatus,
+                    rawTransaction = excluded.rawTransaction"""
 
                 if rows_to_write:
                     try:
@@ -364,8 +383,8 @@ class TransactionRepository:
     ) -> dict[str, Any]:
         """Aggregate totals for the filtered set, computed in SQL.
 
-        Transactions whose category is flagged exclude_from_stats are left
-        out. Summing amounts across currencies is meaningless, so money
+        Transactions excluded from stats (their own flag, or their
+        category's) are left out. Summing amounts across currencies is meaningless, so money
         totals cover only the dominant (most frequent) currency of the set,
         while the counts cover every matching transaction.
         """
@@ -400,7 +419,7 @@ class TransactionRepository:
 
             base = (
                 f"""FROM transactions t{_CATEGORY_JOIN}
-                WHERE (c.exclude_from_stats IS NULL OR c.exclude_from_stats = 0)"""
+                WHERE {_INCLUDED_IN_STATS}"""
                 + filter_clause
             )
 
@@ -495,7 +514,7 @@ class TransactionRepository:
             )
             base = (
                 f"""FROM transactions t{_CATEGORY_JOIN}
-                WHERE (c.exclude_from_stats IS NULL OR c.exclude_from_stats = 0)"""
+                WHERE {_INCLUDED_IN_STATS}"""
                 + filter_clause
             )
 
@@ -567,7 +586,7 @@ class TransactionRepository:
             )
             base = (
                 f"""FROM transactions t{_CATEGORY_JOIN}
-                WHERE (c.exclude_from_stats IS NULL OR c.exclude_from_stats = 0)"""
+                WHERE {_INCLUDED_IN_STATS}"""
                 + filter_clause
             )
 
@@ -624,3 +643,21 @@ class TransactionRepository:
                     )
                 return transaction
             return None
+
+    def set_exclude_from_stats(
+        self, account_id: str, transaction_id: str, value: bool | None
+    ) -> bool:
+        """Set a transaction's exclude_from_stats override.
+
+        None clears the override so the category's flag applies again.
+        Returns False when no such transaction exists.
+        """
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """UPDATE transactions SET exclude_from_stats = ?
+                   WHERE accountId = ? AND transactionId = ?""",
+                (value, account_id, transaction_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0

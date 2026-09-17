@@ -1161,6 +1161,99 @@
         }
       }
     },
+    "/api/v1/transactions/{account_id}/{transaction_id}": {
+      "patch": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Update Transaction",
+        "description": "Update a transaction's user-editable fields.\n\nOnly `exclude_from_stats` is editable; everything else is owned by the\nbank feed and overwritten on sync. Pass `null` to clear the override so\nthe category's own flag applies again.",
+        "operationId": "update_transaction_api_v1_transactions__account_id___transaction_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Account Id"
+            }
+          },
+          {
+            "name": "transaction_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Transaction Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transaction"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/transactions/stats": {
       "get": {
         "tags": [
@@ -5555,6 +5648,18 @@
               }
             ],
             "title": "Category Color"
+          },
+          "exclude_from_stats": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclude From Stats",
+            "description": "Per-transaction statistics override: true keeps it out of totals, false keeps it in, null inherits the category's flag."
           }
         },
         "type": "object",
@@ -5716,6 +5821,17 @@
               }
             ],
             "title": "Category Color"
+          },
+          "exclude_from_stats": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclude From Stats"
           }
         },
         "type": "object",
@@ -5730,6 +5846,28 @@
         ],
         "title": "TransactionSummary",
         "description": "Transaction summary for lists"
+      },
+      "TransactionUpdate": {
+        "properties": {
+          "exclude_from_stats": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclude From Stats",
+            "description": "true excludes the transaction from statistics, false includes it even if its category is excluded, null clears the override so the category's flag applies."
+          }
+        },
+        "type": "object",
+        "required": [
+          "exclude_from_stats"
+        ],
+        "title": "TransactionUpdate",
+        "description": "User-editable transaction fields."
       },
       "ValidationError": {
         "properties": {

@@ -545,3 +545,52 @@ class TestTransactionsAPI:
             "?date_from=2025-01-01&date_to=2025-01-31&category_id=abc"
         )
         assert response.status_code == 422
+
+
+@pytest.mark.api
+class TestUpdateTransaction:
+    """PATCH /transactions/{account_id}/{transaction_id}"""
+
+    def test_sets_and_clears_the_override(self, api_client, mock_db_path):
+        persist_transactions(
+            [("t1", "acc-1", "2025-09-05T10:00:00", -100.00, "EUR", "booked")]
+        )
+
+        response = api_client.patch(
+            "/api/v1/transactions/acc-1/t1", json={"exclude_from_stats": True}
+        )
+        assert response.status_code == 200
+        assert response.json()["exclude_from_stats"] is True
+        assert response.json()["transaction_id"] == "t1"
+
+        response = api_client.patch(
+            "/api/v1/transactions/acc-1/t1", json={"exclude_from_stats": None}
+        )
+        assert response.status_code == 200
+        assert response.json()["exclude_from_stats"] is None
+
+    def test_override_is_visible_in_the_list(self, api_client, mock_db_path):
+        persist_transactions(
+            [("t1", "acc-1", "2025-09-05T10:00:00", -100.00, "EUR", "booked")]
+        )
+        api_client.patch(
+            "/api/v1/transactions/acc-1/t1", json={"exclude_from_stats": False}
+        )
+
+        response = api_client.get("/api/v1/transactions")
+
+        assert response.json()["data"][0]["exclude_from_stats"] is False
+
+    def test_field_is_required(self, api_client, mock_db_path):
+        """An empty body is a mistake, not a request to clear the override."""
+        response = api_client.patch("/api/v1/transactions/acc-1/t1", json={})
+
+        assert response.status_code == 422
+
+    def test_unknown_transaction_is_404(self, api_client, mock_db_path):
+        response = api_client.patch(
+            "/api/v1/transactions/acc-1/nope", json={"exclude_from_stats": True}
+        )
+
+        assert response.status_code == 404
+        assert response.json()["code"] == "NOT_FOUND"

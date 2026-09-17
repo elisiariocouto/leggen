@@ -293,6 +293,16 @@ def _sync_operations_warnings(cursor: sqlite3.Cursor) -> None:
     add_column_if_missing(cursor, "sync_operations", "warnings", "TEXT")
 
 
+def _transactions_exclude_from_stats(cursor: sqlite3.Cursor) -> None:
+    """Add transactions.exclude_from_stats, a per-transaction override.
+
+    Tri-state: NULL inherits the category's flag (the only behaviour that
+    existed before), 1 keeps the transaction out of statistics regardless of
+    category, 0 keeps it in even when its category is excluded.
+    """
+    add_column_if_missing(cursor, "transactions", "exclude_from_stats", "BOOLEAN")
+
+
 @dataclass(frozen=True)
 class Migration:
     """One schema change, applied inside its own transaction."""
@@ -309,6 +319,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(3, "cleanup_orphaned_category_rows", _cleanup_orphaned_category_rows),
     Migration(4, "transaction_date_iso_separator", _transaction_date_iso_separator),
     Migration(5, "sync_operations_warnings", _sync_operations_warnings),
+    Migration(6, "transactions_exclude_from_stats", _transactions_exclude_from_stats),
 )
 
 LATEST_VERSION = len(MIGRATIONS)
