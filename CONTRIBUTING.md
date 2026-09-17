@@ -46,13 +46,36 @@ Preview what a release will say with `git-cliff --unreleased`.
 
 ## Release new version
 
-Run `scripts/release.sh`. It takes no arguments.
+Run `scripts/release.sh` (or `just release`).
 
 Versions are CalVer, `YEAR.MONTH.MICRO` — the year and month come from today's
-date and the micro auto-increments from the last tag in the same month, so the
-first release of a month is `.0`. The script bumps `pyproject.toml` and
+date and the micro auto-increments from the last final tag in the same month,
+so the first release of a month is `.0`. The script bumps `pyproject.toml` and
 `frontend/package.json`, regenerates `CHANGELOG.md` with git-cliff, locks
 dependencies, commits, and tags; it then asks before pushing. Pushing the tag is
 what triggers the PyPI and Docker publishing workflows.
 
 Requires `git-cliff`, `uv`, and `npm` on PATH.
+
+### Pre-releases
+
+Run `scripts/release.sh --pre` (or `just release-pre`) to cut a release
+candidate of the next version: `2026.9.1rc1`, then `rc2`, and so on. It is the
+same flow with three differences:
+
+- `CHANGELOG.md` is left alone. git-cliff ignores rc tags, so the candidate's
+  commits appear in the final release's notes; the GitHub pre-release gets its
+  own notes generated in CI.
+- Nothing is published to PyPI. The package is still built to prove the
+  version is valid, but `pip install leggen` only ever sees final releases.
+- Docker images are pushed under the exact tag (`2026.9.1rc1`,
+  `2026.9.1rc1-frontend`) and the floating `rc` / `rc-frontend` tags. The
+  `latest` tags that `compose.yml` pins are never moved by a pre-release.
+
+To try a candidate, copy `compose.yml` and point the two images at
+`ghcr.io/elisiariocouto/leggen:rc` and `ghcr.io/elisiariocouto/leggen:rc-frontend`.
+Migrations run forward only, so back up the database first if you may want to
+return to the previous release.
+
+`frontend/package.json` gets the semver spelling of the same version
+(`2026.9.1-rc.1`), because npm rejects the PEP 440 form.

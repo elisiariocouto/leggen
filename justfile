@@ -38,3 +38,7 @@ build:
 # Cut a release (CalVer bump, changelog, tag)
 release:
     ./scripts/release.sh
+
+# Cut a pre-release (rcN tag; Docker images only, no PyPI, no changelog)
+release-pre:
+    ./scripts/release.sh --pre

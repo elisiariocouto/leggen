@@ -10,6 +10,11 @@ permissions:
   packages: write
   id-token: write
 
+# A tag with an rc suffix (2026.9.1rc1) is a pre-release: Docker images only,
+# under the exact tag plus a floating :rc, never PyPI and never :latest.
+env:
+  PRERELEASE: ${{ contains(github.ref_name, 'rc') }}
+
 jobs:
   test:
     name: Test
@@ -38,6 +43,8 @@ jobs:
   publish-to-pypi:
     name: Publish Python distribution to PyPI
     runs-on: ubuntu-latest
+    # Pre-releases are not published to PyPI.
+    if: ${{ !contains(github.ref_name, 'rc') }}
     permissions:
       id-token: write # IMPORTANT: mandatory for trusted publishing
     needs:
@@ -97,7 +104,8 @@ jobs:
             type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, 'rc') }}
+            type=raw,value=rc,enable=${{ contains(github.ref_name, 'rc') }}
       - name: Build and push backend
         uses: docker/build-push-action@v7
         with:
@@ -148,7 +156,8 @@ jobs:
             type=ref,event=tag,suffix=-frontend
             type=semver,pattern={{version}},suffix=-frontend
             type=semver,pattern={{major}}.{{minor}},suffix=-frontend
-            type=raw,value=latest-frontend
+            type=raw,value=latest-frontend,enable=${{ !contains(github.ref_name, 'rc') }}
+            type=raw,value=rc-frontend,enable=${{ contains(github.ref_name, 'rc') }}
       - name: Build and push frontend
         uses: docker/build-push-action@v7
         with:
@@ -165,18 +174,30 @@ jobs:
     permissions:
       contents: write
     needs: [build, publish-to-pypi, push-docker-backend, push-docker-frontend]
+    # The PyPI job is skipped for pre-releases, which would skip this job too
+    # under the default "all needs succeeded" rule; spell the rule out so a
+    # skipped PyPI job is acceptable while a failed one still blocks.
+    if: >-
+      ${{ !cancelled()
+          && needs.build.result == 'success'
+          && needs.push-docker-backend.result == 'success'
+          && needs.push-docker-frontend.result == 'success'
+          && (needs.publish-to-pypi.result == 'success' || needs.publish-to-pypi.result == 'skipped') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
+      # cliff.toml ignores rc tags, so --current cannot see one; for a
+      # pre-release, render everything since the last final release under
+      # the rc heading instead.
       - name: Generate release notes
         uses: orhun/git-cliff-action@v4
         id: release_notes
         with:
           config: cliff.toml
-          args: --current
+          args: ${{ env.PRERELEASE == 'true' && format('--unreleased --tag {0}', github.ref_name) || '--current' }}
         env:
           GITHUB_REPO: ${{ github.repository }}
 
@@ -187,4 +208,5 @@ jobs:
           name: Release ${{ github.ref_name }}
           body: ${{ steps.release_notes.outputs.content }}
           draft: false
-          prerelease: false
+          prerelease: ${{ env.PRERELEASE == 'true' }}
+          make_latest: ${{ env.PRERELEASE != 'true' }}

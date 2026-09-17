@@ -63,7 +63,9 @@ protect_breaking_commits = true
 filter_commits = false
 tag_pattern = ""
 skip_tags = ""
-ignore_tags = ""
+# Pre-release tags are not releases: their commits roll into the next final
+# version's notes. (skip_tags would drop those commits instead.)
+ignore_tags = "rc[0-9]+$"
 topo_order = false
 sort_commits = "newest"
 # limit_commits = 42
