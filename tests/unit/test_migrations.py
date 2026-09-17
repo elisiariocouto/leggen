@@ -23,7 +23,8 @@ from leggen.repositories.migrations._steps import Migration
 # The schema as shipped in 2025.9.22, the oldest release that can be upgraded:
 # everything the baseline creates except the columns later migrations add
 # (`categories.exclude_from_stats`, `sync_operations.warnings`,
-# `transactions.exclude_from_stats`).
+# `transactions.exclude_from_stats`, the rule columns on
+# `transaction_categories`) and the `category_rules` table.
 _LEGACY_SCHEMA = (
     """CREATE TABLE accounts (
         id TEXT PRIMARY KEY, institution_id TEXT, status TEXT, iban TEXT, name TEXT,
@@ -179,6 +180,7 @@ class TestFreshDatabase:
             "categories",
             "transaction_categories",
             "category_keywords",
+            "category_rules",
         }
 
     def test_seeds_default_categories_once(self, tmp_path):
@@ -243,6 +245,9 @@ class TestLegacyDatabase:
             assert column_exists(cursor, "categories", "exclude_from_stats")
             assert column_exists(cursor, "sync_operations", "warnings")
             assert column_exists(cursor, "transactions", "exclude_from_stats")
+            assert table_exists(cursor, "category_rules")
+            for column in ("source", "ruleId", "exclude_from_stats"):
+                assert column_exists(cursor, "transaction_categories", column)
         finally:
             conn.close()
 

@@ -54,6 +54,12 @@ class CategoryExistsError(ConflictError):
     code = "CATEGORY_EXISTS"
 
 
+class CategoryRuleExistsError(ConflictError):
+    """A category rule with the requested name already exists."""
+
+    code = "CATEGORY_RULE_EXISTS"
+
+
 class InvalidRuleScriptError(LeggenError):
     """A category rule's Lua script does not compile."""
 

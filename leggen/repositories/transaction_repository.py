@@ -14,10 +14,14 @@ _CATEGORY_JOIN = """
                 LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
                 LEFT JOIN categories c ON tc.categoryId = c.id"""
 
-# A transaction counts towards statistics unless excluded — by its own flag,
-# or by its category's when it carries none (NULL). An explicit 0 keeps it in
-# even when the category is excluded.
-_INCLUDED_IN_STATS = "COALESCE(t.exclude_from_stats, c.exclude_from_stats, 0) = 0"
+# A transaction counts towards statistics unless excluded. Three flags are
+# consulted in order of authority, each NULL deferring to the next: the
+# transaction's own (set by the user), the one on its category assignment
+# (set by the rule that made it), and the category's default. An explicit 0
+# at a higher level keeps it in even when a lower level excludes.
+_INCLUDED_IN_STATS = (
+    "COALESCE(t.exclude_from_stats, tc.exclude_from_stats, c.exclude_from_stats, 0) = 0"
+)
 
 # Sortable columns, keyed by the snake_case name the API exposes. SQLite
 # cannot bind an ORDER BY column, so the column has to be interpolated into

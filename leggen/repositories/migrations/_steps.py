@@ -303,6 +303,53 @@ def _transactions_exclude_from_stats(cursor: sqlite3.Cursor) -> None:
     add_column_if_missing(cursor, "transactions", "exclude_from_stats", "BOOLEAN")
 
 
+def _category_rules(cursor: sqlite3.Cursor) -> None:
+    """Create category_rules and mark rule-made assignments as such.
+
+    A rule assigns a category and may set a statistics exclusion. Both land
+    on the transaction_categories row so they travel with the assignment:
+    `source` tells manual from rule-made rows (the engine never touches a
+    manual one), `ruleId` names the rule so its rows go when it does, and
+    `exclude_from_stats` is the rule's flag — outranked by the transaction's
+    own, outranking the category's.
+    """
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS category_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            categoryId INTEGER NOT NULL,
+            lua_script TEXT NOT NULL,
+            priority INTEGER NOT NULL DEFAULT 100,
+            is_active BOOLEAN NOT NULL DEFAULT 1,
+            is_default BOOLEAN NOT NULL DEFAULT 0,
+            exclude_from_stats BOOLEAN,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE CASCADE
+        )"""
+    )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_category_rules_priority"
+        " ON category_rules(is_active, priority, id)"
+    )
+    add_column_if_missing(
+        cursor, "transaction_categories", "source", "TEXT NOT NULL DEFAULT 'manual'"
+    )
+    add_column_if_missing(
+        cursor,
+        "transaction_categories",
+        "ruleId",
+        "INTEGER REFERENCES category_rules(id) ON DELETE CASCADE",
+    )
+    add_column_if_missing(
+        cursor, "transaction_categories", "exclude_from_stats", "BOOLEAN"
+    )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_tc_rule ON transaction_categories(ruleId)"
+    )
+
+
 @dataclass(frozen=True)
 class Migration:
     """One schema change, applied inside its own transaction."""
@@ -320,6 +367,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(4, "transaction_date_iso_separator", _transaction_date_iso_separator),
     Migration(5, "sync_operations_warnings", _sync_operations_warnings),
     Migration(6, "transactions_exclude_from_stats", _transactions_exclude_from_stats),
+    Migration(7, "category_rules", _category_rules),
 )
 
 LATEST_VERSION = len(MIGRATIONS)

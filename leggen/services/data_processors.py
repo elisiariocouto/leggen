@@ -359,7 +359,8 @@ def calculate_monthly_stats(
         )
 
         # Aggregate by month, leaving out transactions excluded from stats —
-        # by their own flag, or by their category's when they have none.
+        # by their own flag, their rule-made assignment's, or their category's,
+        # in that order of authority (mirrors _INCLUDED_IN_STATS).
         query = """
         SELECT
             strftime('%Y-%m', t.transactionDate) as month,
@@ -369,7 +370,7 @@ def calculate_monthly_stats(
         FROM transactions t
         LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
         LEFT JOIN categories c ON tc.categoryId = c.id
-        WHERE COALESCE(t.exclude_from_stats, c.exclude_from_stats, 0) = 0
+        WHERE COALESCE(t.exclude_from_stats, tc.exclude_from_stats, c.exclude_from_stats, 0) = 0
         """
 
         params = []
