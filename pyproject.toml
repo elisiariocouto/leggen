@@ -37,6 +37,7 @@ dependencies = [
     "PyJWT[crypto]>=2.8.0,<3",
     "boto3>=1.35.0,<2",
     "bcrypt>=4.0.0,<5",
+    "lupa>=2.8,<3",
 ]
 
 [project.urls]
@@ -77,6 +78,12 @@ build-backend = "hatchling.build"
 # between releases — 0.16 turned on several new rule families at once.
 lint.select = ["E", "F", "UP", "B", "C4", "I", "PIE", "T20", "SIM", "TCH"]
 lint.ignore = ["E501", "B008", "B006"]
+
+[tool.mypy]
+# lupa ships compiled extension modules without stubs or a py.typed marker.
+[[tool.mypy.overrides]]
+module = ["lupa", "lupa.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

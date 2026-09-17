@@ -54,6 +54,13 @@ class CategoryExistsError(ConflictError):
     code = "CATEGORY_EXISTS"
 
 
+class InvalidRuleScriptError(LeggenError):
+    """A category rule's Lua script does not compile."""
+
+    status_code = 422
+    code = "INVALID_RULE_SCRIPT"
+
+
 class UnsupportedDatabaseVersionError(LeggenError):
     """The database predates the oldest schema this version can migrate.
 
