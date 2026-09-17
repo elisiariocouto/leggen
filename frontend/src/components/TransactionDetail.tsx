@@ -12,6 +12,7 @@ import { useIsMobile } from "../hooks/use-mobile";
 import { formatCurrency, formatDate } from "../lib/utils";
 import { extractRawFields } from "../lib/raw-transaction";
 import CategoryBadge from "./CategoryBadge";
+import StatsExclusionToggle from "./StatsExclusionToggle";
 import TransactionStatusBadge from "./TransactionStatusBadge";
 import { Button } from "./ui/button";
 import { BlurredValue } from "./ui/blurred-value";
@@ -266,6 +267,8 @@ function TransactionDetailContent({
           description={transaction.description}
         />
       </div>
+
+      <StatsExclusionToggle transaction={transaction} />
 
       <Separator />
 

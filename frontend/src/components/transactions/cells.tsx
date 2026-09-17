@@ -1,5 +1,13 @@
+import { EyeOff } from "lucide-react";
+
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useStatsExclusion } from "@/hooks/useStatsExclusion";
 import { BlurredValue } from "@/components/ui/blurred-value";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import CategoryBadge from "@/components/CategoryBadge";
 import TransactionStatusBadge from "@/components/TransactionStatusBadge";
 import type { Account, Transaction } from "@/types/api";
@@ -77,9 +85,38 @@ export function accountName(account: Account | undefined): string | null {
 }
 
 /**
- * Description plus the secondary line under it (account, and a chip when the
- * transaction is still pending). Booked is the norm and says nothing useful,
- * so only the exceptions are marked.
+ * Marks a transaction the statistics leave out. Silent otherwise: being
+ * counted is the norm, and the totals on Analytics would be unexplainable
+ * if the rows they skip looked like every other row.
+ */
+function ExcludedFromStatsMark({ transaction }: { transaction: Transaction }) {
+  const { excluded, overridden } = useStatsExclusion(transaction);
+  if (!excluded) return null;
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            className="inline-flex shrink-0 text-muted-foreground/70"
+            aria-label="Excluded from statistics"
+          />
+        }
+      >
+        <EyeOff className="h-3 w-3" />
+      </TooltipTrigger>
+      <TooltipContent>
+        Excluded from statistics
+        {overridden ? "" : " by its category"}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+/**
+ * Description plus the secondary line under it (account, a chip when the
+ * transaction is still pending, a mark when statistics skip it). Booked and
+ * counted are the norm and say nothing useful, so only the exceptions are
+ * marked.
  */
 export function Description({
   transaction,
@@ -107,6 +144,7 @@ export function Description({
           pendingOnly
           className="shrink-0"
         />
+        <ExcludedFromStatsMark transaction={transaction} />
       </div>
     </div>
   );

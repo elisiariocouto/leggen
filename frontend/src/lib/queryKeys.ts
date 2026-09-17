@@ -126,6 +126,7 @@ export function invalidateSyncedData(queryClient: QueryClient): void {
 /**
  * Assigning or clearing a category changes the transaction rows and every
  * statistic grouped by category, but leaves balances and accounts alone.
+ * A transaction's statistics override moves exactly the same set.
  */
 export function invalidateCategorizedData(queryClient: QueryClient): void {
   const roots = [

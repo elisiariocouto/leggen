@@ -15,6 +15,7 @@ export type Balance = Schemas["Balance"];
 
 // Transactions
 export type Transaction = Schemas["Transaction"];
+export type TransactionUpdate = Schemas["TransactionUpdate"];
 
 /**
  * Unmodified bank transaction dict as stored by the sync. Keys are

@@ -4,6 +4,7 @@ import type {
   ApiError,
   Account,
   Transaction,
+  TransactionUpdate,
   Balance,
   PaginatedResponse,
   NotificationSettings,
@@ -231,6 +232,19 @@ export const apiClient = {
 
     const response = await api.get<PaginatedResponse<Transaction>>(
       `/transactions?${queryParams.toString()}`,
+    );
+    return response.data;
+  },
+
+  // Update a transaction's user-editable fields (the statistics override)
+  updateTransaction: async (
+    accountId: string,
+    transactionId: string,
+    data: TransactionUpdate,
+  ): Promise<Transaction> => {
+    const response = await api.patch<Transaction>(
+      `/transactions/${accountId}/${transactionId}`,
+      data,
     );
     return response.data;
   },
