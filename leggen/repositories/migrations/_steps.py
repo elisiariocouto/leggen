@@ -350,6 +350,16 @@ def _category_rules(cursor: sqlite3.Cursor) -> None:
     )
 
 
+def _drop_category_keywords(cursor: sqlite3.Cursor) -> None:
+    """Drop the keyword-frequency table behind the old category suggestions.
+
+    Suggestions were a bag-of-words popularity contest with no negative
+    evidence; category rules replace them. The learned frequencies are not
+    convertible into rules, so the table is simply dropped.
+    """
+    cursor.execute("DROP TABLE IF EXISTS category_keywords")
+
+
 @dataclass(frozen=True)
 class Migration:
     """One schema change, applied inside its own transaction."""
@@ -368,6 +378,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(5, "sync_operations_warnings", _sync_operations_warnings),
     Migration(6, "transactions_exclude_from_stats", _transactions_exclude_from_stats),
     Migration(7, "category_rules", _category_rules),
+    Migration(8, "drop_category_keywords", _drop_category_keywords),
 )
 
 LATEST_VERSION = len(MIGRATIONS)

@@ -5,7 +5,6 @@ from typing import Any
 
 from leggen.errors import CategoryExistsError
 from leggen.repositories.db import db_exists, get_db_connection
-from leggen.utils.keywords import extract_keywords
 
 
 class CategoryRepository:
@@ -129,93 +128,44 @@ class CategoryRepository:
 
     # --- Transaction-Category assignment ---
 
+    # A manual choice replaces whatever a rule decided: the row becomes
+    # manual, drops the rule reference and the rule's statistics flag, and
+    # the engine leaves it alone from then on.
+    _ASSIGN_SQL = """INSERT INTO transaction_categories
+           (accountId, transactionId, categoryId, source, ruleId, exclude_from_stats)
+           VALUES (?, ?, ?, 'manual', NULL, NULL)
+           ON CONFLICT(accountId, transactionId) DO UPDATE SET
+               categoryId = excluded.categoryId,
+               source = 'manual',
+               ruleId = NULL,
+               exclude_from_stats = NULL,
+               assigned_at = CURRENT_TIMESTAMP"""
+
     def assign_category(
-        self,
-        account_id: str,
-        transaction_id: str,
-        category_id: int,
-        description: str = "",
-        creditor_name: str = "",
-        debtor_name: str = "",
+        self, account_id: str, transaction_id: str, category_id: int
     ) -> None:
-        """Assign a category to a transaction and learn keywords."""
+        """Assign a category to a transaction by hand."""
         with get_db_connection() as conn:
-            cursor = conn.cursor()
-
-            # Check for existing assignment and unlearn old keywords
-            cursor.execute(
-                "SELECT categoryId FROM transaction_categories WHERE accountId = ? AND transactionId = ?",
-                (account_id, transaction_id),
-            )
-            existing = cursor.fetchone()
-            if existing:
-                old_category_id = existing[0]
-                self._unlearn_keywords_conn(
-                    cursor, old_category_id, description, creditor_name, debtor_name
-                )
-
-            # Insert or replace assignment
-            cursor.execute(
-                """INSERT OR REPLACE INTO transaction_categories (accountId, transactionId, categoryId)
-                   VALUES (?, ?, ?)""",
-                (account_id, transaction_id, category_id),
-            )
-
-            # Learn keywords from this transaction
-            self._learn_keywords_conn(
-                cursor, category_id, description, creditor_name, debtor_name
-            )
-
+            conn.execute(self._ASSIGN_SQL, (account_id, transaction_id, category_id))
             conn.commit()
 
-    def remove_category(
-        self,
-        account_id: str,
-        transaction_id: str,
-        description: str = "",
-        creditor_name: str = "",
-        debtor_name: str = "",
-    ) -> bool:
-        """Remove category from a transaction and unlearn keywords."""
+    def remove_category(self, account_id: str, transaction_id: str) -> bool:
+        """Remove a transaction's category. Returns False if it had none."""
         with get_db_connection() as conn:
-            cursor = conn.cursor()
-
-            # Get current assignment
-            cursor.execute(
-                "SELECT categoryId FROM transaction_categories WHERE accountId = ? AND transactionId = ?",
-                (account_id, transaction_id),
-            )
-            existing = cursor.fetchone()
-            if not existing:
-                return False
-
-            old_category_id = existing[0]
-            self._unlearn_keywords_conn(
-                cursor, old_category_id, description, creditor_name, debtor_name
-            )
-
-            cursor.execute(
+            cursor = conn.execute(
                 "DELETE FROM transaction_categories WHERE accountId = ? AND transactionId = ?",
                 (account_id, transaction_id),
             )
             conn.commit()
-            return True
+            return cursor.rowcount > 0
 
-    def bulk_assign_by_description(
-        self,
-        category_id: int,
-        description: str,
-    ) -> int:
-        """Assign a category to all transactions matching the given description.
+    def bulk_assign_by_description(self, category_id: int, description: str) -> int:
+        """Assign a category to every transaction with exactly this description.
 
-        Unlearns keywords for transactions that had a different category,
-        learns keywords once for the new assignment, and returns the count
-        of affected transactions.
+        Returns the number of transactions affected.
         """
         with get_db_connection() as conn:
             cursor = conn.cursor()
-
-            # Find all transactions with this exact description
             cursor.execute(
                 "SELECT accountId, transactionId FROM transactions WHERE description = ?",
                 (description,),
@@ -223,165 +173,23 @@ class CategoryRepository:
             matching = cursor.fetchall()
             if not matching:
                 return 0
-
-            # Find distinct old categories that will be replaced
-            placeholders = ",".join(["(?, ?)" for _ in matching])
-            params_pairs = [val for row in matching for val in (row[0], row[1])]
-            cursor.execute(
-                f"""SELECT DISTINCT categoryId FROM transaction_categories
-                    WHERE (accountId, transactionId) IN ({placeholders})
-                    AND categoryId != ?""",
-                [*params_pairs, category_id],
-            )
-            old_category_ids = [row[0] for row in cursor.fetchall()]
-
-            # Unlearn keywords once per distinct old category
-            for old_cat_id in old_category_ids:
-                self._unlearn_keywords_conn(cursor, old_cat_id, description, "", "")
-
-            # Batch insert/replace all assignments
             cursor.executemany(
-                """INSERT OR REPLACE INTO transaction_categories (accountId, transactionId, categoryId)
-                   VALUES (?, ?, ?)""",
+                self._ASSIGN_SQL,
                 [(row[0], row[1], category_id) for row in matching],
             )
-
-            # Learn keywords once for this bulk action
-            self._learn_keywords_conn(cursor, category_id, description, "", "")
-
             conn.commit()
             return len(matching)
 
     def bulk_remove_by_description(self, description: str) -> int:
-        """Remove category from all transactions matching the given description.
-
-        Unlearns keywords once per distinct category being removed and
-        returns the count of affected transactions.
-        """
+        """Remove the category from every transaction with exactly this
+        description. Returns the number of transactions affected."""
         with get_db_connection() as conn:
-            cursor = conn.cursor()
-
-            # Find all categorized transactions with this exact description
-            cursor.execute(
-                """SELECT tc.accountId, tc.transactionId, tc.categoryId
-                   FROM transaction_categories tc
-                   JOIN transactions t ON tc.accountId = t.accountId AND tc.transactionId = t.transactionId
-                   WHERE t.description = ?""",
+            cursor = conn.execute(
+                """DELETE FROM transaction_categories
+                   WHERE (accountId, transactionId) IN (
+                       SELECT accountId, transactionId FROM transactions WHERE description = ?
+                   )""",
                 (description,),
             )
-            matching = cursor.fetchall()
-            if not matching:
-                return 0
-
-            # Unlearn keywords once per distinct old category
-            old_category_ids = {row[2] for row in matching}
-            for old_cat_id in old_category_ids:
-                self._unlearn_keywords_conn(cursor, old_cat_id, description, "", "")
-
-            # Delete all assignments
-            placeholders = ",".join(["(?, ?)" for _ in matching])
-            params_pairs = [val for row in matching for val in (row[0], row[1])]
-            cursor.execute(
-                f"""DELETE FROM transaction_categories
-                    WHERE (accountId, transactionId) IN ({placeholders})""",
-                params_pairs,
-            )
-
             conn.commit()
-            return len(matching)
-
-    # --- Keyword learning ---
-
-    def _learn_keywords_conn(
-        self,
-        cursor: Any,
-        category_id: int,
-        description: str,
-        creditor_name: str,
-        debtor_name: str,
-    ) -> None:
-        """Learn keywords from transaction text fields (using existing cursor)."""
-        text = f"{description} {creditor_name} {debtor_name}"
-        keywords = extract_keywords(text)
-
-        for keyword in keywords:
-            cursor.execute(
-                """INSERT INTO category_keywords (keyword, categoryId, frequency)
-                   VALUES (?, ?, 1)
-                   ON CONFLICT(keyword, categoryId) DO UPDATE SET frequency = frequency + 1""",
-                (keyword, category_id),
-            )
-
-    def _unlearn_keywords_conn(
-        self,
-        cursor: Any,
-        category_id: int,
-        description: str,
-        creditor_name: str,
-        debtor_name: str,
-    ) -> None:
-        """Unlearn keywords from transaction text fields (using existing cursor)."""
-        text = f"{description} {creditor_name} {debtor_name}"
-        keywords = extract_keywords(text)
-
-        for keyword in keywords:
-            cursor.execute(
-                "UPDATE category_keywords SET frequency = frequency - 1 WHERE keyword = ? AND categoryId = ?",
-                (keyword, category_id),
-            )
-
-        # Clean up zero/negative frequency entries
-        cursor.execute(
-            "DELETE FROM category_keywords WHERE categoryId = ? AND frequency <= 0",
-            (category_id,),
-        )
-
-    # --- Suggestion engine ---
-
-    def suggest_category(
-        self,
-        description: str,
-        creditor_name: str = "",
-        debtor_name: str = "",
-        limit: int = 3,
-    ) -> list[dict[str, Any]]:
-        """Suggest categories based on keyword matching."""
-        if not db_exists():
-            return []
-
-        text = f"{description} {creditor_name} {debtor_name}"
-        keywords = extract_keywords(text)
-
-        if not keywords:
-            return []
-
-        with get_db_connection(row_factory=True) as conn:
-            cursor = conn.cursor()
-
-            placeholders = ",".join("?" * len(keywords))
-            cursor.execute(
-                f"""SELECT c.id, c.name, c.color, c.icon, c.is_default, c.exclude_from_stats,
-                           SUM(ck.frequency) as score
-                    FROM category_keywords ck
-                    JOIN categories c ON ck.categoryId = c.id
-                    WHERE ck.keyword IN ({placeholders})
-                    GROUP BY ck.categoryId
-                    ORDER BY score DESC
-                    LIMIT ?""",
-                [*keywords, limit],
-            )
-
-            results = []
-            for row in cursor.fetchall():
-                row_dict = dict(row)
-                score = row_dict.pop("score")
-                confidence = "high" if score > 10 else "medium" if score >= 5 else "low"
-                results.append(
-                    {
-                        "category": row_dict,
-                        "score": score,
-                        "confidence": confidence,
-                    }
-                )
-
-            return results
+            return cursor.rowcount

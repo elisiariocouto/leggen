@@ -400,35 +400,16 @@ export interface paths {
         get?: never;
         /**
          * Assign Transaction Category
-         * @description Assign a category to a transaction.
+         * @description Assign a category to a transaction by hand. A manual category is
+         *     never changed by the rule engine.
          */
         put: operations["assign_transaction_category_api_v1_transactions__account_id___transaction_id__category_put"];
         post?: never;
         /**
          * Remove Transaction Category
-         * @description Remove category from a transaction.
+         * @description Remove a transaction's category.
          */
         delete: operations["remove_transaction_category_api_v1_transactions__account_id___transaction_id__category_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/transactions/{account_id}/{transaction_id}/suggest-category": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Suggest Transaction Category
-         * @description Get category suggestions for a transaction.
-         */
-        get: operations["suggest_transaction_category_api_v1_transactions__account_id___transaction_id__suggest_category_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1396,20 +1377,6 @@ export interface components {
             expenses: number;
             /** Currency */
             currency?: string | null;
-        };
-        /**
-         * CategorySuggestion
-         * @description Model for a category suggestion.
-         */
-        CategorySuggestion: {
-            category: components["schemas"]["Category"];
-            /** Score */
-            score: number;
-            /**
-             * Confidence
-             * @enum {string}
-             */
-            confidence: "high" | "medium" | "low";
         };
         /**
          * CategoryUpdate
@@ -3513,56 +3480,6 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    suggest_transaction_category_api_v1_transactions__account_id___transaction_id__suggest_category_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                account_id: string;
-                transaction_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CategorySuggestion"][];
                 };
             };
             /** @description Not authenticated */

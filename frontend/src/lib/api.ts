@@ -37,7 +37,6 @@ import type {
   Category,
   CategoryCreate,
   CategoryUpdate,
-  CategorySuggestion,
   LoginResponse,
   CashFlow,
   NetWorth,
@@ -600,16 +599,6 @@ export const apiClient = {
     transactionId: string,
   ): Promise<void> => {
     await api.delete(`/transactions/${accountId}/${transactionId}/category`);
-  },
-
-  getCategorySuggestions: async (
-    accountId: string,
-    transactionId: string,
-  ): Promise<CategorySuggestion[]> => {
-    const response = await api.get<CategorySuggestion[]>(
-      `/transactions/${accountId}/${transactionId}/suggest-category`,
-    );
-    return response.data;
   },
 
   // Category rule endpoints

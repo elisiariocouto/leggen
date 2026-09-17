@@ -24,7 +24,8 @@ from leggen.repositories.migrations._steps import Migration
 # everything the baseline creates except the columns later migrations add
 # (`categories.exclude_from_stats`, `sync_operations.warnings`,
 # `transactions.exclude_from_stats`, the rule columns on
-# `transaction_categories`) and the `category_rules` table.
+# `transaction_categories`) and the `category_rules` table, plus the
+# `category_keywords` table that migration 8 drops.
 _LEGACY_SCHEMA = (
     """CREATE TABLE accounts (
         id TEXT PRIMARY KEY, institution_id TEXT, status TEXT, iban TEXT, name TEXT,
@@ -179,7 +180,6 @@ class TestFreshDatabase:
             "expiry_notifications",
             "categories",
             "transaction_categories",
-            "category_keywords",
             "category_rules",
         }
 
@@ -294,9 +294,6 @@ class TestLegacyDatabase:
             "INSERT INTO transaction_categories (accountId, transactionId, categoryId)"
             " VALUES ('acc', 'orphan', 999)"
         )
-        conn.execute(
-            "INSERT INTO category_keywords (keyword, categoryId) VALUES ('orphan', 999)"
-        )
         conn.commit()
         conn.close()
 
@@ -310,10 +307,25 @@ class TestLegacyDatabase:
                     "SELECT transactionId FROM transaction_categories"
                 )
             ] == ["kept"]
-            assert (
-                conn.execute("SELECT COUNT(*) FROM category_keywords").fetchone()[0]
-                == 0
-            )
+        finally:
+            conn.close()
+
+    def test_drops_the_keyword_table(self, tmp_path):
+        db = tmp_path / "legacy.db"
+        _build_legacy_db(db)
+        conn = sqlite3.connect(db)
+        conn.execute("INSERT INTO categories (id, name) VALUES (1, 'Kept')")
+        conn.execute(
+            "INSERT INTO category_keywords (keyword, categoryId) VALUES ('lidl', 1)"
+        )
+        conn.commit()
+        conn.close()
+
+        run_migrations(db)
+
+        conn = sqlite3.connect(db)
+        try:
+            assert not table_exists(conn.cursor(), "category_keywords")
         finally:
             conn.close()
 

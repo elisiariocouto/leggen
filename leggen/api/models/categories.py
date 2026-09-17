@@ -1,7 +1,5 @@
 """Pydantic models for category endpoints."""
 
-from typing import Literal
-
 from pydantic import BaseModel
 
 
@@ -51,11 +49,3 @@ class BulkCategoryRemoval(BaseModel):
     """Model for bulk-removing categories by transaction description."""
 
     description: str
-
-
-class CategorySuggestion(BaseModel):
-    """Model for a category suggestion."""
-
-    category: Category
-    score: float
-    confidence: Literal["high", "medium", "low"]

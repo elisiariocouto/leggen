@@ -83,8 +83,6 @@ export const queryKeys = {
   categories: ["categories"] as const,
   categoryRules: ["category-rules"] as const,
   ruleReference: ["category-rules", "reference"] as const,
-  categorySuggestions: (accountId: string, transactionId: string) =>
-    ["categories", "suggestions", accountId, transactionId] as const,
 
   syncOperations: ["sync-operations"] as const,
   scheduleSettings: ["schedule-settings"] as const,

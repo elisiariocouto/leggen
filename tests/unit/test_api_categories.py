@@ -284,56 +284,6 @@ class TestCategoriesAPI:
         fastapi_app.dependency_overrides.clear()
         assert response.status_code == 200
 
-    def test_suggest_category_success(
-        self,
-        fastapi_app,
-        api_client,
-        mock_config,
-        mock_category_repo,
-        mock_transaction_repo,
-    ):
-        """Test getting category suggestions for a transaction."""
-        mock_transaction_repo.get_transactions.return_value = [
-            {
-                "transactionId": "txn-001",
-                "description": "LIDL GROCERY STORE",
-                "rawTransaction": {},
-            }
-        ]
-        mock_category_repo.suggest_category.return_value = [
-            {
-                "category": {
-                    "id": 1,
-                    "name": "Groceries",
-                    "color": "#22c55e",
-                    "icon": "shopping-cart",
-                    "is_default": True,
-                    "exclude_from_stats": False,
-                },
-                "score": 15,
-                "confidence": "high",
-            }
-        ]
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
-        )
-
-        response = api_client.get(
-            "/api/v1/transactions/acc-001/txn-001/suggest-category"
-        )
-
-        fastapi_app.dependency_overrides.clear()
-
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert data[0]["category"]["name"] == "Groceries"
-        assert data[0]["confidence"] == "high"
-
     def test_create_category_with_exclude_from_stats(
         self,
         fastapi_app,

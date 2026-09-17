@@ -2016,7 +2016,7 @@
           "categories"
         ],
         "summary": "Assign Transaction Category",
-        "description": "Assign a category to a transaction.",
+        "description": "Assign a category to a transaction by hand. A manual category is\nnever changed by the rule engine.",
         "operationId": "assign_transaction_category_api_v1_transactions__account_id___transaction_id__category_put",
         "security": [
           {
@@ -2108,7 +2108,7 @@
           "categories"
         ],
         "summary": "Remove Transaction Category",
-        "description": "Remove category from a transaction.",
+        "description": "Remove a transaction's category.",
         "operationId": "remove_transaction_category_api_v1_transactions__account_id___transaction_id__category_delete",
         "security": [
           {
@@ -2149,90 +2149,6 @@
                     "type": "string"
                   },
                   "title": "Response Remove Transaction Category Api V1 Transactions  Account Id   Transaction Id  Category Delete"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not authenticated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/transactions/{account_id}/{transaction_id}/suggest-category": {
-      "get": {
-        "tags": [
-          "categories"
-        ],
-        "summary": "Suggest Transaction Category",
-        "description": "Get category suggestions for a transaction.",
-        "operationId": "suggest_transaction_category_api_v1_transactions__account_id___transaction_id__suggest_category_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyHeader": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "account_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Account Id"
-            }
-          },
-          {
-            "name": "transaction_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Transaction Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CategorySuggestion"
-                  },
-                  "title": "Response Suggest Transaction Category Api V1 Transactions  Account Id   Transaction Id  Suggest Category Get"
                 }
               }
             }
@@ -5412,34 +5328,6 @@
         ],
         "title": "CategoryStats",
         "description": "Income/expense totals for one category"
-      },
-      "CategorySuggestion": {
-        "properties": {
-          "category": {
-            "$ref": "#/components/schemas/Category"
-          },
-          "score": {
-            "type": "number",
-            "title": "Score"
-          },
-          "confidence": {
-            "type": "string",
-            "enum": [
-              "high",
-              "medium",
-              "low"
-            ],
-            "title": "Confidence"
-          }
-        },
-        "type": "object",
-        "required": [
-          "category",
-          "score",
-          "confidence"
-        ],
-        "title": "CategorySuggestion",
-        "description": "Model for a category suggestion."
       },
       "CategoryUpdate": {
         "properties": {

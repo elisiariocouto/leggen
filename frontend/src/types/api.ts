@@ -29,7 +29,6 @@ export type RawTransactionData = Transaction["raw_transaction"];
 export type Category = Schemas["Category"];
 export type CategoryCreate = Schemas["CategoryCreate"];
 export type CategoryUpdate = Schemas["CategoryUpdate"];
-export type CategorySuggestion = Schemas["CategorySuggestion"];
 
 // Category rules
 export type CategoryRule = Schemas["CategoryRule"];

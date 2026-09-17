@@ -10,32 +10,11 @@ from leggen.api.models.categories import (
     Category,
     CategoryAssignment,
     CategoryCreate,
-    CategorySuggestion,
     CategoryUpdate,
 )
 from leggen.repositories.category_repository import CategoryRepository
-from leggen.repositories.transaction_repository import TransactionRepository
-from leggen.services.data_processors import counterparty_name
 
 router = APIRouter()
-
-
-def _get_transaction_text_fields(
-    transaction_repo: TransactionRepository,
-    account_id: str,
-    transaction_id: str,
-) -> tuple[str, str, str]:
-    """Extract description, creditor_name, and debtor_name from a transaction."""
-    txn = transaction_repo.get_transaction_by_id(account_id, transaction_id)
-    if not txn:
-        return "", "", ""
-    description = txn.get("description", "") or ""
-    raw: dict[str, Any] = txn.get("rawTransaction", {}) or {}
-    return (
-        description,
-        counterparty_name(raw, "creditor"),
-        counterparty_name(raw, "debtor"),
-    )
 
 
 # --- Category CRUD ---
@@ -140,27 +119,13 @@ async def assign_transaction_category(
     transaction_id: str,
     body: CategoryAssignment,
     category_repo: Annotated[CategoryRepository, Depends()],
-    transaction_repo: Annotated[TransactionRepository, Depends()],
 ) -> dict[str, str]:
-    """Assign a category to a transaction."""
-    # Verify category exists
+    """Assign a category to a transaction by hand. A manual category is
+    never changed by the rule engine."""
     cat = category_repo.get_category_by_id(body.category_id)
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found.")
-
-    # Get transaction text fields for keyword learning
-    description, creditor_name, debtor_name = _get_transaction_text_fields(
-        transaction_repo, account_id, transaction_id
-    )
-
-    category_repo.assign_category(
-        account_id=account_id,
-        transaction_id=transaction_id,
-        category_id=body.category_id,
-        description=description,
-        creditor_name=creditor_name,
-        debtor_name=debtor_name,
-    )
+    category_repo.assign_category(account_id, transaction_id, body.category_id)
     return {"status": "ok"}
 
 
@@ -169,52 +134,8 @@ async def remove_transaction_category(
     account_id: str,
     transaction_id: str,
     category_repo: Annotated[CategoryRepository, Depends()],
-    transaction_repo: Annotated[TransactionRepository, Depends()],
 ) -> dict[str, str]:
-    """Remove category from a transaction."""
-    # Get transaction text fields for keyword unlearning
-    description, creditor_name, debtor_name = _get_transaction_text_fields(
-        transaction_repo, account_id, transaction_id
-    )
-
-    removed = category_repo.remove_category(
-        account_id=account_id,
-        transaction_id=transaction_id,
-        description=description,
-        creditor_name=creditor_name,
-        debtor_name=debtor_name,
-    )
-    if not removed:
+    """Remove a transaction's category."""
+    if not category_repo.remove_category(account_id, transaction_id):
         raise HTTPException(status_code=404, detail="No category assignment found.")
     return {"status": "ok"}
-
-
-@router.get(
-    "/transactions/{account_id}/{transaction_id}/suggest-category",
-    response_model=list[CategorySuggestion],
-)
-async def suggest_transaction_category(
-    account_id: str,
-    transaction_id: str,
-    category_repo: Annotated[CategoryRepository, Depends()],
-    transaction_repo: Annotated[TransactionRepository, Depends()],
-) -> list[CategorySuggestion]:
-    """Get category suggestions for a transaction."""
-    # Get transaction text fields
-    description, creditor_name, debtor_name = _get_transaction_text_fields(
-        transaction_repo, account_id, transaction_id
-    )
-
-    suggestions = category_repo.suggest_category(
-        description=description,
-        creditor_name=creditor_name,
-        debtor_name=debtor_name,
-    )
-    return [
-        CategorySuggestion(
-            category=Category(**s["category"]),
-            score=s["score"],
-            confidence=s["confidence"],
-        )
-        for s in suggestions
-    ]

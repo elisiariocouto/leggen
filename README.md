@@ -35,7 +35,7 @@ Having your bank data accessible through both CLI and REST API gives you the pow
 
 ### 🏷️ Categorization & Analytics
 - Categorize transactions with custom categories
-- Keyword-based learning: automatically categorizes future transactions matching the same description
+- Category rules: small Lua scripts that categorize transactions as they arrive, with builtin rules for common merchants, a test/preview editor, and an API an agent can drive
 - Bulk categorization and removal by transaction description
 - Filter transactions by category (including uncategorized)
 - Analytics dashboard with spending-by-category breakdown

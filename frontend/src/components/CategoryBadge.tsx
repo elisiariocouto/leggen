@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Tag, Sparkles, X, Check, WandSparkles } from "lucide-react";
+import { Tag, X, Check, WandSparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { apiClient, getApiErrorMessage } from "../lib/api";
 import {
@@ -24,7 +24,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "./ui/tooltip";
-import type { Category, CategoryRule, CategorySuggestion } from "../types/api";
+import type { Category, CategoryRule } from "../types/api";
 import {
   invalidateCategorizedData,
   queryKeys,
@@ -92,17 +92,10 @@ export default function CategoryBadge({
     queryFn: apiClient.getCategories,
   });
 
-  const { data: suggestions } = useQuery<CategorySuggestion[]>({
-    queryKey: queryKeys.categorySuggestions(accountId, transactionId),
-    queryFn: () => apiClient.getCategorySuggestions(accountId, transactionId),
-    enabled: open && !categoryId,
-  });
-
   const assignMutation = useMutation({
     mutationFn: (catId: number) =>
       apiClient.assignCategory(accountId, transactionId, catId),
     onSuccess: () => {
-      // Suggestions live under the categories root, so they refetch too.
       invalidateCategorizedData(queryClient);
       setOpen(false);
     },
@@ -175,15 +168,6 @@ export default function CategoryBadge({
     }
   };
 
-  const confidenceBadge = (confidence: string) => {
-    const colors: Record<string, string> = {
-      high: "text-green-600",
-      medium: "text-yellow-600",
-      low: "text-muted-foreground",
-    };
-    return <span className={`text-[10px] ${colors[confidence] || ""}`}>{confidence}</span>;
-  };
-
   const truncatedDescription =
     description && description.length > 30
       ? description.slice(0, 30) + "..."
@@ -247,34 +231,6 @@ export default function CategoryBadge({
 
           <CommandList>
             <CommandEmpty>No categories found.</CommandEmpty>
-
-            {/* Suggestions section */}
-            {suggestions && suggestions.length > 0 && (
-              <>
-                <CommandGroup heading="Suggestions">
-                  {suggestions.map((s) => (
-                    <CommandItem
-                      key={`suggestion-${s.category.id}`}
-                      value={`suggestion-${s.category.name}`}
-                      onSelect={() => handleAssign(s.category.id)}
-                      disabled={isPending}
-                      className="cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2 flex-1">
-                        <Sparkles className="h-3 w-3 text-yellow-500 shrink-0" />
-                        <span
-                          className="h-2.5 w-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: s.category.color }}
-                        />
-                        <span className="flex-1">{s.category.name}</span>
-                        {confidenceBadge(s.confidence)}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-                <CommandSeparator />
-              </>
-            )}
 
             {/* All categories */}
             <CommandGroup heading="Categories">

@@ -322,14 +322,7 @@ class TestTransactionsAPI:
         cat = category_repo.create_category(
             name="Internal transfers", color="#000000", exclude_from_stats=True
         )
-        category_repo.assign_category(
-            account_id="acc-1",
-            transaction_id="t2",
-            category_id=cat["id"],
-            description="Transaction t2",
-            creditor_name="",
-            debtor_name="",
-        )
+        category_repo.assign_category("acc-1", "t2", cat["id"])
 
         response = api_client.get(
             "/api/v1/transactions/stats?date_from=2025-08-01&date_to=2025-10-01"

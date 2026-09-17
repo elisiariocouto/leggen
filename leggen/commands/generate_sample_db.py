@@ -11,7 +11,6 @@ import click
 from leggen.repositories import run_migrations
 from leggen.repositories.db import create_connection
 from leggen.services.rules import seed_default_category_rules
-from leggen.utils.keywords import extract_keywords
 from leggen.utils.paths import path_manager
 
 
@@ -433,7 +432,8 @@ class SampleDataGenerator:
         cursor.execute("SELECT id, name FROM categories")
         category_map = {row[1]: row[0] for row in cursor.fetchall()}
 
-        # Assign categories to ~60% of transactions and learn keywords
+        # Assign categories by hand to ~60% of transactions; the builtin
+        # rules cover the rest once the server runs them.
         for transaction in transactions:
             if random.random() > 0.6:
                 continue
@@ -458,16 +458,6 @@ class SampleDataGenerator:
                 "INSERT OR IGNORE INTO transaction_categories (accountId, transactionId, categoryId) VALUES (?, ?, ?)",
                 (transaction["accountId"], transaction["transactionId"], category_id),
             )
-
-            # Learn keywords
-            keywords = extract_keywords(description)
-            for keyword in keywords:
-                cursor.execute(
-                    """INSERT INTO category_keywords (keyword, categoryId, frequency)
-                       VALUES (?, ?, 1)
-                       ON CONFLICT(keyword, categoryId) DO UPDATE SET frequency = frequency + 1""",
-                    (keyword, category_id),
-                )
 
         conn.commit()
         conn.close()
