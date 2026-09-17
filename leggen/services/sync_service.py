@@ -21,6 +21,7 @@ from leggen.services.data_processors import (
 )
 from leggen.services.enablebanking_service import EnableBankingService
 from leggen.services.notification_service import NotificationService
+from leggen.services.rules import CategoryRuleEngine
 
 # Constants for notification
 EXPIRED_DAYS_LEFT = 0
@@ -53,6 +54,7 @@ class SyncService:
         self.transactions = TransactionRepository()
         self.sync = SyncRepository()
         self.session_repo = SessionRepository()
+        self.rules = CategoryRuleEngine()
 
     async def get_sync_status(self) -> SyncStatus:
         """Get current sync status"""
@@ -250,6 +252,7 @@ class SyncService:
                             await self.notifications.send_transaction_notifications(
                                 new_transactions
                             )
+                            self._categorize(new_transactions, warnings, logs)
 
                     accounts_processed += 1
                     self._sync_status.accounts_synced = accounts_processed
@@ -364,6 +367,38 @@ class SyncService:
         finally:
             self._sync_status.is_running = False
             self._sync_lock.release()
+
+    def _categorize(
+        self, new_transactions: list[dict], warnings: list[str], logs: list[str]
+    ) -> None:
+        """Run the category rules over the transactions this sync added.
+
+        Only the new rows: history is re-evaluated on demand through
+        POST /category-rules/apply, which is what a new or edited rule
+        needs. Categorization is a convenience layered on the sync, so a
+        failure here is a warning on the operation, never a failed sync.
+        """
+        keys = [(t["accountId"], t["transactionId"]) for t in new_transactions]
+        try:
+            result = self.rules.run(keys=keys)
+        except Exception as e:
+            message = f"Category rules failed: {describe_exception(e)}"
+            logger.error(message)
+            warnings.append(message)
+            return
+
+        if result.assigned:
+            logs.append(
+                f"Category rules assigned {result.assigned} of "
+                f"{result.transactions_evaluated} new transactions"
+            )
+        for rule_id, error in result.skipped_rules.items():
+            warnings.append(f"Category rule {rule_id} does not compile: {error}")
+        for report in result.errors.values():
+            warnings.append(
+                f"Category rule '{report.rule_name}' failed on {report.count} "
+                f"transaction(s): {report.samples[0] if report.samples else 'unknown error'}"
+            )
 
     async def _check_session_expiry(self, sessions: list[dict]) -> None:
         """Check sessions for expiry and send notifications.
