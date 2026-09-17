@@ -48,10 +48,12 @@ DEFAULT_CATEGORY_RULES: list[dict[str, Any]] = [
             "leggen, or the description says so. Inter-account is excluded from "
             "statistics by default."
         ),
+        # Only the counterparty side is tested: for an expense the debtor is
+        # the user's own account, so checking both sides matched everything.
         "lua_script": (
-            "local target = tx.raw.creditor_account and tx.raw.creditor_account.iban\n"
-            "local source = tx.raw.debtor_account and tx.raw.debtor_account.iban\n"
-            "if is_own_iban(target) or is_own_iban(source) then return true end\n"
+            "local other = tx.is_expense and tx.raw.creditor_account or tx.raw.debtor_account\n"
+            "local iban = other and other.iban\n"
+            "if iban ~= nil and not exact(iban, tx.iban) and is_own_iban(iban) then return true end\n"
             "return matches(tx.description,\n"
             '    "\\\\b(internal transfer|transfer (to|from) (checking|savings|current)|own account|conta pr[oó]pria)\\\\b")'
         ),
@@ -83,7 +85,7 @@ DEFAULT_CATEGORY_RULES: list[dict[str, Any]] = [
         "description": "Supermarket chains and grocery stores.",
         "lua_script": (
             "return tx.is_expense and matches(tx.merchant,\n"
-            '    "\\\\b(pingo doce|continente|lidl|aldi|mercadona|auchan|intermarch[eé]|minipre[cç]o|carrefour|tesco|sainsbury|waitrose|asda|morrisons|walmart|rewe|edeka|albert heijn|jumbo|grocery|supermercado|supermarket|mercado|froiz|dia)\\\\b")'
+            '    "\\\\b(pingo doce|continente|lidl|aldi|mercadona|auchan|intermarch[eé]|minipre[cç]o|carrefour|tesco|sainsbury|waitrose|asda|morrisons|walmart|rewe|edeka|albert heijn|grocery|supermercado|supermarket|mercado|froiz)\\\\b")'
         ),
     },
     {

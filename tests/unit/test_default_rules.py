@@ -63,7 +63,14 @@ INCOME_GROUND_TRUTH = {
     "SALARY PAYMENT": "Salary",
 }
 # Must stay uncategorized: generic words a sloppy rule would catch.
-NEGATIVES = ["BPI PRESTACAO", "MAXIMUS LDA", "DIALOGUE CONSULTING", "SHELLEY BOOKS"]
+NEGATIVES = [
+    "BPI PRESTACAO",
+    "MAXIMUS LDA",
+    "DIALOGUE CONSULTING",
+    "SHELLEY BOOKS",
+    "BOM DIA PADEIRO",  # "dia" is a word, not a supermarket
+    "5ASEC JUMBO MAIA",  # a laundry in a mall
+]
 
 
 def _categories() -> dict[int, str]:
@@ -204,9 +211,36 @@ class TestPrecision:
                     -300.0,
                     {"creditor_account": {"iban": "DE89370400440532013000"}},
                 ),
+                # Banks put the user's own account on the debtor side of every
+                # expense; that must never read as a transfer to oneself.
+                (
+                    "fee",
+                    "MANUTENCAO DE CONTA",
+                    -5.0,
+                    {
+                        "debtor_account": {"iban": "PT50000201231234567890154"},
+                        "creditor_account": {"iban": "PT50001000001111111111111"},
+                    },
+                ),
+                (
+                    "mbway",
+                    "TRF MB WAY P  SOMEONE",
+                    -20.0,
+                    {"debtor_account": {"iban": "PT50000201231234567890154"}},
+                ),
+                # Income from one of the user's other accounts is a transfer.
+                (
+                    "incoming",
+                    "TRF",
+                    300.0,
+                    {
+                        "debtor_account": {"iban": "PT50003300004555555555555"},
+                        "creditor_account": {"iban": "PT50000201231234567890154"},
+                    },
+                ),
             ]
         )
 
         CategoryRuleEngine().run()
 
-        assert _assigned() == {"own": "Inter-account"}
+        assert _assigned() == {"own": "Inter-account", "incoming": "Inter-account"}
