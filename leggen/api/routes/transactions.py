@@ -50,6 +50,8 @@ def _to_summary(txn: dict[str, Any]) -> TransactionSummary:
         category_name=txn.get("categoryName"),
         category_color=txn.get("categoryColor"),
         exclude_from_stats=txn.get("exclude_from_stats"),
+        category_source=txn.get("categorySource"),
+        category_rule_id=txn.get("categoryRuleId"),
     )
 
 
@@ -71,6 +73,8 @@ def _to_transaction(txn: dict[str, Any]) -> Transaction:
         category_name=txn.get("categoryName"),
         category_color=txn.get("categoryColor"),
         exclude_from_stats=txn.get("exclude_from_stats"),
+        category_source=txn.get("categorySource"),
+        category_rule_id=txn.get("categoryRuleId"),
     )
 
 

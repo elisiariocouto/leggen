@@ -72,6 +72,14 @@ class Transaction(BaseModel):
         description="Per-transaction statistics override: true keeps it out of "
         "totals, false keeps it in, null inherits the category's flag.",
     )
+    category_source: str | None = Field(
+        default=None,
+        description='How the category was assigned: "manual" or "rule". '
+        "Null when uncategorized.",
+    )
+    category_rule_id: int | None = Field(
+        default=None, description="The rule that assigned the category, if a rule did."
+    )
 
 
 class TransactionSummary(BaseModel):
@@ -89,6 +97,14 @@ class TransactionSummary(BaseModel):
     category_name: str | None = None
     category_color: str | None = None
     exclude_from_stats: bool | None = None
+    category_source: str | None = Field(
+        default=None,
+        description='How the category was assigned: "manual" or "rule". '
+        "Null when uncategorized.",
+    )
+    category_rule_id: int | None = Field(
+        default=None, description="The rule that assigned the category, if a rule did."
+    )
 
 
 class TransactionUpdate(BaseModel):

@@ -594,3 +594,37 @@ class TestUpdateTransaction:
 
         assert response.status_code == 404
         assert response.json()["code"] == "NOT_FOUND"
+
+
+@pytest.mark.api
+class TestCategorySource:
+    def test_reports_how_the_category_was_assigned(self, api_client, mock_db_path):
+        from leggen.repositories import CategoryRepository, CategoryRuleRepository
+
+        persist_transactions(
+            [
+                ("t1", "acc-1", "2025-09-05T10:00:00", -10.0, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-06T10:00:00", -20.0, "EUR", "booked"),
+                ("t3", "acc-1", "2025-09-07T10:00:00", -30.0, "EUR", "booked"),
+            ]
+        )
+        groceries = next(
+            c
+            for c in CategoryRepository().get_all_categories()
+            if c["name"] == "Groceries"
+        )
+        CategoryRepository().assign_category("acc-1", "t1", groceries["id"])
+        rules = CategoryRuleRepository()
+        rule = rules.create_rule("r", groceries["id"], "return true")
+        rules.apply_assignments([("acc-1", "t2", groceries["id"], rule["id"], None)])
+
+        rows = {
+            t["transaction_id"]: t
+            for t in api_client.get("/api/v1/transactions").json()["data"]
+        }
+
+        assert rows["t1"]["category_source"] == "manual"
+        assert rows["t1"]["category_rule_id"] is None
+        assert rows["t2"]["category_source"] == "rule"
+        assert rows["t2"]["category_rule_id"] == rule["id"]
+        assert rows["t3"]["category_source"] is None

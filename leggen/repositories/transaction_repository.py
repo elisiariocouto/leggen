@@ -301,7 +301,8 @@ class TransactionRepository:
             )
 
             query = (
-                f"""SELECT t.*, tc.categoryId, c.name as categoryName, c.color as categoryColor
+                f"""SELECT t.*, tc.categoryId, c.name as categoryName, c.color as categoryColor,
+                       tc.source AS categorySource, tc.ruleId AS categoryRuleId
                 FROM transactions t{_CATEGORY_JOIN}
                 WHERE 1=1"""
                 + filter_clause
@@ -631,10 +632,9 @@ class TransactionRepository:
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """SELECT t.*, tc.categoryId, c.name as categoryName, c.color as categoryColor
-                FROM transactions t
-                LEFT JOIN transaction_categories tc ON t.accountId = tc.accountId AND t.transactionId = tc.transactionId
-                LEFT JOIN categories c ON tc.categoryId = c.id
+                f"""SELECT t.*, tc.categoryId, c.name as categoryName, c.color as categoryColor,
+                       tc.source AS categorySource, tc.ruleId AS categoryRuleId
+                FROM transactions t{_CATEGORY_JOIN}
                 WHERE t.accountId = ? AND t.transactionId = ?""",
                 (account_id, transaction_id),
             )

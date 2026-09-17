@@ -2164,6 +2164,16 @@ export interface components {
              * @description Per-transaction statistics override: true keeps it out of totals, false keeps it in, null inherits the category's flag.
              */
             exclude_from_stats?: boolean | null;
+            /**
+             * Category Source
+             * @description How the category was assigned: "manual" or "rule". Null when uncategorized.
+             */
+            category_source?: string | null;
+            /**
+             * Category Rule Id
+             * @description The rule that assigned the category, if a rule did.
+             */
+            category_rule_id?: number | null;
         };
         /**
          * TransactionStats
@@ -2228,6 +2238,16 @@ export interface components {
             category_color?: string | null;
             /** Exclude From Stats */
             exclude_from_stats?: boolean | null;
+            /**
+             * Category Source
+             * @description How the category was assigned: "manual" or "rule". Null when uncategorized.
+             */
+            category_source?: string | null;
+            /**
+             * Category Rule Id
+             * @description The rule that assigned the category, if a rule did.
+             */
+            category_rule_id?: number | null;
         };
         /**
          * TransactionUpdate
