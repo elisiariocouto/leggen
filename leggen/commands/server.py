@@ -27,6 +27,7 @@ from leggen.api.routes import (
 from leggen.background.scheduler import scheduler
 from leggen.repositories import run_migrations
 from leggen.services.enablebanking_service import close_enablebanking_service
+from leggen.services.rules import seed_default_category_rules
 from leggen.utils.config import config
 from leggen.utils.paths import path_manager
 
@@ -72,6 +73,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Database migration failed: {e}")
         raise
+
+    # A database that has never had category rules gets the builtin set
+    seeded = seed_default_category_rules()
+    if seeded:
+        logger.info(f"Seeded {seeded} builtin category rules")
 
     # Start background scheduler
     scheduler.start()

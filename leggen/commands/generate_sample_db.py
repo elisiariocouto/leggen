@@ -10,6 +10,7 @@ import click
 
 from leggen.repositories import run_migrations
 from leggen.repositories.db import create_connection
+from leggen.services.rules import seed_default_category_rules
 from leggen.utils.keywords import extract_keywords
 from leggen.utils.paths import path_manager
 
@@ -126,6 +127,7 @@ class SampleDataGenerator:
         """Create database tables using the shared repository schema."""
         path_manager.set_database_path(self.db_path)
         run_migrations()
+        seed_default_category_rules()
 
     def generate_iban(self, country_code: str) -> str:
         """Generate a realistic IBAN for the given country."""

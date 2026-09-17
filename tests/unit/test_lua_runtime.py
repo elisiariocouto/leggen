@@ -305,6 +305,25 @@ class TestStdlib:
 
 
 @pytest.mark.unit
+class TestAccountIbans:
+    def test_is_own_iban_ignores_spaces_and_case(self):
+        runtime = RuleRuntime(account_ibans=["PT50 0002 0123 1234 5678 9015 4"])
+
+        assert run(runtime, 'return is_own_iban("pt50000201231234567890154")').matched
+        assert run(runtime, 'return not is_own_iban("DE89370400440532013000")').matched
+        assert run(runtime, "return not is_own_iban(nil)").matched
+        assert run(
+            runtime,
+            'return #ACCOUNT_IBANS == 1 and ACCOUNT_IBANS[1] == "PT50000201231234567890154"',
+        ).matched
+
+    def test_defaults_to_no_accounts(self, runtime):
+        assert run(
+            runtime, "return #ACCOUNT_IBANS == 0 and not is_own_iban('X')"
+        ).matched
+
+
+@pytest.mark.unit
 class TestReference:
     def test_documents_every_injected_function(self, runtime):
         documented = {
@@ -337,6 +356,7 @@ class TestReference:
                 "coalesce",
                 "is_nil",
                 "log",
+                "is_own_iban",
             ]
             # Python callables reach Lua as userdata, not "function".
             if run(runtime, f"return {name} ~= nil").matched

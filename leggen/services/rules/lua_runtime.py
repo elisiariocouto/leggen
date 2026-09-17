@@ -147,6 +147,15 @@ STDLIB_REFERENCE: list[dict[str, Any]] = [
             },
         ],
     },
+    {
+        "title": "Accounts",
+        "functions": [
+            {
+                "signature": "is_own_iban(iban)",
+                "description": "True if the IBAN belongs to one of the user's own accounts in leggen — the test for a transfer between own accounts. nil-safe; ignores spaces and case.",
+            },
+        ],
+    },
 ]
 
 TX_REFERENCE: list[dict[str, Any]] = [
@@ -246,6 +255,7 @@ NOTES: list[str] = [
     "Text comparisons are case-insensitive. matches() takes Python regex syntax, not Lua patterns.",
     "tx.amount is signed: compare against negative numbers for expenses, or use magnitude().",
     "tx.raw lists are Lua arrays: 1-based, and iterable with ipairs() and #.",
+    "ACCOUNT_IBANS is a Lua array of the IBANs of the user's own accounts; is_own_iban() checks against it.",
     "The runtime is sandboxed: os, io, require, load, dofile, debug, package, coroutine and python are unavailable. string, table and math are.",
     f"An evaluation is aborted after {MAX_INSTRUCTIONS:,} Lua instructions, so a rule cannot loop forever.",
 ]
@@ -298,6 +308,12 @@ def _strip_accents(text: str) -> str:
 
 
 _WORD = re.compile(r"[a-zA-Z0-9À-ɏ]+")
+
+
+def _iban_key(iban: Any) -> str:
+    """IBANs compare without spaces and regardless of case."""
+    text = _to_str(iban)
+    return re.sub(r"\s+", "", text).upper() if text else ""
 
 
 def _lua_list(value: Any) -> list[Any]:
@@ -541,8 +557,9 @@ class RuleRuntime:
     every rule once, and builds each `tx` table once per transaction.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, account_ibans: list[str] | None = None) -> None:
         self._logs: list[str] = []
+        self._own_ibans: set[str] = set()
         self._lua = LuaRuntime(
             unpack_returned_tuples=True,
             register_eval=False,
@@ -553,6 +570,18 @@ class RuleRuntime:
         self._call_rule = self._lua.eval(_MAKE_CALL_RULE)(MAX_INSTRUCTIONS)
         self._lua.execute(_SANDBOX)
         self._install_stdlib()
+        self.set_account_ibans(account_ibans or [])
+
+    def set_account_ibans(self, ibans: list[str]) -> None:
+        """Tell the runtime which IBANs are the user's own.
+
+        Exposed to scripts as the ACCOUNT_IBANS array and through
+        is_own_iban(), so a rule can recognize a transfer between the user's
+        accounts without hardcoding them.
+        """
+        cleaned = sorted({_iban_key(iban) for iban in ibans if _iban_key(iban)})
+        self._own_ibans = set(cleaned)
+        self._lua.globals()["ACCOUNT_IBANS"] = self._lua.table(*cleaned)
 
     def _install_stdlib(self) -> None:
         lua = self._lua
@@ -565,6 +594,10 @@ class RuleRuntime:
         def log(message: Any) -> None:
             if len(self._logs) < MAX_LOG_LINES:
                 self._logs.append("nil" if message is None else str(message))
+
+        def is_own_iban(iban: Any) -> bool:
+            key = _iban_key(iban)
+            return bool(key) and key in self._own_ibans
 
         stdlib: dict[str, Any] = {
             "contains": _contains,
@@ -589,6 +622,7 @@ class RuleRuntime:
             "is_nil": _is_nil,
             "log": log,
             "print": log,
+            "is_own_iban": is_own_iban,
         }
         for name, function in stdlib.items():
             globals_[name] = function

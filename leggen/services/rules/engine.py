@@ -14,7 +14,11 @@ from typing import Any
 from loguru import logger
 
 from leggen.errors import InvalidRuleScriptError
-from leggen.repositories import CategoryRuleRepository, TransactionRepository
+from leggen.repositories import (
+    AccountRepository,
+    CategoryRuleRepository,
+    TransactionRepository,
+)
 from leggen.services.rules.lua_runtime import CompiledRule, RuleOutcome, RuleRuntime
 
 # Error messages kept per rule in a run report; the count is unbounded.
@@ -116,9 +120,16 @@ class CategoryRuleEngine:
         self,
         rules: CategoryRuleRepository | None = None,
         transactions: TransactionRepository | None = None,
+        accounts: AccountRepository | None = None,
     ) -> None:
         self.rules = rules or CategoryRuleRepository()
         self.transactions = transactions or TransactionRepository()
+        self.accounts = accounts or AccountRepository()
+
+    def _runtime(self) -> RuleRuntime:
+        """A runtime that knows the user's own IBANs, for is_own_iban()."""
+        ibans = [a["iban"] for a in self.accounts.get_accounts() if a.get("iban")]
+        return RuleRuntime(account_ibans=ibans)
 
     def _compile_active_rules(
         self, runtime: RuleRuntime
@@ -149,7 +160,7 @@ class CategoryRuleEngine:
         category. With `dry_run` nothing is written and the report says
         what would have been.
         """
-        runtime = RuleRuntime()
+        runtime = self._runtime()
         compiled, skipped = self._compile_active_rules(runtime)
         errors: dict[int, RuleErrorReport] = {}
 
@@ -243,7 +254,7 @@ class CategoryRuleEngine:
         row = self.transactions.get_transaction_by_id(account_id, transaction_id)
         if row is None:
             raise LookupError("Transaction not found.")
-        runtime = RuleRuntime()
+        runtime = self._runtime()
         compiled = runtime.compile(script)
         return runtime.evaluate(compiled, runtime.build_tx(row))
 
@@ -251,7 +262,7 @@ class CategoryRuleEngine:
         """Every transaction a script matches, including manually categorized
         ones, which are flagged: the engine would not change them, but the
         author needs to see the rule's full reach to judge it."""
-        runtime = RuleRuntime()
+        runtime = self._runtime()
         compiled = runtime.compile(script)
         matches: list[ScriptMatch] = []
         errors = 0

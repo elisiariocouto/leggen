@@ -1,6 +1,10 @@
 """Lua-scripted category rules: the sandboxed runtime and the engine that
 runs rules over transactions."""
 
+from leggen.services.rules.defaults import (
+    DEFAULT_CATEGORY_RULES,
+    seed_default_category_rules,
+)
 from leggen.services.rules.engine import (
     CategoryRuleEngine,
     RuleChange,
@@ -19,6 +23,7 @@ from leggen.services.rules.lua_runtime import (
 )
 
 __all__ = [
+    "DEFAULT_CATEGORY_RULES",
     "MAX_INSTRUCTIONS",
     "CategoryRuleEngine",
     "CompiledRule",
@@ -30,5 +35,6 @@ __all__ = [
     "ScriptMatch",
     "ScriptPreview",
     "reference",
+    "seed_default_category_rules",
     "validate_script",
 ]
