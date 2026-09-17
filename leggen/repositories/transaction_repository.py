@@ -648,6 +648,58 @@ class TransactionRepository:
                 return transaction
             return None
 
+    def get_rule_candidates(
+        self,
+        keys: list[tuple[str, str]] | None = None,
+        include_manual: bool = False,
+    ) -> list[dict[str, Any]]:
+        """Transactions for the rule engine, with their current assignment.
+
+        By default only transactions without a manual category — the ones a
+        rule may assign. `keys` restricts the set to those (accountId,
+        transactionId) pairs, for a sync that only needs the new rows;
+        `include_manual` widens it to everything, for previewing what a
+        script matches. Rows carry `categorySource`, `ruleId` and
+        `ruleExcludeFromStats` describing the assignment they have now.
+        """
+        if not db_exists():
+            return []
+
+        select = f"""SELECT t.*, tc.categoryId, c.name AS categoryName,
+                            tc.source AS categorySource, tc.ruleId,
+                            tc.exclude_from_stats AS ruleExcludeFromStats
+                     FROM transactions t{_CATEGORY_JOIN}
+                     WHERE {"1=1" if include_manual else "(tc.source IS NULL OR tc.source = 'rule')"}"""
+
+        with get_db_connection(row_factory=True) as conn:
+            cursor = conn.cursor()
+            if keys is None:
+                cursor.execute(select + " ORDER BY t.transactionDate, t.transactionId")
+                rows = cursor.fetchall()
+            else:
+                # Row-value IN, chunked to stay under SQLite's parameter limit.
+                rows = []
+                pairs = list(dict.fromkeys(keys))
+                chunk_size = _SELECT_CHUNK_SIZE // 2
+                for start in range(0, len(pairs), chunk_size):
+                    chunk = pairs[start : start + chunk_size]
+                    placeholders = ",".join("(?, ?)" for _ in chunk)
+                    cursor.execute(
+                        f"{select} AND (t.accountId, t.transactionId) IN (VALUES {placeholders})",
+                        [value for pair in chunk for value in pair],
+                    )
+                    rows.extend(cursor.fetchall())
+
+            candidates = []
+            for row in rows:
+                transaction = dict(row)
+                if transaction["rawTransaction"]:
+                    transaction["rawTransaction"] = json.loads(
+                        transaction["rawTransaction"]
+                    )
+                candidates.append(transaction)
+            return candidates
+
     def set_exclude_from_stats(
         self, account_id: str, transaction_id: str, value: bool | None
     ) -> bool:
