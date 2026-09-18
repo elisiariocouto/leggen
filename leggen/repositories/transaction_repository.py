@@ -622,6 +622,50 @@ class TransactionRepository:
                 rows.append(record)
             return rows, currency
 
+    def get_category_month_rows(
+        self,
+        date_from: str,
+        date_to: str,
+        account_id: str | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Expense totals per (month, category), for the analytics pivot.
+
+        Rows with no category come back with NULL category fields as one
+        group. Only the dominant currency is summed, as elsewhere.
+        """
+        if not db_exists():
+            return [], None
+
+        with get_db_connection(row_factory=True) as conn:
+            cursor = conn.cursor()
+            filter_clause, params = self._build_filter_clause(
+                account_id=account_id, date_from=date_from, date_to=date_to
+            )
+            base = (
+                f"""FROM transactions t{_CATEGORY_JOIN}
+                WHERE {_INCLUDED_IN_STATS}"""
+                + filter_clause
+            )
+
+            currency = self._dominant_currency(cursor, base, params)
+            if currency is None:
+                return [], None
+
+            cursor.execute(
+                f"""SELECT
+                    strftime('%Y-%m', t.transactionDate) AS month,
+                    c.id AS category_id,
+                    c.name AS category_name,
+                    c.color AS category_color,
+                    SUM(ABS(t.transactionValue)) AS expenses,
+                    COUNT(*) AS transaction_count
+                {base} AND t.transactionCurrency IS ? AND t.transactionValue < 0
+                GROUP BY month, c.id
+                ORDER BY month ASC""",
+                params + [currency],
+            )
+            return [dict(row) for row in cursor.fetchall()], currency
+
     def get_transaction_by_id(
         self, account_id: str, transaction_id: str
     ) -> dict[str, Any] | None:

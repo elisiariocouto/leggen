@@ -562,3 +562,107 @@ class TestRecurring:
         detected = response.json()
         assert len(detected) == 1
         assert detected[0]["occurrences"] == 3
+
+
+@pytest.mark.api
+class TestSpendingByCategory:
+    """Category × month pivot behind the stacked chart and the matrix."""
+
+    def _categories(self):
+        from leggen.repositories import CategoryRepository
+
+        repo = CategoryRepository()
+        by_name = {c["name"]: c for c in repo.get_all_categories()}
+        return repo, by_name
+
+    def test_pivots_by_month_and_category(self, api_client, mock_db_path):
+        """Every month of the window is a column; uncategorized spend trails."""
+        persist_transactions(
+            [
+                ("t1", "acc-1", "2025-08-05T10:00:00", -100.00, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-05T10:00:00", -50.00, "EUR", "booked"),
+                ("t3", "acc-1", "2025-09-06T10:00:00", -30.00, "EUR", "booked"),
+                ("t4", "acc-1", "2025-09-07T10:00:00", -20.00, "EUR", "booked"),
+            ]
+        )
+        repo, by_name = self._categories()
+        repo.assign_category("acc-1", "t1", by_name["Groceries"]["id"])
+        repo.assign_category("acc-1", "t2", by_name["Groceries"]["id"])
+        repo.assign_category("acc-1", "t3", by_name["Dining"]["id"])
+
+        response = api_client.get(
+            "/api/v1/analytics/spending-by-category"
+            "?date_from=2025-07-01&date_to=2025-09-30"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["months"] == ["2025-07", "2025-08", "2025-09"]
+        assert data["currency"] == "EUR"
+        assert data["total"] == 200.00
+        assert data["categorized_share"] == 0.9
+
+        names = [c["category_name"] for c in data["categories"]]
+        assert names == ["Groceries", "Dining", "Uncategorized"]
+
+        groceries, dining, uncategorized = data["categories"]
+        assert groceries["monthly"] == [0.0, 100.0, 50.0]
+        assert groceries["total"] == 150.00
+        assert groceries["transaction_count"] == 2
+        assert groceries["category_color"] == by_name["Groceries"]["color"]
+        assert dining["monthly"] == [0.0, 0.0, 30.0]
+        assert uncategorized["category_id"] is None
+        assert uncategorized["monthly"] == [0.0, 0.0, 20.0]
+
+    def test_income_is_not_spending(self, api_client, mock_db_path):
+        persist_transactions(
+            [
+                ("t1", "acc-1", "2025-09-05T10:00:00", 500.00, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-06T10:00:00", -40.00, "EUR", "booked"),
+            ]
+        )
+        repo, by_name = self._categories()
+        repo.assign_category("acc-1", "t1", by_name["Salary"]["id"])
+
+        response = api_client.get(
+            "/api/v1/analytics/spending-by-category"
+            "?date_from=2025-09-01&date_to=2025-09-30"
+        )
+
+        data = response.json()
+        assert [c["category_name"] for c in data["categories"]] == ["Uncategorized"]
+        assert data["total"] == 40.00
+
+    def test_excludes_flagged_categories(self, api_client, mock_db_path):
+        """Inter-account transfers are not spending and must not show up."""
+        persist_transactions(
+            [
+                ("t1", "acc-1", "2025-09-05T10:00:00", -1000.00, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-06T10:00:00", -40.00, "EUR", "booked"),
+            ]
+        )
+        repo, by_name = self._categories()
+        excluded = next(c for c in by_name.values() if c["exclude_from_stats"])
+        repo.assign_category("acc-1", "t1", excluded["id"])
+
+        response = api_client.get(
+            "/api/v1/analytics/spending-by-category"
+            "?date_from=2025-09-01&date_to=2025-09-30"
+        )
+
+        data = response.json()
+        assert data["total"] == 40.00
+        assert excluded["name"] not in [c["category_name"] for c in data["categories"]]
+
+    def test_empty_window_keeps_its_months(self, api_client, mock_db_path):
+        response = api_client.get(
+            "/api/v1/analytics/spending-by-category"
+            "?date_from=2025-09-01&date_to=2025-10-31"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["months"] == ["2025-09", "2025-10"]
+        assert data["categories"] == []
+        assert data["total"] == 0.0
+        assert data["categorized_share"] == 0.0

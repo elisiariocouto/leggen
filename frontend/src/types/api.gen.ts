@@ -924,6 +924,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analytics/spending-by-category": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Spending By Category
+         * @description Expenses per category, month by month, across the window.
+         *
+         *     Every month in the window is present and zero-filled so the series align.
+         *     Spend excluded from statistics (inter-account transfers and the like) is
+         *     left out; spend without a category is reported as its own trailing entry.
+         */
+        get: operations["get_spending_by_category_api_v1_analytics_spending_by_category_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -1265,6 +1289,24 @@ export interface components {
              * @default false
              */
             exclude_from_stats: boolean;
+        };
+        /**
+         * CategoryMonthly
+         * @description One category's expenses per month of the window.
+         */
+        CategoryMonthly: {
+            /** Category Id */
+            category_id?: number | null;
+            /** Category Name */
+            category_name: string;
+            /** Category Color */
+            category_color: string;
+            /** Monthly */
+            monthly: number[];
+            /** Total */
+            total: number;
+            /** Transaction Count */
+            transaction_count: number;
         };
         /**
          * CategoryRule
@@ -1923,6 +1965,26 @@ export interface components {
             rule_id: number;
             /** Error */
             error: string;
+        };
+        /**
+         * SpendingByCategory
+         * @description Expenses pivoted by category and month: where does it go, and when?
+         *
+         *     Months cover the whole window, including ones without spending. Categories
+         *     are sorted by total, with uncategorized spend as the trailing entry so the
+         *     caller can show how much of the picture is still unexplained.
+         */
+        SpendingByCategory: {
+            /** Months */
+            months: string[];
+            /** Categories */
+            categories: components["schemas"]["CategoryMonthly"][];
+            /** Currency */
+            currency?: string | null;
+            /** Total */
+            total: number;
+            /** Categorized Share */
+            categorized_share: number;
         };
         /**
          * SyncOperation
@@ -4910,6 +4972,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecurringPayment"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_spending_by_category_api_v1_analytics_spending_by_category_get: {
+        parameters: {
+            query: {
+                /** @description Start date (YYYY-MM-DD) */
+                date_from: string;
+                /** @description End date (YYYY-MM-DD) */
+                date_to: string;
+                /** @description Filter by account ID */
+                account_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpendingByCategory"];
                 };
             };
             /** @description Not authenticated */

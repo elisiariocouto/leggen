@@ -123,3 +123,33 @@ class RecurringPayment(BaseModel):
     last_seen: str
     next_expected: str | None = None
     currency: str | None = None
+
+
+class CategoryMonthly(BaseModel):
+    """One category's expenses per month of the window."""
+
+    # None for spend that carries no category.
+    category_id: int | None = None
+    category_name: str
+    category_color: str
+    # One entry per month in SpendingByCategory.months, zero where nothing
+    # was spent, so series from different categories line up column by column.
+    monthly: list[float]
+    total: float
+    transaction_count: int
+
+
+class SpendingByCategory(BaseModel):
+    """Expenses pivoted by category and month: where does it go, and when?
+
+    Months cover the whole window, including ones without spending. Categories
+    are sorted by total, with uncategorized spend as the trailing entry so the
+    caller can show how much of the picture is still unexplained.
+    """
+
+    months: list[str]
+    categories: list[CategoryMonthly]
+    currency: str | None = None
+    total: float
+    # Share of the expense amount that carries a category, 0..1.
+    categorized_share: float

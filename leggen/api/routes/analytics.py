@@ -9,6 +9,7 @@ from leggen.api.models.stats import (
     Merchants,
     NetWorth,
     RecurringPayment,
+    SpendingByCategory,
 )
 from leggen.repositories.balance_repository import BalanceRepository
 from leggen.repositories.transaction_repository import TransactionRepository
@@ -72,5 +73,23 @@ async def get_recurring(
     last-seen date so a mis-grouped merchant is visible to the caller.
     """
     return analytics_service.get_recurring(
+        transaction_repo, date_from, date_to, account_id=account_id
+    )
+
+
+@router.get("/analytics/spending-by-category", response_model=SpendingByCategory)
+async def get_spending_by_category(
+    transaction_repo: Annotated[TransactionRepository, Depends()],
+    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
+    date_to: str = Query(description="End date (YYYY-MM-DD)"),
+    account_id: str | None = Query(default=None, description="Filter by account ID"),
+) -> dict:
+    """Expenses per category, month by month, across the window.
+
+    Every month in the window is present and zero-filled so the series align.
+    Spend excluded from statistics (inter-account transfers and the like) is
+    left out; spend without a category is reported as its own trailing entry.
+    """
+    return analytics_service.get_spending_by_category(
         transaction_repo, date_from, date_to, account_id=account_id
     )

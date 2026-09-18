@@ -4255,6 +4255,108 @@
         }
       }
     },
+    "/api/v1/analytics/spending-by-category": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Spending By Category",
+        "description": "Expenses per category, month by month, across the window.\n\nEvery month in the window is present and zero-filled so the series align.\nSpend excluded from statistics (inter-account transfers and the like) is\nleft out; spend without a category is reported as its own trailing entry.",
+        "operationId": "get_spending_by_category_api_v1_analytics_spending_by_category_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Start date (YYYY-MM-DD)",
+              "title": "Date From"
+            },
+            "description": "Start date (YYYY-MM-DD)"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "End date (YYYY-MM-DD)",
+              "title": "Date To"
+            },
+            "description": "End date (YYYY-MM-DD)"
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by account ID",
+              "title": "Account Id"
+            },
+            "description": "Filter by account ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendingByCategory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "summary": "Health",
@@ -5019,6 +5121,54 @@
         ],
         "title": "CategoryCreate",
         "description": "Model for creating a category."
+      },
+      "CategoryMonthly": {
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "category_name": {
+            "type": "string",
+            "title": "Category Name"
+          },
+          "category_color": {
+            "type": "string",
+            "title": "Category Color"
+          },
+          "monthly": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Monthly"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total"
+          },
+          "transaction_count": {
+            "type": "integer",
+            "title": "Transaction Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category_name",
+          "category_color",
+          "monthly",
+          "total",
+          "transaction_count"
+        ],
+        "title": "CategoryMonthly",
+        "description": "One category's expenses per month of the window."
       },
       "CategoryRule": {
         "properties": {
@@ -6622,6 +6772,52 @@
           "error"
         ],
         "title": "SkippedRule"
+      },
+      "SpendingByCategory": {
+        "properties": {
+          "months": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Months"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryMonthly"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total"
+          },
+          "categorized_share": {
+            "type": "number",
+            "title": "Categorized Share"
+          }
+        },
+        "type": "object",
+        "required": [
+          "months",
+          "categories",
+          "total",
+          "categorized_share"
+        ],
+        "title": "SpendingByCategory",
+        "description": "Expenses pivoted by category and month: where does it go, and when?\n\nMonths cover the whole window, including ones without spending. Categories\nare sorted by total, with uncategorized spend as the trailing entry so the\ncaller can show how much of the picture is still unexplained."
       },
       "SyncOperation": {
         "properties": {

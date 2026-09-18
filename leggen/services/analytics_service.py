@@ -286,3 +286,96 @@ def get_recurring(
     # outrank a large one-off-looking yearly bill.
     detected.sort(key=_recurring_weight, reverse=True)
     return detected
+
+
+# Colour used for spend without a category, matching the transactions table.
+_UNCATEGORIZED_COLOR = "#9ca3af"
+
+
+def _months_between(date_from: str, date_to: str) -> list[str]:
+    """Every YYYY-MM from the first month of the window to the last, inclusive."""
+    start = _parse_day(date_from)
+    end = _parse_day(date_to)
+    if start is None or end is None or start > end:
+        return []
+    months: list[str] = []
+    year, month = start.year, start.month
+    while (year, month) <= (end.year, end.month):
+        months.append(f"{year:04d}-{month:02d}")
+        month += 1
+        if month > 12:
+            year, month = year + 1, 1
+    return months
+
+
+def get_spending_by_category(
+    transaction_repo: TransactionRepository,
+    date_from: str,
+    date_to: str,
+    account_id: str | None = None,
+) -> dict[str, Any]:
+    """Pivot expenses into one zero-filled monthly series per category.
+
+    The month axis comes from the requested window rather than from the data,
+    so a month with nothing spent still appears as a column of zeros and the
+    series stay aligned. Uncategorized spend is kept as its own trailing entry
+    rather than dropped: it is the honest size of what the categories miss.
+    """
+    months = _months_between(date_from, date_to)
+    rows, currency = transaction_repo.get_category_month_rows(
+        date_from, date_to, account_id=account_id
+    )
+    empty: dict[str, Any] = {
+        "months": months,
+        "categories": [],
+        "currency": currency,
+        "total": 0.0,
+        "categorized_share": 0.0,
+    }
+    if not rows or not months:
+        return empty
+
+    index = {month: i for i, month in enumerate(months)}
+    series: dict[int | None, dict[str, Any]] = {}
+    for row in rows:
+        position = index.get(row["month"])
+        # A malformed bank date can fall outside the window's months even
+        # though it passed the SQL date filter; it has no column to land in.
+        if position is None:
+            continue
+        key = row["category_id"]
+        entry = series.get(key)
+        if entry is None:
+            entry = series[key] = {
+                "category_id": key,
+                "category_name": row["category_name"] or "Uncategorized",
+                "category_color": row["category_color"] or _UNCATEGORIZED_COLOR,
+                "monthly": [0.0] * len(months),
+                "total": 0.0,
+                "transaction_count": 0,
+            }
+        entry["monthly"][position] += row["expenses"]
+        entry["total"] += row["expenses"]
+        entry["transaction_count"] += row["transaction_count"]
+
+    categories = sorted(
+        (entry for key, entry in series.items() if key is not None),
+        key=lambda entry: entry["total"],
+        reverse=True,
+    )
+    uncategorized = series.get(None)
+    if uncategorized is not None:
+        categories.append(uncategorized)
+    for entry in categories:
+        entry["monthly"] = [round(value, 2) for value in entry["monthly"]]
+        entry["total"] = round(entry["total"], 2)
+
+    total = sum(entry["total"] for entry in categories)
+    unexplained = uncategorized["total"] if uncategorized is not None else 0.0
+    return {
+        "months": months,
+        "categories": categories,
+        "currency": currency,
+        "total": round(total, 2),
+        "categorized_share": round((total - unexplained) / total, 4) if total else 0.0,
+    }
