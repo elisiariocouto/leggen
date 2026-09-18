@@ -10,7 +10,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { format, parse } from "date-fns";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
 import { Skeleton } from "../ui/skeleton";
@@ -23,6 +22,7 @@ import {
 } from "../../lib/chartColors";
 import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
+import { monthLabel } from "../../lib/months";
 import type { CashFlowPoint } from "../../types/api";
 
 interface CashFlowChartProps {
@@ -36,15 +36,6 @@ interface TooltipProps {
   active?: boolean;
   payload?: Array<{ payload: CashFlowPoint }>;
   label?: string;
-}
-
-/** "2025-09" reads as "Sep 2025" on the axis and in the tooltip. */
-function monthLabel(month: string): string {
-  try {
-    return format(parse(month, "yyyy-MM", new Date()), "MMM yyyy");
-  } catch {
-    return month;
-  }
 }
 
 // Module scope: a component defined during render is a new type on every pass,
@@ -151,7 +142,7 @@ export default function CashFlowChart({
             <XAxis
               dataKey="month"
               tick={CHART_AXIS_TICK}
-              tickFormatter={monthLabel}
+              tickFormatter={(month: string) => monthLabel(month)}
               tickLine={false}
             />
             <YAxis

@@ -10,7 +10,8 @@ import CashFlowChart from "./CashFlowChart";
 import NetWorthChart from "./NetWorthChart";
 import TopMerchants from "./TopMerchants";
 import RecurringPayments from "./RecurringPayments";
-import CategoryBreakdown from "./CategoryBreakdown";
+import SpendingByCategoryChart from "./SpendingByCategoryChart";
+import CategoryMatrix from "./CategoryMatrix";
 import { DateRangePicker } from "../filters/DateRangePicker";
 import type { DatePreset } from "../filters/DateRangePicker";
 import { AccountCombobox } from "../filters/AccountCombobox";
@@ -170,10 +171,20 @@ export default function AnalyticsDashboard() {
         </Card>
       </div>
 
-      {/* Categories cover a minority of transactions, so this sits last */}
+      {/* Where does it go, month by month: the chart for the shape, the
+          table for every number */}
       <Card>
         <CardContent className="p-6">
-          <CategoryBreakdown
+          <SpendingByCategoryChart
+            dateFrom={startDate}
+            dateTo={endDate}
+            accountId={accountId}
+          />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-6">
+          <CategoryMatrix
             dateFrom={startDate}
             dateTo={endDate}
             accountId={accountId}

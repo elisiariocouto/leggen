@@ -22,7 +22,7 @@ import type {
   AccountUpdate,
   TransactionStats,
   MonthlyStats,
-  CategoryStats,
+  SpendingByCategory,
   SyncOperation,
   SyncResult,
   BankInstitution,
@@ -390,19 +390,12 @@ export const apiClient = {
     return response.data;
   },
 
-  // Get transaction stats grouped by category
-  getStatsByCategory: async (
-    dateFrom: string,
-    dateTo: string,
-    accountId?: string,
-  ): Promise<CategoryStats[]> => {
-    const queryParams = new URLSearchParams();
-    queryParams.append("date_from", dateFrom);
-    queryParams.append("date_to", dateTo);
-    if (accountId) queryParams.append("account_id", accountId);
-
-    const response = await api.get<CategoryStats[]>(
-      `/transactions/stats/by-category?${queryParams.toString()}`,
+  // Expenses per category, month by month
+  getSpendingByCategory: async (
+    params: AnalyticsParams,
+  ): Promise<SpendingByCategory> => {
+    const response = await api.get<SpendingByCategory>(
+      `/analytics/spending-by-category?${analyticsQuery(params)}`,
     );
     return response.data;
   },

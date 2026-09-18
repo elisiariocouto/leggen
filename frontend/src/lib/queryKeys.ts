@@ -64,11 +64,6 @@ export const queryKeys = {
     dateTo: string,
     accountId?: string,
   ) => ["transaction-stats", "monthly", dateFrom, dateTo, accountId] as const,
-  transactionStatsByCategory: (
-    dateFrom: string,
-    dateTo: string,
-    accountId?: string,
-  ) => ["transaction-stats", "category", dateFrom, dateTo, accountId] as const,
 
   analytics: ["analytics"] as const,
   cashFlow: (dateFrom: string, dateTo: string, accountId?: string) =>
@@ -79,6 +74,8 @@ export const queryKeys = {
     ["analytics", "merchants", dateFrom, dateTo, accountId] as const,
   recurring: (dateFrom: string, dateTo: string, accountId?: string) =>
     ["analytics", "recurring", dateFrom, dateTo, accountId] as const,
+  spendingByCategory: (dateFrom: string, dateTo: string, accountId?: string) =>
+    ["analytics", "spending-by-category", dateFrom, dateTo, accountId] as const,
 
   categories: ["categories"] as const,
   categoryRules: ["category-rules"] as const,

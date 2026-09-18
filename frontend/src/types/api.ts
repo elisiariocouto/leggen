@@ -42,7 +42,6 @@ export type RuleChange = Schemas["RuleChange"];
 export type RuleReference = Schemas["RuleReference"];
 
 // Analytics
-export type CategoryStats = Schemas["CategoryStats"];
 export type TransactionStats = Schemas["TransactionStats"];
 export type MonthlyStats = Schemas["MonthlyStats"];
 export type CashFlow = Schemas["CashFlow"];
@@ -52,6 +51,8 @@ export type NetWorthPoint = Schemas["NetWorthPoint"];
 export type Merchants = Schemas["Merchants"];
 export type MerchantStats = Schemas["MerchantStats"];
 export type RecurringPayment = Schemas["RecurringPayment"];
+export type SpendingByCategory = Schemas["SpendingByCategory"];
+export type CategoryMonthly = Schemas["CategoryMonthly"];
 
 // OpenAPI cannot express generics, so the schema only holds concrete
 // instantiations of PaginatedResponse. Rebuild the generic from one of
