@@ -189,15 +189,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      # cliff.toml ignores rc tags, so --current cannot see one; for a
-      # pre-release, render everything since the last final release under
-      # the rc heading instead.
+      # cliff.toml ignores rc tags, so --current cannot see one, and with
+      # HEAD sitting on the ignored tag --unreleased renders nothing. For a
+      # pre-release, render the explicit range since the last final release
+      # under the rc heading instead.
+      - name: Find the previous final release
+        if: env.PRERELEASE == 'true'
+        id: previous
+        run: echo "tag=$(git describe --tags --abbrev=0 --exclude='*rc*' "${GITHUB_REF_NAME}^")" >> "$GITHUB_OUTPUT"
+
       - name: Generate release notes
         uses: orhun/git-cliff-action@v4
         id: release_notes
         with:
           config: cliff.toml
-          args: ${{ env.PRERELEASE == 'true' && format('--unreleased --tag {0}', github.ref_name) || '--current' }}
+          args: ${{ env.PRERELEASE == 'true' && format('{0}..{1} --tag {1}', steps.previous.outputs.tag, github.ref_name) || '--current' }}
         env:
           GITHUB_REPO: ${{ github.repository }}
 
