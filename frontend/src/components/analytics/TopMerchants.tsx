@@ -14,6 +14,10 @@ interface TopMerchantsProps {
   dateTo: string;
   accountId?: string;
   limit?: number;
+  /** Rank within one category ("uncategorized" for spend without one). */
+  categoryId?: string;
+  title?: string;
+  subtitle?: string;
 }
 
 /**
@@ -29,22 +33,29 @@ export default function TopMerchants({
   dateTo,
   accountId,
   limit = 10,
+  categoryId,
+  title = "Top Merchants",
+  subtitle = "Compared with the preceding period of the same length",
 }: TopMerchantsProps) {
   const { isBalanceVisible } = useBalanceVisibility();
 
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.merchants(dateFrom, dateTo, accountId),
+    queryKey: queryKeys.merchants(dateFrom, dateTo, accountId, categoryId),
     queryFn: () =>
-      apiClient.getMerchants({ dateFrom, dateTo, accountId, limit }),
+      apiClient.getMerchants({
+        dateFrom,
+        dateTo,
+        accountId,
+        limit,
+        categoryId,
+      }),
     placeholderData: (previousData) => previousData,
   });
 
   if (isLoading) {
     return (
       <div className={className}>
-        <h3 className="text-lg font-medium text-foreground mb-4">
-          Top Merchants
-        </h3>
+        <h3 className="text-lg font-medium text-foreground mb-4">{title}</h3>
         <Skeleton className="h-80 w-full" />
       </div>
     );
@@ -54,9 +65,7 @@ export default function TopMerchants({
   if (merchants.length === 0) {
     return (
       <div className={className}>
-        <h3 className="text-lg font-medium text-foreground mb-4">
-          Top Merchants
-        </h3>
+        <h3 className="text-lg font-medium text-foreground mb-4">{title}</h3>
         <div className="h-80 flex items-center justify-center text-muted-foreground">
           No spending in this period
         </div>
@@ -70,10 +79,8 @@ export default function TopMerchants({
   return (
     <div className={className}>
       <div className="mb-4">
-        <h3 className="text-lg font-medium text-foreground">Top Merchants</h3>
-        <p className="text-sm text-muted-foreground">
-          Compared with the preceding period of the same length
-        </p>
+        <h3 className="text-lg font-medium text-foreground">{title}</h3>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
       </div>
       <div className={cn("space-y-2", !isBalanceVisible && "select-none")}>
         {merchants.map((merchant) => {
@@ -141,7 +148,7 @@ export default function TopMerchants({
           );
         })}
       </div>
-      {(data?.uncategorized_share ?? 0) > 0.5 && (
+      {!categoryId && (data?.uncategorized_share ?? 0) > 0.5 && (
         <p className="mt-4 text-xs text-muted-foreground text-center">
           {Math.round((data?.uncategorized_share ?? 0) * 100)}% of these
           transactions are uncategorized — merchants are grouped from their

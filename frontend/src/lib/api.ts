@@ -370,12 +370,14 @@ export const apiClient = {
 
   // Top merchants by spend, compared with the preceding window
   getMerchants: async (
-    params: AnalyticsParams & { limit?: number },
+    params: AnalyticsParams & { limit?: number; categoryId?: string },
   ): Promise<Merchants> => {
-    const query = analyticsQuery(params);
-    const suffix = params.limit ? `&limit=${params.limit}` : "";
+    const queryParams = new URLSearchParams(analyticsQuery(params));
+    if (params.limit) queryParams.append("limit", String(params.limit));
+    // A category id, or "uncategorized" for spend no rule has explained
+    if (params.categoryId) queryParams.append("category_id", params.categoryId);
     const response = await api.get<Merchants>(
-      `/analytics/merchants?${query}${suffix}`,
+      `/analytics/merchants?${queryParams.toString()}`,
     );
     return response.data;
   },

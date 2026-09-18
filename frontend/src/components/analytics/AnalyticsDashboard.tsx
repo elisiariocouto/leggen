@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { CreditCard, TrendingUp, TrendingDown } from "lucide-react";
@@ -12,6 +12,8 @@ import TopMerchants from "./TopMerchants";
 import RecurringPayments from "./RecurringPayments";
 import SpendingByCategoryChart from "./SpendingByCategoryChart";
 import CategoryMatrix from "./CategoryMatrix";
+import CategoryDetail, { type SelectedCategory } from "./CategoryDetail";
+import NeedsRule from "./NeedsRule";
 import { DateRangePicker } from "../filters/DateRangePicker";
 import type { DatePreset } from "../filters/DateRangePicker";
 import { AccountCombobox } from "../filters/AccountCombobox";
@@ -41,6 +43,11 @@ export default function AnalyticsDashboard() {
   const selectedAccount = search.account ?? "";
 
   const accountId = selectedAccount || undefined;
+
+  // A category picked from the stacked chart or the matrix opens its detail
+  // panel; null is the uncategorized remainder, undefined nothing.
+  const [selectedCategory, setSelectedCategory] =
+    useState<SelectedCategory>(undefined);
 
   const handleDateRangeChange = (start: string, end: string) => {
     navigate({
@@ -127,6 +134,51 @@ export default function AnalyticsDashboard() {
         />
       </div>
 
+      {/* Where does it go, month by month: the chart for the shape, the
+          table for every number. Clicking either opens the category. */}
+      <Card>
+        <CardContent className="p-6">
+          <SpendingByCategoryChart
+            dateFrom={startDate}
+            dateTo={endDate}
+            accountId={accountId}
+            onSelectCategory={setSelectedCategory}
+          />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-6">
+          <CategoryMatrix
+            dateFrom={startDate}
+            dateTo={endDate}
+            accountId={accountId}
+            onSelectCategory={setSelectedCategory}
+          />
+        </CardContent>
+      </Card>
+
+      {/* What the categories still miss, and who gets the money overall */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card>
+          <CardContent className="p-6">
+            <NeedsRule
+              dateFrom={startDate}
+              dateTo={endDate}
+              accountId={accountId}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <TopMerchants
+              dateFrom={startDate}
+              dateTo={endDate}
+              accountId={accountId}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Am I saving or burning, and what do I actually have */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card>
@@ -149,48 +201,24 @@ export default function AnalyticsDashboard() {
         </Card>
       </div>
 
-      {/* Where does it go, and what am I committed to */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card>
-          <CardContent className="p-6">
-            <TopMerchants
-              dateFrom={startDate}
-              dateTo={endDate}
-              accountId={accountId}
-            />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <RecurringPayments
-              dateFrom={startDate}
-              dateTo={endDate}
-              accountId={accountId}
-            />
-          </CardContent>
-        </Card>
-      </div>
+      {/* What am I committed to */}
+      <Card>
+        <CardContent className="p-6">
+          <RecurringPayments
+            dateFrom={startDate}
+            dateTo={endDate}
+            accountId={accountId}
+          />
+        </CardContent>
+      </Card>
 
-      {/* Where does it go, month by month: the chart for the shape, the
-          table for every number */}
-      <Card>
-        <CardContent className="p-6">
-          <SpendingByCategoryChart
-            dateFrom={startDate}
-            dateTo={endDate}
-            accountId={accountId}
-          />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-6">
-          <CategoryMatrix
-            dateFrom={startDate}
-            dateTo={endDate}
-            accountId={accountId}
-          />
-        </CardContent>
-      </Card>
+      <CategoryDetail
+        categoryId={selectedCategory}
+        onClose={() => setSelectedCategory(undefined)}
+        dateFrom={startDate}
+        dateTo={endDate}
+        accountId={accountId}
+      />
     </div>
   );
 }

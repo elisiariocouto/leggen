@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { EyeOff, Pencil, Plus, Trash2, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -39,7 +40,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "./ui/empty";
-import RuleEditor, { draftFromRule, type RuleDraft } from "./rules/RuleEditor";
+import RuleEditor, {
+  draftForMerchant,
+  draftFromRule,
+  type RuleDraft,
+} from "./rules/RuleEditor";
 import RuleApplyDialog from "./rules/RuleApplyDialog";
 import type { Category, CategoryRule } from "../types/api";
 
@@ -49,8 +54,16 @@ import type { Category, CategoryRule } from "../types/api";
  */
 export default function CategoryRules() {
   const queryClient = useQueryClient();
-  const [editing, setEditing] = useState<CategoryRule | "new" | null>(null);
-  const [draft, setDraft] = useState<RuleDraft>(draftFromRule());
+  // Arriving from the analytics page with ?merchant= opens the editor with a
+  // rule for that merchant already drafted.
+  const { merchant } = useSearch({ from: "/rules" });
+  const navigate = useNavigate({ from: "/rules" });
+  const [editing, setEditing] = useState<CategoryRule | "new" | null>(
+    merchant ? "new" : null,
+  );
+  const [draft, setDraft] = useState<RuleDraft>(() =>
+    merchant ? draftForMerchant(merchant) : draftFromRule(),
+  );
   const [deleteTarget, setDeleteTarget] = useState<CategoryRule | null>(null);
 
   const { data: rules, isLoading } = useQuery<CategoryRule[]>({
@@ -67,6 +80,12 @@ export default function CategoryRules() {
     setDraft(draftFromRule(rule === "new" ? undefined : rule));
     setEditing(rule);
   };
+
+  // Drop the parameter once consumed, so a reload or a cancelled editor does
+  // not reopen the draft.
+  useEffect(() => {
+    if (merchant) navigate({ search: {}, replace: true });
+  }, [merchant, navigate]);
 
   const save = useMutation({
     mutationFn: () => {

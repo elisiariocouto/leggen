@@ -47,6 +47,20 @@ export interface RuleDraft {
 
 const DEFAULT_SCRIPT = 'return contains(tx.merchant, "")';
 
+/**
+ * A rule matching one merchant as the analytics page names it. `tx.merchant`
+ * is the same normalized label the merchant rankings group by, so the draft
+ * matches exactly the rows the reader clicked on.
+ */
+export function draftForMerchant(merchant: string): RuleDraft {
+  const escaped = merchant.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return {
+    ...draftFromRule(),
+    name: merchant,
+    lua_script: `return contains(tx.merchant, "${escaped}")`,
+  };
+}
+
 export function draftFromRule(rule?: CategoryRule): RuleDraft {
   return {
     name: rule?.name ?? "",
