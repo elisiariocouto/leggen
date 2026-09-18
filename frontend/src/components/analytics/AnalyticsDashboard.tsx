@@ -14,6 +14,7 @@ import SpendingByCategoryChart from "./SpendingByCategoryChart";
 import CategoryMatrix from "./CategoryMatrix";
 import CategoryDetail, { type SelectedCategory } from "./CategoryDetail";
 import NeedsRule from "./NeedsRule";
+import CoverageCard from "./CoverageCard";
 import { DateRangePicker } from "../filters/DateRangePicker";
 import type { DatePreset } from "../filters/DateRangePicker";
 import { AccountCombobox } from "../filters/AccountCombobox";
@@ -103,8 +104,9 @@ export default function AnalyticsDashboard() {
         />
       </div>
 
-      {/* Headline totals for the selected window */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Headline totals for the selected window, and how much of the
+          spending the categories below can explain */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           isLoading={statsLoading}
           title="Income"
@@ -131,6 +133,11 @@ export default function AnalyticsDashboard() {
           icon={CreditCard}
           iconColor={(stats?.net_change || 0) >= 0 ? "green" : "red"}
           shouldBlur={true}
+        />
+        <CoverageCard
+          dateFrom={startDate}
+          dateTo={endDate}
+          accountId={accountId}
         />
       </div>
 
