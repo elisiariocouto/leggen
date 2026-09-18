@@ -574,12 +574,16 @@ class TransactionRepository:
         date_to: str,
         account_id: str | None = None,
         currency: str | None = None,
+        category_id: str | None = None,
     ) -> tuple[list[dict[str, Any]], str | None]:
         """Rows needed for merchant grouping and recurrence detection.
 
         Merchant identity depends on the raw payload and on normalizing the
         description, neither of which SQLite can do, so the grouping happens in
         Python. Only the columns those two steps need are selected.
+
+        `category_id` narrows to one category, or to rows without one when
+        it is "uncategorized".
         """
         if not db_exists():
             return [], None
@@ -587,7 +591,10 @@ class TransactionRepository:
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             filter_clause, params = self._build_filter_clause(
-                account_id=account_id, date_from=date_from, date_to=date_to
+                account_id=account_id,
+                date_from=date_from,
+                date_to=date_to,
+                category_id=category_id,
             )
             base = (
                 f"""FROM transactions t{_CATEGORY_JOIN}

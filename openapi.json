@@ -4039,7 +4039,7 @@
           "analytics"
         ],
         "summary": "Get Merchants",
-        "description": "Top merchants by spend, compared with the preceding window.",
+        "description": "Top merchants by spend, compared with the preceding window.\n\nFiltered to `category_id=uncategorized`, this is the work list for rule\nauthors: the merchants whose transactions carry no category, largest\nfirst, so one rule per row clears the most spend.",
         "operationId": "get_merchants_api_v1_analytics_merchants_get",
         "security": [
           {
@@ -4103,6 +4103,25 @@
               "title": "Limit"
             },
             "description": "Merchants to return"
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(\\d+|uncategorized)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Rank merchants within one category, or pass 'uncategorized' for the spend no rule has explained yet",
+              "title": "Category Id"
+            },
+            "description": "Rank merchants within one category, or pass 'uncategorized' for the spend no rule has explained yet"
           }
         ],
         "responses": {

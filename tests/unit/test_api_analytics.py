@@ -414,6 +414,50 @@ class TestMerchants:
 
         assert response.json()["uncategorized_share"] == 1.0
 
+    def test_filters_by_category(self, api_client, mock_db_path):
+        """A category filter ranks merchants inside it; "uncategorized" lists
+        the spend no rule has explained."""
+        from leggen.repositories import CategoryRepository
+
+        _persist_rich(
+            [
+                {
+                    "id": "t1",
+                    "date": "2025-09-10T10:00:00",
+                    "value": -80.00,
+                    "description": "Grocer",
+                },
+                {
+                    "id": "t2",
+                    "date": "2025-09-11T10:00:00",
+                    "value": -20.00,
+                    "description": "Cafe",
+                },
+                {
+                    "id": "t3",
+                    "date": "2025-09-12T10:00:00",
+                    "value": -5.00,
+                    "description": "Kiosk",
+                },
+            ]
+        )
+        repo = CategoryRepository()
+        by_name = {c["name"]: c for c in repo.get_all_categories()}
+        repo.assign_category("acc-1", "t1", by_name["Groceries"]["id"])
+        repo.assign_category("acc-1", "t2", by_name["Dining"]["id"])
+
+        base = "/api/v1/analytics/merchants?date_from=2025-09-01&date_to=2025-09-30"
+
+        within = api_client.get(f"{base}&category_id={by_name['Groceries']['id']}")
+        assert [m["merchant"] for m in within.json()["merchants"]] == ["Grocer"]
+
+        unexplained = api_client.get(f"{base}&category_id=uncategorized")
+        assert [m["merchant"] for m in unexplained.json()["merchants"]] == ["Kiosk"]
+        assert unexplained.json()["uncategorized_share"] == 1.0
+
+        rejected = api_client.get(f"{base}&category_id=groceries")
+        assert rejected.status_code == 422
+
 
 @pytest.mark.api
 class TestRecurring:

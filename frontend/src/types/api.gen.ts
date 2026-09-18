@@ -891,6 +891,10 @@ export interface paths {
         /**
          * Get Merchants
          * @description Top merchants by spend, compared with the preceding window.
+         *
+         *     Filtered to `category_id=uncategorized`, this is the work list for rule
+         *     authors: the merchants whose transactions carry no category, largest
+         *     first, so one rule per row clears the most spend.
          */
         get: operations["get_merchants_api_v1_analytics_merchants_get"];
         put?: never;
@@ -4904,6 +4908,8 @@ export interface operations {
                 account_id?: string | null;
                 /** @description Merchants to return */
                 limit?: number;
+                /** @description Rank merchants within one category, or pass 'uncategorized' for the spend no rule has explained yet */
+                category_id?: string | null;
             };
             header?: never;
             path?: never;

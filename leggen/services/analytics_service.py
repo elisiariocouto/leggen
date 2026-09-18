@@ -109,14 +109,19 @@ def get_merchants(
     date_to: str,
     account_id: str | None = None,
     limit: int = 15,
+    category_id: str | None = None,
 ) -> dict[str, Any]:
     """Top merchants by spend, compared against the preceding window.
 
     The comparison window is the same length as the requested one and ends the
     day before it starts, so "last 30 days" compares against the 30 before it.
+
+    With `category_id` the ranking covers one category only — or, for
+    "uncategorized", the spend no rule has explained yet, which is the list a
+    rule author wants to work down.
     """
     rows, currency = transaction_repo.get_expense_rows(
-        date_from, date_to, account_id=account_id
+        date_from, date_to, account_id=account_id, category_id=category_id
     )
     if not rows:
         return {"merchants": [], "currency": None, "uncategorized_share": 0.0}
@@ -133,6 +138,7 @@ def get_merchants(
             prev_end.isoformat(),
             account_id=account_id,
             currency=currency,
+            category_id=category_id,
         )
         for row in prev_rows:
             if row["transactionValue"] >= 0:

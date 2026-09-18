@@ -11,6 +11,7 @@ from leggen.api.models.stats import (
     RecurringPayment,
     SpendingByCategory,
 )
+from leggen.api.routes.transactions import _CATEGORY_ID_PATTERN
 from leggen.repositories.balance_repository import BalanceRepository
 from leggen.repositories.transaction_repository import TransactionRepository
 from leggen.services import analytics_service
@@ -53,10 +54,28 @@ async def get_merchants(
     date_to: str = Query(description="End date (YYYY-MM-DD)"),
     account_id: str | None = Query(default=None, description="Filter by account ID"),
     limit: int = Query(default=15, ge=1, le=100, description="Merchants to return"),
+    category_id: str | None = Query(
+        default=None,
+        pattern=_CATEGORY_ID_PATTERN,
+        description=(
+            "Rank merchants within one category, or pass 'uncategorized' for "
+            "the spend no rule has explained yet"
+        ),
+    ),
 ) -> dict:
-    """Top merchants by spend, compared with the preceding window."""
+    """Top merchants by spend, compared with the preceding window.
+
+    Filtered to `category_id=uncategorized`, this is the work list for rule
+    authors: the merchants whose transactions carry no category, largest
+    first, so one rule per row clears the most spend.
+    """
     return analytics_service.get_merchants(
-        transaction_repo, date_from, date_to, account_id=account_id, limit=limit
+        transaction_repo,
+        date_from,
+        date_to,
+        account_id=account_id,
+        limit=limit,
+        category_id=category_id,
     )
 
 
