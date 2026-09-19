@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
 import { Skeleton } from "../ui/skeleton";
@@ -21,6 +20,7 @@ import {
   monthLabel,
   monthRange,
 } from "../../lib/months";
+import type { CellSelection } from "./CategoryTransactions";
 import type { CategoryMonthly } from "../../types/api";
 
 /** A month this far off the category's typical month gets called out. */
@@ -40,6 +40,8 @@ interface CategoryMatrixProps {
   dateTo: string;
   accountId?: string;
   onSelectCategory?: (categoryId: number | null) => void;
+  /** A figure was clicked: open the transactions it was summed from. */
+  onSelectCell: (selection: CellSelection) => void;
 }
 
 /** Column heading: month name, plus the year on the first column and each January. */
@@ -69,36 +71,23 @@ function isStrong(value: number, rowMax: number): boolean {
 /**
  * A figure that opens the transactions it was summed from. Fills its cell
  * so the whole shaded square is the target, and underlines on hover so it
- * reads as a link without a colour the shading would swallow.
+ * reads as clickable without a colour the shading would swallow.
  */
-function CellLink({
-  category,
-  from,
-  to,
-  accountId,
+function CellButton({
+  onClick,
   children,
 }: {
-  /** A category id, "uncategorized", or undefined for every category. */
-  category?: string;
-  from: string;
-  to: string;
-  accountId?: string;
+  onClick: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <Link
-      to="/transactions"
-      search={{
-        category,
-        kind: "expense",
-        from,
-        to,
-        account: accountId,
-      }}
-      className="block px-2 py-2 decoration-dotted underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none"
+    <button
+      type="button"
+      onClick={onClick}
+      className="block w-full px-2 py-2 text-right decoration-dotted underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none"
     >
       {children}
-    </Link>
+    </button>
   );
 }
 
@@ -108,8 +97,9 @@ function CellLink({
  * categories the chart folds into "Other". The last columns compare the
  * latest complete month with the category's typical month.
  *
- * Every figure is a link to the transactions behind it, one month of one
- * category at a time; the category name opens its detail panel instead.
+ * Every figure opens a panel listing the transactions behind it, one month
+ * of one category at a time; the category name opens its detail panel
+ * instead.
  */
 export default function CategoryMatrix({
   className,
@@ -117,6 +107,7 @@ export default function CategoryMatrix({
   dateTo,
   accountId,
   onSelectCategory,
+  onSelectCell,
 }: CategoryMatrixProps) {
   const { isBalanceVisible } = useBalanceVisibility();
 
@@ -179,6 +170,31 @@ export default function CategoryMatrix({
   // A column links to the month clipped to the window, so a partial first
   // or last column opens the same transactions it was summed from.
   const ranges = months.map((m) => monthRange(m, dateFrom, dateTo));
+
+  const wholePeriod =
+    months.length === 1
+      ? monthLabel(months[0])
+      : `${monthLabel(months[0])} – ${monthLabel(months[months.length - 1])}`;
+
+  /** The selection for one figure: a row (or the total row) over a column (or the whole period). */
+  const selectionFor = (
+    row: CategoryMonthly | null,
+    monthIndex: number | null,
+    total: number,
+  ): CellSelection => ({
+    categoryId: row ? (row.category_id ?? null) : undefined,
+    categoryName: row ? row.category_name : "All spending",
+    categoryColor:
+      row && row.category_id != null
+        ? row.category_color
+        : "var(--color-muted-foreground)",
+    from: monthIndex == null ? dateFrom : ranges[monthIndex].startDate,
+    to: monthIndex == null ? dateTo : ranges[monthIndex].endDate,
+    periodLabel:
+      monthIndex == null ? wholePeriod : monthLabel(months[monthIndex]),
+    total,
+    currency,
+  });
 
   const renderChange = (latest: number, typical: number | null) => {
     if (typical == null) return <span className="text-muted-foreground">–</span>;
@@ -261,9 +277,6 @@ export default function CategoryMatrix({
           <TableBody>
             {data.categories.map((row) => {
               const uncategorized = row.category_id == null;
-              const filterId = uncategorized
-                ? "uncategorized"
-                : String(row.category_id);
               const rowMax = Math.max(...row.monthly);
               const typical = typicalOf(row);
               return (
@@ -311,28 +324,26 @@ export default function CategoryMatrix({
                       title={`${row.category_name} · ${monthLabel(months[i])} · ${formatCurrency(value, currency)}`}
                     >
                       {value > 0 ? (
-                        <CellLink
-                          category={filterId}
-                          from={ranges[i].startDate}
-                          to={ranges[i].endDate}
-                          accountId={accountId}
+                        <CellButton
+                          onClick={() =>
+                            onSelectCell(selectionFor(row, i, value))
+                          }
                         >
                           {compact.format(value)}
-                        </CellLink>
+                        </CellButton>
                       ) : (
                         <span className="block px-2 py-2">–</span>
                       )}
                     </TableCell>
                   ))}
                   <TableCell className="p-0 text-right tabular-nums font-medium text-foreground">
-                    <CellLink
-                      category={filterId}
-                      from={dateFrom}
-                      to={dateTo}
-                      accountId={accountId}
+                    <CellButton
+                      onClick={() =>
+                        onSelectCell(selectionFor(row, null, row.total))
+                      }
                     >
                       {formatCurrency(row.total, currency)}
-                    </CellLink>
+                    </CellButton>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {typical == null ? "–" : formatCurrency(typical, currency)}
@@ -368,22 +379,26 @@ export default function CategoryMatrix({
                   className="p-0 text-right tabular-nums"
                 >
                   {value > 0 ? (
-                    <CellLink
-                      from={ranges[i].startDate}
-                      to={ranges[i].endDate}
-                      accountId={accountId}
+                    <CellButton
+                      onClick={() =>
+                        onSelectCell(selectionFor(null, i, value))
+                      }
                     >
                       {compact.format(value)}
-                    </CellLink>
+                    </CellButton>
                   ) : (
                     <span className="block px-2 py-2">–</span>
                   )}
                 </TableCell>
               ))}
               <TableCell className="p-0 text-right tabular-nums">
-                <CellLink from={dateFrom} to={dateTo} accountId={accountId}>
+                <CellButton
+                  onClick={() =>
+                    onSelectCell(selectionFor(null, null, grandTotal))
+                  }
+                >
                   {formatCurrency(grandTotal, currency)}
-                </CellLink>
+                </CellButton>
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {totalsTypical == null

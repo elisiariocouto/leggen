@@ -13,6 +13,9 @@ import RecurringPayments from "./RecurringPayments";
 import SpendingByCategoryChart from "./SpendingByCategoryChart";
 import CategoryMatrix from "./CategoryMatrix";
 import CategoryDetail, { type SelectedCategory } from "./CategoryDetail";
+import CategoryTransactions, {
+  type CellSelection,
+} from "./CategoryTransactions";
 import NeedsRule from "./NeedsRule";
 import CoverageCard from "./CoverageCard";
 import { DateRangePicker } from "../filters/DateRangePicker";
@@ -49,6 +52,10 @@ export default function AnalyticsDashboard() {
   // panel; null is the uncategorized remainder, undefined nothing.
   const [selectedCategory, setSelectedCategory] =
     useState<SelectedCategory>(undefined);
+  // A figure picked from the matrix lists the transactions behind it.
+  const [selectedCell, setSelectedCell] = useState<CellSelection | undefined>(
+    undefined,
+  );
 
   const handleDateRangeChange = (start: string, end: string) => {
     navigate({
@@ -233,6 +240,7 @@ export default function AnalyticsDashboard() {
             dateTo={endDate}
             accountId={accountId}
             onSelectCategory={setSelectedCategory}
+            onSelectCell={setSelectedCell}
           />
         </CardContent>
       </Card>
@@ -275,6 +283,11 @@ export default function AnalyticsDashboard() {
         onClose={() => setSelectedCategory(undefined)}
         dateFrom={startDate}
         dateTo={endDate}
+        accountId={accountId}
+      />
+      <CategoryTransactions
+        selection={selectedCell}
+        onClose={() => setSelectedCell(undefined)}
         accountId={accountId}
       />
     </div>
