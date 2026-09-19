@@ -41,10 +41,10 @@ export default defineConfig({
             ],
           },
           {
-            name: "Analytics",
-            short_name: "Analytics",
-            description: "View financial analytics",
-            url: "/analytics",
+            name: "Transactions",
+            short_name: "Transactions",
+            description: "Browse and search transactions",
+            url: "/transactions",
             icons: [
               { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
             ],

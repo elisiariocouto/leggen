@@ -24,7 +24,7 @@ export function SiteHeader({ onOpenCommandPalette }: SiteHeaderProps) {
   const location = useLocation();
   const currentPage =
     navigation.find((item) => item.to === location.pathname)?.name ||
-    "Dashboard";
+    "Leggen";
 
   const {
     data: healthStatus,

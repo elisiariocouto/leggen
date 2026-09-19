@@ -213,8 +213,8 @@ export default function TransactionsTable() {
 
   // Net movement across the rows on screen. Deliberately this page only, and
   // deliberately understated: the page is a browse-and-search tool, and
-  // period-scoped income/expense analysis belongs on Analytics, where it can
-  // carry a time axis. An unbounded all-time total here would also double
+  // period-scoped income/expense analysis belongs on the home page, where it
+  // can carry a time axis. An unbounded all-time total here would also double
   // count transfers between the user's own accounts.
   const pageNet = useMemo(
     () => transactions.reduce((sum, t) => sum + t.transaction_value, 0),

@@ -76,7 +76,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   // row one click from its details.
   const openTransaction = (transaction: Transaction) => {
     handleOpenChange(false);
-    navigate({ to: "/", search: { q: transaction.description } });
+    navigate({ to: "/transactions", search: { q: transaction.description } });
   };
 
   return (

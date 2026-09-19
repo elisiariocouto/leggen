@@ -263,7 +263,7 @@ export default function CategoryDetail({
             />
 
             <Link
-              to="/"
+              to="/transactions"
               search={{
                 category: filterId,
                 from: dateFrom,

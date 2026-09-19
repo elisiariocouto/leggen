@@ -4,7 +4,7 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { asNonNegativeNumber } from "@/lib/searchParams";
 import type { SortDirection, TransactionSortField } from "@/lib/searchParams";
 import type { FilterState } from "@/components/filters";
-import type { TransactionSearch } from "@/routes/index";
+import type { TransactionSearch } from "@/routes/transactions";
 
 /** Which URL param backs each filter field. */
 const PARAM_FOR: Record<keyof FilterState, keyof TransactionSearch> = {
@@ -31,8 +31,8 @@ const DEFAULT_DIR: SortDirection = "desc";
  * page-overflow guard — leaving the component to render.
  */
 export function useTransactionSearch() {
-  const search = useSearch({ from: "/" });
-  const navigate = useNavigate({ from: "/" });
+  const search = useSearch({ from: "/transactions" });
+  const navigate = useNavigate({ from: "/transactions" });
 
   const filterState: FilterState = useMemo(
     () => ({
@@ -213,7 +213,7 @@ export function usePageClamp(
   currentPage: number,
   totalPages: number | undefined,
 ) {
-  const navigate = useNavigate({ from: "/" });
+  const navigate = useNavigate({ from: "/transactions" });
   useEffect(() => {
     if (totalPages === undefined || currentPage === 1) return;
     if (currentPage > totalPages) {

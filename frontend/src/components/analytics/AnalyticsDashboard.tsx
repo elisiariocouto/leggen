@@ -21,7 +21,7 @@ import { AccountCombobox } from "../filters/AccountCombobox";
 import { Card, CardContent } from "../ui/card";
 import { queryKeys } from "../../lib/queryKeys";
 import { TIME_PERIODS } from "../../lib/timePeriods";
-import type { AnalyticsSearch } from "../../routes/analytics";
+import type { HomeSearch } from "../../routes/index";
 
 const analyticsPresets: DatePreset[] = TIME_PERIODS.map((p) => ({
   label: p.label,
@@ -30,8 +30,8 @@ const analyticsPresets: DatePreset[] = TIME_PERIODS.map((p) => ({
 
 export default function AnalyticsDashboard() {
   // Filters live in the URL so a view can be bookmarked and shared.
-  const search = useSearch({ from: "/analytics" });
-  const navigate = useNavigate({ from: "/analytics" });
+  const search = useSearch({ from: "/" });
+  const navigate = useNavigate({ from: "/" });
 
   // Absent params mean the default window, resolved on each render so a
   // saved link stays relative to today rather than freezing a past year.
@@ -52,13 +52,13 @@ export default function AnalyticsDashboard() {
 
   const handleDateRangeChange = (start: string, end: string) => {
     navigate({
-      search: (prev: AnalyticsSearch) => ({ ...prev, from: start, to: end }),
+      search: (prev: HomeSearch) => ({ ...prev, from: start, to: end }),
     });
   };
 
   const handleAccountChange = (nextAccount: string) => {
     navigate({
-      search: (prev: AnalyticsSearch) => ({
+      search: (prev: HomeSearch) => ({
         ...prev,
         account: nextAccount || undefined,
       }),

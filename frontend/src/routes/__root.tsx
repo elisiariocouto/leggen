@@ -75,7 +75,7 @@ function NotFound() {
         The page you're looking for doesn't exist.
       </p>
       <Link to="/" className="text-primary underline underline-offset-4">
-        Go to Transactions
+        Go home
       </Link>
     </div>
   );

@@ -88,7 +88,7 @@ export function accountName(account: Account | undefined): string | null {
 
 /**
  * Marks a transaction the statistics leave out. Silent otherwise: being
- * counted is the norm, and the totals on Analytics would be unexplainable
+ * counted is the norm, and the totals on the home page would be unexplainable
  * if the rows they skip looked like every other row.
  */
 function ExcludedFromStatsMark({ transaction }: { transaction: Transaction }) {

@@ -1,7 +1,7 @@
 import {
   ArrowLeftRight,
-  BarChart3,
   Building2,
+  LayoutDashboard,
   RefreshCw,
   Settings,
   WandSparkles,
@@ -22,8 +22,8 @@ export interface NavigationItem {
 }
 
 export const navigation: NavigationItem[] = [
-  { name: "Transactions", icon: ArrowLeftRight, to: "/" },
-  { name: "Analytics", icon: BarChart3, to: "/analytics" },
+  { name: "Home", icon: LayoutDashboard, to: "/" },
+  { name: "Transactions", icon: ArrowLeftRight, to: "/transactions" },
   { name: "Accounts", icon: Building2, to: "/accounts" },
   { name: "Rules", icon: WandSparkles, to: "/rules" },
   { name: "Sync", icon: RefreshCw, to: "/sync" },

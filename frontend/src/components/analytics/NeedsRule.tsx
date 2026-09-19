@@ -99,7 +99,7 @@ export default function NeedsRule({
           </p>
         </div>
         <Link
-          to="/"
+          to="/transactions"
           search={{
             category: UNCATEGORIZED,
             from: dateFrom,
