@@ -27,6 +27,7 @@ export const queryKeys = {
     startDate: string;
     endDate: string;
     status: string;
+    kind: string;
     page: number;
     perPage: number;
     search: string;

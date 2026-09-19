@@ -53,6 +53,20 @@ export function asTransactionStatus(
 }
 
 /**
+ * Money in or money out. Mirrors the API's `kind` parameter, so a home
+ * page figure that only summed one direction can link to exactly the rows
+ * behind it.
+ */
+const TRANSACTION_KINDS = ["income", "expense"] as const;
+
+export type TransactionKind = (typeof TRANSACTION_KINDS)[number];
+
+export function asTransactionKind(value: unknown): TransactionKind | undefined {
+  const text = asTrimmedString(value)?.toLowerCase();
+  return TRANSACTION_KINDS.find((kind) => kind === text);
+}
+
+/**
  * Sort field and direction for the transaction list.
  *
  * The values mirror the API's own enums; anything else falls back to the

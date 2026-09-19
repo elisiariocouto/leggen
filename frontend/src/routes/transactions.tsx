@@ -5,12 +5,14 @@ import {
   asNonNegativeNumber,
   asPositiveInt,
   asSortDirection,
+  asTransactionKind,
   asTransactionSortField,
   asTransactionStatus,
   asTrimmedString,
 } from "../lib/searchParams";
 import type {
   SortDirection,
+  TransactionKind,
   TransactionSortField,
   TransactionStatusFilter,
 } from "../lib/searchParams";
@@ -29,6 +31,7 @@ export interface TransactionSearch {
   account?: string;
   category?: string;
   status?: TransactionStatusFilter;
+  kind?: TransactionKind;
   from?: string;
   to?: string;
   page?: number;
@@ -46,6 +49,7 @@ export const Route = createFileRoute("/transactions")({
     account: asTrimmedString(search.account),
     category: asTrimmedString(search.category),
     status: asTransactionStatus(search.status),
+    kind: asTransactionKind(search.kind),
     from: asISODate(search.from),
     to: asISODate(search.to),
     page: asPositiveInt(search.page),

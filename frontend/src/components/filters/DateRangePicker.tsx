@@ -1,9 +1,15 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Calendar as CalendarIcon, ChevronDown } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import type { DateRange } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
+import { describeRange, shiftRange } from "@/lib/dateRanges";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -34,6 +40,13 @@ export interface DateRangePickerProps {
   className?: string;
 }
 
+/**
+ * A date range: the calendar for any span, presets for the usual ones, and
+ * arrows that step the current span back and forth — a whole month to the
+ * neighbouring month, anything else by its own length. A reader who has
+ * landed on one month of the category matrix walks to the next one from
+ * here rather than through the calendar.
+ */
 export function DateRangePicker({
   startDate,
   endDate,
@@ -93,33 +106,48 @@ export function DateRangePicker({
       return "Select date range";
     }
 
-    const start = parseISO(startDate);
-    const end = parseISO(endDate);
+    return describeRange(startDate, endDate);
+  };
 
-    if (startDate === endDate) {
-      return format(start, "MMM d, yyyy");
-    }
-
-    return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
+  // Stepping needs a bounded span to step. Forward stops once the span
+  // would start after today: nothing lives there yet.
+  const canStep = Boolean(startDate && endDate);
+  const today = format(new Date(), "yyyy-MM-dd");
+  const canStepForward = canStep && shiftRange(startDate, endDate, 1).startDate <= today;
+  const step = (direction: -1 | 1) => {
+    const next = shiftRange(startDate, endDate, direction);
+    onDateRangeChange(next.startDate, next.endDate);
   };
 
   return (
-    <div className={cn("grid gap-2", className)}>
+    <div className={cn("flex items-stretch", className)}>
+      {canStep && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-r-none border-r-0"
+          aria-label="Previous period"
+          onClick={() => step(-1)}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      )}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
             <Button
               variant="outline"
               className={cn(
-                "justify-between text-left font-normal",
+                "min-w-0 flex-1 justify-between text-left font-normal",
+                canStep && "rounded-none",
                 !dateRange && "text-muted-foreground",
               )}
             >
-              <div className="flex items-center">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {formatDateRange()}
+              <div className="flex min-w-0 items-center">
+                <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                <span className="truncate">{formatDateRange()}</span>
               </div>
-              <ChevronDown className="h-4 w-4 opacity-50" />
+              <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
             </Button>
           }
         />
@@ -156,6 +184,18 @@ export function DateRangePicker({
           </Card>
         </PopoverContent>
       </Popover>
+      {canStep && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-l-none border-l-0"
+          aria-label="Next period"
+          disabled={!canStepForward}
+          onClick={() => step(1)}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
+import { describeRange } from "@/lib/dateRanges";
 import { apiClient } from "../../lib/api";
 import type { FilterState } from "./FilterBar";
 import type { Account, Category } from "../../types/api";
@@ -87,15 +88,19 @@ export function ActiveFilterChips({
     });
   }
 
+  if (filterState.selectedKind) {
+    chips.push({
+      key: "selectedKind",
+      label: filterState.selectedKind === "income" ? "Income only" : "Expenses only",
+      value: filterState.selectedKind,
+    });
+  }
+
   // Date range chip
   if (filterState.startDate || filterState.endDate) {
     let dateLabel = "Date: ";
     if (filterState.startDate && filterState.endDate) {
-      if (filterState.startDate === filterState.endDate) {
-        dateLabel += formatDate(filterState.startDate);
-      } else {
-        dateLabel += `${formatDate(filterState.startDate)} - ${formatDate(filterState.endDate)}`;
-      }
+      dateLabel += describeRange(filterState.startDate, filterState.endDate);
     } else if (filterState.startDate) {
       dateLabel += `From ${formatDate(filterState.startDate)}`;
     } else if (filterState.endDate) {

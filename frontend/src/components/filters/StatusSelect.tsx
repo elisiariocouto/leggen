@@ -17,6 +17,12 @@ import {
  */
 const ALL = "all";
 
+const LABELS: Record<string, string> = {
+  [ALL]: "All statuses",
+  booked: "Booked",
+  pending: "Pending",
+};
+
 export interface StatusSelectProps {
   selectedStatus: string;
   onStatusChange: (status: string) => void;
@@ -36,7 +42,14 @@ export function StatusSelect({
       <SelectTrigger className={className} aria-label="Filter by status">
         <div className="flex items-center">
           <CircleDot className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-          <SelectValue placeholder="All statuses" />
+          {/* Rendered by hand: Base UI's SelectValue shows the raw value
+              until the items mount, so "all" would flash in place of the
+              label. The sort select does the same. */}
+          <SelectValue
+            render={() => (
+              <span>{LABELS[selectedStatus || ALL] ?? "All statuses"}</span>
+            )}
+          />
         </div>
       </SelectTrigger>
       <SelectContent>

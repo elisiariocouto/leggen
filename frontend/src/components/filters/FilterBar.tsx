@@ -36,6 +36,8 @@ export interface FilterState {
   selectedAccount: string;
   selectedCategory: string;
   selectedStatus: string;
+  // "income", "expense" or "" for both.
+  selectedKind: string;
   startDate: string;
   endDate: string;
   // Kept as strings like every other field ("" means unset) so the whole
@@ -71,6 +73,7 @@ export function FilterBar({
     filterState.selectedAccount ||
     filterState.selectedCategory ||
     filterState.selectedStatus ||
+    filterState.selectedKind ||
     filterState.startDate ||
     filterState.endDate ||
     filterState.minAmount ||
@@ -87,11 +90,12 @@ export function FilterBar({
           `hidden lg:flex` and `lg:hidden` — so this wrapper needs no
           child spacing, just the gap to the chips row when it is shown. */}
       <div className={cn(hasActiveFilters && "mb-2.5")}>
-        {/* Desktop Layout */}
-        <div className="hidden lg:flex items-center gap-2">
-          {/* Left Side: Search & Account */}
-          <div className="flex items-center gap-2">
-            <div className="relative w-[300px]">
+        {/* Desktop Layout. The search box takes whatever width the fixed
+            controls leave, and the row wraps rather than clipping the date
+            picker when even that is not enough. */}
+        <div className="hidden lg:flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <div className="relative min-w-[180px] flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 ref={searchInputRef}
@@ -115,7 +119,7 @@ export function FilterBar({
               onAccountChange={(accountId) =>
                 onFilterChange("selectedAccount", accountId)
               }
-              className="w-[180px]"
+              className="w-[170px]"
             />
 
             <CategoryCombobox
@@ -123,7 +127,7 @@ export function FilterBar({
               onCategoryChange={(categoryId) =>
                 onFilterChange("selectedCategory", categoryId)
               }
-              className="w-[180px]"
+              className="w-[170px]"
             />
 
             <StatusSelect
@@ -131,15 +135,17 @@ export function FilterBar({
               onStatusChange={(status) =>
                 onFilterChange("selectedStatus", status)
               }
-              className="w-[150px]"
+              className="w-[140px]"
             />
 
             <AmountRangeFilter
               minAmount={filterState.minAmount}
               maxAmount={filterState.maxAmount}
+              selectedKind={filterState.selectedKind}
               onAmountChange={onFilterChange}
+              onKindChange={(kind) => onFilterChange("selectedKind", kind)}
               currency={currency}
-              className="w-[150px]"
+              className="w-[140px]"
             />
           </div>
 
@@ -149,7 +155,7 @@ export function FilterBar({
             endDate={filterState.endDate}
             onDateRangeChange={handleDateRangeChange}
             presets={transactionPresets}
-            className="ml-auto w-[220px]"
+            className="ml-auto w-[250px]"
           />
         </div>
 
@@ -204,7 +210,9 @@ export function FilterBar({
           <AmountRangeFilter
             minAmount={filterState.minAmount}
             maxAmount={filterState.maxAmount}
+            selectedKind={filterState.selectedKind}
             onAmountChange={onFilterChange}
+            onKindChange={(kind) => onFilterChange("selectedKind", kind)}
             currency={currency}
             className="w-full"
           />

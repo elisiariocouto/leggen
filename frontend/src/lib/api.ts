@@ -200,6 +200,7 @@ export const apiClient = {
     maxAmount?: number;
     categoryId?: string;
     status?: string;
+    kind?: string;
     minMagnitude?: number;
     maxMagnitude?: number;
     sortBy?: string;
@@ -226,6 +227,7 @@ export const apiClient = {
     if (params?.categoryId)
       queryParams.append("category_id", params.categoryId);
     if (params?.status) queryParams.append("status", params.status);
+    if (params?.kind) queryParams.append("kind", params.kind);
     // `!== undefined` rather than a truthiness test: 0 is a valid bound.
     if (params?.minMagnitude !== undefined) {
       queryParams.append("min_magnitude", params.minMagnitude.toString());

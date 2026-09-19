@@ -12,6 +12,7 @@ const PARAM_FOR: Record<keyof FilterState, keyof TransactionSearch> = {
   selectedAccount: "account",
   selectedCategory: "category",
   selectedStatus: "status",
+  selectedKind: "kind",
   startDate: "from",
   endDate: "to",
   minAmount: "minAmount",
@@ -40,6 +41,7 @@ export function useTransactionSearch() {
       selectedAccount: search.account ?? "",
       selectedCategory: search.category ?? "",
       selectedStatus: search.status ?? "",
+      selectedKind: search.kind ?? "",
       startDate: search.from ?? "",
       endDate: search.to ?? "",
       minAmount: search.minAmount?.toString() ?? "",
@@ -50,6 +52,7 @@ export function useTransactionSearch() {
       search.account,
       search.category,
       search.status,
+      search.kind,
       search.from,
       search.to,
       search.minAmount,
@@ -177,8 +180,11 @@ export function useTransactionSearch() {
       filterState.selectedAccount ||
       filterState.selectedCategory ||
       filterState.selectedStatus ||
+      filterState.selectedKind ||
       filterState.startDate ||
-      filterState.endDate,
+      filterState.endDate ||
+      filterState.minAmount ||
+      filterState.maxAmount,
   );
 
   return {
