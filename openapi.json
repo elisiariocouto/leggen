@@ -6080,6 +6080,10 @@
             "type": "integer",
             "title": "Occurrences"
           },
+          "first_seen": {
+            "type": "string",
+            "title": "First Seen"
+          },
           "last_seen": {
             "type": "string",
             "title": "Last Seen"
@@ -6113,6 +6117,7 @@
           "cadence",
           "typical_amount",
           "occurrences",
+          "first_seen",
           "last_seen"
         ],
         "title": "RecurringPayment",

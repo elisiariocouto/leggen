@@ -493,6 +493,7 @@ class TestRecurring:
         assert detected[0]["cadence"] == "monthly"
         assert detected[0]["typical_amount"] == 9.99
         assert detected[0]["occurrences"] == 4
+        assert detected[0]["first_seen"] == "2025-07-01"
         assert detected[0]["last_seen"] == "2025-10-01"
         assert detected[0]["next_expected"] == "2025-10-31"
 

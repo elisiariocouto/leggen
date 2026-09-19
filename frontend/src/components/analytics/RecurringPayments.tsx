@@ -28,12 +28,25 @@ function annualized(payment: RecurringPayment): number {
   return payment.typical_amount * (PER_YEAR[payment.cadence] ?? 0);
 }
 
+/**
+ * Dates always carry the year: the window can span years, and a commitment
+ * that ended months ago looks live when "30 Jan" could be either year.
+ */
 function shortDate(value: string | null | undefined): string {
   if (!value) return "—";
   try {
-    return format(parseISO(value), "d MMM");
+    return format(parseISO(value), "d MMM yyyy");
   } catch {
     return value;
+  }
+}
+
+function monthYear(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    return format(parseISO(value), "MMM yyyy");
+  } catch {
+    return null;
   }
 }
 
@@ -119,6 +132,8 @@ export default function RecurringPayments({
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {payment.occurrences} charges
+                    {monthYear(payment.first_seen) &&
+                      ` since ${monthYear(payment.first_seen)}`}
                   </span>
                 </td>
                 <td className="py-2 pr-3 text-muted-foreground">

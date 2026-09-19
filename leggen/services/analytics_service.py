@@ -216,8 +216,8 @@ def get_recurring(
 
     Heuristic by nature: merchants are grouped by normalized description, and
     a merchant billing several different subscriptions appears once per amount
-    cluster. Results carry the amount, cadence and last-seen date so a wrong
-    grouping is visible rather than silently folded into a total.
+    cluster. Results carry the amount, cadence and first/last-seen dates so a
+    wrong grouping is visible rather than silently folded into a total.
     """
     rows, currency = transaction_repo.get_expense_rows(
         date_from, date_to, account_id=account_id
@@ -272,6 +272,7 @@ def get_recurring(
 
             amounts = [amount for _, amount in cluster]
             typical = sorted(amounts)[len(amounts) // 2]
+            first_seen = unique_days[0]
             last_seen = unique_days[-1]
             period = next(p for name, p, _ in _CADENCES if name == cadence)
             detected.append(
@@ -280,6 +281,7 @@ def get_recurring(
                     "cadence": cadence,
                     "typical_amount": round(typical, 2),
                     "occurrences": len(cluster),
+                    "first_seen": first_seen.isoformat(),
                     "last_seen": last_seen.isoformat(),
                     "next_expected": (
                         last_seen + timedelta(days=round(period))

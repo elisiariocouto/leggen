@@ -1671,6 +1671,8 @@ export interface components {
             typical_amount: number;
             /** Occurrences */
             occurrences: number;
+            /** First Seen */
+            first_seen: string;
             /** Last Seen */
             last_seen: string;
             /** Next Expected */
