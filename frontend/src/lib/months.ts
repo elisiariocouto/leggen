@@ -39,6 +39,25 @@ export function isCompleteMonth(
   }
 }
 
+/**
+ * The month as a date range, clipped to the window the figures were
+ * computed over, so a partial first or last column links to the same
+ * transactions it was summed from.
+ */
+export function monthRange(
+  month: string,
+  dateFrom: string,
+  dateTo: string,
+): { startDate: string; endDate: string } {
+  const date = parse(month, "yyyy-MM", new Date());
+  const start = format(startOfMonth(date), "yyyy-MM-dd");
+  const end = format(endOfMonth(date), "yyyy-MM-dd");
+  return {
+    startDate: start < dateFrom ? dateFrom : start,
+    endDate: end > dateTo ? dateTo : end,
+  };
+}
+
 /** Median, or null for an empty list. Robust to one-off spikes, unlike the mean. */
 export function median(values: number[]): number | null {
   if (values.length === 0) return null;

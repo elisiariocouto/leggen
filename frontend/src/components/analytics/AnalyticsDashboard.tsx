@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { CreditCard, TrendingUp, TrendingDown } from "lucide-react";
 import { apiClient } from "../../lib/api";
@@ -86,6 +86,13 @@ export default function AnalyticsDashboard() {
 
   const statsCurrency = stats?.currency ?? "EUR";
 
+  // Each headline figure opens the transactions it was summed from. The
+  // link wraps the card so the whole tile is the target; the hover tint
+  // goes on the card, which is the thing that looks pressed.
+  const tileLink =
+    "block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const tile = "h-full transition-colors hover:bg-muted/40";
+
   return (
     <div className="space-y-8">
       {/* Filters */}
@@ -107,38 +114,72 @@ export default function AnalyticsDashboard() {
       {/* Headline totals for the selected window, and how much of the
           spending the categories below can explain */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          isLoading={statsLoading}
-          title="Income"
-          value={formatCurrency(stats?.total_income || 0, statsCurrency)}
-          subtitle={subtitle}
-          icon={TrendingUp}
-          iconColor="green"
-          shouldBlur={true}
-        />
-        <StatCard
-          isLoading={statsLoading}
-          title="Expenses"
-          value={formatCurrency(stats?.total_expenses || 0, statsCurrency)}
-          subtitle={`${stats?.total_transactions ?? 0} transactions`}
-          icon={TrendingDown}
-          iconColor="red"
-          shouldBlur={true}
-        />
-        <StatCard
-          isLoading={statsLoading}
-          title="Net Change"
-          value={formatCurrency(stats?.net_change || 0, statsCurrency)}
-          subtitle="Income minus expenses"
-          icon={CreditCard}
-          iconColor={(stats?.net_change || 0) >= 0 ? "green" : "red"}
-          shouldBlur={true}
-        />
-        <CoverageCard
-          dateFrom={startDate}
-          dateTo={endDate}
-          accountId={accountId}
-        />
+        <Link
+          to="/transactions"
+          search={{ kind: "income", from: startDate, to: endDate, account: accountId }}
+          className={tileLink}
+        >
+          <StatCard
+            className={tile}
+            isLoading={statsLoading}
+            title="Income"
+            value={formatCurrency(stats?.total_income || 0, statsCurrency)}
+            subtitle={subtitle}
+            icon={TrendingUp}
+            iconColor="green"
+            shouldBlur={true}
+          />
+        </Link>
+        <Link
+          to="/transactions"
+          search={{ kind: "expense", from: startDate, to: endDate, account: accountId }}
+          className={tileLink}
+        >
+          <StatCard
+            className={tile}
+            isLoading={statsLoading}
+            title="Expenses"
+            value={formatCurrency(stats?.total_expenses || 0, statsCurrency)}
+            subtitle={`${stats?.total_transactions ?? 0} transactions`}
+            icon={TrendingDown}
+            iconColor="red"
+            shouldBlur={true}
+          />
+        </Link>
+        <Link
+          to="/transactions"
+          search={{ from: startDate, to: endDate, account: accountId }}
+          className={tileLink}
+        >
+          <StatCard
+            className={tile}
+            isLoading={statsLoading}
+            title="Net Change"
+            value={formatCurrency(stats?.net_change || 0, statsCurrency)}
+            subtitle="Income minus expenses"
+            icon={CreditCard}
+            iconColor={(stats?.net_change || 0) >= 0 ? "green" : "red"}
+            shouldBlur={true}
+          />
+        </Link>
+        <Link
+          to="/transactions"
+          search={{
+            category: "uncategorized",
+            kind: "expense",
+            from: startDate,
+            to: endDate,
+            account: accountId,
+          }}
+          className={tileLink}
+        >
+          <CoverageCard
+            className={tile}
+            dateFrom={startDate}
+            dateTo={endDate}
+            accountId={accountId}
+          />
+        </Link>
       </div>
 
       {/* Where does it go, month by month: the chart for the shape, the

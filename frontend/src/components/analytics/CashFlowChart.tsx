@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import {
   Bar,
   CartesianGrid,
@@ -22,7 +23,7 @@ import {
 } from "../../lib/chartColors";
 import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
-import { monthLabel } from "../../lib/months";
+import { monthLabel, monthRange } from "../../lib/months";
 import type { CashFlowPoint } from "../../types/api";
 
 interface CashFlowChartProps {
@@ -82,6 +83,7 @@ export default function CashFlowChart({
   accountId,
 }: CashFlowChartProps) {
   const { isBalanceVisible } = useBalanceVisibility();
+  const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.cashFlow(dateFrom, dateTo, accountId),
@@ -113,6 +115,18 @@ export default function CashFlowChart({
   const currency = data?.currency ?? "EUR";
   const net = data?.net ?? 0;
 
+  // A bar opens its month's transactions, both directions, since the bar
+  // is the net of the two.
+  const openMonth = (item: { payload?: CashFlowPoint }) => {
+    const month = item.payload?.month;
+    if (!month) return;
+    const range = monthRange(month, dateFrom, dateTo);
+    navigate({
+      to: "/transactions",
+      search: { from: range.startDate, to: range.endDate, account: accountId },
+    });
+  };
+
   return (
     <div className={className}>
       <div className="mb-4">
@@ -129,7 +143,7 @@ export default function CashFlowChart({
           </span>{" "}
           over {points.length} {points.length === 1 ? "month" : "months"} ·{" "}
           {formatCurrency(data?.average_monthly_net ?? 0, currency)} in a typical
-          month
+          month · Click a month for its transactions
         </p>
       </div>
       <div className={cn("h-80", !isBalanceVisible && "blur-md select-none")}>
@@ -156,7 +170,13 @@ export default function CashFlowChart({
               content={<CashFlowTooltip currency={currency} />}
               cursor={{ fill: CHART_GRID_COLOR, fillOpacity: 0.3 }}
             />
-            <Bar dataKey="net" name="Net" radius={[4, 4, 0, 0]}>
+            <Bar
+              dataKey="net"
+              name="Net"
+              radius={[4, 4, 0, 0]}
+              cursor="pointer"
+              onClick={openMonth}
+            >
               {points.map((point) => (
                 <Cell
                   key={point.month}

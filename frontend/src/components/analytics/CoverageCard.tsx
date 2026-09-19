@@ -8,6 +8,7 @@ import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
 
 interface CoverageCardProps {
+  className?: string;
   dateFrom: string;
   dateTo: string;
   accountId?: string;
@@ -19,6 +20,7 @@ interface CoverageCardProps {
  * headline totals rather than in a footnote.
  */
 export default function CoverageCard({
+  className,
   dateFrom,
   dateTo,
   accountId,
@@ -37,7 +39,7 @@ export default function CoverageCard({
   const currency = data?.currency ?? "EUR";
 
   return (
-    <Card>
+    <Card className={className}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">

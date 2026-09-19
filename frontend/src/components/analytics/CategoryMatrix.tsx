@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
 import { Skeleton } from "../ui/skeleton";
@@ -14,7 +15,12 @@ import {
 import Sparkline from "./Sparkline";
 import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
-import { isCompleteMonth, median, monthLabel } from "../../lib/months";
+import {
+  isCompleteMonth,
+  median,
+  monthLabel,
+  monthRange,
+} from "../../lib/months";
 import type { CategoryMonthly } from "../../types/api";
 
 /** A month this far off the category's typical month gets called out. */
@@ -61,10 +67,49 @@ function isStrong(value: number, rowMax: number): boolean {
 }
 
 /**
+ * A figure that opens the transactions it was summed from. Fills its cell
+ * so the whole shaded square is the target, and underlines on hover so it
+ * reads as a link without a colour the shading would swallow.
+ */
+function CellLink({
+  category,
+  from,
+  to,
+  accountId,
+  children,
+}: {
+  /** A category id, "uncategorized", or undefined for every category. */
+  category?: string;
+  from: string;
+  to: string;
+  accountId?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      to="/transactions"
+      search={{
+        category,
+        kind: "expense",
+        from,
+        to,
+        account: accountId,
+      }}
+      className="block px-2 py-2 decoration-dotted underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none"
+    >
+      {children}
+    </Link>
+  );
+}
+
+/**
  * Every category by every month: the table twin of the stacked chart. The
  * chart shows the shape of a year; this shows the numbers, including the
  * categories the chart folds into "Other". The last columns compare the
  * latest complete month with the category's typical month.
+ *
+ * Every figure is a link to the transactions behind it, one month of one
+ * category at a time; the category name opens its detail panel instead.
  */
 export default function CategoryMatrix({
   className,
@@ -131,6 +176,10 @@ export default function CategoryMatrix({
     ? median(baselineIndexes.map((i) => totals[i]))
     : null;
 
+  // A column links to the month clipped to the window, so a partial first
+  // or last column opens the same transactions it was summed from.
+  const ranges = months.map((m) => monthRange(m, dateFrom, dateTo));
+
   const renderChange = (latest: number, typical: number | null) => {
     if (typical == null) return <span className="text-muted-foreground">–</span>;
     if (typical === 0) {
@@ -171,6 +220,8 @@ export default function CategoryMatrix({
               the other complete months
             </>
           )}
+          {" · "}
+          Click a figure for its transactions
         </p>
       </div>
       <div
@@ -210,23 +261,30 @@ export default function CategoryMatrix({
           <TableBody>
             {data.categories.map((row) => {
               const uncategorized = row.category_id == null;
+              const filterId = uncategorized
+                ? "uncategorized"
+                : String(row.category_id);
               const rowMax = Math.max(...row.monthly);
               const typical = typicalOf(row);
               return (
                 <TableRow
                   key={row.category_id ?? "uncategorized"}
-                  className={cn(
-                    uncategorized && "text-muted-foreground",
-                    onSelectCategory && "cursor-pointer",
-                  )}
-                  onClick={
-                    onSelectCategory
-                      ? () => onSelectCategory(row.category_id ?? null)
-                      : undefined
-                  }
+                  className={cn(uncategorized && "text-muted-foreground")}
                 >
                   <TableCell className="sticky left-0 bg-card font-medium whitespace-nowrap">
-                    <span className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className={cn(
+                        "flex items-center gap-2",
+                        onSelectCategory && "cursor-pointer hover:underline",
+                      )}
+                      onClick={
+                        onSelectCategory
+                          ? () => onSelectCategory(row.category_id ?? null)
+                          : undefined
+                      }
+                      disabled={!onSelectCategory}
+                    >
                       <span
                         className="h-2.5 w-2.5 rounded-full shrink-0"
                         style={
@@ -239,24 +297,42 @@ export default function CategoryMatrix({
                         }
                       />
                       {row.category_name}
-                    </span>
+                    </button>
                   </TableCell>
                   {row.monthly.map((value, i) => (
                     <TableCell
                       key={months[i]}
                       className={cn(
-                        "text-right tabular-nums rounded-sm",
+                        "p-0 text-right tabular-nums rounded-sm",
                         value <= 0 && "text-muted-foreground/60",
                         isStrong(value, rowMax) && "text-primary-foreground",
                       )}
                       style={cellStyle(value, rowMax)}
                       title={`${row.category_name} · ${monthLabel(months[i])} · ${formatCurrency(value, currency)}`}
                     >
-                      {value > 0 ? compact.format(value) : "–"}
+                      {value > 0 ? (
+                        <CellLink
+                          category={filterId}
+                          from={ranges[i].startDate}
+                          to={ranges[i].endDate}
+                          accountId={accountId}
+                        >
+                          {compact.format(value)}
+                        </CellLink>
+                      ) : (
+                        <span className="block px-2 py-2">–</span>
+                      )}
                     </TableCell>
                   ))}
-                  <TableCell className="text-right tabular-nums font-medium text-foreground">
-                    {formatCurrency(row.total, currency)}
+                  <TableCell className="p-0 text-right tabular-nums font-medium text-foreground">
+                    <CellLink
+                      category={filterId}
+                      from={dateFrom}
+                      to={dateTo}
+                      accountId={accountId}
+                    >
+                      {formatCurrency(row.total, currency)}
+                    </CellLink>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {typical == null ? "–" : formatCurrency(typical, currency)}
@@ -289,13 +365,25 @@ export default function CategoryMatrix({
               {totals.map((value, i) => (
                 <TableCell
                   key={months[i]}
-                  className="text-right tabular-nums"
+                  className="p-0 text-right tabular-nums"
                 >
-                  {value > 0 ? compact.format(value) : "–"}
+                  {value > 0 ? (
+                    <CellLink
+                      from={ranges[i].startDate}
+                      to={ranges[i].endDate}
+                      accountId={accountId}
+                    >
+                      {compact.format(value)}
+                    </CellLink>
+                  ) : (
+                    <span className="block px-2 py-2">–</span>
+                  )}
                 </TableCell>
               ))}
-              <TableCell className="text-right tabular-nums">
-                {formatCurrency(grandTotal, currency)}
+              <TableCell className="p-0 text-right tabular-nums">
+                <CellLink from={dateFrom} to={dateTo} accountId={accountId}>
+                  {formatCurrency(grandTotal, currency)}
+                </CellLink>
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {totalsTypical == null

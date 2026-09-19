@@ -266,6 +266,7 @@ export default function CategoryDetail({
               to="/transactions"
               search={{
                 category: filterId,
+                kind: "expense",
                 from: dateFrom,
                 to: dateTo,
                 account: accountId,

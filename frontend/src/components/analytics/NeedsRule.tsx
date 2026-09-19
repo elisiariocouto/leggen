@@ -102,6 +102,7 @@ export default function NeedsRule({
           to="/transactions"
           search={{
             category: UNCATEGORIZED,
+            kind: "expense",
             from: dateFrom,
             to: dateTo,
             account: accountId,
