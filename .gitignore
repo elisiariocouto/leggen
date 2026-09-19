@@ -162,6 +162,8 @@ nocodb/
 sql/
 leggen.db
 *.db
+*.db-shm
+*.db-wal
 config.toml
 .claude/
 .playwright-mcp/
