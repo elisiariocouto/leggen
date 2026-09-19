@@ -2944,6 +2944,8 @@ export interface operations {
                 min_magnitude?: number | null;
                 /** @description Maximum transaction size, ignoring sign (matches income and expenses alike) */
                 max_magnitude?: number | null;
+                /** @description Only money in ('income') or money out ('expense') */
+                kind?: ("income" | "expense") | null;
                 /** @description Column to order results by */
                 sort_by?: "date" | "amount" | "description";
                 /** @description Order direction */

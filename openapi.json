@@ -1084,6 +1084,28 @@
             "description": "Maximum transaction size, ignoring sign (matches income and expenses alike)"
           },
           {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "income",
+                    "expense"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only money in ('income') or money out ('expense')",
+              "title": "Kind"
+            },
+            "description": "Only money in ('income') or money out ('expense')"
+          },
+          {
             "name": "sort_by",
             "in": "query",
             "required": false,

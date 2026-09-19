@@ -178,6 +178,7 @@ class TestTransactionsAPI:
             status=None,
             min_magnitude=None,
             max_magnitude=None,
+            kind=None,
             sort_by="date",
             sort_order="desc",
         )
@@ -527,6 +528,36 @@ class TestTransactionsAPI:
         data = response.json()
         assert sorted(txn["transaction_id"] for txn in data["data"]) == ["t1", "t2"]
         assert data["total"] == 2
+
+    def test_get_transactions_kind_filter_splits_by_sign(
+        self, api_client, mock_db_path
+    ):
+        """`kind` keeps one direction, so a list linked from an income or an
+        expense figure holds exactly the rows that figure was summed from."""
+        self._persist_txns(
+            [
+                ("t1", "acc-1", "2025-09-01T10:00:00", -45.30, "EUR", "booked"),
+                ("t2", "acc-1", "2025-09-02T10:00:00", 1200.00, "EUR", "booked"),
+                ("t3", "acc-1", "2025-09-03T10:00:00", -500.0, "EUR", "booked"),
+            ]
+        )
+
+        response = api_client.get("/api/v1/transactions?kind=expense")
+        assert response.status_code == 200
+        data = response.json()
+        assert sorted(txn["transaction_id"] for txn in data["data"]) == ["t1", "t3"]
+        assert data["total"] == 2
+
+        response = api_client.get("/api/v1/transactions?kind=income")
+        assert response.status_code == 200
+        data = response.json()
+        assert [txn["transaction_id"] for txn in data["data"]] == ["t2"]
+        assert data["total"] == 1
+
+    def test_get_transactions_invalid_kind(self, api_client, mock_config):
+        """Anything but the two directions is a 422, not an unfiltered list."""
+        response = api_client.get("/api/v1/transactions?kind=refund")
+        assert response.status_code == 422
 
     def test_get_transactions_invalid_category_id(self, api_client, mock_config):
         """Non-numeric category_id is rejected with 422, not a 500."""

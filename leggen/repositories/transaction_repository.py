@@ -66,10 +66,18 @@ class TransactionRepository:
         status: str | None = None,
         min_magnitude: float | None = None,
         max_magnitude: float | None = None,
+        kind: str | None = None,
     ) -> tuple[str, list[str | int | float]]:
         """Build WHERE clause and params for transaction filtering."""
         clause = ""
         params: list[str | int | float] = []
+
+        # Same sign test as the stats totals, so a list filtered to one
+        # direction adds up to the figure the analytics reported for it.
+        if kind == "expense":
+            clause += " AND t.transactionValue < 0"
+        elif kind == "income":
+            clause += " AND t.transactionValue > 0"
 
         if account_id:
             clause += " AND t.accountId = ?"
@@ -277,6 +285,7 @@ class TransactionRepository:
         status: str | None = None,
         min_magnitude: float | None = None,
         max_magnitude: float | None = None,
+        kind: str | None = None,
         sort_by: str | None = None,
         sort_order: str | None = None,
     ) -> list[dict[str, Any]]:
@@ -298,6 +307,7 @@ class TransactionRepository:
                 status=status,
                 min_magnitude=min_magnitude,
                 max_magnitude=max_magnitude,
+                kind=kind,
             )
 
             query = (
@@ -345,6 +355,7 @@ class TransactionRepository:
         status: str | None = None,
         min_magnitude: float | None = None,
         max_magnitude: float | None = None,
+        kind: str | None = None,
     ) -> int:
         """Get total count of transactions matching filters"""
         if not db_exists():
@@ -364,6 +375,7 @@ class TransactionRepository:
                 status=status,
                 min_magnitude=min_magnitude,
                 max_magnitude=max_magnitude,
+                kind=kind,
             )
 
             query = (

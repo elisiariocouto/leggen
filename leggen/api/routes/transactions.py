@@ -28,6 +28,9 @@ _CATEGORY_ID_PATTERN = r"^(\d+|uncategorized)$"
 # The two statuses EnableBanking reports for a transaction.
 TransactionStatusFilter = Literal["booked", "pending"]
 
+# Money in or money out, by the sign of the amount.
+TransactionKind = Literal["income", "expense"]
+
 # Columns the transaction list can be ordered by. Declaring these as Literals
 # lets FastAPI reject anything else with a 422 and publish the allowed values
 # in the OpenAPI schema, and keeps arbitrary strings away from the ORDER BY.
@@ -120,6 +123,10 @@ async def get_all_transactions(
         ge=0,
         description="Maximum transaction size, ignoring sign (matches income and expenses alike)",
     ),
+    kind: TransactionKind | None = Query(
+        default=None,
+        description="Only money in ('income') or money out ('expense')",
+    ),
     sort_by: TransactionSortField = Query(
         default="date", description="Column to order results by"
     ),
@@ -146,6 +153,7 @@ async def get_all_transactions(
         status=status,
         min_magnitude=min_magnitude,
         max_magnitude=max_magnitude,
+        kind=kind,
         sort_by=sort_by,
         sort_order=sort_order,
     )
@@ -162,6 +170,7 @@ async def get_all_transactions(
         status=status,
         min_magnitude=min_magnitude,
         max_magnitude=max_magnitude,
+        kind=kind,
     )
 
     data: list[TransactionSummary | Transaction]
