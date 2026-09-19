@@ -50,6 +50,64 @@ function monthYear(value: string | null | undefined): string | null {
   }
 }
 
+function rowKey(payment: RecurringPayment): string {
+  return `${payment.merchant}-${payment.typical_amount}-${payment.first_seen}`;
+}
+
+/**
+ * One commitment. An ended one is dimmed and, instead of predicting a charge
+ * that is not coming, says so; its last-seen date is when it stopped.
+ */
+function PaymentRow({
+  payment,
+  currency,
+}: {
+  payment: RecurringPayment;
+  currency: string;
+}) {
+  return (
+    <tr
+      className={cn(
+        "border-b last:border-0",
+        !payment.active && "text-muted-foreground/70",
+      )}
+    >
+      <td className="py-2 pr-3">
+        <span
+          className={cn(
+            "block max-w-[16rem] truncate",
+            payment.active ? "text-foreground" : "text-muted-foreground",
+          )}
+        >
+          {payment.merchant}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {payment.occurrences} charges
+          {monthYear(payment.first_seen) &&
+            ` since ${monthYear(payment.first_seen)}`}
+        </span>
+      </td>
+      <td className="py-2 pr-3 text-muted-foreground">{payment.cadence}</td>
+      <td
+        className={cn(
+          "py-2 pr-3 text-right font-medium tabular-nums",
+          payment.active ? "text-foreground" : "text-muted-foreground",
+        )}
+      >
+        <BlurredValue>
+          {formatCurrency(payment.typical_amount, currency)}
+        </BlurredValue>
+      </td>
+      <td className="py-2 pr-3 text-right text-muted-foreground tabular-nums">
+        {shortDate(payment.last_seen)}
+      </td>
+      <td className="py-2 text-right text-muted-foreground tabular-nums">
+        {payment.active ? shortDate(payment.next_expected) : "Ended"}
+      </td>
+    </tr>
+  );
+}
+
 /**
  * What the money is committed to.
  *
@@ -97,19 +155,25 @@ export default function RecurringPayments({
   }
 
   const currency = payments[0]?.currency ?? "EUR";
-  const yearlyTotal = payments.reduce((sum, p) => sum + annualized(p), 0);
+  // The API lists live commitments first, so the split keeps that order.
+  const active = payments.filter((p) => p.active);
+  const ended = payments.filter((p) => !p.active);
+  const yearlyTotal = active.reduce((sum, p) => sum + annualized(p), 0);
 
   return (
     <div className={className}>
       <div className="mb-4">
         <h3 className="text-lg font-medium text-foreground">Recurring</h3>
         <p className="text-sm text-muted-foreground">
-          {payments.length} detected ·{" "}
+          {active.length} active ·{" "}
           <BlurredValue>{formatCurrency(yearlyTotal, currency)}</BlurredValue> a
           year at current prices
+          {ended.length > 0 && ` · ${ended.length} ended`}
         </p>
       </div>
-      <div className={cn("overflow-x-auto", !isBalanceVisible && "select-none")}>
+      <div
+        className={cn("overflow-x-auto", !isBalanceVisible && "select-none")}
+      >
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-xs text-muted-foreground">
@@ -121,36 +185,29 @@ export default function RecurringPayments({
             </tr>
           </thead>
           <tbody>
-            {payments.map((payment) => (
-              <tr
-                key={`${payment.merchant}-${payment.typical_amount}`}
-                className="border-b last:border-0"
-              >
-                <td className="py-2 pr-3">
-                  <span className="block max-w-[16rem] truncate text-foreground">
-                    {payment.merchant}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {payment.occurrences} charges
-                    {monthYear(payment.first_seen) &&
-                      ` since ${monthYear(payment.first_seen)}`}
-                  </span>
-                </td>
-                <td className="py-2 pr-3 text-muted-foreground">
-                  {payment.cadence}
-                </td>
-                <td className="py-2 pr-3 text-right font-medium text-foreground tabular-nums">
-                  <BlurredValue>
-                    {formatCurrency(payment.typical_amount, currency)}
-                  </BlurredValue>
-                </td>
-                <td className="py-2 pr-3 text-right text-muted-foreground tabular-nums">
-                  {shortDate(payment.last_seen)}
-                </td>
-                <td className="py-2 text-right text-muted-foreground tabular-nums">
-                  {shortDate(payment.next_expected)}
+            {active.map((payment) => (
+              <PaymentRow
+                key={rowKey(payment)}
+                payment={payment}
+                currency={currency}
+              />
+            ))}
+            {ended.length > 0 && (
+              <tr className="border-b">
+                <td
+                  colSpan={5}
+                  className="pt-5 pb-2 text-xs font-medium text-muted-foreground"
+                >
+                  No longer charged
                 </td>
               </tr>
+            )}
+            {ended.map((payment) => (
+              <PaymentRow
+                key={rowKey(payment)}
+                payment={payment}
+                currency={currency}
+              />
             ))}
           </tbody>
         </table>

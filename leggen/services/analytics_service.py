@@ -31,6 +31,11 @@ _MIN_OCCURRENCES = 3
 # different commitment.
 _AMOUNT_TOLERANCE = 0.15
 
+# A charge that has not turned up this long after it was due is treated as
+# ended. Twice the cadence tolerance absorbs a late debit; the floor absorbs a
+# sync that has not run for a few days on the short cadences.
+_MISSED_GRACE_DAYS = 7
+
 
 def _parse_day(value: str) -> date | None:
     """Parse a stored transaction/balance date, which may carry a time part."""
@@ -211,6 +216,7 @@ def get_recurring(
     date_from: str,
     date_to: str,
     account_id: str | None = None,
+    today: date | None = None,
 ) -> list[dict[str, Any]]:
     """Detect charges that repeat on a regular cadence.
 
@@ -218,12 +224,24 @@ def get_recurring(
     a merchant billing several different subscriptions appears once per amount
     cluster. Results carry the amount, cadence and first/last-seen dates so a
     wrong grouping is visible rather than silently folded into a total.
+
+    A commitment whose next charge was due well before the end of the window
+    (or before today, when the window runs into the future) is reported as no
+    longer active, with no next date: a cancelled subscription or a finished
+    instalment plan is still worth listing, but not as money still going out.
     """
     rows, currency = transaction_repo.get_expense_rows(
         date_from, date_to, account_id=account_id
     )
     if not rows:
         return []
+
+    # The last day a charge could have been observed. Data cannot exist past
+    # today, so a window ending in the future must not count that stretch as
+    # silence from the merchant.
+    today = today or date.today()
+    window_end = _parse_day(date_to) or today
+    observed_until = min(window_end, today)
 
     charges: dict[str, list[tuple[date, float]]] = defaultdict(list)
     display: dict[str, str] = {}
@@ -274,7 +292,12 @@ def get_recurring(
             typical = sorted(amounts)[len(amounts) // 2]
             first_seen = unique_days[0]
             last_seen = unique_days[-1]
-            period = next(p for name, p, _ in _CADENCES if name == cadence)
+            period, tolerance = next(
+                (p, t) for name, p, t in _CADENCES if name == cadence
+            )
+            next_expected = last_seen + timedelta(days=round(period))
+            grace = timedelta(days=max(2 * tolerance, _MISSED_GRACE_DAYS))
+            active = observed_until <= next_expected + grace
             detected.append(
                 {
                     "merchant": display[key],
@@ -283,16 +306,15 @@ def get_recurring(
                     "occurrences": len(cluster),
                     "first_seen": first_seen.isoformat(),
                     "last_seen": last_seen.isoformat(),
-                    "next_expected": (
-                        last_seen + timedelta(days=round(period))
-                    ).isoformat(),
+                    "next_expected": next_expected.isoformat() if active else None,
+                    "active": active,
                     "currency": currency,
                 }
             )
 
-    # Rank by total spent on the commitment, so a small monthly charge can
-    # outrank a large one-off-looking yearly bill.
-    detected.sort(key=_recurring_weight, reverse=True)
+    # Live commitments first, each group ranked by total spent, so a small
+    # monthly charge can outrank a large one-off-looking yearly bill.
+    detected.sort(key=lambda d: (not d["active"], -_recurring_weight(d)))
     return detected
 
 

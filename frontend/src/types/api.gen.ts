@@ -1677,6 +1677,11 @@ export interface components {
             last_seen: string;
             /** Next Expected */
             next_expected?: string | null;
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
             /** Currency */
             currency?: string | null;
         };

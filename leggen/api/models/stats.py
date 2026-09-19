@@ -120,12 +120,14 @@ class RecurringPayment(BaseModel):
     cadence: str
     typical_amount: float
     occurrences: int
-    # First and last charge inside the window. A commitment that ended long
-    # ago still shows up here for as long as the window covers it, so the
-    # caller needs both ends to tell an active subscription from a past one.
+    # First and last charge inside the window.
     first_seen: str
     last_seen: str
+    # Set only while the commitment is active: a charge that stopped arriving
+    # has no next date. A cancelled subscription or a finished instalment plan
+    # is still listed, so the caller can tell it from one that is still billing.
     next_expected: str | None = None
+    active: bool = True
     currency: str | None = None
 
 

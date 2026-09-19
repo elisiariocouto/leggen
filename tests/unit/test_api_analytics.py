@@ -497,6 +497,93 @@ class TestRecurring:
         assert detected[0]["last_seen"] == "2025-10-01"
         assert detected[0]["next_expected"] == "2025-10-31"
 
+    def test_reports_a_stopped_charge_as_ended(self, api_client, mock_db_path):
+        """A charge overdue by more than the cadence slack has no next date."""
+        _persist_rich(
+            [
+                {
+                    "id": f"floa{i}",
+                    "date": date,
+                    "value": -237.35,
+                    "description": "COMPRA ELEC 00 FLOA France",
+                }
+                for i, date in enumerate(
+                    [
+                        "2025-10-31T10:00:00",
+                        "2025-11-30T10:00:00",
+                        "2025-12-31T10:00:00",
+                    ]
+                )
+            ]
+            + [
+                {
+                    "id": f"meo{i}",
+                    "date": date,
+                    "value": -47.59,
+                    "description": "DD MEO SA",
+                }
+                for i, date in enumerate(
+                    [
+                        "2025-10-26T10:00:00",
+                        "2025-11-26T10:00:00",
+                        "2025-12-26T10:00:00",
+                        "2026-01-26T10:00:00",
+                        "2026-02-26T10:00:00",
+                    ]
+                )
+            ]
+        )
+
+        response = api_client.get(
+            "/api/v1/analytics/recurring?date_from=2025-10-01&date_to=2026-03-10"
+        )
+
+        assert response.status_code == 200
+        by_merchant = {d["merchant"]: d for d in response.json()}
+        ended = by_merchant["COMPRA ELEC 00 FLOA France"]
+        assert ended["active"] is False
+        assert ended["next_expected"] is None
+        assert ended["last_seen"] == "2025-12-31"
+        live = by_merchant["DD MEO SA"]
+        assert live["active"] is True
+        assert live["next_expected"] == "2026-03-28"
+        # Live commitments come first even when the ended one cost more.
+        assert [d["merchant"] for d in response.json()] == [
+            "DD MEO SA",
+            "COMPRA ELEC 00 FLOA France",
+        ]
+
+    def test_future_window_end_does_not_end_a_current_charge(
+        self, api_client, mock_db_path
+    ):
+        """Silence past today is missing data, not a cancelled subscription."""
+        from datetime import date, timedelta
+
+        today = date.today()
+        days = [today - timedelta(days=30 * n) for n in (2, 1, 0)]
+        _persist_rich(
+            [
+                {
+                    "id": f"t{i}",
+                    "date": f"{day.isoformat()}T10:00:00",
+                    "value": -6.49,
+                    "description": "Google Youtubepremium",
+                }
+                for i, day in enumerate(days)
+            ]
+        )
+        far_future = (today + timedelta(days=400)).isoformat()
+
+        response = api_client.get(
+            f"/api/v1/analytics/recurring?date_from={days[0].isoformat()}"
+            f"&date_to={far_future}"
+        )
+
+        detected = response.json()
+        assert len(detected) == 1
+        assert detected[0]["active"] is True
+        assert detected[0]["next_expected"] is not None
+
     def test_ignores_irregular_charges(self, api_client, mock_db_path):
         """Random dates at one merchant are not a commitment."""
         _persist_rich(

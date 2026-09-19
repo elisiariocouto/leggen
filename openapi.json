@@ -6121,6 +6121,11 @@
             ],
             "title": "Next Expected"
           },
+          "active": {
+            "type": "boolean",
+            "title": "Active",
+            "default": true
+          },
           "currency": {
             "anyOf": [
               {
