@@ -116,7 +116,12 @@ export default function AnalyticsDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link
           to="/transactions"
-          search={{ kind: "income", from: startDate, to: endDate, account: accountId }}
+          search={{
+            kind: "income",
+            from: startDate,
+            to: endDate,
+            account: accountId,
+          }}
           className={tileLink}
         >
           <StatCard
@@ -132,7 +137,12 @@ export default function AnalyticsDashboard() {
         </Link>
         <Link
           to="/transactions"
-          search={{ kind: "expense", from: startDate, to: endDate, account: accountId }}
+          search={{
+            kind: "expense",
+            from: startDate,
+            to: endDate,
+            account: accountId,
+          }}
           className={tileLink}
         >
           <StatCard
@@ -182,6 +192,28 @@ export default function AnalyticsDashboard() {
         </Link>
       </div>
 
+      {/* Am I saving or burning, and what do I actually have */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card>
+          <CardContent className="p-6">
+            <CashFlowChart
+              dateFrom={startDate}
+              dateTo={endDate}
+              accountId={accountId}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <NetWorthChart
+              dateFrom={startDate}
+              dateTo={endDate}
+              accountId={accountId}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Where does it go, month by month: the chart for the shape, the
           table for every number. Clicking either opens the category. */}
       <Card>
@@ -219,28 +251,6 @@ export default function AnalyticsDashboard() {
         <Card>
           <CardContent className="p-6">
             <TopMerchants
-              dateFrom={startDate}
-              dateTo={endDate}
-              accountId={accountId}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Am I saving or burning, and what do I actually have */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card>
-          <CardContent className="p-6">
-            <CashFlowChart
-              dateFrom={startDate}
-              dateTo={endDate}
-              accountId={accountId}
-            />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <NetWorthChart
               dateFrom={startDate}
               dateTo={endDate}
               accountId={accountId}
