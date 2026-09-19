@@ -46,18 +46,21 @@ import RuleEditor, {
   type RuleDraft,
 } from "./rules/RuleEditor";
 import RuleApplyDialog from "./rules/RuleApplyDialog";
+import CategoryManager from "./CategoryManager";
 import type { Category, CategoryRule } from "../types/api";
 
 /**
- * The category rules page: the rules in the order they run, an editor with
- * test and preview built in, and the button that runs them over history.
+ * The categories page: the rules in the order they run, an editor with
+ * test and preview built in, the button that runs them over history, and
+ * the categories themselves underneath, since a rule is only ever written
+ * to assign one of them.
  */
 export default function CategoryRules() {
   const queryClient = useQueryClient();
-  // Arriving from the analytics page with ?merchant= opens the editor with a
+  // Arriving from the home page with ?merchant= opens the editor with a
   // rule for that merchant already drafted.
-  const { merchant } = useSearch({ from: "/rules" });
-  const navigate = useNavigate({ from: "/rules" });
+  const { merchant } = useSearch({ from: "/categories" });
+  const navigate = useNavigate({ from: "/categories" });
   const [editing, setEditing] = useState<CategoryRule | "new" | null>(
     merchant ? "new" : null,
   );
@@ -266,6 +269,8 @@ export default function CategoryRules() {
           )}
         </CardContent>
       </Card>
+
+      <CategoryManager />
 
       <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-5xl">

@@ -45,7 +45,6 @@ import {
 } from "./ui/alert-dialog";
 
 import AccountsSkeleton from "./AccountsSkeleton";
-import CategoryManager from "./CategoryManager";
 import NotificationFiltersDrawer from "./NotificationFiltersDrawer";
 import DiscordConfigDrawer from "./DiscordConfigDrawer";
 import TelegramConfigDrawer from "./TelegramConfigDrawer";
@@ -283,9 +282,6 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Category Management */}
-          <CategoryManager />
 
           {/* Notification Services */}
           <Card>

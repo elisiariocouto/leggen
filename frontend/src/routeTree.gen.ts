@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as BankConnectedRouteImport } from './routes/bank-connected'
+import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RulesRouteImport } from './routes/rules'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -37,6 +38,11 @@ const AnalyticsRoute = AnalyticsRouteImport.update({
 const BankConnectedRoute = BankConnectedRouteImport.update({
   id: '/bank-connected',
   path: '/bank-connected',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/accounts': typeof AccountsRoute
   '/analytics': typeof AnalyticsRoute
   '/bank-connected': typeof BankConnectedRoute
+  '/categories': typeof CategoriesRoute
   '/login': typeof LoginRoute
   '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/accounts': typeof AccountsRoute
   '/analytics': typeof AnalyticsRoute
   '/bank-connected': typeof BankConnectedRoute
+  '/categories': typeof CategoriesRoute
   '/login': typeof LoginRoute
   '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/accounts': typeof AccountsRoute
   '/analytics': typeof AnalyticsRoute
   '/bank-connected': typeof BankConnectedRoute
+  '/categories': typeof CategoriesRoute
   '/login': typeof LoginRoute
   '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/analytics'
     | '/bank-connected'
+    | '/categories'
     | '/login'
     | '/rules'
     | '/settings'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/analytics'
     | '/bank-connected'
+    | '/categories'
     | '/login'
     | '/rules'
     | '/settings'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/analytics'
     | '/bank-connected'
+    | '/categories'
     | '/login'
     | '/rules'
     | '/settings'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   AccountsRoute: typeof AccountsRoute
   AnalyticsRoute: typeof AnalyticsRoute
   BankConnectedRoute: typeof BankConnectedRoute
+  CategoriesRoute: typeof CategoriesRoute
   LoginRoute: typeof LoginRoute
   RulesRoute: typeof RulesRoute
   SettingsRoute: typeof SettingsRoute
@@ -175,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/bank-connected'
       fullPath: '/bank-connected'
       preLoaderRoute: typeof BankConnectedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountsRoute: AccountsRoute,
   AnalyticsRoute: AnalyticsRoute,
   BankConnectedRoute: BankConnectedRoute,
+  CategoriesRoute: CategoriesRoute,
   LoginRoute: LoginRoute,
   RulesRoute: RulesRoute,
   SettingsRoute: SettingsRoute,

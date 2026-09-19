@@ -1,18 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
-import CategoryRules from "../components/CategoryRules";
-import { asTrimmedString } from "../lib/searchParams";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import type { CategoriesSearch } from "./categories";
 
 /**
- * `merchant` opens the editor with a rule for that merchant drafted, which
- * is how the analytics page hands over an uncategorized merchant.
+ * The rules page grew category management and became "Categories". Saved
+ * links, including the `?merchant=` hand-off, land there with their search
+ * kept.
  */
-export interface RulesSearch {
-  merchant?: string;
-}
-
 export const Route = createFileRoute("/rules")({
-  component: CategoryRules,
-  validateSearch: (search: Record<string, unknown>): RulesSearch => ({
-    merchant: asTrimmedString(search.merchant),
-  }),
+  beforeLoad: ({ location }) => {
+    throw redirect({
+      to: "/categories",
+      search: location.search as CategoriesSearch,
+      replace: true,
+    });
+  },
 });

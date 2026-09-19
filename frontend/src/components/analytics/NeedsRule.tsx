@@ -143,7 +143,7 @@ export default function NeedsRule({
                 className="shrink-0 h-7"
                 nativeButton={false}
                 render={
-                  <Link to="/rules" search={{ merchant: merchant.merchant }} />
+                  <Link to="/categories" search={{ merchant: merchant.merchant }} />
                 }
               >
                 <WandSparkles className="h-3 w-3" />

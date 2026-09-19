@@ -57,7 +57,7 @@ function RuleProvenance({ ruleId }: { ruleId: number | null | undefined }) {
       <TooltipTrigger
         render={
           <Link
-            to="/rules"
+            to="/categories"
             className="inline-flex"
             aria-label="Assigned by a rule"
             onClick={(event) => event.stopPropagation()}
