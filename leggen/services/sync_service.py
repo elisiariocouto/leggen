@@ -19,7 +19,7 @@ from leggen.services.data_processors import (
     process_transactions,
     transform_to_database_format,
 )
-from leggen.services.enablebanking_service import EnableBankingService
+from leggen.services.enablebanking_service import get_enablebanking_service
 from leggen.services.notification_service import NotificationService
 from leggen.services.rules import CategoryRuleEngine
 
@@ -40,7 +40,7 @@ class SyncService:
     _sync_lock = asyncio.Lock()
 
     def __init__(self):
-        self.enablebanking = EnableBankingService()
+        self.enablebanking = get_enablebanking_service()
         self.notifications = NotificationService()
 
         # Ensure the schema is present and current (for CLI use outside the

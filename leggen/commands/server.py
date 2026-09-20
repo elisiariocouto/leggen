@@ -88,7 +88,6 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down leggen server...")
     scheduler.shutdown()
-    await scheduler.close_services()
     await close_enablebanking_service()
 
 
