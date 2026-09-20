@@ -73,10 +73,9 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
                 )
             except MaskedSecretError as e:
                 raise HTTPException(status_code=400, detail=str(e)) from e
-            notifications_config["discord"] = {
-                "webhook": webhook,
-                "enabled": settings.discord.enabled,
-            }
+            notifications_config["discord"] = settings.discord.model_copy(
+                update={"webhook": webhook}
+            ).model_dump()
 
     if "telegram" in settings.model_fields_set:
         if settings.telegram is None:
@@ -90,11 +89,9 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
                 )
             except MaskedSecretError as e:
                 raise HTTPException(status_code=400, detail=str(e)) from e
-            notifications_config["telegram"] = {
-                "token": token,
-                "chat_id": settings.telegram.chat_id,
-                "enabled": settings.telegram.enabled,
-            }
+            notifications_config["telegram"] = settings.telegram.model_copy(
+                update={"token": token}
+            ).model_dump()
 
     if notifications_config != stored_config:
         config.update_section("notifications", notifications_config)

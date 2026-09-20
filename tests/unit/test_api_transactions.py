@@ -167,7 +167,9 @@ class TestTransactionsAPI:
         assert data["data"] == []
         assert data["total"] == 0
         assert data["page"] == 1
-        assert data["total_pages"] == 0
+        # An empty result is one empty page, as the preview route reports
+        assert data["total_pages"] == 1
+        assert data["has_next"] is False
 
     def test_get_transactions_database_error(self, raw_api_client, override):
         """A repository error surfaces as the sanitized global 500."""

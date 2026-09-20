@@ -101,15 +101,9 @@ async def get_sync_operations(
     """Get sync operations history"""
     sync_repo = SyncRepository()
     operations = sync_repo.get_operations(limit=per_page, offset=(page - 1) * per_page)
-    total = sync_repo.get_operations_count()
-    total_pages = (total + per_page - 1) // per_page
-
-    return PaginatedResponse(
-        data=[SyncOperation(**operation) for operation in operations],
-        total=total,
+    return PaginatedResponse.build(
+        [SyncOperation(**operation) for operation in operations],
+        total=sync_repo.get_operations_count(),
         page=page,
         per_page=per_page,
-        total_pages=total_pages,
-        has_next=page < total_pages,
-        has_prev=page > 1,
     )

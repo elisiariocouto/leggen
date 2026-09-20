@@ -2,20 +2,17 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-
-class DiscordConfig(BaseModel):
-    """Discord notification configuration"""
-
-    webhook: str
-    enabled: bool = True
+from leggen.models.config import DiscordNotificationConfig, TelegramNotificationConfig
 
 
-class TelegramConfig(BaseModel):
-    """Telegram notification configuration"""
+class DiscordConfig(DiscordNotificationConfig):
+    """The Discord section as the API exchanges it: the webhook is masked on
+    reads, and a masked value on writes keeps the stored one."""
 
-    token: str
-    chat_id: int
-    enabled: bool = True
+
+class TelegramConfig(TelegramNotificationConfig):
+    """The Telegram section as the API exchanges it: the token is masked on
+    reads, and a masked value on writes keeps the stored one."""
 
 
 class NotificationFilters(BaseModel):

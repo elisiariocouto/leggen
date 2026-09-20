@@ -369,9 +369,8 @@ class TestBackupAPI:
 
         response = api_client.post("/api/v1/backup/test", json=request_data)
 
-        assert response.status_code == 400
-        data = response.json()
-        assert "Only 's3' service is supported" in data["detail"]
+        assert response.status_code == 422
+        assert response.json()["errors"][0]["field"] == "body.service"
 
     @patch("leggen.services.backup_service.BackupService.list_backups")
     def test_list_backups_success(self, mock_list_backups, api_client, test_config):
@@ -477,6 +476,5 @@ class TestBackupAPI:
 
         response = api_client.post("/api/v1/backup/operation", json=request_data)
 
-        assert response.status_code == 400
-        data = response.json()
-        assert "Invalid operation" in data["detail"]
+        assert response.status_code == 422
+        assert response.json()["errors"][0]["field"] == "body.operation"

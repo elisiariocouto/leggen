@@ -4,6 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from leggen.api.models.common import PaginatedResponse
+
 _SCRIPT_DESCRIPTION = (
     "Body of a Lua function receiving the transaction as `tx`; return true "
     "to apply the rule. See GET /category-rules/reference for the fields and "
@@ -111,16 +113,10 @@ class RuleMatch(BaseModel):
     logs: list[str] = Field(default_factory=list)
 
 
-class RulePreviewResponse(BaseModel):
+class RulePreviewResponse(PaginatedResponse[RuleMatch]):
     """The transactions a script matches, paginated, with run statistics."""
 
-    data: list[RuleMatch]
     total: int = Field(description="Transactions matched.")
-    page: int
-    per_page: int
-    total_pages: int
-    has_next: bool
-    has_prev: bool
     evaluated: int = Field(description="Transactions the script was run against.")
     errors: int = Field(description="Evaluations that raised a runtime error.")
     error_samples: list[str] = Field(default_factory=list)

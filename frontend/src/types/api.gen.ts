@@ -988,9 +988,9 @@ export interface components {
         BackupOperation: {
             /**
              * Operation
-             * @description Operation type (backup, restore)
+             * @enum {string}
              */
-            operation: string;
+            operation: "backup" | "restore";
             /**
              * Backup Key
              * @description Backup key for restore operations
@@ -1011,9 +1011,10 @@ export interface components {
         BackupTest: {
             /**
              * Service
-             * @description Backup service type (s3)
+             * @description Backup service type
+             * @constant
              */
-            service: string;
+            service: "s3";
             /** @description S3 configuration to test */
             config: components["schemas"]["S3Config"];
         };
@@ -1367,13 +1368,18 @@ export interface components {
         };
         /**
          * DiscordConfig
-         * @description Discord notification configuration
+         * @description The Discord section as the API exchanges it: the webhook is masked on
+         *     reads, and a masked value on writes keeps the stored one.
          */
         DiscordConfig: {
-            /** Webhook */
+            /**
+             * Webhook
+             * @description Discord webhook URL
+             */
             webhook: string;
             /**
              * Enabled
+             * @description Enable Discord notifications
              * @default true
              */
             enabled: boolean;
@@ -1829,7 +1835,10 @@ export interface components {
         };
         /**
          * S3Config
-         * @description S3 backup configuration model for API.
+         * @description The S3 section as the API exchanges it.
+         *
+         *     Same fields as the config model; on reads the two secrets are masked, and
+         *     on writes a masked value means "keep what is stored".
          */
         S3Config: {
             /**
@@ -2056,15 +2065,23 @@ export interface components {
         };
         /**
          * TelegramConfig
-         * @description Telegram notification configuration
+         * @description The Telegram section as the API exchanges it: the token is masked on
+         *     reads, and a masked value on writes keeps the stored one.
          */
         TelegramConfig: {
-            /** Token */
+            /**
+             * Token
+             * @description Telegram bot token
+             */
             token: string;
-            /** Chat Id */
+            /**
+             * Chat Id
+             * @description Telegram chat ID
+             */
             chat_id: number;
             /**
              * Enabled
+             * @description Enable Telegram notifications
              * @default true
              */
             enabled: boolean;

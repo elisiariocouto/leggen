@@ -69,20 +69,13 @@ async def update_backup_settings(settings: BackupSettings) -> dict:
     except MaskedSecretError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-    # Convert API model to config model
-    s3_config = S3BackupConfig(
-        access_key_id=access_key_id,
-        secret_access_key=secret_access_key,
-        bucket_name=settings.s3.bucket_name,
-        region=settings.s3.region,
-        endpoint_url=settings.s3.endpoint_url,
-        path_style=settings.s3.path_style,
-        enabled=settings.s3.enabled,
+    s3_config = settings.s3.model_copy(
+        update={"access_key_id": access_key_id, "secret_access_key": secret_access_key}
     )
 
     # Test connection, unless the config is being disabled —
     # turning S3 off must not require working credentials
-    if settings.s3.enabled:
+    if s3_config.enabled:
         backup_service = BackupService()
         connection_success = await backup_service.test_connection(s3_config)
 
@@ -92,20 +85,7 @@ async def update_backup_settings(settings: BackupSettings) -> dict:
                 detail="S3 connection test failed. Please check your configuration.",
             )
 
-    config.update_section(
-        "backup",
-        {
-            "s3": {
-                "access_key_id": access_key_id,
-                "secret_access_key": secret_access_key,
-                "bucket_name": settings.s3.bucket_name,
-                "region": settings.s3.region,
-                "endpoint_url": settings.s3.endpoint_url,
-                "path_style": settings.s3.path_style,
-                "enabled": settings.s3.enabled,
-            }
-        },
-    )
+    config.update_section("backup", {"s3": s3_config.model_dump()})
 
     return {"updated": True}
 
@@ -121,9 +101,6 @@ async def delete_backup_settings() -> dict:
 @router.post("/backup/test")
 async def test_backup_connection(test_request: BackupTest) -> dict:
     """Test backup connection."""
-    if test_request.service != "s3":
-        raise HTTPException(status_code=400, detail="Only 's3' service is supported")
-
     # Clients may submit masked secrets meaning "test with the stored value"
     stored_s3 = config.backup_config.get("s3", {})
     try:
@@ -140,15 +117,8 @@ async def test_backup_connection(test_request: BackupTest) -> dict:
     except MaskedSecretError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-    # Convert API model to config model
-    s3_config = S3BackupConfig(
-        access_key_id=access_key_id,
-        secret_access_key=secret_access_key,
-        bucket_name=test_request.config.bucket_name,
-        region=test_request.config.region,
-        endpoint_url=test_request.config.endpoint_url,
-        path_style=test_request.config.path_style,
-        enabled=test_request.config.enabled,
+    s3_config = test_request.config.model_copy(
+        update={"access_key_id": access_key_id, "secret_access_key": secret_access_key}
     )
 
     backup_service = BackupService()
@@ -201,7 +171,7 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
 
         return {"operation": "backup", "completed": True}
 
-    elif operation_request.operation == "restore":
+    else:
         if not operation_request.backup_key:
             raise HTTPException(
                 status_code=400,
@@ -218,7 +188,3 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
             raise HTTPException(status_code=500, detail="Database restore failed")
 
         return {"operation": "restore", "completed": True}
-    else:
-        raise HTTPException(
-            status_code=400, detail="Invalid operation. Use 'backup' or 'restore'"
-        )

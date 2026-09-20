@@ -1,18 +1,18 @@
 """API models for backup endpoints."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
+from leggen.models.config import S3BackupConfig
 
-class S3Config(BaseModel):
-    """S3 backup configuration model for API."""
 
-    access_key_id: str = Field(..., description="AWS S3 access key ID")
-    secret_access_key: str = Field(..., description="AWS S3 secret access key")
-    bucket_name: str = Field(..., description="S3 bucket name")
-    region: str = Field(default="us-east-1", description="AWS S3 region")
-    endpoint_url: str | None = Field(default=None, description="Custom S3 endpoint URL")
-    path_style: bool = Field(default=False, description="Use path-style addressing")
-    enabled: bool = Field(default=True, description="Enable S3 backups")
+class S3Config(S3BackupConfig):
+    """The S3 section as the API exchanges it.
+
+    Same fields as the config model; on reads the two secrets are masked, and
+    on writes a masked value means "keep what is stored".
+    """
 
 
 class BackupSettings(BaseModel):
@@ -24,7 +24,7 @@ class BackupSettings(BaseModel):
 class BackupTest(BaseModel):
     """Backup connection test request model."""
 
-    service: str = Field(..., description="Backup service type (s3)")
+    service: Literal["s3"] = Field(description="Backup service type")
     config: S3Config = Field(..., description="S3 configuration to test")
 
 
@@ -39,7 +39,7 @@ class BackupInfo(BaseModel):
 class BackupOperation(BaseModel):
     """Backup operation request model."""
 
-    operation: str = Field(..., description="Operation type (backup, restore)")
+    operation: Literal["backup", "restore"]
     backup_key: str | None = Field(
         default=None, description="Backup key for restore operations"
     )

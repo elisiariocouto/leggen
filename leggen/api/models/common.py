@@ -1,8 +1,10 @@
+from typing import Any, Self
+
 from pydantic import BaseModel
 
 
 class PaginatedResponse[T](BaseModel):
-    """Paginated response model"""
+    """One page of a list, with the arithmetic every paged route needs."""
 
     data: list[T]
     total: int
@@ -11,6 +13,25 @@ class PaginatedResponse[T](BaseModel):
     total_pages: int
     has_next: bool
     has_prev: bool
+
+    @classmethod
+    def build(
+        cls, data: list[T], *, total: int, page: int, per_page: int, **extra: Any
+    ) -> Self:
+        """Assemble a page. An empty list is one empty page, not zero pages,
+        so "page 1 of 1" holds for every result set. `extra` carries the
+        fields a subclass adds."""
+        total_pages = max((total + per_page - 1) // per_page, 1)
+        return cls(
+            data=data,
+            total=total,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1,
+            **extra,
+        )
 
 
 class HealthStatus(BaseModel):

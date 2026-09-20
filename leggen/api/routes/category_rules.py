@@ -128,18 +128,13 @@ async def preview_rule_script(body: RuleScriptPreview) -> RulePreviewResponse:
     Use this to check a rule's precision before creating or activating it.
     """
     preview = CategoryRuleEngine().preview_script(body.lua_script)
-    total = preview.matched
-    total_pages = max((total + body.per_page - 1) // body.per_page, 1)
     start = (body.page - 1) * body.per_page
     page_matches = preview.matches[start : start + body.per_page]
-    return RulePreviewResponse(
-        data=[RuleMatch(**m.__dict__) for m in page_matches],
-        total=total,
+    return RulePreviewResponse.build(
+        [RuleMatch(**m.__dict__) for m in page_matches],
+        total=preview.matched,
         page=body.page,
         per_page=body.per_page,
-        total_pages=total_pages,
-        has_next=body.page < total_pages,
-        has_prev=body.page > 1,
         evaluated=preview.evaluated,
         errors=preview.errors,
         error_samples=preview.error_samples,

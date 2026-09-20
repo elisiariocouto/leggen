@@ -84,16 +84,8 @@ async def get_all_transactions(
     else:
         data = [_to_transaction(txn) for txn in db_transactions]
 
-    total_pages = (total_transactions + query.per_page - 1) // query.per_page
-
-    return PaginatedResponse(
-        data=data,
-        total=total_transactions,
-        page=query.page,
-        per_page=query.per_page,
-        total_pages=total_pages,
-        has_next=query.page < total_pages,
-        has_prev=query.page > 1,
+    return PaginatedResponse.build(
+        data, total=total_transactions, page=query.page, per_page=query.per_page
     )
 
 

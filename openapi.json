@@ -4381,8 +4381,11 @@
         "properties": {
           "operation": {
             "type": "string",
-            "title": "Operation",
-            "description": "Operation type (backup, restore)"
+            "enum": [
+              "backup",
+              "restore"
+            ],
+            "title": "Operation"
           },
           "backup_key": {
             "anyOf": [
@@ -4425,8 +4428,9 @@
         "properties": {
           "service": {
             "type": "string",
+            "const": "s3",
             "title": "Service",
-            "description": "Backup service type (s3)"
+            "description": "Backup service type"
           },
           "config": {
             "$ref": "#/components/schemas/S3Config",
@@ -5302,11 +5306,13 @@
         "properties": {
           "webhook": {
             "type": "string",
-            "title": "Webhook"
+            "title": "Webhook",
+            "description": "Discord webhook URL"
           },
           "enabled": {
             "type": "boolean",
             "title": "Enabled",
+            "description": "Enable Discord notifications",
             "default": true
           }
         },
@@ -5315,7 +5321,7 @@
           "webhook"
         ],
         "title": "DiscordConfig",
-        "description": "Discord notification configuration"
+        "description": "The Discord section as the API exchanges it: the webhook is masked on\nreads, and a masked value on writes keeps the stored one."
       },
       "HTTPValidationError": {
         "properties": {
@@ -6472,7 +6478,7 @@
           "bucket_name"
         ],
         "title": "S3Config",
-        "description": "S3 backup configuration model for API."
+        "description": "The S3 section as the API exchanges it.\n\nSame fields as the config model; on reads the two secrets are masked, and\non writes a masked value means \"keep what is stored\"."
       },
       "SkippedRule": {
         "properties": {
@@ -6831,15 +6837,18 @@
         "properties": {
           "token": {
             "type": "string",
-            "title": "Token"
+            "title": "Token",
+            "description": "Telegram bot token"
           },
           "chat_id": {
             "type": "integer",
-            "title": "Chat Id"
+            "title": "Chat Id",
+            "description": "Telegram chat ID"
           },
           "enabled": {
             "type": "boolean",
             "title": "Enabled",
+            "description": "Enable Telegram notifications",
             "default": true
           }
         },
@@ -6849,7 +6858,7 @@
           "chat_id"
         ],
         "title": "TelegramConfig",
-        "description": "Telegram notification configuration"
+        "description": "The Telegram section as the API exchanges it: the token is masked on\nreads, and a masked value on writes keeps the stored one."
       },
       "Transaction": {
         "properties": {
