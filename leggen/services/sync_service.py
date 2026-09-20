@@ -1,5 +1,7 @@
 import asyncio
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from loguru import logger
 
@@ -26,11 +28,89 @@ from leggen.services.rules import CategoryRuleEngine
 EXPIRED_DAYS_LEFT = 0
 EXPIRY_WARNING_THRESHOLDS = [7, 3, 1]
 
+# An incremental sync re-fetches this much history so late bookings and
+# status changes on recent transactions are picked up.
+INCREMENTAL_SYNC_DAYS = 30
+
 
 class SyncAlreadyRunningError(ConflictError):
     """Raised when a sync is triggered while another one is still running."""
 
     code = "SYNC_ALREADY_RUNNING"
+
+
+@dataclass
+class _SyncRun:
+    """Everything one sync accumulates.
+
+    Persisted as the sync_operations row when the run ends, however it ends,
+    and returned to the caller as a SyncResult on success.
+    """
+
+    trigger_type: str
+    started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    completed_at: datetime | None = None
+    accounts_processed: int = 0
+    transactions_added: int = 0
+    transactions_updated: int = 0
+    balances_updated: int = 0
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    logs: list[str] = field(default_factory=list)
+
+    def log(self, message: str) -> None:
+        """Record a progress line on the operation and in the server log."""
+        logger.info(message)
+        self.logs.append(message)
+
+    def fail(self, message: str) -> None:
+        """Record an error; any error makes the whole run unsuccessful."""
+        logger.error(message)
+        self.errors.append(message)
+        self.logs.append(message)
+
+    @property
+    def success(self) -> bool:
+        return not self.errors
+
+    @property
+    def duration_seconds(self) -> float:
+        end = self.completed_at or datetime.now(UTC)
+        return (end - self.started_at).total_seconds()
+
+    def to_operation(self) -> dict[str, Any]:
+        """The row SyncRepository.persist stores."""
+        return {
+            "started_at": self.started_at.isoformat(),
+            "completed_at": self.completed_at.isoformat()
+            if self.completed_at
+            else None,
+            "trigger_type": self.trigger_type,
+            "success": self.success,
+            "accounts_processed": self.accounts_processed,
+            "transactions_added": self.transactions_added,
+            "transactions_updated": self.transactions_updated,
+            "balances_updated": self.balances_updated,
+            "duration_seconds": self.duration_seconds,
+            "errors": self.errors,
+            "warnings": self.warnings,
+            "logs": self.logs,
+        }
+
+    def to_result(self) -> SyncResult:
+        assert self.completed_at is not None
+        return SyncResult(
+            success=self.success,
+            accounts_processed=self.accounts_processed,
+            transactions_added=self.transactions_added,
+            transactions_updated=self.transactions_updated,
+            balances_updated=self.balances_updated,
+            duration_seconds=self.duration_seconds,
+            errors=self.errors,
+            warnings=self.warnings,
+            started_at=self.started_at,
+            completed_at=self.completed_at,
+        )
 
 
 class SyncService:
@@ -60,300 +140,232 @@ class SyncService:
 
         account_ids accepts the IDs returned by GET /accounts (IBAN-based
         database IDs) as well as EnableBanking account UIDs.
+
+        A failure on one account is recorded and the others still sync; a
+        failure outside the per-account loop is recorded and re-raised.
+        Either way the run leaves a sync_operations row behind.
         """
         if self._sync_lock.locked():
             raise SyncAlreadyRunningError("Sync is already running")
-        await self._sync_lock.acquire()
 
-        start_time = datetime.now(UTC)
+        async with self._sync_lock:
+            run = _SyncRun(trigger_type)
+            run.logs.append(f"Sync started at {run.started_at.isoformat()}")
+            try:
+                await self._sync(run, full_sync, account_ids)
+            except Exception as e:
+                run.fail(f"Sync failed: {describe_exception(e)}")
+                raise
+            finally:
+                run.completed_at = datetime.now(UTC)
+                self._record_operation(run)
+            return run.to_result()
 
-        accounts_processed = 0
-        transactions_added = 0
-        transactions_updated = 0
-        balances_updated = 0
-        errors = []
-        warnings: list[str] = []
-        logs = [f"Sync started at {start_time.isoformat()}"]
+    async def _sync(
+        self, run: _SyncRun, full_sync: bool, account_ids: list[str] | None
+    ) -> None:
+        run.log("Starting sync of all accounts")
+        sessions = self.session_repo.get_sessions()
+        targets = self._accounts_to_sync(sessions, account_ids, run)
+        requested_ids = set(account_ids) if account_ids else None
 
-        # Initialize sync operation record
-        sync_operation = {
-            "started_at": start_time.isoformat(),
-            "trigger_type": trigger_type,
-            "accounts_processed": 0,
-            "transactions_added": 0,
-            "transactions_updated": 0,
-            "balances_updated": 0,
-            "errors": [],
-            "warnings": [],
-            "logs": logs,
+        date_from: str | None = None
+        if full_sync:
+            run.logs.append("Full sync: fetching all transactions")
+        else:
+            since = datetime.now(UTC) - timedelta(days=INCREMENTAL_SYNC_DAYS)
+            date_from = since.strftime("%Y-%m-%d")
+            run.logs.append(f"Fetching transactions from {date_from}")
+
+        await self._check_session_expiry(sessions)
+
+        for account_id, session in targets.items():
+            try:
+                await self._sync_account(
+                    account_id, session, requested_ids, date_from, run
+                )
+            except Exception as e:
+                await self._report_account_failure(account_id, e, run)
+
+        run.log(
+            f"Sync completed: {run.accounts_processed} accounts, "
+            f"{run.transactions_added} new transactions"
+        )
+
+    def _accounts_to_sync(
+        self,
+        sessions: list[dict[str, Any]],
+        account_ids: list[str] | None,
+        run: _SyncRun,
+    ) -> dict[str, dict[str, Any]]:
+        """Map each EnableBanking account UID to the session that holds it.
+
+        Session rows store the raw EnableBanking account objects, whose IBAN
+        (when present) is the database account ID. Deleted accounts are left
+        out. With a per-account request, an account is kept when its UID or
+        IBAN was asked for — or when its IBAN is not known locally yet, in
+        which case `_sync_account` resolves it from the account details and
+        makes the final call.
+        """
+        session_by_uid: dict[str, dict[str, Any]] = {}
+        iban_by_uid: dict[str, str | None] = {}
+        for session in sessions:
+            for account in session.get("accounts", []) or []:
+                if isinstance(account, dict):
+                    uid = account.get("uid") or account.get("id")
+                    iban = (account.get("account_id") or {}).get("iban")
+                else:
+                    uid, iban = account, None
+                if uid:
+                    session_by_uid[uid] = session
+                    iban_by_uid[uid] = iban
+
+        deleted_ids = {
+            a["id"]
+            for a in self.accounts.get_accounts(include_deleted=True)
+            if a.get("status") == "DELETED"
+        }
+        for uid in deleted_ids:
+            session_by_uid.pop(uid, None)
+
+        if account_ids:
+            requested = set(account_ids)
+            session_by_uid = {
+                uid: session
+                for uid, session in session_by_uid.items()
+                if uid in requested
+                or iban_by_uid[uid] in requested
+                or iban_by_uid[uid] is None
+            }
+            run.logs.append(f"Per-account sync requested for: {sorted(requested)}")
+
+        run.logs.append(f"Found {len(session_by_uid)} accounts to sync")
+        return session_by_uid
+
+    async def _sync_account(
+        self,
+        account_id: str,
+        session: dict[str, Any],
+        requested_ids: set[str] | None,
+        date_from: str | None,
+        run: _SyncRun,
+    ) -> None:
+        """Fetch one account from EnableBanking and store what it returned."""
+        details = await self.enablebanking.get_account_details(account_id)
+
+        # The IBAN is the stored ID, so one real-world account stays one row
+        # across providers.
+        stored_id = details.get("account_id", {}).get("iban") or account_id
+
+        # Authoritative per-account filter: accounts kept only because their
+        # IBAN wasn't known locally are resolved now.
+        if (
+            requested_ids
+            and account_id not in requested_ids
+            and stored_id not in requested_ids
+        ):
+            logger.debug(f"Skipping account {account_id}: not in requested accounts")
+            return
+
+        account_details = {
+            "id": stored_id,
+            "institution_id": session["aspsp_name"],
+            "status": "READY",
+            "iban": details.get("account_id", {}).get("iban"),
+            "name": details.get("name"),
+            "currency": details.get("currency"),
+            "created": session.get("created_at"),
         }
 
-        operation_id = None
+        balances = await self.enablebanking.get_account_balances(account_id)
+        if balances:
+            account_details = await enrich_account_details(
+                account_details,
+                balances,
+                aspsp_country=session.get("aspsp_country"),
+                enablebanking_service=self.enablebanking,
+            )
+            self.accounts.persist(account_details)
+            self._store_balances(stored_id, account_details, balances, run)
+        else:
+            self.accounts.persist(account_details)
 
-        try:
-            logger.info("Starting sync of all accounts")
-            logs.append("Starting sync of all accounts")
-
-            # Get all sessions from local DB
-            sessions = self.session_repo.get_sessions()
-
-            # Build account-to-session mapping. Session rows store the raw
-            # EnableBanking account objects, whose IBAN (when present) is the
-            # database account ID — keep it for the per-account filter below.
-            account_session_map = {}
-            account_iban_map: dict = {}
-            all_account_ids = set()
-            for session in sessions:
-                session_accounts = session.get("accounts", []) or []
-                for account in session_accounts:
-                    if isinstance(account, dict):
-                        uid = account.get("uid") or account.get("id")
-                        iban = (account.get("account_id") or {}).get("iban")
-                    else:
-                        uid = account
-                        iban = None
-                    if uid:
-                        all_account_ids.add(uid)
-                        account_session_map[uid] = session
-                        account_iban_map[uid] = iban
-
-            # Skip deleted accounts
-            deleted_ids = {
-                a["id"]
-                for a in self.accounts.get_accounts(include_deleted=True)
-                if a.get("status") == "DELETED"
-            }
-            all_account_ids -= deleted_ids
-
-            # Per-account sync: keep accounts whose UID or IBAN was requested.
-            # A UID with no locally known IBAN can't be ruled out yet — keep it
-            # and let the in-loop check (which resolves the IBAN via account
-            # details) decide.
-            requested_ids = set(account_ids) if account_ids else None
-            if requested_ids:
-                all_account_ids = {
-                    uid
-                    for uid in all_account_ids
-                    if uid in requested_ids
-                    or account_iban_map.get(uid) in requested_ids
-                    or account_iban_map.get(uid) is None
-                }
-                logs.append(f"Per-account sync requested for: {sorted(requested_ids)}")
-
-            logs.append(f"Found {len(all_account_ids)} accounts to sync")
-
-            date_from: str | None = None
-            if not full_sync:
-                date_from = (datetime.now(UTC) - timedelta(days=30)).strftime(
-                    "%Y-%m-%d"
-                )
-                logs.append(f"Fetching transactions from {date_from}")
-            else:
-                logs.append("Full sync: fetching all transactions")
-
-            # Check for expired sessions
-            await self._check_session_expiry(sessions)
-
-            # Process each account
-            for account_id in all_account_ids:
-                try:
-                    session = account_session_map[account_id]
-
-                    # Get account details from EnableBanking
-                    details = await self.enablebanking.get_account_details(account_id)
-
-                    # Use IBAN as stored ID to prevent duplicates across providers
-                    stored_id = details.get("account_id", {}).get("iban") or account_id
-
-                    # Authoritative per-account filter: accounts kept only
-                    # because their IBAN wasn't known locally are resolved now
-                    if (
-                        requested_ids
-                        and account_id not in requested_ids
-                        and stored_id not in requested_ids
-                    ):
-                        logger.debug(
-                            f"Skipping account {account_id}: not in requested accounts"
-                        )
-                        continue
-
-                    # Map to internal format
-                    account_details = {
-                        "id": stored_id,
-                        "institution_id": session["aspsp_name"],
-                        "status": "READY",
-                        "iban": details.get("account_id", {}).get("iban"),
-                        "name": details.get("name"),
-                        "currency": details.get("currency"),
-                        "created": session.get("created_at"),
-                    }
-
-                    # Get balances
-                    balances = await self.enablebanking.get_account_balances(account_id)
-
-                    # Enrich and persist account details
-                    if account_details and balances:
-                        enriched_account_details = await enrich_account_details(
-                            account_details,
-                            balances,
-                            aspsp_country=session.get("aspsp_country"),
-                            enablebanking_service=self.enablebanking,
-                        )
-
-                        self.accounts.persist(enriched_account_details)
-
-                        balances_with_account_info = (
-                            merge_account_metadata_into_balances(
-                                balances, enriched_account_details
-                            )
-                        )
-                        balance_rows = transform_to_database_format(
-                            stored_id, balances_with_account_info
-                        )
-                        self.balances.persist(stored_id, balance_rows)
-                        balances_updated += len(balances.get("balances", []))
-                    elif account_details:
-                        self.accounts.persist(account_details)
-
-                    # Get and save transactions
-                    transactions = await self.enablebanking.get_account_transactions(
-                        account_id, date_from=date_from
-                    )
-                    if transactions:
-                        processed_transactions, skipped_count = process_transactions(
-                            stored_id, account_details, transactions
-                        )
-                        if skipped_count:
-                            warnings.append(
-                                f"{skipped_count} transaction(s) skipped for account "
-                                f"{account_id} — see server logs"
-                            )
-                        new_transactions, updated_count = self.transactions.persist(
-                            stored_id, processed_transactions
-                        )
-                        transactions_added += len(new_transactions)
-                        transactions_updated += updated_count
-
-                        # Send notifications for new transactions
-                        if new_transactions:
-                            await self.notifications.send_transaction_notifications(
-                                new_transactions
-                            )
-                            self._categorize(new_transactions, warnings, logs)
-
-                    accounts_processed += 1
-
-                    logger.info(f"Synced account {account_id} successfully")
-                    logs.append(f"Synced account {account_id} successfully")
-
-                except Exception as e:
-                    error_msg = (
-                        f"Failed to sync account {account_id}: {describe_exception(e)}"
-                    )
-                    errors.append(error_msg)
-                    logger.error(error_msg)
-                    logs.append(error_msg)
-
-                    # Send notification for account sync failure
-                    try:
-                        await self.notifications.send_sync_failure_notification(
-                            {
-                                "account_id": account_id,
-                                "error": error_msg,
-                                "type": "account_sync_failure",
-                            }
-                        )
-                    except Exception as notify_err:
-                        logger.error(
-                            f"Failed to send sync failure notification: {notify_err}"
-                        )
-
-            end_time = datetime.now(UTC)
-            duration = (end_time - start_time).total_seconds()
-
-            # Update sync operation with final results
-            sync_operation.update(
-                {
-                    "completed_at": end_time.isoformat(),
-                    "success": len(errors) == 0,
-                    "accounts_processed": accounts_processed,
-                    "transactions_added": transactions_added,
-                    "transactions_updated": transactions_updated,
-                    "balances_updated": balances_updated,
-                    "duration_seconds": duration,
-                    "errors": errors,
-                    "warnings": warnings,
-                    "logs": logs,
-                }
+        transactions = await self.enablebanking.get_account_transactions(
+            account_id, date_from=date_from
+        )
+        if transactions:
+            await self._store_transactions(
+                account_id, stored_id, account_details, transactions, run
             )
 
-            # Persist sync operation to database
-            try:
-                operation_id = self.sync.persist(sync_operation)
-                logger.debug(f"Saved sync operation with ID: {operation_id}")
-            except Exception as e:
-                logger.error(f"Failed to persist sync operation: {e}")
+        run.accounts_processed += 1
+        run.log(f"Synced account {account_id} successfully")
 
-            result = SyncResult(
-                success=len(errors) == 0,
-                accounts_processed=accounts_processed,
-                transactions_added=transactions_added,
-                transactions_updated=transactions_updated,
-                balances_updated=balances_updated,
-                duration_seconds=duration,
-                errors=errors,
-                warnings=warnings,
-                started_at=start_time,
-                completed_at=end_time,
-            )
-
-            logger.info(
-                f"Sync completed: {accounts_processed} accounts, {transactions_added} new transactions"
-            )
-            logs.append(
-                f"Sync completed: {accounts_processed} accounts, {transactions_added} new transactions"
-            )
-            return result
-
-        except Exception as e:
-            error_msg = f"Sync failed: {describe_exception(e)}"
-            errors.append(error_msg)
-            logs.append(error_msg)
-            logger.error(error_msg)
-
-            # Save failed sync operation
-            end_time = datetime.now(UTC)
-            duration = (end_time - start_time).total_seconds()
-            sync_operation.update(
-                {
-                    "completed_at": end_time.isoformat(),
-                    "success": False,
-                    "accounts_processed": accounts_processed,
-                    "transactions_added": transactions_added,
-                    "transactions_updated": transactions_updated,
-                    "balances_updated": balances_updated,
-                    "duration_seconds": duration,
-                    "errors": errors,
-                    "warnings": warnings,
-                    "logs": logs,
-                }
-            )
-
-            try:
-                operation_id = self.sync.persist(sync_operation)
-                logger.debug(f"Saved failed sync operation with ID: {operation_id}")
-            except Exception as persist_error:
-                logger.error(
-                    f"Failed to persist failed sync operation: {persist_error}"
-                )
-
-            raise
-        finally:
-            self._sync_lock.release()
-
-    def _categorize(
-        self, new_transactions: list[dict], warnings: list[str], logs: list[str]
+    def _store_balances(
+        self,
+        stored_id: str,
+        account_details: dict[str, Any],
+        balances: dict[str, Any],
+        run: _SyncRun,
     ) -> None:
+        with_account = merge_account_metadata_into_balances(balances, account_details)
+        self.balances.persist(
+            stored_id, transform_to_database_format(stored_id, with_account)
+        )
+        run.balances_updated += len(balances.get("balances", []))
+
+    async def _store_transactions(
+        self,
+        account_id: str,
+        stored_id: str,
+        account_details: dict[str, Any],
+        transactions: dict[str, Any],
+        run: _SyncRun,
+    ) -> None:
+        processed, skipped_count = process_transactions(
+            stored_id, account_details, transactions
+        )
+        if skipped_count:
+            run.warnings.append(
+                f"{skipped_count} transaction(s) skipped for account "
+                f"{account_id} — see server logs"
+            )
+        new_transactions, updated_count = self.transactions.persist(
+            stored_id, processed
+        )
+        run.transactions_added += len(new_transactions)
+        run.transactions_updated += updated_count
+
+        if new_transactions:
+            await self.notifications.send_transaction_notifications(new_transactions)
+            self._categorize(new_transactions, run)
+
+    async def _report_account_failure(
+        self, account_id: str, error: Exception, run: _SyncRun
+    ) -> None:
+        message = f"Failed to sync account {account_id}: {describe_exception(error)}"
+        run.fail(message)
+        try:
+            await self.notifications.send_sync_failure_notification(
+                {
+                    "account_id": account_id,
+                    "error": message,
+                    "type": "account_sync_failure",
+                }
+            )
+        except Exception as notify_err:
+            logger.error(f"Failed to send sync failure notification: {notify_err}")
+
+    def _record_operation(self, run: _SyncRun) -> None:
+        """Persist the run; a failure here is logged, never raised, so the
+        sync's own outcome is what reaches the caller."""
+        try:
+            operation_id = self.sync.persist(run.to_operation())
+            logger.debug(f"Saved sync operation with ID: {operation_id}")
+        except Exception as e:
+            logger.error(f"Failed to persist sync operation: {e}")
+
+    def _categorize(self, new_transactions: list[dict], run: _SyncRun) -> None:
         """Run the category rules over the transactions this sync added.
 
         Only the new rows: history is re-evaluated on demand through
@@ -367,18 +379,18 @@ class SyncService:
         except Exception as e:
             message = f"Category rules failed: {describe_exception(e)}"
             logger.error(message)
-            warnings.append(message)
+            run.warnings.append(message)
             return
 
         if result.assigned:
-            logs.append(
+            run.logs.append(
                 f"Category rules assigned {result.assigned} of "
                 f"{result.transactions_evaluated} new transactions"
             )
         for rule_id, error in result.skipped_rules.items():
-            warnings.append(f"Category rule {rule_id} does not compile: {error}")
+            run.warnings.append(f"Category rule {rule_id} does not compile: {error}")
         for report in result.errors.values():
-            warnings.append(
+            run.warnings.append(
                 f"Category rule '{report.rule_name}' failed on {report.count} "
                 f"transaction(s): {report.samples[0] if report.samples else 'unknown error'}"
             )
