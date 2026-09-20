@@ -3,8 +3,9 @@
 Every error leaving the API is shaped by one of the handlers registered in
 `register_exception_handlers`, so clients see a single envelope
 (`leggen.api.models.common.ErrorResponse`) regardless of where the failure
-came from: a deliberate `HTTPException`, a `LeggenError` raised deep in a
-service, request validation, or an unhandled crash.
+came from: a `LeggenError` raised by a route or deep in a service, request
+validation, Starlette's own `HTTPException` for an unknown route or method,
+or an unhandled crash.
 
 The domain errors themselves live in `leggen.errors`, free of HTTP imports,
 and are re-exported here for convenience.

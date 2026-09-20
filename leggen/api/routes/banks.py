@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 
 from leggen.api.models.banks import (
     BankAuthResponse,
@@ -11,6 +11,7 @@ from leggen.api.models.banks import (
     BankInstitution,
     Country,
 )
+from leggen.errors import BadRequestError, NotFoundError
 from leggen.repositories import SessionRepository
 from leggen.services.enablebanking_service import (
     EnableBankingService,
@@ -86,9 +87,8 @@ async def bank_auth_callback(
     """Exchange authorization code for a session"""
     auth_state = enablebanking_service.claim_auth_state(request.state)
     if auth_state is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Unknown or expired authorization state. Restart the bank connection flow.",
+        raise BadRequestError(
+            "Unknown or expired authorization state. Restart the bank connection flow."
         )
 
     # The same redirect can reach us twice -- a reload, a PWA service-worker
@@ -168,7 +168,7 @@ async def delete_bank_connection(
     """Delete a bank connection session"""
     deleted = session_repo.delete_session(session_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+        raise NotFoundError(f"Session {session_id} not found")
     return {"deleted": session_id}
 
 

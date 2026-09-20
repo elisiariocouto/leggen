@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 
 from leggen.api.models.common import PaginatedResponse
 from leggen.api.models.sync import (
@@ -11,6 +11,7 @@ from leggen.api.models.sync import (
     SyncScheduleResponse,
 )
 from leggen.background.scheduler import scheduler
+from leggen.errors import NotFoundError
 from leggen.repositories import AccountRepository, SyncRepository
 from leggen.utils.config import config
 
@@ -32,10 +33,7 @@ async def trigger_sync(
         }
         unknown_ids = sorted(set(account_ids) - known_ids)
         if unknown_ids:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Unknown account IDs: {', '.join(unknown_ids)}",
-            )
+            raise NotFoundError(f"Unknown account IDs: {', '.join(unknown_ids)}")
 
     # SyncAlreadyRunningError is a ConflictError; the global handler
     # renders it as a 409 with its own code.

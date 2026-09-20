@@ -4,15 +4,19 @@ Settings endpoints never return stored secrets; they return MASK instead.
 Clients may echo MASK back on update to mean "keep the current value".
 """
 
+from leggen.errors import BadRequestError
+
 MASK = "***"
 
 
-class MaskedSecretError(ValueError):
+class MaskedSecretError(BadRequestError):
     """A client echoed back the mask but no secret is stored to keep.
 
-    Distinct from a plain ValueError so callers can surface this message to
-    the client without risking an unrelated error's text leaking.
+    A domain error, so the API renders it as a 400 with this message and
+    no route has to translate it.
     """
+
+    code = "MASKED_SECRET_NOT_STORED"
 
 
 def mask_secret(value: str | None) -> str:

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from loguru import logger
 from pydantic import ValidationError
 
@@ -10,6 +10,7 @@ from leggen.api.models.accounts import (
     AccountUpdate,
     Balance,
 )
+from leggen.errors import NotFoundError
 from leggen.repositories import AccountRepository, BalanceRepository
 
 router = APIRouter()
@@ -96,7 +97,7 @@ async def delete_account(
     """Delete a bank account and optionally its associated data"""
     deleted = account_repo.delete_account(account_id, delete_data)
     if not deleted:
-        raise HTTPException(status_code=404, detail=f"Account {account_id} not found")
+        raise NotFoundError(f"Account {account_id} not found")
     return {"deleted": account_id}
 
 
@@ -109,7 +110,7 @@ async def update_account_details(
     """Update account details (currently only display_name)"""
     current_account = account_repo.get_account(account_id)
     if not current_account:
-        raise HTTPException(status_code=404, detail=f"Account {account_id} not found")
+        raise NotFoundError(f"Account {account_id} not found")
 
     updated_account_data = current_account.copy()
     if update_data.display_name is not None:

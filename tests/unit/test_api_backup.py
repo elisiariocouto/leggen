@@ -259,6 +259,7 @@ class TestBackupAPI:
         response = api_client.put("/api/v1/backup/settings", json=request_data)
 
         assert response.status_code == 400
+        assert response.json()["code"] == "MASKED_SECRET_NOT_STORED"
         assert "no existing value" in response.json()["detail"]
         mock_test_connection.assert_not_called()
 

@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from leggen.api.models.notifications import (
     DiscordConfig,
@@ -12,7 +12,7 @@ from leggen.api.models.notifications import (
 )
 from leggen.services.notification_service import NotificationService
 from leggen.utils.config import config
-from leggen.utils.masking import MaskedSecretError, mask_secret, resolve_secret
+from leggen.utils.masking import mask_secret, resolve_secret
 
 router = APIRouter()
 
@@ -57,7 +57,8 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
     from wiping the settings it does not mention. An explicit `null` service
     removes it, and an explicit empty filter list clears it.
     """
-    # Clients echo back masked secrets from GET to mean "keep current value"
+    # Clients echo back masked secrets from GET to mean "keep current value";
+    # a mask with nothing stored raises MaskedSecretError, a 400.
     stored_config = config.notifications_config
     notifications_config = dict(stored_config)
 
@@ -65,14 +66,11 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
         if settings.discord is None:
             notifications_config.pop("discord", None)
         else:
-            try:
-                webhook = resolve_secret(
-                    settings.discord.webhook,
-                    stored_config.get("discord", {}).get("webhook"),
-                    "Discord webhook",
-                )
-            except MaskedSecretError as e:
-                raise HTTPException(status_code=400, detail=str(e)) from e
+            webhook = resolve_secret(
+                settings.discord.webhook,
+                stored_config.get("discord", {}).get("webhook"),
+                "Discord webhook",
+            )
             notifications_config["discord"] = settings.discord.model_copy(
                 update={"webhook": webhook}
             ).model_dump()
@@ -81,14 +79,11 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
         if settings.telegram is None:
             notifications_config.pop("telegram", None)
         else:
-            try:
-                token = resolve_secret(
-                    settings.telegram.token,
-                    stored_config.get("telegram", {}).get("token"),
-                    "Telegram token",
-                )
-            except MaskedSecretError as e:
-                raise HTTPException(status_code=400, detail=str(e)) from e
+            token = resolve_secret(
+                settings.telegram.token,
+                stored_config.get("telegram", {}).get("token"),
+                "Telegram token",
+            )
             notifications_config["telegram"] = settings.telegram.model_copy(
                 update={"token": token}
             ).model_dump()

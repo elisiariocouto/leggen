@@ -2,7 +2,7 @@
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from leggen.api.models.categories import (
     BulkCategoryAssignment,
@@ -12,6 +12,7 @@ from leggen.api.models.categories import (
     CategoryCreate,
     CategoryUpdate,
 )
+from leggen.errors import BadRequestError, NotFoundError
 from leggen.repositories.category_repository import CategoryRepository
 
 router = APIRouter()
@@ -63,7 +64,7 @@ async def update_category(
         exclude_from_stats=body.exclude_from_stats,
     )
     if not cat:
-        raise HTTPException(status_code=404, detail="Category not found.")
+        raise NotFoundError("Category not found.")
     return Category(**cat)
 
 
@@ -75,10 +76,7 @@ async def delete_category(
     """Delete a custom category."""
     deleted = category_repo.delete_category(category_id)
     if not deleted:
-        raise HTTPException(
-            status_code=400,
-            detail="Category not found or is a default category.",
-        )
+        raise BadRequestError("Category not found or is a default category.")
 
 
 # --- Transaction category assignment ---
@@ -92,7 +90,7 @@ async def bulk_categorize_transactions(
     """Assign a category to all transactions matching a description."""
     cat = category_repo.get_category_by_id(body.category_id)
     if not cat:
-        raise HTTPException(status_code=404, detail="Category not found.")
+        raise NotFoundError("Category not found.")
 
     updated_count = category_repo.bulk_assign_by_description(
         category_id=body.category_id,
@@ -124,7 +122,7 @@ async def assign_transaction_category(
     never changed by the rule engine."""
     cat = category_repo.get_category_by_id(body.category_id)
     if not cat:
-        raise HTTPException(status_code=404, detail="Category not found.")
+        raise NotFoundError("Category not found.")
     category_repo.assign_category(account_id, transaction_id, body.category_id)
     return {"status": "ok"}
 
@@ -137,5 +135,5 @@ async def remove_transaction_category(
 ) -> dict[str, str]:
     """Remove a transaction's category."""
     if not category_repo.remove_category(account_id, transaction_id):
-        raise HTTPException(status_code=404, detail="No category assignment found.")
+        raise NotFoundError("No category assignment found.")
     return {"status": "ok"}

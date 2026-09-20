@@ -1,6 +1,6 @@
 """API routes for backup management."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import ValidationError
 
 from leggen.api.models.backup import (
@@ -10,10 +10,11 @@ from leggen.api.models.backup import (
     BackupTest,
     S3Config,
 )
+from leggen.errors import BadRequestError, LeggenError
 from leggen.models.config import S3BackupConfig
 from leggen.services.backup_service import BackupService
 from leggen.utils.config import config
-from leggen.utils.masking import MaskedSecretError, mask_secret, resolve_secret
+from leggen.utils.masking import mask_secret, resolve_secret
 from leggen.utils.paths import path_manager
 
 router = APIRouter()
@@ -48,26 +49,21 @@ async def update_backup_settings(settings: BackupSettings) -> dict:
     if settings.s3 is None:
         # Reporting success for a request that changes nothing hides the
         # mistake; removing the configuration has its own endpoint.
-        raise HTTPException(
-            status_code=400,
-            detail="s3 configuration is required. Use DELETE /backup/settings to remove it.",
+        raise BadRequestError(
+            "s3 configuration is required. Use DELETE /backup/settings to remove it."
         )
 
-    # Clients echo back masked secrets from GET to mean "keep current value"
+    # Clients echo back masked secrets from GET to mean "keep current value";
+    # a mask with nothing stored raises MaskedSecretError, a 400.
     stored_s3 = config.backup_config.get("s3", {})
-    try:
-        access_key_id = resolve_secret(
-            settings.s3.access_key_id,
-            stored_s3.get("access_key_id"),
-            "S3 access key ID",
-        )
-        secret_access_key = resolve_secret(
-            settings.s3.secret_access_key,
-            stored_s3.get("secret_access_key"),
-            "S3 secret access key",
-        )
-    except MaskedSecretError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+    access_key_id = resolve_secret(
+        settings.s3.access_key_id, stored_s3.get("access_key_id"), "S3 access key ID"
+    )
+    secret_access_key = resolve_secret(
+        settings.s3.secret_access_key,
+        stored_s3.get("secret_access_key"),
+        "S3 secret access key",
+    )
 
     s3_config = settings.s3.model_copy(
         update={"access_key_id": access_key_id, "secret_access_key": secret_access_key}
@@ -80,9 +76,8 @@ async def update_backup_settings(settings: BackupSettings) -> dict:
         connection_success = await backup_service.test_connection(s3_config)
 
         if not connection_success:
-            raise HTTPException(
-                status_code=400,
-                detail="S3 connection test failed. Please check your configuration.",
+            raise BadRequestError(
+                "S3 connection test failed. Please check your configuration."
             )
 
     config.update_section("backup", {"s3": s3_config.model_dump()})
@@ -103,19 +98,16 @@ async def test_backup_connection(test_request: BackupTest) -> dict:
     """Test backup connection."""
     # Clients may submit masked secrets meaning "test with the stored value"
     stored_s3 = config.backup_config.get("s3", {})
-    try:
-        access_key_id = resolve_secret(
-            test_request.config.access_key_id,
-            stored_s3.get("access_key_id"),
-            "S3 access key ID",
-        )
-        secret_access_key = resolve_secret(
-            test_request.config.secret_access_key,
-            stored_s3.get("secret_access_key"),
-            "S3 secret access key",
-        )
-    except MaskedSecretError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+    access_key_id = resolve_secret(
+        test_request.config.access_key_id,
+        stored_s3.get("access_key_id"),
+        "S3 access key ID",
+    )
+    secret_access_key = resolve_secret(
+        test_request.config.secret_access_key,
+        stored_s3.get("secret_access_key"),
+        "S3 secret access key",
+    )
 
     s3_config = test_request.config.model_copy(
         update={"access_key_id": access_key_id, "secret_access_key": secret_access_key}
@@ -125,7 +117,7 @@ async def test_backup_connection(test_request: BackupTest) -> dict:
     success = await backup_service.test_connection(s3_config)
 
     if not success:
-        raise HTTPException(status_code=400, detail="S3 connection test failed")
+        raise BadRequestError("S3 connection test failed")
 
     return {"connected": True}
 
@@ -151,13 +143,13 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
     backup_config = config.backup_config.get("s3", {})
 
     if not backup_config.get("bucket_name"):
-        raise HTTPException(status_code=400, detail="S3 backup is not configured")
+        raise BadRequestError("S3 backup is not configured")
 
     # Convert config to model with validation
     try:
         s3_config = S3BackupConfig(**backup_config)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail="Invalid S3 configuration.") from e
+        raise BadRequestError("Invalid S3 configuration.") from e
 
     backup_service = BackupService(s3_config)
 
@@ -167,16 +159,13 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
         success = await backup_service.backup_database(database_path)
 
         if not success:
-            raise HTTPException(status_code=500, detail="Database backup failed")
+            raise LeggenError("Database backup failed")
 
         return {"operation": "backup", "completed": True}
 
     else:
         if not operation_request.backup_key:
-            raise HTTPException(
-                status_code=400,
-                detail="backup_key is required for restore operation",
-            )
+            raise BadRequestError("backup_key is required for restore operation")
 
         # Restore database
         database_path = path_manager.get_database_path()
@@ -185,6 +174,6 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
         )
 
         if not success:
-            raise HTTPException(status_code=500, detail="Database restore failed")
+            raise LeggenError("Database restore failed")
 
         return {"operation": "restore", "completed": True}

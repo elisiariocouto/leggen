@@ -104,6 +104,7 @@ class TestNotificationSettingsAPI:
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 400
+        assert response.json()["code"] == "MASKED_SECRET_NOT_STORED"
         assert "no existing value" in response.json()["detail"]
         assert "notifications" not in test_config._config or not test_config._config[
             "notifications"

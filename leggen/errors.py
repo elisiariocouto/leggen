@@ -34,6 +34,13 @@ class LeggenError(Exception):
         self.detail = detail
 
 
+class BadRequestError(LeggenError):
+    """The request is well-formed but cannot be acted on as sent."""
+
+    status_code = 400
+    code = "BAD_REQUEST"
+
+
 class NotFoundError(LeggenError):
     """The requested resource does not exist."""
 
