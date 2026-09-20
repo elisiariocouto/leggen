@@ -9,10 +9,10 @@ import pytest
 class TestBackupAPI:
     """Test backup-related API endpoints."""
 
-    def test_get_backup_settings_no_config(self, api_client, mock_config):
+    def test_get_backup_settings_no_config(self, api_client, test_config):
         """Test getting backup settings with no configuration."""
         # Mock empty backup config by updating the config dict
-        mock_config._config["backup"] = {}
+        test_config._config["backup"] = {}
 
         response = api_client.get("/api/v1/backup/settings")
 
@@ -20,10 +20,10 @@ class TestBackupAPI:
         data = response.json()
         assert data["s3"] is None
 
-    def test_get_backup_settings_with_s3_config(self, api_client, mock_config):
+    def test_get_backup_settings_with_s3_config(self, api_client, test_config):
         """Test getting backup settings with S3 configuration."""
         # Mock S3 backup config (with masked credentials)
-        mock_config._config["backup"] = {
+        test_config._config["backup"] = {
             "s3": {
                 "access_key_id": "AKIATEST123",
                 "secret_access_key": "secret123",
@@ -50,11 +50,11 @@ class TestBackupAPI:
 
     @patch("leggen.services.backup_service.BackupService.test_connection")
     def test_update_backup_settings_success(
-        self, mock_test_connection, api_client, mock_config
+        self, mock_test_connection, api_client, test_config
     ):
         """Test successful backup settings update."""
         mock_test_connection.return_value = True
-        mock_config._config["backup"] = {}
+        test_config._config["backup"] = {}
 
         request_data = {
             "s3": {
@@ -79,11 +79,11 @@ class TestBackupAPI:
 
     @patch("leggen.services.backup_service.BackupService.test_connection")
     def test_update_backup_settings_connection_failure(
-        self, mock_test_connection, api_client, mock_config
+        self, mock_test_connection, api_client, test_config
     ):
         """Test backup settings update with connection test failure."""
         mock_test_connection.return_value = False
-        mock_config._config["backup"] = {}
+        test_config._config["backup"] = {}
 
         request_data = {
             "s3": {
@@ -105,11 +105,11 @@ class TestBackupAPI:
 
     @patch("leggen.services.backup_service.BackupService.test_connection")
     def test_update_backup_settings_disabled_skips_connection_test(
-        self, mock_test_connection, api_client, mock_config
+        self, mock_test_connection, api_client, test_config
     ):
         """Disabling S3 must save without requiring working credentials."""
         mock_test_connection.return_value = False
-        mock_config._config["backup"] = {}
+        test_config._config["backup"] = {}
 
         request_data = {
             "s3": {
@@ -128,11 +128,11 @@ class TestBackupAPI:
         assert response.status_code == 200
         assert response.json()["updated"] is True
         mock_test_connection.assert_not_called()
-        assert mock_config._config["backup"]["s3"]["enabled"] is False
+        assert test_config._config["backup"]["s3"]["enabled"] is False
 
     @patch("leggen.services.backup_service.BackupService.test_connection")
     def test_update_backup_settings_without_s3_is_rejected(
-        self, mock_test_connection, api_client, mock_config
+        self, mock_test_connection, api_client, test_config
     ):
         """A body with no s3 config used to report success while doing nothing."""
         stored = {
@@ -147,7 +147,7 @@ class TestBackupAPI:
         }
 
         for request_data in ({"s3": None}, {}):
-            mock_config._config["backup"] = {
+            test_config._config["backup"] = {
                 "s3": dict(stored["s3"]),
             }
 
@@ -157,11 +157,11 @@ class TestBackupAPI:
             assert "DELETE /backup/settings" in response.json()["detail"]
             mock_test_connection.assert_not_called()
             # The stored configuration is left intact
-            assert mock_config._config["backup"]["s3"]["bucket_name"] == "test-bucket"
+            assert test_config._config["backup"]["s3"]["bucket_name"] == "test-bucket"
 
-    def test_delete_backup_settings_clears_the_section(self, api_client, mock_config):
+    def test_delete_backup_settings_clears_the_section(self, api_client, test_config):
         """Removing the configuration must drop the stored credentials."""
-        mock_config._config["backup"] = {
+        test_config._config["backup"] = {
             "s3": {
                 "access_key_id": "AKIAREAL123",
                 "secret_access_key": "real-secret",
@@ -176,15 +176,15 @@ class TestBackupAPI:
 
         assert response.status_code == 200
         assert response.json() == {"deleted": "s3"}
-        assert not mock_config._config["backup"].get("s3")
+        assert not test_config._config["backup"].get("s3")
 
         # The GET endpoint now reports nothing configured
         response = api_client.get("/api/v1/backup/settings")
         assert response.json()["s3"] is None
 
-    def test_delete_backup_settings_with_nothing_stored(self, api_client, mock_config):
+    def test_delete_backup_settings_with_nothing_stored(self, api_client, test_config):
         """Deleting an absent configuration is not an error."""
-        mock_config._config.pop("backup", None)
+        test_config._config.pop("backup", None)
 
         response = api_client.delete("/api/v1/backup/settings")
 
@@ -193,12 +193,12 @@ class TestBackupAPI:
 
     @patch("leggen.services.backup_service.BackupService.test_connection")
     def test_update_backup_settings_masked_secrets_keep_stored_values(
-        self, mock_test_connection, api_client, mock_config
+        self, mock_test_connection, api_client, test_config
     ):
         """Echoing masked credentials back must keep the stored keys, so other
         fields (e.g. the bucket) can be edited without re-typing secrets."""
         mock_test_connection.return_value = True
-        mock_config._config["backup"] = {
+        test_config._config["backup"] = {
             "s3": {
                 "access_key_id": "AKIAREAL123",
                 "secret_access_key": "real-secret",
@@ -226,7 +226,7 @@ class TestBackupAPI:
         assert response.status_code == 200
         assert response.json()["updated"] is True
 
-        s3_config = mock_config._config["backup"]["s3"]
+        s3_config = test_config._config["backup"]["s3"]
         assert s3_config["access_key_id"] == "AKIAREAL123"
         assert s3_config["secret_access_key"] == "real-secret"
         assert s3_config["bucket_name"] == "new-bucket"
@@ -238,11 +238,11 @@ class TestBackupAPI:
 
     @patch("leggen.services.backup_service.BackupService.test_connection")
     def test_update_backup_settings_masked_secrets_nothing_stored(
-        self, mock_test_connection, api_client, mock_config
+        self, mock_test_connection, api_client, test_config
     ):
         """A masked placeholder with no stored secret is a client error."""
         mock_test_connection.return_value = True
-        mock_config._config["backup"] = {}
+        test_config._config["backup"] = {}
 
         request_data = {
             "s3": {
@@ -264,11 +264,11 @@ class TestBackupAPI:
 
     @patch("leggen.services.backup_service.BackupService.test_connection")
     def test_test_backup_connection_resolves_masked_secrets(
-        self, mock_test_connection, api_client, mock_config
+        self, mock_test_connection, api_client, test_config
     ):
         """The test endpoint resolves masked credentials against stored ones."""
         mock_test_connection.return_value = True
-        mock_config._config["backup"] = {
+        test_config._config["backup"] = {
             "s3": {
                 "access_key_id": "AKIAREAL123",
                 "secret_access_key": "real-secret",
@@ -374,7 +374,7 @@ class TestBackupAPI:
         assert "Only 's3' service is supported" in data["detail"]
 
     @patch("leggen.services.backup_service.BackupService.list_backups")
-    def test_list_backups_success(self, mock_list_backups, api_client, mock_config):
+    def test_list_backups_success(self, mock_list_backups, api_client, test_config):
         """Test successful backup listing."""
         mock_list_backups.return_value = [
             {
@@ -389,7 +389,7 @@ class TestBackupAPI:
             },
         ]
 
-        mock_config._config["backup"] = {
+        test_config._config["backup"] = {
             "s3": {
                 "access_key_id": "AKIATEST123",
                 "secret_access_key": "secret123",
@@ -406,9 +406,9 @@ class TestBackupAPI:
         assert len(data) == 2
         assert data[0]["key"] == "leggen_backups/database_backup_20250101_120000.db"
 
-    def test_list_backups_no_config(self, api_client, mock_config):
+    def test_list_backups_no_config(self, api_client, test_config):
         """Test backup listing with no configuration."""
-        mock_config._config["backup"] = {}
+        test_config._config["backup"] = {}
 
         response = api_client.get("/api/v1/backup/list")
 
@@ -419,7 +419,7 @@ class TestBackupAPI:
     @patch("leggen.services.backup_service.BackupService.backup_database")
     @patch("leggen.utils.paths.path_manager.get_database_path")
     def test_backup_operation_success(
-        self, mock_get_db_path, mock_backup_db, api_client, mock_config
+        self, mock_get_db_path, mock_backup_db, api_client, test_config
     ):
         """Test successful backup operation."""
         from pathlib import Path
@@ -427,7 +427,7 @@ class TestBackupAPI:
         mock_get_db_path.return_value = Path("/test/database.db")
         mock_backup_db.return_value = True
 
-        mock_config._config["backup"] = {
+        test_config._config["backup"] = {
             "s3": {
                 "access_key_id": "AKIATEST123",
                 "secret_access_key": "secret123",
@@ -449,9 +449,9 @@ class TestBackupAPI:
         # Verify backup was called
         mock_backup_db.assert_called_once()
 
-    def test_backup_operation_no_config(self, api_client, mock_config):
+    def test_backup_operation_no_config(self, api_client, test_config):
         """Test backup operation with no configuration."""
-        mock_config._config["backup"] = {}
+        test_config._config["backup"] = {}
 
         request_data = {"operation": "backup"}
 
@@ -461,9 +461,9 @@ class TestBackupAPI:
         data = response.json()
         assert "S3 backup is not configured" in data["detail"]
 
-    def test_backup_operation_invalid_operation(self, api_client, mock_config):
+    def test_backup_operation_invalid_operation(self, api_client, test_config):
         """Test backup operation with invalid operation type."""
-        mock_config._config["backup"] = {
+        test_config._config["backup"] = {
             "s3": {
                 "access_key_id": "AKIATEST123",
                 "secret_access_key": "secret123",

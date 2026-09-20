@@ -9,9 +9,9 @@ import pytest
 class TestNotificationSettingsAPI:
     """Test notification settings endpoints, especially secret masking."""
 
-    def test_get_settings_no_config(self, api_client, mock_config):
+    def test_get_settings_no_config(self, api_client, test_config):
         """Settings without configured services return null services."""
-        mock_config._config["notifications"] = {}
+        test_config._config["notifications"] = {}
 
         response = api_client.get("/api/v1/notifications/settings")
 
@@ -20,9 +20,9 @@ class TestNotificationSettingsAPI:
         assert data["discord"] is None
         assert data["telegram"] is None
 
-    def test_get_settings_masks_secrets(self, api_client, mock_config):
+    def test_get_settings_masks_secrets(self, api_client, test_config):
         """Stored webhook and token are masked in responses."""
-        mock_config._config["notifications"] = {
+        test_config._config["notifications"] = {
             "discord": {
                 "webhook": "https://discord.com/api/webhooks/123/real-secret",
                 "enabled": True,
@@ -39,13 +39,13 @@ class TestNotificationSettingsAPI:
         assert data["telegram"]["chat_id"] == 42
 
     def test_update_with_masked_secrets_keeps_stored_values(
-        self, api_client, mock_config
+        self, api_client, test_config
     ):
         """Echoing masked secrets back (e.g. a filters-only save) must not
         overwrite the stored webhook/token."""
         real_webhook = "https://discord.com/api/webhooks/123/real-secret"
         real_token = "123456:real-token"
-        mock_config._config["notifications"] = {
+        test_config._config["notifications"] = {
             "discord": {"webhook": real_webhook, "enabled": True},
             "telegram": {"token": real_token, "chat_id": 42, "enabled": True},
         }
@@ -61,16 +61,16 @@ class TestNotificationSettingsAPI:
         assert response.status_code == 200
         assert response.json()["updated"] is True
 
-        notifications = mock_config._config["notifications"]
+        notifications = test_config._config["notifications"]
         assert notifications["discord"]["webhook"] == real_webhook
         assert notifications["telegram"]["token"] == real_token
-        assert mock_config._config["filters"]["case_insensitive"] == ["rent"]
+        assert test_config._config["filters"]["case_insensitive"] == ["rent"]
 
     def test_update_with_new_secrets_replaces_stored_values(
-        self, api_client, mock_config
+        self, api_client, test_config
     ):
         """Sending a real new value replaces the stored secret."""
-        mock_config._config["notifications"] = {
+        test_config._config["notifications"] = {
             "discord": {
                 "webhook": "https://discord.com/api/webhooks/123/old-secret",
                 "enabled": True,
@@ -86,15 +86,15 @@ class TestNotificationSettingsAPI:
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
-        notifications = mock_config._config["notifications"]
+        notifications = test_config._config["notifications"]
         assert notifications["discord"]["webhook"] == new_webhook
         assert notifications["discord"]["enabled"] is False
 
     def test_update_with_masked_secret_but_nothing_stored_fails(
-        self, api_client, mock_config
+        self, api_client, test_config
     ):
         """A masked placeholder with no stored secret is a client error."""
-        mock_config._config["notifications"] = {}
+        test_config._config["notifications"] = {}
 
         request_data = {
             "discord": {"webhook": "***", "enabled": True},
@@ -105,33 +105,18 @@ class TestNotificationSettingsAPI:
 
         assert response.status_code == 400
         assert "no existing value" in response.json()["detail"]
-        assert "notifications" not in mock_config._config or not mock_config._config[
+        assert "notifications" not in test_config._config or not test_config._config[
             "notifications"
         ].get("discord")
 
 
-@pytest.fixture
-def clean_notification_sections(mock_config):
-    """Drop the sections these tests write.
-
-    `mock_config` mutates the process-global `config` singleton rather than
-    replacing it, so `filters`/`notifications` have to be removed afterwards or
-    they leak into later tests.
-    """
-    yield mock_config
-
-    mock_config._config.pop("filters", None)
-    mock_config._config.pop("notifications", None)
-
-
 @pytest.mark.api
-@pytest.mark.usefixtures("clean_notification_sections")
 class TestNotificationFiltersUpdateAPI:
     """Test that filters can be cleared and that a partial body merges."""
 
-    def test_empty_filter_lists_clear_stored_filters(self, api_client, mock_config):
+    def test_empty_filter_lists_clear_stored_filters(self, api_client, test_config):
         """Removing the last filter in the UI must persist as no filters."""
-        mock_config._config["filters"] = {
+        test_config._config["filters"] = {
             "case_insensitive": ["rent"],
             "case_sensitive": ["ACME"],
         }
@@ -141,12 +126,12 @@ class TestNotificationFiltersUpdateAPI:
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
-        assert mock_config._config["filters"]["case_insensitive"] == []
-        assert mock_config._config["filters"]["case_sensitive"] == []
+        assert test_config._config["filters"]["case_insensitive"] == []
+        assert test_config._config["filters"]["case_sensitive"] == []
 
-    def test_omitted_filter_list_is_left_alone(self, api_client, mock_config):
+    def test_omitted_filter_list_is_left_alone(self, api_client, test_config):
         """A body that mentions one list must not clear the other."""
-        mock_config._config["filters"] = {
+        test_config._config["filters"] = {
             "case_insensitive": ["rent"],
             "case_sensitive": ["ACME"],
         }
@@ -156,13 +141,13 @@ class TestNotificationFiltersUpdateAPI:
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
-        assert mock_config._config["filters"]["case_insensitive"] == ["rent", "gym"]
-        assert mock_config._config["filters"]["case_sensitive"] == ["ACME"]
+        assert test_config._config["filters"]["case_insensitive"] == ["rent", "gym"]
+        assert test_config._config["filters"]["case_sensitive"] == ["ACME"]
 
-    def test_omitted_filters_leave_the_section_untouched(self, api_client, mock_config):
+    def test_omitted_filters_leave_the_section_untouched(self, api_client, test_config):
         """Saving a service must not disturb stored filters."""
-        mock_config._config["filters"] = {"case_insensitive": ["rent"]}
-        mock_config._config["notifications"] = {}
+        test_config._config["filters"] = {"case_insensitive": ["rent"]}
+        test_config._config["notifications"] = {}
 
         request_data = {
             "discord": {
@@ -174,14 +159,14 @@ class TestNotificationFiltersUpdateAPI:
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
-        assert mock_config._config["filters"]["case_insensitive"] == ["rent"]
+        assert test_config._config["filters"]["case_insensitive"] == ["rent"]
 
     def test_omitted_service_survives_an_update_to_the_other(
-        self, api_client, mock_config
+        self, api_client, test_config
     ):
         """`update_section` replaces wholesale, so the handler has to merge."""
         real_token = "123456:real-token"
-        mock_config._config["notifications"] = {
+        test_config._config["notifications"] = {
             "telegram": {"token": real_token, "chat_id": 42, "enabled": True},
         }
 
@@ -195,13 +180,13 @@ class TestNotificationFiltersUpdateAPI:
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
-        notifications = mock_config._config["notifications"]
+        notifications = test_config._config["notifications"]
         assert notifications["telegram"]["token"] == real_token
         assert notifications["discord"]["enabled"] is True
 
-    def test_null_service_removes_it(self, api_client, mock_config):
+    def test_null_service_removes_it(self, api_client, test_config):
         """An explicit null means "remove this service"."""
-        mock_config._config["notifications"] = {
+        test_config._config["notifications"] = {
             "discord": {
                 "webhook": "https://discord.com/api/webhooks/123/secret",
                 "enabled": True,
@@ -214,34 +199,22 @@ class TestNotificationFiltersUpdateAPI:
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
         assert response.status_code == 200
-        notifications = mock_config._config["notifications"]
+        notifications = test_config._config["notifications"]
         assert "telegram" not in notifications
         assert notifications["discord"]["enabled"] is True
 
 
 @pytest.fixture
-def enabled_notifications(mock_config):
-    """Enable both notification services for the duration of a test.
-
-    `mock_config` mutates the process-global `config` singleton rather than
-    replacing it, so the `notifications` key has to be restored afterwards or it
-    leaks into later tests.
-    """
-    previous = mock_config._config.get("notifications")
-    mock_config._config["notifications"] = {
+def enabled_notifications(test_config):
+    """Configure and switch on both notification services."""
+    test_config._config["notifications"] = {
         "discord": {
             "webhook": "https://discord.com/api/webhooks/123/secret",
             "enabled": True,
         },
         "telegram": {"token": "123456:token", "chat_id": 42, "enabled": True},
     }
-
-    yield mock_config
-
-    if previous is None:
-        mock_config._config.pop("notifications", None)
-    else:
-        mock_config._config["notifications"] = previous
+    return test_config
 
 
 @pytest.mark.api
@@ -288,20 +261,13 @@ class TestNotificationTestAPI:
         assert "Leggen notifications are configured correctly\\." in message
         assert "test-123" not in message
 
-    def test_unconfigured_service_returns_not_enabled(self, api_client, mock_config):
+    def test_unconfigured_service_returns_not_enabled(self, api_client, test_config):
         """A service with no credentials is a configuration error, not a
         delivery failure."""
-        previous = mock_config._config.get("notifications")
-        mock_config._config["notifications"] = {}
-        try:
-            response = api_client.post(
-                "/api/v1/notifications/test", json={"service": "discord"}
-            )
-        finally:
-            if previous is None:
-                mock_config._config.pop("notifications", None)
-            else:
-                mock_config._config["notifications"] = previous
+        test_config._config["notifications"] = {}
+        response = api_client.post(
+            "/api/v1/notifications/test", json={"service": "discord"}
+        )
 
         assert response.status_code == 400
         body = response.json()
@@ -424,18 +390,11 @@ class TestNotificationServicesStatusAPI:
             "active": True,
         }
 
-    def test_missing_credentials_are_not_configured(self, api_client, mock_config):
+    def test_missing_credentials_are_not_configured(self, api_client, test_config):
         """`enabled` reflects the config switch, so an unconfigured service is
         reported as enabled-but-not-configured and is not active."""
-        previous = mock_config._config.get("notifications")
-        mock_config._config["notifications"] = {}
-        try:
-            response = api_client.get("/api/v1/notifications/services")
-        finally:
-            if previous is None:
-                mock_config._config.pop("notifications", None)
-            else:
-                mock_config._config["notifications"] = previous
+        test_config._config["notifications"] = {}
+        response = api_client.get("/api/v1/notifications/services")
 
         telegram = response.json()["telegram"]
         assert telegram["enabled"] is True

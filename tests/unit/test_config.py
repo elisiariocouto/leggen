@@ -1,11 +1,12 @@
 """Tests for configuration management."""
 
+import tomllib
 from unittest.mock import patch
 
 import pytest
+import tomli_w
 
 from leggen.utils.config import Config
-from tests.conftest import reset_config_singleton
 
 _AUTH_CONFIG = {
     "username": "testuser",
@@ -20,23 +21,13 @@ _AUTH_CONFIG = {
 class TestConfig:
     """Test configuration management."""
 
-    @pytest.fixture(autouse=True)
-    def _restore_config_singleton(self):
-        """`Config()` is a process-global singleton, so every test below that
-        pokes at `config._config*` leaks into the rest of the session. Clear it
-        afterwards so the next access reloads the canonical test config."""
-        try:
-            yield
-        finally:
-            reset_config_singleton()
-
     def test_singleton_behavior(self):
         """Test that Config is a singleton."""
         config1 = Config()
         config2 = Config()
         assert config1 is config2
 
-    def test_load_config_success(self, temp_config_dir, test_key_path):
+    def test_load_config_success(self, tmp_path, test_key_path):
         """Test successful configuration loading."""
         config_data = {
             "auth": _AUTH_CONFIG,
@@ -49,10 +40,8 @@ class TestConfig:
             "database": {"sqlite": True},
         }
 
-        config_file = temp_config_dir / "config.toml"
+        config_file = tmp_path / "config.toml"
         with open(config_file, "wb") as f:
-            import tomli_w
-
             tomli_w.dump(config_data, f)
 
         config = Config()
@@ -76,7 +65,7 @@ class TestConfig:
         with pytest.raises(FileNotFoundError):
             config.load_config("/nonexistent/config.toml")
 
-    def test_save_config_success(self, temp_config_dir, test_key_path):
+    def test_save_config_success(self, tmp_path, test_key_path):
         """Test successful configuration saving."""
         config_data = {
             "auth": _AUTH_CONFIG,
@@ -87,7 +76,7 @@ class TestConfig:
             },
         }
 
-        config_file = temp_config_dir / "new_config.toml"
+        config_file = tmp_path / "new_config.toml"
         config = Config()
         config._config = None
         config._config_model = None
@@ -97,14 +86,12 @@ class TestConfig:
         # Verify file was created and contains correct data
         assert config_file.exists()
 
-        import tomllib
-
         with open(config_file, "rb") as f:
             saved_data = tomllib.load(f)
 
         assert saved_data["enablebanking"]["application_id"] == "new-app-id"
 
-    def test_update_section_success(self, temp_config_dir, test_key_path):
+    def test_update_section_success(self, tmp_path, test_key_path):
         """Test updating entire configuration section."""
         initial_config = {
             "auth": _AUTH_CONFIG,
@@ -115,10 +102,8 @@ class TestConfig:
             },
         }
 
-        config_file = temp_config_dir / "config.toml"
+        config_file = tmp_path / "config.toml"
         with open(config_file, "wb") as f:
-            import tomli_w
-
             tomli_w.dump(initial_config, f)
 
         config = Config()
@@ -166,9 +151,7 @@ class TestConfig:
         assert scheduler_config["sync"]["minute"] == 30
         assert scheduler_config["sync"]["cron"] == "0 6 * * 1-5"
 
-    def test_set_config_path_wins_over_environment(
-        self, temp_config_dir, test_key_path
-    ):
+    def test_set_config_path_wins_over_environment(self, tmp_path, test_key_path):
         """An explicit path (e.g. the --config flag) beats LEGGEN_CONFIG_FILE."""
         config_data = {
             "auth": _AUTH_CONFIG,
@@ -178,10 +161,8 @@ class TestConfig:
                 "url": "https://api.enablebanking.com",
             },
         }
-        flag_config = temp_config_dir / "flag.toml"
+        flag_config = tmp_path / "flag.toml"
         with open(flag_config, "wb") as f:
-            import tomli_w
-
             tomli_w.dump(config_data, f)
 
         config = Config()

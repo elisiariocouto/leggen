@@ -23,7 +23,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test successful retrieval of all categories."""
@@ -65,7 +64,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test creating a new custom category."""
@@ -98,7 +96,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test updating a category."""
@@ -129,7 +126,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test updating a non-existent category."""
@@ -151,7 +147,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test deleting a custom category."""
@@ -170,7 +165,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test that deleting a default category is rejected."""
@@ -189,7 +183,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
         mock_transaction_repo,
     ):
@@ -232,7 +225,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
         mock_transaction_repo,
     ):
@@ -258,7 +250,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
         mock_transaction_repo,
     ):
@@ -288,7 +279,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test creating a category with exclude_from_stats=True."""
@@ -331,7 +321,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test bulk categorizing transactions by description."""
@@ -372,7 +361,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test bulk categorize with non-existent category returns 404."""
@@ -397,7 +385,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test bulk categorize with no matching transactions returns count 0."""
@@ -434,7 +421,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test bulk removing categories by description."""
@@ -464,7 +450,6 @@ class TestCategoriesAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         """Test bulk remove with no matching categorized transactions."""
@@ -496,7 +481,6 @@ class TestDuplicateCategory:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_category_repo,
     ):
         mock_category_repo.create_category.side_effect = CategoryExistsError(

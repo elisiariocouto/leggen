@@ -13,8 +13,8 @@ class TestBackgroundScheduler:
     """Test background job scheduler."""
 
     @pytest.fixture
-    def mock_config(self):
-        """Mock configuration for scheduler tests."""
+    def schedule_config(self):
+        """A scheduler config section with both jobs enabled."""
         return {
             "sync": {"enabled": True, "hour": 3, "minute": 0, "cron": None},
             "backup": {"enabled": True, "hour": 4, "minute": 0, "cron": None},
@@ -39,10 +39,10 @@ class TestBackgroundScheduler:
             scheduler.scheduler = mock_scheduler
             return scheduler
 
-    def test_scheduler_start_default_config(self, scheduler, mock_config):
+    def test_scheduler_start_default_config(self, scheduler, schedule_config):
         """Test starting scheduler with default configuration."""
         with patch("leggen.background.scheduler.config") as mock_config_obj:
-            mock_config_obj.scheduler_config = mock_config
+            mock_config_obj.scheduler_config = schedule_config
 
             scheduler.start()
 
@@ -146,7 +146,7 @@ class TestBackgroundScheduler:
 
         scheduler.scheduler.shutdown.assert_called_once()
 
-    def test_reschedule_sync(self, scheduler, mock_config):
+    def test_reschedule_sync(self, scheduler, schedule_config):
         """Test rescheduling sync job."""
         scheduler.scheduler.running = True
 
@@ -159,7 +159,7 @@ class TestBackgroundScheduler:
         scheduler.scheduler.remove_job.assert_called_once_with("daily_sync")
         scheduler.scheduler.add_job.assert_called_once()
 
-    def test_reschedule_sync_disable(self, scheduler, mock_config):
+    def test_reschedule_sync_disable(self, scheduler, schedule_config):
         """Test disabling sync via reschedule."""
         scheduler.scheduler.running = True
 
@@ -171,7 +171,7 @@ class TestBackgroundScheduler:
         scheduler.scheduler.remove_job.assert_called_once_with("daily_sync")
         scheduler.scheduler.add_job.assert_not_called()
 
-    def test_get_next_sync_time(self, scheduler, mock_config):
+    def test_get_next_sync_time(self, scheduler, schedule_config):
         """Test getting next scheduled sync time."""
         mock_job = MagicMock()
         mock_job.next_run_time = datetime(2025, 9, 2, 3, 0)
@@ -214,10 +214,10 @@ class TestBackgroundScheduler:
 
         mock_sync_service.sync_all_accounts.assert_called_once()
 
-    def test_scheduler_job_max_instances(self, scheduler, mock_config):
+    def test_scheduler_job_max_instances(self, scheduler, schedule_config):
         """Test that scheduled jobs have max_instances=1."""
         with patch("leggen.background.scheduler.config") as mock_config_obj:
-            mock_config_obj.scheduler_config = mock_config
+            mock_config_obj.scheduler_config = schedule_config
             scheduler.start()
 
             # Verify every job was added with max_instances=1

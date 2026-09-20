@@ -150,12 +150,13 @@ class TestConfigResolution:
     """
 
     @pytest.fixture(autouse=True)
-    def clean_singletons(self):
+    def unloaded_config(self):
+        """Start with the config singleton empty so the CLI performs the lazy
+        load itself; the tests below check which file it picks."""
         original_config_dir = path_manager._config_dir
         reset_config_singleton()
         yield
         path_manager._config_dir = original_config_dir
-        reset_config_singleton()
 
     def test_config_dir_flag_resolves_config_file(self, tmp_path, monkeypatch):
         """--config-dir <dir> must find <dir>/config.toml (regression: the

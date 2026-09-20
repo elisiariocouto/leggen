@@ -15,9 +15,7 @@ from leggen.services.enablebanking_service import (
 class TestBanksAPI:
     """Test bank-related API endpoints."""
 
-    def test_get_institutions_success(
-        self, fastapi_app, api_client, mock_config, sample_bank_data
-    ):
+    def test_get_institutions_success(self, fastapi_app, api_client, sample_bank_data):
         """Test successful retrieval of bank institutions."""
         mock_eb = AsyncMock()
         mock_eb.get_aspsps.return_value = sample_bank_data["aspsps"]
@@ -33,9 +31,7 @@ class TestBanksAPI:
         assert data[0]["name"] == "Banco BPI"
         assert data[1]["name"] == "Revolut"
 
-    def test_get_institutions_invalid_country(
-        self, fastapi_app, api_client, mock_config
-    ):
+    def test_get_institutions_invalid_country(self, fastapi_app, api_client):
         """Test institutions endpoint with invalid country code."""
         mock_eb = AsyncMock()
         mock_eb.get_aspsps.return_value = []
@@ -49,7 +45,7 @@ class TestBanksAPI:
         data = response.json()
         assert len(data) == 0
 
-    def test_connect_to_bank_success(self, fastapi_app, api_client, mock_config):
+    def test_connect_to_bank_success(self, fastapi_app, api_client):
         """Test successful bank authorization start."""
         mock_eb = AsyncMock()
         mock_eb.get_aspsps.return_value = [
@@ -76,9 +72,7 @@ class TestBanksAPI:
         call_kwargs = mock_eb.start_auth.call_args.kwargs
         assert call_kwargs["maximum_consent_validity"] == 15552000
 
-    def test_connect_to_bank_without_consent_validity(
-        self, fastapi_app, api_client, mock_config
-    ):
+    def test_connect_to_bank_without_consent_validity(self, fastapi_app, api_client):
         """Banks that don't report a maximum consent validity fall back to None."""
         mock_eb = AsyncMock()
         mock_eb.get_aspsps.return_value = [{"name": "Revolut", "country": "GB"}]
@@ -95,7 +89,7 @@ class TestBanksAPI:
         assert response.status_code == 200
         assert mock_eb.start_auth.call_args.kwargs["maximum_consent_validity"] is None
 
-    def test_bank_callback_success(self, api_client, mock_config, mock_db_path):
+    def test_bank_callback_success(self, api_client, mock_db_path):
         """Test successful auth code exchange."""
         session_response = {
             "session_id": "sess-123",
@@ -125,9 +119,7 @@ class TestBanksAPI:
         assert data["aspsp_name"] == "Revolut"
         assert data["aspsp_country"] == "GB"
 
-    def test_bank_callback_replays_session_on_repeat(
-        self, api_client, mock_config, mock_db_path
-    ):
+    def test_bank_callback_replays_session_on_repeat(self, api_client, mock_db_path):
         """A redirect delivered twice returns the session the first call made.
 
         The page can be remounted by a reload -- a service worker taking
@@ -162,9 +154,7 @@ class TestBanksAPI:
         # The upstream code is single-use, so it must only be exchanged once.
         assert mock_eb.create_session.await_count == 1
 
-    def test_bank_callback_rejects_unknown_state(
-        self, api_client, mock_config, mock_db_path
-    ):
+    def test_bank_callback_rejects_unknown_state(self, api_client, mock_db_path):
         """Callback rejects a state that was never issued by start_auth."""
         mock_eb = AsyncMock()
         mock_eb.claim_auth_state = MagicMock(return_value=None)
@@ -180,7 +170,7 @@ class TestBanksAPI:
         assert response.status_code == 400
         mock_eb.create_session.assert_not_called()
 
-    def test_get_bank_status_success(self, api_client, mock_config, mock_db_path):
+    def test_get_bank_status_success(self, api_client, mock_db_path):
         """Test successful retrieval of bank connection status."""
         # First create a session via callback
         session_response = {
@@ -228,7 +218,7 @@ class TestBanksAPI:
         assert "GB" in country_codes
         assert "DE" in country_codes
 
-    def test_delete_bank_connection(self, api_client, mock_config, mock_db_path):
+    def test_delete_bank_connection(self, api_client, mock_db_path):
         """Test deleting a bank connection."""
         # First create a session
         session_response = {
@@ -259,7 +249,7 @@ class TestBanksAPI:
         assert response.status_code == 200
         assert response.json()["deleted"] == "sess-delete-test"
 
-    def test_delete_nonexistent_connection(self, api_client, mock_config, mock_db_path):
+    def test_delete_nonexistent_connection(self, api_client, mock_db_path):
         """Test deleting a non-existent connection returns 404."""
         response = api_client.delete("/api/v1/banks/connections/nonexistent-id")
 

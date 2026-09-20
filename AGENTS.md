@@ -66,7 +66,7 @@ Routes → services → repositories:
 ### Config and paths are singletons
 - `leggen/utils/config.py` — `config` singleton, validated against the Pydantic model in `leggen/models/config.py`; also writes config back to disk (`update_section`). It is the **only** config loader, and it loads lazily: `cli()` just records `--config`/`--config-dir` (via `set_config_path`/`path_manager`), and the file is first read when something needs it — the server lifespan, or the CLI's `auth.api_key` fallback in `LeggenAPIClient.from_context`. Help and the bootstrap commands therefore never require a config file.
 - `leggen/utils/paths.py` — `path_manager` singleton resolving config dir and DB path from `LEGGEN_CONFIG_DIR` / `LEGGEN_DATABASE_PATH`
-- Tests reset the `config` singleton's internal fields rather than replacing the instance (other modules hold it by reference) — see `tests/conftest.py`, which also generates a throwaway RSA keypair and test config at import time
+- Tests reset the `config` singleton's internal fields rather than replacing the instance (other modules hold it by reference). The autouse `test_config` fixture in `tests/conftest.py` gives every test its own copy of the config on disk and in the singleton; `mock_db_path` gives it a fresh migrated SQLite file
 
 ### Sync flow
 APScheduler (`leggen/background/scheduler.py`, cron from config, live-reschedulable via `PUT /api/v1/sync/schedule`) or `POST /api/v1/sync` → `SyncService.sync_all_accounts()` → fetch balances/transactions from EnableBanking → transform in `data_processors.py` → persist via repositories → fire notifications (transaction filters + account-expiry warnings).

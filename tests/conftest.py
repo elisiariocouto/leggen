@@ -1,127 +1,69 @@
-"""Pytest configuration and shared fixtures."""
+"""Pytest configuration and shared fixtures.
 
-import os
-import shutil
-import tempfile
+Config loads lazily, so nothing here has to run before the app modules are
+imported: the test config is written by a fixture, not at import time.
+"""
+
+import copy
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock
 
 import pytest
 import tomli_w
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from fastapi.testclient import TestClient
 
-# Create a test RSA key pair for EnableBanking BEFORE any app imports
-_test_config_dir = tempfile.mkdtemp(prefix="leggen_test_")
-_test_key_path = Path(_test_config_dir) / "test_key.pem"
+from leggen.commands.server import create_app
+from leggen.repositories import run_migrations
+from leggen.utils.config import config
+from leggen.utils.paths import path_manager
 
-_test_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-_test_key_path.write_bytes(
-    _test_private_key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption(),
-    )
-)
-
-_test_config_path = Path(_test_config_dir) / "config.toml"
-
-# Create minimal test config
 # bcrypt hash of "testpassword"
-_test_password_hash = "$2b$12$VNxOF9xF676elZu5M9pW7eYZ.p.qVJsh/n6jIsHE3iNnHWBtUxr/y"
-
-_config_data = {
-    "auth": {
-        "username": "testuser",
-        "password_hash": _test_password_hash,
-        "api_key": "lgn_test-api-key-for-testing",
-        "jwt_secret": "test-jwt-secret-for-testing-only",
-        "jwt_expiry_minutes": 60,
-    },
-    "enablebanking": {
-        "application_id": "test-app-id",
-        "key_path": str(_test_key_path),
-        "url": "https://api.enablebanking.com",
-    },
-    "scheduler": {"sync": {"enabled": True, "hour": 3, "minute": 0}},
-}
-
-with open(_test_config_path, "wb") as f:
-    tomli_w.dump(_config_data, f)
-
-# Set environment variable BEFORE any app imports that trigger config loading
-os.environ["LEGGEN_CONFIG_FILE"] = str(_test_config_path)
-
-# Reset the Config singleton's cached data so it reloads from our test config.
-# We must NOT reset _instance itself, because other modules import the `config`
-# singleton object by reference — resetting _instance would leave them with a stale ref.
-from leggen.utils.config import Config, config  # noqa: E402
-
-config._config = None
-config._config_model = None
-config._config_path = None
-
-# Now it's safe to import app modules that trigger config loading
-from fastapi.testclient import TestClient  # noqa: E402
-
-from leggen.commands.server import create_app  # noqa: E402
-
-
-def pytest_configure(config):
-    """Pytest hook called before test collection."""
-    # Ensure test config is set
-    os.environ["LEGGEN_CONFIG_FILE"] = str(_test_config_path)
-
-
-def pytest_unconfigure(config):
-    """Pytest hook called after all tests."""
-    # Cleanup test config directory
-    if Path(_test_config_dir).exists():
-        shutil.rmtree(_test_config_dir)
-
-
-@pytest.fixture
-def temp_config_dir():
-    """Create a temporary config directory for testing."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_dir = Path(tmpdir) / ".config" / "leggen"
-        config_dir.mkdir(parents=True, exist_ok=True)
-        yield config_dir
-
-
-@pytest.fixture
-def temp_db_path():
-    """Create a temporary database file for testing."""
-    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp_file:
-        db_path = Path(tmp_file.name)
-        yield db_path
-    # Clean up the temporary database file after test
-    if db_path.exists():
-        db_path.unlink()
-
-
-@pytest.fixture
-def test_key_path():
-    """Return the path to the test RSA private key."""
-    return _test_key_path
+TEST_PASSWORD_HASH = "$2b$12$VNxOF9xF676elZu5M9pW7eYZ.p.qVJsh/n6jIsHE3iNnHWBtUxr/y"
+TEST_API_KEY = "lgn_test-api-key-for-testing"
 
 
 def reset_config_singleton() -> None:
     """Clear the config singleton so the next access reloads from
-    LEGGEN_CONFIG_FILE (the canonical test config set in this conftest)."""
+    LEGGEN_CONFIG_FILE.
+
+    `Config()` is a process-global singleton that other modules hold by
+    reference, so its fields are cleared in place rather than replacing the
+    instance.
+    """
     config._config = None
     config._config_model = None
     config._config_path = None
 
 
-@pytest.fixture
-def mock_config(temp_config_dir, test_key_path):
-    """Mock configuration for testing."""
-    config_data = {
+@pytest.fixture(scope="session")
+def test_key_path(tmp_path_factory) -> Path:
+    """An RSA private key for the EnableBanking section of the test config.
+
+    Config validation only checks that the file exists, but the sync service
+    signs its API JWT with it, so it is a real key rather than a placeholder.
+    """
+    key_path = tmp_path_factory.mktemp("keys") / "enablebanking.pem"
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    key_path.write_bytes(
+        private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+    )
+    return key_path
+
+
+@pytest.fixture(scope="session")
+def base_config(test_key_path) -> dict:
+    """The canonical test configuration, copied fresh for every test."""
+    return {
         "auth": {
             "username": "testuser",
-            "password_hash": _test_password_hash,
-            "api_key": "lgn_test-api-key-for-testing",
+            "password_hash": TEST_PASSWORD_HASH,
+            "api_key": TEST_API_KEY,
             "jwt_secret": "test-jwt-secret-for-testing-only",
             "jwt_expiry_minutes": 60,
         },
@@ -133,40 +75,54 @@ def mock_config(temp_config_dir, test_key_path):
         "scheduler": {"sync": {"enabled": True, "hour": 3, "minute": 0}},
     }
 
-    config_file = temp_config_dir / "config.toml"
-    with open(config_file, "wb") as f:
-        tomli_w.dump(config_data, f)
 
-    # Mock the config path. `Config()` returns the process-global singleton, so
-    # the assignments below mutate shared state — always restore it afterwards,
-    # or whatever a test stores here leaks into every later test in the session.
-    with patch.object(Config, "load_config") as mock_load:
-        mock_load.return_value = config_data
-        config = Config()
-        config._config = config_data
-        config._config_path = str(config_file)
-        try:
-            yield config
-        finally:
-            reset_config_singleton()
+@pytest.fixture(autouse=True)
+def test_config(base_config, tmp_path_factory, monkeypatch):
+    """Give every test its own copy of the config, on disk and in the singleton.
+
+    Tests may mutate `test_config._config` or save through `update_section`;
+    both touch only this test's copy. The singleton is cleared afterwards so
+    nothing leaks into the next test. The file lives outside `tmp_path`, which
+    some CLI tests assert stays empty.
+    """
+    data = copy.deepcopy(base_config)
+    config_file = tmp_path_factory.mktemp("config") / "config.toml"
+    config_file.write_bytes(tomli_w.dumps(data).encode())
+    monkeypatch.setenv("LEGGEN_CONFIG_FILE", str(config_file))
+
+    config._config = data
+    config._config_model = None
+    config._config_path = str(config_file)
+    try:
+        yield config
+    finally:
+        reset_config_singleton()
+
+
+@pytest.fixture
+def mock_db_path(tmp_path) -> Path:
+    """Point the path manager at a fresh, migrated SQLite database."""
+    db_path = tmp_path / "leggen.db"
+    original_database_path = path_manager._database_path
+    path_manager.set_database_path(db_path)
+    run_migrations()
+    try:
+        yield db_path
+    finally:
+        path_manager._database_path = original_database_path
 
 
 @pytest.fixture
 def fastapi_app(mock_db_path):
-    """Create FastAPI test application."""
-    # Patch the database path for the app
-    with patch(
-        "leggen.utils.paths.path_manager.get_database_path", return_value=mock_db_path
-    ):
-        app = create_app()
-        yield app
+    """The FastAPI application, wired to the temporary database."""
+    return create_app()
 
 
 @pytest.fixture
 def api_client(fastapi_app):
-    """Create FastAPI test client with auth headers."""
+    """Authenticated test client."""
     client = TestClient(fastapi_app)
-    client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
+    client.headers["X-API-Key"] = TEST_API_KEY
     return client
 
 
@@ -175,8 +131,26 @@ def raw_api_client(fastapi_app):
     """Authenticated test client that returns 500 responses instead of
     re-raising unhandled route exceptions — for testing the global handlers."""
     client = TestClient(fastapi_app, raise_server_exceptions=False)
-    client.headers["X-API-Key"] = "lgn_test-api-key-for-testing"
+    client.headers["X-API-Key"] = TEST_API_KEY
     return client
+
+
+@pytest.fixture
+def override(fastapi_app):
+    """Replace a FastAPI dependency for the duration of one test.
+
+    For the external boundary (EnableBanking) and for injecting failures;
+    repositories are otherwise exercised against the real temporary database.
+    """
+
+    def _override(dependency, replacement):
+        fastapi_app.dependency_overrides[dependency] = lambda: replacement
+        return replacement
+
+    try:
+        yield _override
+    finally:
+        fastapi_app.dependency_overrides.clear()
 
 
 def persist_transactions(rows: list[tuple]) -> None:
@@ -212,47 +186,17 @@ def persist_transactions(rows: list[tuple]) -> None:
 
 @pytest.fixture
 def mock_account_repo():
-    """Create mock AccountRepository for testing."""
-    from unittest.mock import MagicMock
-
     return MagicMock()
 
 
 @pytest.fixture
 def mock_balance_repo():
-    """Create mock BalanceRepository for testing."""
-    from unittest.mock import MagicMock
-
     return MagicMock()
 
 
 @pytest.fixture
 def mock_transaction_repo():
-    """Create mock TransactionRepository for testing."""
-    from unittest.mock import MagicMock
-
     return MagicMock()
-
-
-@pytest.fixture
-def mock_db_path(temp_db_path):
-    """Mock the database path to use temporary database for testing."""
-    from leggen.utils.paths import path_manager
-
-    # Set the path manager to use the temporary database
-    original_database_path = path_manager._database_path
-    path_manager.set_database_path(temp_db_path)
-
-    # Create all tables so tests can use them
-    from leggen.repositories import run_migrations
-
-    run_migrations()
-
-    try:
-        yield temp_db_path
-    finally:
-        # Restore original path
-        path_manager._database_path = original_database_path
 
 
 @pytest.fixture
@@ -286,22 +230,4 @@ def sample_account_data():
         "iban": "LT313250081177977789",
         "created": "2024-02-13T23:56:00Z",
         "last_accessed": "2025-09-01T09:30:00Z",
-    }
-
-
-@pytest.fixture
-def sample_transaction_data():
-    """Sample transaction data for testing (EnableBanking format)."""
-    return {
-        "transactions": [
-            {
-                "transaction_id": "txn-123",
-                "entry_reference": "ref-123",
-                "booking_date": "2025-09-01",
-                "value_date": "2025-09-01",
-                "transaction_amount": {"amount": "-10.50", "currency": "EUR"},
-                "remittance_information": ["Coffee Shop Payment"],
-                "status": "BOOK",
-            }
-        ]
     }

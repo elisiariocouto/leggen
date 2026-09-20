@@ -16,7 +16,6 @@ class TestTransactionsAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_transaction_repo,
     ):
         """Test successful retrieval of all transactions from database."""
@@ -76,7 +75,6 @@ class TestTransactionsAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_transaction_repo,
     ):
         """Test retrieval of full transaction details from database."""
@@ -121,7 +119,6 @@ class TestTransactionsAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_transaction_repo,
     ):
         """Test getting transactions with various filters."""
@@ -187,7 +184,6 @@ class TestTransactionsAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_transaction_repo,
     ):
         """Test getting transactions when database returns empty result."""
@@ -399,7 +395,7 @@ class TestTransactionsAPI:
         assert response.status_code == 500
         assert response.json()["detail"] == "Internal server error."
 
-    def test_get_transactions_invalid_per_page(self, api_client, mock_config):
+    def test_get_transactions_invalid_per_page(self, api_client):
         """per_page below 1 is rejected instead of dividing by zero."""
         response = api_client.get("/api/v1/transactions?per_page=0")
         assert response.status_code == 422
@@ -411,7 +407,6 @@ class TestTransactionsAPI:
         self,
         fastapi_app,
         api_client,
-        mock_config,
         mock_transaction_repo,
     ):
         """A status filter is forwarded to both repository calls."""
@@ -467,13 +462,13 @@ class TestTransactionsAPI:
         data = response.json()
         assert data["total"] == 2
 
-    def test_get_transactions_invalid_status(self, api_client, mock_config):
+    def test_get_transactions_invalid_status(self, api_client):
         """An unknown status is rejected with 422 rather than silently
         returning an empty page."""
         response = api_client.get("/api/v1/transactions?status=nonsense")
         assert response.status_code == 422
 
-    def test_get_transactions_invalid_sort_params(self, api_client, mock_config):
+    def test_get_transactions_invalid_sort_params(self, api_client):
         """Sort params are constrained to the allowlist, so an unknown column
         is a 422 and never reaches the ORDER BY."""
         response = api_client.get("/api/v1/transactions?sort_by=transactionValue")
@@ -482,9 +477,7 @@ class TestTransactionsAPI:
         response = api_client.get("/api/v1/transactions?sort_order=sideways")
         assert response.status_code == 422
 
-    def test_get_transactions_negative_magnitude_rejected(
-        self, api_client, mock_config
-    ):
+    def test_get_transactions_negative_magnitude_rejected(self, api_client):
         """Magnitudes are sizes, so a negative bound is meaningless."""
         response = api_client.get("/api/v1/transactions?min_magnitude=-5")
         assert response.status_code == 422
@@ -554,12 +547,12 @@ class TestTransactionsAPI:
         assert [txn["transaction_id"] for txn in data["data"]] == ["t2"]
         assert data["total"] == 1
 
-    def test_get_transactions_invalid_kind(self, api_client, mock_config):
+    def test_get_transactions_invalid_kind(self, api_client):
         """Anything but the two directions is a 422, not an unfiltered list."""
         response = api_client.get("/api/v1/transactions?kind=refund")
         assert response.status_code == 422
 
-    def test_get_transactions_invalid_category_id(self, api_client, mock_config):
+    def test_get_transactions_invalid_category_id(self, api_client):
         """Non-numeric category_id is rejected with 422, not a 500."""
         response = api_client.get("/api/v1/transactions?category_id=abc")
         assert response.status_code == 422
