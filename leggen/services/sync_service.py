@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 
 from loguru import logger
 
-from leggen.api.models.sync import SyncResult, SyncStatus
+from leggen.api.models.sync import SyncResult
 from leggen.errors import ConflictError, describe_exception
 from leggen.repositories import (
     AccountRepository,
@@ -35,10 +35,9 @@ class SyncAlreadyRunningError(ConflictError):
 
 
 class SyncService:
-    # Class-level so the "already running" guard and reported status hold
-    # across all instances — only one sync may run per process.
+    # Class-level so the "already running" guard holds across all instances —
+    # only one sync may run per process.
     _sync_lock = asyncio.Lock()
-    _sync_status = SyncStatus(is_running=False)
 
     def __init__(self):
         self.enablebanking = EnableBankingService()
@@ -72,8 +71,6 @@ class SyncService:
         await self._sync_lock.acquire()
 
         start_time = datetime.now(UTC)
-        self._sync_status.is_running = True
-        self._sync_status.errors = []
 
         accounts_processed = 0
         transactions_added = 0
@@ -148,7 +145,6 @@ class SyncService:
                 }
                 logs.append(f"Per-account sync requested for: {sorted(requested_ids)}")
 
-            self._sync_status.total_accounts = len(all_account_ids)
             logs.append(f"Found {len(all_account_ids)} accounts to sync")
 
             date_from: str | None = None
@@ -251,7 +247,6 @@ class SyncService:
                             self._categorize(new_transactions, warnings, logs)
 
                     accounts_processed += 1
-                    self._sync_status.accounts_synced = accounts_processed
 
                     logger.info(f"Synced account {account_id} successfully")
                     logs.append(f"Synced account {account_id} successfully")
@@ -280,8 +275,6 @@ class SyncService:
 
             end_time = datetime.now(UTC)
             duration = (end_time - start_time).total_seconds()
-
-            self._sync_status.last_sync = end_time
 
             # Update sync operation with final results
             sync_operation.update(
@@ -361,7 +354,6 @@ class SyncService:
 
             raise
         finally:
-            self._sync_status.is_running = False
             self._sync_lock.release()
 
     def _categorize(

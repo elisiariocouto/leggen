@@ -28,18 +28,6 @@ class SyncRequest(BaseModel):
     full_sync: bool = False  # If False, only sync last 30 days of transactions
 
 
-class SyncStatus(BaseModel):
-    """Sync operation status"""
-
-    is_running: bool
-    last_sync: datetime | None = None
-    next_sync: datetime | None = None
-    accounts_synced: int = 0
-    total_accounts: int = 0
-    transactions_added: int = 0
-    errors: list[str] = []
-
-
 class SyncScheduleRequest(BaseModel):
     """Request to update sync schedule"""
 
