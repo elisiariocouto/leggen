@@ -5,7 +5,7 @@ from datetime import datetime
 import pytest
 
 from leggen.repositories import TransactionRepository
-from tests.conftest import persist_transactions
+from tests.helpers import persist_transactions
 
 
 @pytest.mark.api

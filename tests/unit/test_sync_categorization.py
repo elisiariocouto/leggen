@@ -7,12 +7,7 @@ import pytest
 from leggen.repositories import CategoryRepository, CategoryRuleRepository
 from leggen.repositories.db import get_db_connection
 from leggen.services.sync_service import SyncService
-
-
-def _category(name: str) -> int:
-    return next(
-        c for c in CategoryRepository().get_all_categories() if c["name"] == name
-    )["id"]
+from tests.helpers import category_id
 
 
 def _bank_transaction(transaction_id: str, description: str, amount: str) -> dict:
@@ -75,7 +70,7 @@ class TestSyncCategorization:
     async def test_new_transactions_are_categorized(self, mock_db_path):
         CategoryRuleRepository().create_rule(
             "Groceries",
-            _category("Groceries"),
+            category_id("Groceries"),
             'return contains(tx.description, "pingo")',
         )
 
@@ -89,7 +84,7 @@ class TestSyncCategorization:
 
         assert result.success is True
         assert result.transactions_added == 2
-        assert _assignments() == {"tx-1": (_category("Groceries"), "rule")}
+        assert _assignments() == {"tx-1": (category_id("Groceries"), "rule")}
 
     async def test_only_new_transactions_are_evaluated(self, mock_db_path):
         """A transaction that already existed is not re-categorized by the
@@ -100,7 +95,7 @@ class TestSyncCategorization:
         )
         CategoryRuleRepository().create_rule(
             "Groceries",
-            _category("Groceries"),
+            category_id("Groceries"),
             'return contains(tx.description, "pingo")',
         )
 
@@ -115,9 +110,9 @@ class TestSyncCategorization:
         await _sync(
             sync_service, [_bank_transaction("tx-1", "COMPRA PINGO DOCE", "30.00")]
         )
-        CategoryRepository().assign_category("PT1", "tx-1", _category("Dining"))
+        CategoryRepository().assign_category("PT1", "tx-1", category_id("Dining"))
         CategoryRuleRepository().create_rule(
-            "Groceries", _category("Groceries"), "return true"
+            "Groceries", category_id("Groceries"), "return true"
         )
 
         # The bank re-sends the row, now booked instead of pending.
@@ -125,11 +120,11 @@ class TestSyncCategorization:
         booked["status"] = "BOOK"
         await _sync(sync_service, [booked])
 
-        assert _assignments() == {"tx-1": (_category("Dining"), "manual")}
+        assert _assignments() == {"tx-1": (category_id("Dining"), "manual")}
 
     async def test_rule_failures_become_warnings(self, mock_db_path):
         CategoryRuleRepository().create_rule(
-            "Faulty", _category("Groceries"), "return tx.raw.a.b == 1"
+            "Faulty", category_id("Groceries"), "return tx.raw.a.b == 1"
         )
 
         result = await _sync(SyncService(), [_bank_transaction("tx-1", "X", "1.00")])

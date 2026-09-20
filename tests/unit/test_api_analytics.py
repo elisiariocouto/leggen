@@ -2,36 +2,7 @@
 
 import pytest
 
-from tests.conftest import persist_transactions
-
-
-def _persist_rich(rows: list[dict]) -> None:
-    """Seed transactions with per-row description and raw payload.
-
-    The shared `persist_transactions` helper fixes both, but merchant grouping
-    and recurrence detection are driven entirely by those two fields.
-    """
-    from leggen.repositories import TransactionRepository
-
-    repo = TransactionRepository()
-    by_account: dict[str, list] = {}
-    for row in rows:
-        txn = {
-            "transactionId": row["id"],
-            "internalTransactionId": f"int-{row['id']}",
-            "institutionId": "TEST_BANK",
-            "iban": "LT313250081177977789",
-            "accountId": row.get("account_id", "acc-1"),
-            "transactionDate": row["date"],
-            "description": row.get("description", "Payment"),
-            "transactionValue": row["value"],
-            "transactionCurrency": row.get("currency", "EUR"),
-            "transactionStatus": "booked",
-            "rawTransaction": row.get("raw", {}),
-        }
-        by_account.setdefault(txn["accountId"], []).append(txn)
-    for account_id, txns in by_account.items():
-        repo.persist(account_id, txns)
+from tests.helpers import persist_transactions, seed_transactions
 
 
 def _persist_balances(rows: list[tuple]) -> None:
@@ -266,7 +237,7 @@ class TestMerchants:
 
     def test_groups_noisy_descriptions(self, api_client, mock_db_path):
         """Reference numbers must not split one merchant into several."""
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": "t1",
@@ -294,7 +265,7 @@ class TestMerchants:
         assert merchants[0]["transaction_count"] == 2
 
     def test_uses_creditor_name_when_present(self, api_client, mock_db_path):
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": "t1",
@@ -314,7 +285,7 @@ class TestMerchants:
 
     def test_compares_against_preceding_window(self, api_client, mock_db_path):
         """The comparison window has equal length and ends the day before."""
-        _persist_rich(
+        seed_transactions(
             [
                 # Previous window: 2025-08-02..2025-08-31
                 {
@@ -344,7 +315,7 @@ class TestMerchants:
 
     def test_new_merchant_has_no_change_pct(self, api_client, mock_db_path):
         """No prior spend is "new", which is not a 0% change."""
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": "t1",
@@ -364,7 +335,7 @@ class TestMerchants:
         assert merchant["change_pct"] is None
 
     def test_income_is_excluded(self, api_client, mock_db_path):
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": "t1",
@@ -391,7 +362,7 @@ class TestMerchants:
 
     def test_reports_uncategorized_share(self, api_client, mock_db_path):
         """The widget needs to say how much of the spend is uncategorized."""
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": "t1",
@@ -419,7 +390,7 @@ class TestMerchants:
         the spend no rule has explained."""
         from leggen.repositories import CategoryRepository
 
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": "t1",
@@ -464,7 +435,7 @@ class TestRecurring:
     """Cadence detection over merchant/amount clusters."""
 
     def test_detects_a_monthly_subscription(self, api_client, mock_db_path):
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": f"t{i}",
@@ -499,7 +470,7 @@ class TestRecurring:
 
     def test_reports_a_stopped_charge_as_ended(self, api_client, mock_db_path):
         """A charge overdue by more than the cadence slack has no next date."""
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": f"floa{i}",
@@ -561,7 +532,7 @@ class TestRecurring:
 
         today = date.today()
         days = [today - timedelta(days=30 * n) for n in (2, 1, 0)]
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": f"t{i}",
@@ -586,7 +557,7 @@ class TestRecurring:
 
     def test_ignores_irregular_charges(self, api_client, mock_db_path):
         """Random dates at one merchant are not a commitment."""
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": f"t{i}",
@@ -613,7 +584,7 @@ class TestRecurring:
 
     def test_requires_a_minimum_number_of_occurrences(self, api_client, mock_db_path):
         """Two charges a month apart are not yet a pattern."""
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": "t1",
@@ -658,7 +629,7 @@ class TestRecurring:
                     "description": "Apple.com/bill",
                 }
             )
-        _persist_rich(rows)
+        seed_transactions(rows)
 
         response = api_client.get(
             "/api/v1/analytics/recurring?date_from=2025-07-01&date_to=2025-09-30"
@@ -669,7 +640,7 @@ class TestRecurring:
 
     def test_tolerates_small_price_drift(self, api_client, mock_db_path):
         """A subscription that changes price slightly is still one commitment."""
-        _persist_rich(
+        seed_transactions(
             [
                 {
                     "id": f"t{i}",

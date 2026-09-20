@@ -3,42 +3,10 @@
 import pytest
 
 from leggen.errors import InvalidRuleScriptError
-from leggen.repositories import (
-    CategoryRepository,
-    CategoryRuleRepository,
-    TransactionRepository,
-)
+from leggen.repositories import CategoryRepository, CategoryRuleRepository
 from leggen.repositories.db import get_db_connection
 from leggen.services.rules import CategoryRuleEngine
-
-
-def _category(name: str) -> int:
-    return next(
-        c for c in CategoryRepository().get_all_categories() if c["name"] == name
-    )["id"]
-
-
-def _seed_transactions(rows: list[tuple[str, str, float]]) -> None:
-    """(transaction_id, description, amount) on one account."""
-    TransactionRepository().persist(
-        "acc-1",
-        [
-            {
-                "transactionId": txn_id,
-                "internalTransactionId": f"int-{txn_id}",
-                "institutionId": "TEST_BANK",
-                "iban": "PT1",
-                "accountId": "acc-1",
-                "transactionDate": "2025-09-05T10:00:00",
-                "description": description,
-                "transactionValue": amount,
-                "transactionCurrency": "EUR",
-                "transactionStatus": "booked",
-                "rawTransaction": {},
-            }
-            for txn_id, description, amount in rows
-        ],
-    )
+from tests.helpers import category_id, seed_transactions
 
 
 def _assignments() -> dict[str, tuple[int, str, int | None]]:
@@ -54,24 +22,24 @@ def _assignments() -> dict[str, tuple[int, str, int | None]]:
 
 @pytest.fixture
 def seeded(mock_db_path):
-    _seed_transactions(
+    seed_transactions(
         [
-            ("t-pingo", "COMPRA PINGO DOCE", -30.0),
-            ("t-uber", "UBER EATS", -15.0),
-            ("t-salary", "ACME LDA SALARIO", 2000.0),
-            ("t-other", "SOMETHING ELSE", -5.0),
+            {"id": "t-pingo", "description": "COMPRA PINGO DOCE", "value": -30.0},
+            {"id": "t-uber", "description": "UBER EATS", "value": -15.0},
+            {"id": "t-salary", "description": "ACME LDA SALARIO", "value": 2000.0},
+            {"id": "t-other", "description": "SOMETHING ELSE", "value": -5.0},
         ]
     )
     rules = CategoryRuleRepository()
     groceries = rules.create_rule(
         "Groceries",
-        _category("Groceries"),
+        category_id("Groceries"),
         'return contains(tx.description, "pingo")',
         priority=10,
     )
     dining = rules.create_rule(
         "Dining",
-        _category("Dining"),
+        category_id("Dining"),
         'return contains(tx.description, "uber")',
         priority=20,
     )
@@ -84,16 +52,16 @@ class TestRun:
         rules = CategoryRuleRepository()
         # A broader rule at a lower priority must not steal the match.
         rules.create_rule(
-            "Catch-all", _category("Shopping"), "return tx.is_expense", priority=999
+            "Catch-all", category_id("Shopping"), "return tx.is_expense", priority=999
         )
 
         result = CategoryRuleEngine().run()
 
         assert result.assigned == 3
         assigned = _assignments()
-        assert assigned["t-pingo"][0] == _category("Groceries")
-        assert assigned["t-uber"][0] == _category("Dining")
-        assert assigned["t-other"][0] == _category("Shopping")
+        assert assigned["t-pingo"][0] == category_id("Groceries")
+        assert assigned["t-uber"][0] == category_id("Dining")
+        assert assigned["t-other"][0] == category_id("Shopping")
         assert "t-salary" not in assigned
         assert all(source == "rule" for _, source, _ in assigned.values())
 
@@ -101,7 +69,7 @@ class TestRun:
         result = CategoryRuleEngine().run()
 
         assert _assignments()["t-uber"] == (
-            _category("Dining"),
+            category_id("Dining"),
             "rule",
             seeded["dining"]["id"],
         )
@@ -109,11 +77,11 @@ class TestRun:
         assert result.transactions_evaluated == 4
 
     def test_manual_assignments_are_never_touched(self, seeded):
-        CategoryRepository().assign_category("acc-1", "t-pingo", _category("Dining"))
+        CategoryRepository().assign_category("acc-1", "t-pingo", category_id("Dining"))
 
         CategoryRuleEngine().run()
 
-        assert _assignments()["t-pingo"] == (_category("Dining"), "manual", None)
+        assert _assignments()["t-pingo"] == (category_id("Dining"), "manual", None)
 
     def test_is_idempotent(self, seeded):
         engine = CategoryRuleEngine()
@@ -135,7 +103,7 @@ class TestRun:
         assert result.cleared == 1
         assert "t-pingo" not in _assignments()
         assert [c.action for c in result.changes] == ["clear"]
-        assert result.changes[0].previous_category_id == _category("Groceries")
+        assert result.changes[0].previous_category_id == category_id("Groceries")
 
     def test_reassigns_when_the_winning_rule_changes(self, seeded):
         engine = CategoryRuleEngine()
@@ -143,7 +111,7 @@ class TestRun:
         # A new, earlier rule now claims the Pingo Doce transaction.
         shopping = CategoryRuleRepository().create_rule(
             "Shopping first",
-            _category("Shopping"),
+            category_id("Shopping"),
             'return contains(tx.description, "pingo")',
             priority=1,
         )
@@ -152,7 +120,7 @@ class TestRun:
 
         assert result.assigned == 1
         assert _assignments()["t-pingo"] == (
-            _category("Shopping"),
+            category_id("Shopping"),
             "rule",
             shopping["id"],
         )
@@ -189,7 +157,7 @@ class TestRun:
 
     def test_a_rule_that_does_not_compile_is_skipped(self, seeded):
         broken = CategoryRuleRepository().create_rule(
-            "Broken", _category("Shopping"), "if then", priority=1
+            "Broken", category_id("Shopping"), "if then", priority=1
         )
 
         result = CategoryRuleEngine().run()
@@ -201,7 +169,7 @@ class TestRun:
 
     def test_runtime_errors_are_counted_not_fatal(self, seeded):
         faulty = CategoryRuleRepository().create_rule(
-            "Faulty", _category("Shopping"), "return tx.raw.a.b == 1", priority=1
+            "Faulty", category_id("Shopping"), "return tx.raw.a.b == 1", priority=1
         )
 
         result = CategoryRuleEngine().run()
@@ -213,7 +181,7 @@ class TestRun:
         assert result.assigned == 2  # later rules still matched
 
     def test_no_rules_is_a_clean_no_op(self, mock_db_path):
-        _seed_transactions([("t", "X", -1.0)])
+        seed_transactions([{"id": "t", "description": "X", "value": -1.0}])
 
         result = CategoryRuleEngine().run()
 
@@ -243,7 +211,7 @@ class TestAuthoringHelpers:
             CategoryRuleEngine().test_script("return true", "acc-1", "nope")
 
     def test_preview_includes_and_flags_manual_rows(self, seeded):
-        CategoryRepository().assign_category("acc-1", "t-pingo", _category("Dining"))
+        CategoryRepository().assign_category("acc-1", "t-pingo", category_id("Dining"))
 
         preview = CategoryRuleEngine().preview_script("return tx.is_expense")
 

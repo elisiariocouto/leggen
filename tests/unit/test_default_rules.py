@@ -6,7 +6,6 @@ from leggen.repositories import (
     AccountRepository,
     CategoryRepository,
     CategoryRuleRepository,
-    TransactionRepository,
 )
 from leggen.repositories.db import get_db_connection
 from leggen.services.rules import (
@@ -15,6 +14,7 @@ from leggen.services.rules import (
     seed_default_category_rules,
     validate_script,
 )
+from tests.helpers import seed_transactions
 
 # Descriptions the sample generator uses, with the category each should get.
 # The builtin rules are judged against these: a fresh install with sample
@@ -73,30 +73,12 @@ NEGATIVES = [
 ]
 
 
+# The IBAN of the account the seeded transactions belong to.
+OWN_IBAN = "PT50000201231234567890154"
+
+
 def _categories() -> dict[int, str]:
     return {c["id"]: c["name"] for c in CategoryRepository().get_all_categories()}
-
-
-def _seed_rows(rows: list[tuple[str, str, float, dict]]) -> None:
-    TransactionRepository().persist(
-        "acc-1",
-        [
-            {
-                "transactionId": txn_id,
-                "internalTransactionId": f"int-{txn_id}",
-                "institutionId": "TEST_BANK",
-                "iban": "PT50000201231234567890154",
-                "accountId": "acc-1",
-                "transactionDate": "2025-09-05T10:00:00",
-                "description": description,
-                "transactionValue": amount,
-                "transactionCurrency": "EUR",
-                "transactionStatus": "booked",
-                "rawTransaction": raw,
-            }
-            for txn_id, description, amount, raw in rows
-        ],
-    )
 
 
 def _assigned() -> dict[str, str]:
@@ -154,18 +136,18 @@ class TestPrecision:
     def test_ground_truth(self, mock_db_path):
         seed_default_category_rules()
         rows = [
-            (f"e-{i}", description, -25.0, {})
+            {"id": f"e-{i}", "description": description, "value": -25.0}
             for i, description in enumerate(GROUND_TRUTH)
         ]
         rows += [
-            (f"i-{i}", description, 2500.0, {})
+            {"id": f"i-{i}", "description": description, "value": 2500.0}
             for i, description in enumerate(INCOME_GROUND_TRUTH)
         ]
         rows += [
-            (f"n-{i}", description, -25.0, {})
+            {"id": f"n-{i}", "description": description, "value": -25.0}
             for i, description in enumerate(NEGATIVES)
         ]
-        _seed_rows(rows)
+        seed_transactions(rows)
 
         CategoryRuleEngine().run()
 
@@ -197,47 +179,52 @@ class TestPrecision:
                     "created": "2025-01-01T00:00:00Z",
                 }
             )
-        _seed_rows(
+        seed_transactions(
             [
-                (
-                    "own",
-                    "TRF SEPA",
-                    -300.0,
-                    {"creditor_account": {"iban": "PT50003300004555555555555"}},
-                ),
-                (
-                    "other",
-                    "TRF SEPA",
-                    -300.0,
-                    {"creditor_account": {"iban": "DE89370400440532013000"}},
-                ),
+                {
+                    "id": "own",
+                    "description": "TRF SEPA",
+                    "value": -300.0,
+                    "iban": OWN_IBAN,
+                    "raw": {"creditor_account": {"iban": "PT50003300004555555555555"}},
+                },
+                {
+                    "id": "other",
+                    "description": "TRF SEPA",
+                    "value": -300.0,
+                    "iban": OWN_IBAN,
+                    "raw": {"creditor_account": {"iban": "DE89370400440532013000"}},
+                },
                 # Banks put the user's own account on the debtor side of every
                 # expense; that must never read as a transfer to oneself.
-                (
-                    "fee",
-                    "MANUTENCAO DE CONTA",
-                    -5.0,
-                    {
+                {
+                    "id": "fee",
+                    "description": "MANUTENCAO DE CONTA",
+                    "value": -5.0,
+                    "iban": OWN_IBAN,
+                    "raw": {
                         "debtor_account": {"iban": "PT50000201231234567890154"},
                         "creditor_account": {"iban": "PT50001000001111111111111"},
                     },
-                ),
-                (
-                    "mbway",
-                    "TRF MB WAY P  SOMEONE",
-                    -20.0,
-                    {"debtor_account": {"iban": "PT50000201231234567890154"}},
-                ),
+                },
+                {
+                    "id": "mbway",
+                    "description": "TRF MB WAY P  SOMEONE",
+                    "value": -20.0,
+                    "iban": OWN_IBAN,
+                    "raw": {"debtor_account": {"iban": "PT50000201231234567890154"}},
+                },
                 # Income from one of the user's other accounts is a transfer.
-                (
-                    "incoming",
-                    "TRF",
-                    300.0,
-                    {
+                {
+                    "id": "incoming",
+                    "description": "TRF",
+                    "value": 300.0,
+                    "iban": OWN_IBAN,
+                    "raw": {
                         "debtor_account": {"iban": "PT50003300004555555555555"},
                         "creditor_account": {"iban": "PT50000201231234567890154"},
                     },
-                ),
+                },
             ]
         )
 

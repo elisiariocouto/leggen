@@ -11,13 +11,7 @@ from leggen.repositories import (
     TransactionRepository,
 )
 from leggen.repositories.db import get_db_connection
-from tests.conftest import persist_transactions
-
-
-def _category_id(name: str = "Groceries") -> int:
-    return next(
-        c for c in CategoryRepository().get_all_categories() if c["name"] == name
-    )["id"]
+from tests.helpers import category_id, persist_transactions
 
 
 def _assignment(account_id: str, transaction_id: str) -> dict | None:
@@ -37,7 +31,7 @@ class TestRuleCrud:
 
         rule = repo.create_rule(
             name="Supermarkets",
-            category_id=_category_id(),
+            category_id=category_id("Groceries"),
             lua_script='return contains(tx.merchant, "pingo")',
             description="Big chains",
             priority=10,
@@ -51,7 +45,7 @@ class TestRuleCrud:
 
     def test_listed_in_evaluation_order(self, mock_db_path):
         repo = CategoryRuleRepository()
-        cat = _category_id()
+        cat = category_id("Groceries")
         repo.create_rule("later", cat, "return false", priority=200)
         repo.create_rule("first", cat, "return false", priority=10)
         repo.create_rule("also-ten", cat, "return false", priority=10)
@@ -64,7 +58,7 @@ class TestRuleCrud:
 
     def test_active_only(self, mock_db_path):
         repo = CategoryRuleRepository()
-        cat = _category_id()
+        cat = category_id("Groceries")
         repo.create_rule("on", cat, "return false")
         repo.create_rule("off", cat, "return false", is_active=False)
 
@@ -72,10 +66,10 @@ class TestRuleCrud:
 
     def test_duplicate_name_is_a_conflict(self, mock_db_path):
         repo = CategoryRuleRepository()
-        repo.create_rule("dup", _category_id(), "return false")
+        repo.create_rule("dup", category_id("Groceries"), "return false")
 
         with pytest.raises(CategoryRuleExistsError):
-            repo.create_rule("dup", _category_id(), "return true")
+            repo.create_rule("dup", category_id("Groceries"), "return true")
 
     def test_unknown_category_is_rejected(self, mock_db_path):
         """Foreign keys are on, so the database refuses the row itself."""
@@ -86,7 +80,7 @@ class TestRuleCrud:
 
     def test_update(self, mock_db_path):
         repo = CategoryRuleRepository()
-        rule = repo.create_rule("r", _category_id(), "return false")
+        rule = repo.create_rule("r", category_id("Groceries"), "return false")
 
         updated = repo.update_rule(
             rule["id"],
@@ -106,7 +100,7 @@ class TestRuleCrud:
         repo = CategoryRuleRepository()
         rule = repo.create_rule(
             "r",
-            _category_id(),
+            category_id("Groceries"),
             "return false",
             description="d",
             exclude_from_stats=True,
@@ -122,7 +116,7 @@ class TestRuleCrud:
 
     def test_update_rejects_unknown_fields(self, mock_db_path):
         repo = CategoryRuleRepository()
-        rule = repo.create_rule("r", _category_id(), "return false")
+        rule = repo.create_rule("r", category_id("Groceries"), "return false")
 
         with pytest.raises(ValueError):
             repo.update_rule(rule["id"], id=5)
@@ -132,15 +126,15 @@ class TestRuleCrud:
 
     def test_update_to_taken_name_is_a_conflict(self, mock_db_path):
         repo = CategoryRuleRepository()
-        repo.create_rule("a", _category_id(), "return false")
-        b = repo.create_rule("b", _category_id(), "return false")
+        repo.create_rule("a", category_id("Groceries"), "return false")
+        b = repo.create_rule("b", category_id("Groceries"), "return false")
 
         with pytest.raises(CategoryRuleExistsError):
             repo.update_rule(b["id"], name="a")
 
     def test_delete(self, mock_db_path):
         repo = CategoryRuleRepository()
-        rule = repo.create_rule("r", _category_id(), "return false")
+        rule = repo.create_rule("r", category_id("Groceries"), "return false")
 
         assert repo.delete_rule(rule["id"]) is True
         assert repo.delete_rule(rule["id"]) is False
@@ -168,9 +162,9 @@ class TestAssignments:
             ]
         )
         rule = CategoryRuleRepository().create_rule(
-            "r", _category_id("Groceries"), "return true"
+            "r", category_id("Groceries"), "return true"
         )
-        return rule["id"], _category_id("Groceries")
+        return rule["id"], category_id("Groceries")
 
     def test_apply_records_source_and_rule(self, mock_db_path):
         rule_id, cat = self._seed()
@@ -190,7 +184,7 @@ class TestAssignments:
 
     def test_apply_never_overwrites_a_manual_assignment(self, mock_db_path):
         rule_id, groceries = self._seed()
-        dining = _category_id("Dining")
+        dining = category_id("Dining")
         CategoryRepository().assign_category("acc-1", "t1", dining)
 
         CategoryRuleRepository().apply_assignments(
@@ -206,18 +200,18 @@ class TestAssignments:
     def test_apply_replaces_a_previous_rule_assignment(self, mock_db_path):
         rule_id, groceries = self._seed()
         other = CategoryRuleRepository().create_rule(
-            "o", _category_id("Dining"), "return true"
+            "o", category_id("Dining"), "return true"
         )
         repo = CategoryRuleRepository()
         repo.apply_assignments([("acc-1", "t1", groceries, rule_id, None)])
 
         repo.apply_assignments(
-            [("acc-1", "t1", _category_id("Dining"), other["id"], True)]
+            [("acc-1", "t1", category_id("Dining"), other["id"], True)]
         )
 
         current = _assignment("acc-1", "t1")
         assert current is not None
-        assert current["categoryId"] == _category_id("Dining")
+        assert current["categoryId"] == category_id("Dining")
         assert current["ruleId"] == other["id"]
         assert current["exclude_from_stats"] == 1
 
@@ -228,7 +222,7 @@ class TestAssignments:
         repo = CategoryRuleRepository()
         repo.apply_assignments([("acc-1", "t1", groceries, rule_id, True)])
 
-        CategoryRepository().assign_category("acc-1", "t1", _category_id("Dining"))
+        CategoryRepository().assign_category("acc-1", "t1", category_id("Dining"))
 
         current = _assignment("acc-1", "t1")
         assert current is not None

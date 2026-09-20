@@ -3,19 +3,13 @@
 import pytest
 
 from leggen.repositories import CategoryRepository
-from tests.conftest import persist_transactions
-
-
-def _category(name: str) -> int:
-    return next(
-        c for c in CategoryRepository().get_all_categories() if c["name"] == name
-    )["id"]
+from tests.helpers import category_id, persist_transactions
 
 
 def _create(api_client, **overrides) -> dict:
     body = {
         "name": "Supermarkets",
-        "category_id": _category("Groceries"),
+        "category_id": category_id("Groceries"),
         "lua_script": 'return contains(tx.description, "Transaction t1")',
         "priority": 10,
     }
@@ -73,7 +67,7 @@ class TestRuleCrud:
             "/api/v1/category-rules",
             json={
                 "name": "x",
-                "category_id": _category("Groceries"),
+                "category_id": category_id("Groceries"),
                 "lua_script": "if then",
             },
         )
@@ -90,7 +84,7 @@ class TestRuleCrud:
             "/api/v1/category-rules",
             json={
                 "name": "Supermarkets",
-                "category_id": _category("Groceries"),
+                "category_id": category_id("Groceries"),
                 "lua_script": "return true",
             },
         )
@@ -256,7 +250,7 @@ class TestAuthoringHelpers:
         assert response.status_code == 404
 
     def test_preview_paginates_and_flags_manual(self, api_client):
-        CategoryRepository().assign_category("acc-1", "t1", _category("Dining"))
+        CategoryRepository().assign_category("acc-1", "t1", category_id("Dining"))
 
         response = api_client.post(
             "/api/v1/category-rules/preview",
@@ -308,9 +302,9 @@ class TestAuthoringHelpers:
         from leggen.repositories import CategoryRuleRepository
 
         repo = CategoryRuleRepository()
-        broken = repo.create_rule("broken", _category("Shopping"), "if then")
+        broken = repo.create_rule("broken", category_id("Shopping"), "if then")
         faulty = repo.create_rule(
-            "faulty", _category("Shopping"), "return tx.raw.a.b == 1"
+            "faulty", category_id("Shopping"), "return tx.raw.a.b == 1"
         )
 
         report = api_client.post("/api/v1/category-rules/apply").json()
