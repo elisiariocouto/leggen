@@ -33,7 +33,6 @@ class TestBackupService:
         service = BackupService(s3_config)
         assert service.s3_config == s3_config
 
-    @pytest.mark.asyncio
     async def test_test_connection_success(self):
         """Test successful S3 connection test."""
         s3_config = S3BackupConfig(
@@ -61,7 +60,6 @@ class TestBackupService:
                 Bucket="test-bucket", MaxKeys=1
             )
 
-    @pytest.mark.asyncio
     async def test_test_connection_no_credentials(self):
         """Test S3 connection test with no credentials."""
         s3_config = S3BackupConfig(
@@ -82,7 +80,6 @@ class TestBackupService:
             result = await service.test_connection(s3_config)
             assert result is False
 
-    @pytest.mark.asyncio
     async def test_test_connection_client_error(self):
         """Test S3 connection test with client error."""
         s3_config = S3BackupConfig(
@@ -108,7 +105,6 @@ class TestBackupService:
             result = await service.test_connection(s3_config)
             assert result is False
 
-    @pytest.mark.asyncio
     async def test_backup_database_no_config(self):
         """Test backup database with no configuration."""
         service = BackupService()
@@ -120,7 +116,6 @@ class TestBackupService:
             result = await service.backup_database(db_path)
             assert result is False
 
-    @pytest.mark.asyncio
     async def test_backup_database_disabled(self):
         """Test backup database with disabled configuration."""
         s3_config = S3BackupConfig(
@@ -139,7 +134,6 @@ class TestBackupService:
             result = await service.backup_database(db_path)
             assert result is False
 
-    @pytest.mark.asyncio
     async def test_backup_database_file_not_found(self):
         """Test backup database with non-existent file."""
         s3_config = S3BackupConfig(
@@ -154,7 +148,6 @@ class TestBackupService:
         result = await service.backup_database(non_existent_path)
         assert result is False
 
-    @pytest.mark.asyncio
     async def test_backup_database_success(self):
         """Test successful database backup uploads a sqlite snapshot."""
         s3_config = S3BackupConfig(
@@ -202,7 +195,6 @@ class TestBackupService:
                 assert uploaded["bucket"] == "test-bucket"
                 assert uploaded["key"].startswith("leggen_backups/database_backup_")
 
-    @pytest.mark.asyncio
     async def test_restore_database_rejects_foreign_key(self):
         """Restore refuses S3 keys outside the backup prefix."""
         s3_config = S3BackupConfig(
@@ -231,7 +223,6 @@ class TestBackupService:
                 )
                 mock_client.download_file.assert_not_called()
 
-    @pytest.mark.asyncio
     async def test_restore_database_success(self):
         """Restore downloads into the destination directory and swaps in place."""
         s3_config = S3BackupConfig(
@@ -263,7 +254,6 @@ class TestBackupService:
                 assert result is True
                 assert restore_path.read_text() == "db payload"
 
-    @pytest.mark.asyncio
     async def test_restore_database_discards_stale_wal(self):
         """A leftover WAL from the replaced database must not survive.
 
@@ -327,7 +317,6 @@ class TestBackupService:
             finally:
                 restored.close()
 
-    @pytest.mark.asyncio
     async def test_list_backups_success(self):
         """Test successful backup listing."""
         s3_config = S3BackupConfig(

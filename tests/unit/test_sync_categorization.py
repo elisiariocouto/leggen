@@ -7,20 +7,13 @@ import pytest
 from leggen.repositories import CategoryRepository, CategoryRuleRepository
 from leggen.repositories.db import get_db_connection
 from leggen.services.sync_service import SyncService
-from tests.helpers import category_id
-
-
-def _bank_transaction(transaction_id: str, description: str, amount: str) -> dict:
-    """One transaction in EnableBanking's own format."""
-    return {
-        "transaction_id": transaction_id,
-        "entry_reference": f"ref-{transaction_id}",
-        "booking_date": "2025-09-01",
-        "transaction_amount": {"amount": amount, "currency": "EUR"},
-        "credit_debit_indicator": "DBIT",
-        "remittance_information": [description],
-        "status": "BOOK",
-    }
+from tests.helpers import (
+    account_details,
+    bank_transaction,
+    category_id,
+    enablebanking_returns,
+    seed_session,
+)
 
 
 def _assignments() -> dict[str, tuple[int, str]]:
@@ -32,36 +25,12 @@ def _assignments() -> dict[str, tuple[int, str]]:
 
 
 async def _sync(sync_service: SyncService, transactions: list[dict]):
-    with (
-        patch.object(sync_service.session_repo, "get_sessions") as mock_sessions,
-        patch.object(sync_service.enablebanking, "get_account_details") as mock_details,
-        patch.object(
-            sync_service.enablebanking, "get_account_balances", return_value={}
-        ),
-        patch.object(
-            sync_service.enablebanking,
-            "get_account_transactions",
-            return_value={"transactions": transactions},
-        ),
-        patch.object(sync_service.notifications, "send_transaction_notifications"),
-        patch.object(sync_service.notifications, "send_sync_failure_notification"),
+    seed_session(["account-1"])
+    with enablebanking_returns(
+        sync_service,
+        details={"account-1": account_details("account-1", "PT1")},
+        transactions=transactions,
     ):
-        mock_sessions.return_value = [
-            {
-                "session_id": "sess-1",
-                "aspsp_name": "TEST_BANK",
-                "aspsp_country": "PT",
-                "status": "active",
-                "accounts": ["account-1"],
-                "created_at": "2025-09-01T00:00:00Z",
-            }
-        ]
-        mock_details.return_value = {
-            "uid": "account-1",
-            "account_id": {"iban": "PT1"},
-            "name": "Test Account",
-            "currency": "EUR",
-        }
         return await sync_service.sync_all_accounts()
 
 
@@ -77,8 +46,8 @@ class TestSyncCategorization:
         result = await _sync(
             SyncService(),
             [
-                _bank_transaction("tx-1", "COMPRA PINGO DOCE", "30.00"),
-                _bank_transaction("tx-2", "SOMETHING ELSE", "5.00"),
+                bank_transaction("tx-1", "COMPRA PINGO DOCE", "30.00"),
+                bank_transaction("tx-2", "SOMETHING ELSE", "5.00"),
             ],
         )
 
@@ -91,7 +60,7 @@ class TestSyncCategorization:
         sync — that is what the explicit apply is for."""
         sync_service = SyncService()
         await _sync(
-            sync_service, [_bank_transaction("tx-1", "COMPRA PINGO DOCE", "30.00")]
+            sync_service, [bank_transaction("tx-1", "COMPRA PINGO DOCE", "30.00")]
         )
         CategoryRuleRepository().create_rule(
             "Groceries",
@@ -100,7 +69,7 @@ class TestSyncCategorization:
         )
 
         await _sync(
-            sync_service, [_bank_transaction("tx-1", "COMPRA PINGO DOCE", "30.00")]
+            sync_service, [bank_transaction("tx-1", "COMPRA PINGO DOCE", "30.00")]
         )
 
         assert _assignments() == {}
@@ -108,7 +77,7 @@ class TestSyncCategorization:
     async def test_manual_category_survives_a_sync(self, mock_db_path):
         sync_service = SyncService()
         await _sync(
-            sync_service, [_bank_transaction("tx-1", "COMPRA PINGO DOCE", "30.00")]
+            sync_service, [bank_transaction("tx-1", "COMPRA PINGO DOCE", "30.00")]
         )
         CategoryRepository().assign_category("PT1", "tx-1", category_id("Dining"))
         CategoryRuleRepository().create_rule(
@@ -116,7 +85,7 @@ class TestSyncCategorization:
         )
 
         # The bank re-sends the row, now booked instead of pending.
-        booked = _bank_transaction("tx-1", "COMPRA PINGO DOCE", "30.00")
+        booked = bank_transaction("tx-1", "COMPRA PINGO DOCE", "30.00")
         booked["status"] = "BOOK"
         await _sync(sync_service, [booked])
 
@@ -127,7 +96,7 @@ class TestSyncCategorization:
             "Faulty", category_id("Groceries"), "return tx.raw.a.b == 1"
         )
 
-        result = await _sync(SyncService(), [_bank_transaction("tx-1", "X", "1.00")])
+        result = await _sync(SyncService(), [bank_transaction("tx-1", "X", "1.00")])
 
         assert result.success is True
         assert any("Faulty" in w for w in result.warnings)
@@ -136,7 +105,7 @@ class TestSyncCategorization:
         sync_service = SyncService()
 
         with patch.object(sync_service.rules, "run", side_effect=RuntimeError("boom")):
-            result = await _sync(sync_service, [_bank_transaction("tx-1", "X", "1.00")])
+            result = await _sync(sync_service, [bank_transaction("tx-1", "X", "1.00")])
 
         assert result.success is True
         assert result.transactions_added == 1

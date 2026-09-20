@@ -192,7 +192,6 @@ class TestBackgroundScheduler:
         assert next_time is None
         scheduler.scheduler.get_job.assert_called_once_with("daily_sync")
 
-    @pytest.mark.asyncio
     async def test_run_sync_success(self, scheduler):
         """Test successful sync job execution."""
         mock_sync_service = AsyncMock()
@@ -202,7 +201,6 @@ class TestBackgroundScheduler:
 
         mock_sync_service.sync_all_accounts.assert_called_once()
 
-    @pytest.mark.asyncio
     async def test_run_sync_failure(self, scheduler):
         """Test sync job execution with failure."""
         mock_sync_service = AsyncMock()
@@ -225,7 +223,6 @@ class TestBackgroundScheduler:
             for call in scheduler.scheduler.add_job.call_args_list:
                 assert call.kwargs["max_instances"] == 1
 
-    @pytest.mark.asyncio
     async def test_run_backup_success(self, scheduler):
         """A scheduled backup runs against the live S3 configuration."""
         s3_settings = {
@@ -249,7 +246,6 @@ class TestBackgroundScheduler:
             assert s3_config.bucket_name == "bucket"
             mock_service.backup_database.assert_called_once()
 
-    @pytest.mark.asyncio
     async def test_run_backup_skips_when_unconfigured_or_disabled(self, scheduler):
         """The backup job no-ops when S3 is unconfigured or disabled."""
         disabled_s3 = {
@@ -270,7 +266,6 @@ class TestBackgroundScheduler:
 
                 mock_service_cls.assert_not_called()
 
-    @pytest.mark.asyncio
     async def test_run_backup_failure_does_not_raise(self, scheduler):
         """A failed scheduled backup logs the error instead of raising."""
         s3_settings = {

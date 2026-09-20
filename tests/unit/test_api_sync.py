@@ -2,7 +2,7 @@
 
 import tomllib
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -10,6 +10,7 @@ from leggen.api.models.sync import SyncResult
 from leggen.background.scheduler import scheduler
 from leggen.repositories import AccountRepository
 from leggen.services.sync_service import SyncAlreadyRunningError, SyncService
+from tests.helpers import account_details, enablebanking_returns, seed_session
 
 
 def _sync_result() -> SyncResult:
@@ -164,123 +165,73 @@ class TestPerAccountSyncFilter:
     """Test SyncService.sync_all_accounts account_ids filtering."""
 
     DETAILS = {
-        "account-1": {
-            "account_id": {"iban": "IBAN1"},
-            "name": "Account One",
-            "currency": "EUR",
-        },
-        "account-2": {
-            "account_id": {"iban": "IBAN2"},
-            "name": "Account Two",
-            "currency": "EUR",
-        },
+        "account-1": account_details("account-1", "IBAN1", name="Account One"),
+        "account-2": account_details("account-2", "IBAN2", name="Account Two"),
     }
 
-    def _session(self, accounts) -> dict:
-        return {
-            "session_id": "sess-123",
-            "aspsp_name": "TEST_BANK",
-            "aspsp_country": "PT",
-            "status": "active",
-            "accounts": accounts,
-            "created_at": "2025-09-01T00:00:00Z",
-        }
-
-    async def _run_sync(self, sync_service, sessions, account_ids):
-        with (
-            patch.object(
-                sync_service.session_repo, "get_sessions", return_value=sessions
-            ),
-            patch.object(
-                sync_service.enablebanking, "get_account_details"
-            ) as mock_get_details,
-            patch.object(
-                sync_service.enablebanking, "get_account_balances", return_value={}
-            ),
-            patch.object(
-                sync_service.enablebanking, "get_account_transactions", return_value={}
-            ),
-            patch.object(sync_service.accounts, "persist") as mock_persist,
-            patch.object(sync_service.sync, "persist", return_value=1),
-        ):
-            mock_get_details.side_effect = lambda uid: self.DETAILS[uid]
-
+    async def _run_sync(self, sync_service, accounts, account_ids):
+        """Sync one session holding `accounts`; returns the result, the
+        account-details mock and the IDs of the accounts now stored."""
+        seed_session(accounts, session_id="sess-123")
+        with enablebanking_returns(sync_service, details=self.DETAILS) as details:
             result = await sync_service.sync_all_accounts(account_ids=account_ids)
+        stored = sorted(a["id"] for a in AccountRepository().get_accounts())
+        return result, details, stored
 
-            return result, mock_get_details, mock_persist
-
-    @pytest.mark.asyncio
     async def test_filters_by_db_account_id(self, mock_db_path):
         """Requesting a DB account ID (IBAN) syncs only that account and
         never touches the others (their IBAN is known from the session)."""
-        sessions = [
-            self._session(
-                [
-                    {"uid": "account-1", "account_id": {"iban": "IBAN1"}},
-                    {"uid": "account-2", "account_id": {"iban": "IBAN2"}},
-                ]
-            )
+        accounts = [
+            {"uid": "account-1", "account_id": {"iban": "IBAN1"}},
+            {"uid": "account-2", "account_id": {"iban": "IBAN2"}},
         ]
 
-        result, mock_get_details, mock_persist = await self._run_sync(
-            SyncService(), sessions, account_ids=["IBAN1"]
+        result, mock_get_details, stored = await self._run_sync(
+            SyncService(), accounts, account_ids=["IBAN1"]
         )
 
         assert result.accounts_processed == 1
         mock_get_details.assert_called_once_with("account-1")
-        mock_persist.assert_called_once()
-        assert mock_persist.call_args.args[0]["id"] == "IBAN1"
+        assert stored == ["IBAN1"]
 
-    @pytest.mark.asyncio
     async def test_filters_by_enablebanking_uid(self, mock_db_path):
         """Requesting an EnableBanking UID also works."""
-        sessions = [
-            self._session(
-                [
-                    {"uid": "account-1", "account_id": {"iban": "IBAN1"}},
-                    {"uid": "account-2", "account_id": {"iban": "IBAN2"}},
-                ]
-            )
+        accounts = [
+            {"uid": "account-1", "account_id": {"iban": "IBAN1"}},
+            {"uid": "account-2", "account_id": {"iban": "IBAN2"}},
         ]
 
-        result, mock_get_details, mock_persist = await self._run_sync(
-            SyncService(), sessions, account_ids=["account-2"]
+        result, mock_get_details, stored = await self._run_sync(
+            SyncService(), accounts, account_ids=["account-2"]
         )
 
         assert result.accounts_processed == 1
         mock_get_details.assert_called_once_with("account-2")
-        assert mock_persist.call_args.args[0]["id"] == "IBAN2"
+        assert stored == ["IBAN2"]
 
-    @pytest.mark.asyncio
     async def test_filters_when_session_lacks_iban(self, mock_db_path):
         """Accounts stored as plain UID strings (no local IBAN) resolve
         through account details: the requested one syncs, the rest skip."""
-        sessions = [self._session(["account-1", "account-2"])]
+        accounts = ["account-1", "account-2"]
 
-        result, mock_get_details, mock_persist = await self._run_sync(
-            SyncService(), sessions, account_ids=["IBAN1"]
+        result, mock_get_details, stored = await self._run_sync(
+            SyncService(), accounts, account_ids=["IBAN1"]
         )
 
         # Both accounts need a details call to learn their IBAN, but only
         # the requested one is processed
         assert mock_get_details.call_count == 2
         assert result.accounts_processed == 1
-        mock_persist.assert_called_once()
-        assert mock_persist.call_args.args[0]["id"] == "IBAN1"
+        assert stored == ["IBAN1"]
 
-    @pytest.mark.asyncio
     async def test_no_filter_syncs_everything(self, mock_db_path):
-        sessions = [
-            self._session(
-                [
-                    {"uid": "account-1", "account_id": {"iban": "IBAN1"}},
-                    {"uid": "account-2", "account_id": {"iban": "IBAN2"}},
-                ]
-            )
+        accounts = [
+            {"uid": "account-1", "account_id": {"iban": "IBAN1"}},
+            {"uid": "account-2", "account_id": {"iban": "IBAN2"}},
         ]
 
-        result, mock_get_details, mock_persist = await self._run_sync(
-            SyncService(), sessions, account_ids=None
+        result, mock_get_details, stored = await self._run_sync(
+            SyncService(), accounts, account_ids=None
         )
 
         assert result.accounts_processed == 2
