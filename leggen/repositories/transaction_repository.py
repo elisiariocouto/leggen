@@ -36,6 +36,32 @@ _DEFAULT_SORT_BY = "date"
 _DEFAULT_SORT_ORDER = "desc"
 
 
+def _row_to_transaction(row: sqlite3.Row) -> dict[str, Any]:
+    """A transactions row as a dict, with rawTransaction decoded.
+
+    A blob that does not parse (legacy rows, a NULL) becomes an empty dict
+    rather than an error: the row's own columns are still worth returning,
+    and every consumer treats the payload as optional detail.
+    """
+    transaction = dict(row)
+    raw = transaction.get("rawTransaction")
+    try:
+        transaction["rawTransaction"] = json.loads(raw) if raw else {}
+    except (TypeError, ValueError):
+        transaction["rawTransaction"] = {}
+    return transaction
+
+
+def _stats_base(filter_clause: str) -> str:
+    """FROM/WHERE shared by every statistics query: the filtered set, minus
+    the transactions excluded from stats."""
+    return (
+        f"""FROM transactions t{_CATEGORY_JOIN}
+                WHERE {_INCLUDED_IN_STATS}"""
+        + filter_clause
+    )
+
+
 def _build_order_clause(sort_by: str | None, sort_order: str | None) -> str:
     """Build a validated ORDER BY, falling back to the default on anything
     unrecognised so a bad value can never reach the SQL.
@@ -327,18 +353,7 @@ class TransactionRepository:
                 params.append(offset)
 
             cursor.execute(query, params)
-            rows = cursor.fetchall()
-
-            transactions = []
-            for row in rows:
-                transaction = dict(row)
-                if transaction["rawTransaction"]:
-                    transaction["rawTransaction"] = json.loads(
-                        transaction["rawTransaction"]
-                    )
-                transactions.append(transaction)
-
-            return transactions
+            return [_row_to_transaction(row) for row in cursor.fetchall()]
 
     def get_count(
         self,
@@ -425,24 +440,13 @@ class TransactionRepository:
                 max_magnitude=max_magnitude,
             )
 
-            base = (
-                f"""FROM transactions t{_CATEGORY_JOIN}
-                WHERE {_INCLUDED_IN_STATS}"""
-                + filter_clause
-            )
+            base = _stats_base(filter_clause)
 
-            cursor.execute(
-                f"""SELECT t.transactionCurrency AS currency, COUNT(*) AS n
-                {base}
-                GROUP BY t.transactionCurrency ORDER BY n DESC LIMIT 1""",
-                params,
-            )
-            row = cursor.fetchone()
-            if row is None:
-                return empty
             # A NULL currency (legacy rows) still counts as the dominant
             # group, hence `IS ?` below instead of `= ?`.
-            currency = row["currency"]
+            currency, present = self._dominant_currency(cursor, base, params)
+            if not present:
+                return empty
 
             # Placeholder order matters: the four currency parameters sit in
             # the SELECT list, before the filter parameters from the WHERE.
@@ -457,7 +461,7 @@ class TransactionRepository:
                     COALESCE(SUM(CASE WHEN t.transactionCurrency IS ? THEN ABS(t.transactionValue) ELSE 0 END), 0) AS money_magnitude,
                     SUM(CASE WHEN t.transactionCurrency IS ? THEN 1 ELSE 0 END) AS money_count
                 {base}""",
-                [currency] * 4 + params,
+                [currency] * 4 + list(params),
             )
             totals = cursor.fetchone()
 
@@ -482,11 +486,16 @@ class TransactionRepository:
                 "accounts_included": totals["accounts_included"],
             }
 
-    def _dominant_currency(self, cursor, base: str, params: list[Any]) -> str | None:
-        """Most frequent currency for a filtered set.
+    def _dominant_currency(
+        self, cursor: sqlite3.Cursor, base: str, params: list[Any]
+    ) -> tuple[str | None, bool]:
+        """Most frequent currency for a filtered set, and whether the set
+        has any rows at all.
 
         Money aggregations are restricted to one currency because summing
-        across currencies produces meaningless numbers.
+        across currencies produces meaningless numbers. The flag matters
+        because legacy rows can carry a NULL currency: they still form the
+        dominant group, which a bare None could not express.
         """
         cursor.execute(
             f"""SELECT t.transactionCurrency AS currency, COUNT(*) AS n
@@ -495,7 +504,7 @@ class TransactionRepository:
             params,
         )
         row = cursor.fetchone()
-        return row["currency"] if row else None
+        return (row["currency"], True) if row else (None, False)
 
     def get_cash_flow(
         self,
@@ -517,14 +526,10 @@ class TransactionRepository:
             filter_clause, params = self._build_filter_clause(
                 account_id=account_id, date_from=date_from, date_to=date_to
             )
-            base = (
-                f"""FROM transactions t{_CATEGORY_JOIN}
-                WHERE {_INCLUDED_IN_STATS}"""
-                + filter_clause
-            )
+            base = _stats_base(filter_clause)
 
-            currency = self._dominant_currency(cursor, base, params)
-            if currency is None:
+            currency, present = self._dominant_currency(cursor, base, params)
+            if not present:
                 return empty
 
             cursor.execute(
@@ -593,16 +598,12 @@ class TransactionRepository:
                 date_to=date_to,
                 category_id=category_id,
             )
-            base = (
-                f"""FROM transactions t{_CATEGORY_JOIN}
-                WHERE {_INCLUDED_IN_STATS}"""
-                + filter_clause
-            )
+            base = _stats_base(filter_clause)
 
             if currency is None:
-                currency = self._dominant_currency(cursor, base, params)
-            if currency is None:
-                return [], None
+                currency, present = self._dominant_currency(cursor, base, params)
+                if not present:
+                    return [], None
 
             cursor.execute(
                 f"""SELECT t.transactionDate, t.description, t.transactionValue,
@@ -612,19 +613,7 @@ class TransactionRepository:
                 params + [currency],
             )
 
-            rows = []
-            for row in cursor.fetchall():
-                record = dict(row)
-                raw = record.get("rawTransaction")
-                if raw:
-                    try:
-                        record["rawTransaction"] = json.loads(raw)
-                    except (TypeError, ValueError):
-                        record["rawTransaction"] = {}
-                else:
-                    record["rawTransaction"] = {}
-                rows.append(record)
-            return rows, currency
+            return [_row_to_transaction(row) for row in cursor.fetchall()], currency
 
     def get_category_month_rows(
         self,
@@ -642,14 +631,10 @@ class TransactionRepository:
             filter_clause, params = self._build_filter_clause(
                 account_id=account_id, date_from=date_from, date_to=date_to
             )
-            base = (
-                f"""FROM transactions t{_CATEGORY_JOIN}
-                WHERE {_INCLUDED_IN_STATS}"""
-                + filter_clause
-            )
+            base = _stats_base(filter_clause)
 
-            currency = self._dominant_currency(cursor, base, params)
-            if currency is None:
+            currency, present = self._dominant_currency(cursor, base, params)
+            if not present:
                 return [], None
 
             cursor.execute(
@@ -681,14 +666,7 @@ class TransactionRepository:
                 (account_id, transaction_id),
             )
             row = cursor.fetchone()
-            if row:
-                transaction = dict(row)
-                if transaction["rawTransaction"]:
-                    transaction["rawTransaction"] = json.loads(
-                        transaction["rawTransaction"]
-                    )
-                return transaction
-            return None
+            return _row_to_transaction(row) if row else None
 
     def get_rule_candidates(
         self,
@@ -729,15 +707,7 @@ class TransactionRepository:
                     )
                     rows.extend(cursor.fetchall())
 
-            candidates = []
-            for row in rows:
-                transaction = dict(row)
-                if transaction["rawTransaction"]:
-                    transaction["rawTransaction"] = json.loads(
-                        transaction["rawTransaction"]
-                    )
-                candidates.append(transaction)
-            return candidates
+            return [_row_to_transaction(row) for row in rows]
 
     def set_exclude_from_stats(
         self, account_id: str, transaction_id: str, value: bool | None
