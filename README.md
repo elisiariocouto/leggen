@@ -212,7 +212,7 @@ then be reachable without TLS.
 
 > **Do not** route your proxy straight to port 8000 while serving the frontend
 > from a different hostname. The API's CORS policy only allows the frontend
-> container's origin and local dev ports (`leggen/commands/server.py`), so a
+> container's origin and local dev ports (`leggen/api/app.py`), so a
 > split-origin setup fails in the browser. Keeping everything behind one
 > hostname avoids cross-origin requests entirely.
 

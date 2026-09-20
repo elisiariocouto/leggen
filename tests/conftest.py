@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
-from leggen.commands.server import create_app
+from leggen.api.app import create_app
 from leggen.repositories import run_migrations
 from leggen.utils.config import config
 from leggen.utils.paths import path_manager

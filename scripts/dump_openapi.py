@@ -10,7 +10,7 @@ the committed schema or generated types are stale.
 import json
 from pathlib import Path
 
-from leggen.commands.server import create_app
+from leggen.api.app import create_app
 
 
 def main() -> None:

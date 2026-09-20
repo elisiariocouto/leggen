@@ -1,11 +1,12 @@
 """Tests for the unified error envelope and its exception handlers."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
 from leggen.repositories import SessionRepository
+from leggen.utils.config import config
 
 
 def _assert_envelope(body: dict, status: int, code: str) -> None:
@@ -145,8 +146,10 @@ class TestHealthEndpoint:
         """The endpoint is unauthenticated, so it must not echo the failure."""
         client = TestClient(fastapi_app)
 
-        with patch(
-            "leggen.commands.server.metadata.version",
+        with patch.object(
+            type(config),
+            "is_loaded",
+            new_callable=PropertyMock,
             side_effect=Exception("/secret/path/leggen.db unreadable"),
         ):
             response = client.get("/api/v1/health")

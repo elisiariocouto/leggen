@@ -57,7 +57,7 @@ Nearly all business logic lives in the FastAPI server. CLI commands (`leggen/com
 
 ### Backend layering
 Routes → services → repositories:
-- `leggen/commands/server.py` — `create_app()` assembles the FastAPI app; the lifespan hook loads config, runs DB migrations, and starts the scheduler
+- `leggen/api/app.py` — `create_app()` assembles the FastAPI app (one protected router for everything but login); the lifespan hook loads config, runs DB migrations, and starts the scheduler. `leggen/commands/server.py` only starts uvicorn
 - `leggen/api/routes/` — routers mounted under `/api/v1`; all except `auth` require authentication (JWT Bearer from the frontend login flow, or `X-API-Key` header for CLI/programmatic access — resolved in `leggen/api/dependencies/auth.py`)
 - `leggen/api/models/` — Pydantic request/response models
 - `leggen/services/` — business logic: `sync_service.py` (orchestrator), `enablebanking_service.py` (external API; auth is an RS256 JWT signed with the RSA key at config `key_path`), `notification_service.py`, `backup_service.py`, `data_processors.py`, `rules/` (category rules: `lua_runtime.py` is the sandboxed Lua runtime, `engine.py` runs rules over transactions, `defaults.py` the builtin rules)
