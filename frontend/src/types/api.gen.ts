@@ -2770,34 +2770,34 @@ export interface operations {
     get_all_transactions_api_v1_transactions_get: {
         parameters: {
             query?: {
-                /** @description Page number (1-based) */
-                page?: number;
-                /** @description Items per page */
-                per_page?: number;
-                /** @description Return transaction summaries only */
-                summary_only?: boolean;
                 /** @description Filter from date (YYYY-MM-DD) */
                 date_from?: string | null;
-                /** @description Filter to date (YYYY-MM-DD) */
+                /** @description Filter to date (YYYY-MM-DD), inclusive */
                 date_to?: string | null;
-                /** @description Minimum transaction amount */
-                min_amount?: number | null;
-                /** @description Maximum transaction amount */
-                max_amount?: number | null;
-                /** @description Search in transaction descriptions */
-                search?: string | null;
                 /** @description Filter by account ID */
                 account_id?: string | null;
                 /** @description Filter by category ID or 'uncategorized' for transactions without a category */
                 category_id?: string | null;
                 /** @description Filter by transaction status */
                 status?: ("booked" | "pending") | null;
+                /** @description Only money in ('income') or money out ('expense') */
+                kind?: ("income" | "expense") | null;
+                /** @description Search in transaction descriptions */
+                search?: string | null;
+                /** @description Minimum transaction amount */
+                min_amount?: number | null;
+                /** @description Maximum transaction amount */
+                max_amount?: number | null;
                 /** @description Minimum transaction size, ignoring sign (matches income and expenses alike) */
                 min_magnitude?: number | null;
                 /** @description Maximum transaction size, ignoring sign (matches income and expenses alike) */
                 max_magnitude?: number | null;
-                /** @description Only money in ('income') or money out ('expense') */
-                kind?: ("income" | "expense") | null;
+                /** @description Page number (1-based) */
+                page?: number;
+                /** @description Items per page */
+                per_page?: number;
+                /** @description Return transaction summaries only */
+                summary_only?: boolean;
                 /** @description Column to order results by */
                 sort_by?: "date" | "amount" | "description";
                 /** @description Order direction */
@@ -2913,10 +2913,16 @@ export interface operations {
             query: {
                 /** @description Start date (YYYY-MM-DD) */
                 date_from: string;
-                /** @description End date (YYYY-MM-DD) */
+                /** @description End date (YYYY-MM-DD), inclusive */
                 date_to: string;
                 /** @description Filter by account ID */
                 account_id?: string | null;
+                /** @description Filter by category ID or 'uncategorized' for transactions without a category */
+                category_id?: string | null;
+                /** @description Filter by transaction status */
+                status?: ("booked" | "pending") | null;
+                /** @description Only money in ('income') or money out ('expense') */
+                kind?: ("income" | "expense") | null;
                 /** @description Search in transaction descriptions */
                 search?: string | null;
                 /** @description Minimum transaction amount */
@@ -2927,8 +2933,6 @@ export interface operations {
                 min_magnitude?: number | null;
                 /** @description Maximum transaction size, ignoring sign (matches income and expenses alike) */
                 max_magnitude?: number | null;
-                /** @description Filter by category ID or 'uncategorized' for transactions without a category */
-                category_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -4554,7 +4558,7 @@ export interface operations {
             query: {
                 /** @description Start date (YYYY-MM-DD) */
                 date_from: string;
-                /** @description End date (YYYY-MM-DD) */
+                /** @description End date (YYYY-MM-DD), inclusive */
                 date_to: string;
                 /** @description Filter by account ID */
                 account_id?: string | null;
@@ -4608,7 +4612,7 @@ export interface operations {
             query: {
                 /** @description Start date (YYYY-MM-DD) */
                 date_from: string;
-                /** @description End date (YYYY-MM-DD) */
+                /** @description End date (YYYY-MM-DD), inclusive */
                 date_to: string;
                 /** @description Filter by account ID */
                 account_id?: string | null;
@@ -4662,7 +4666,7 @@ export interface operations {
             query: {
                 /** @description Start date (YYYY-MM-DD) */
                 date_from: string;
-                /** @description End date (YYYY-MM-DD) */
+                /** @description End date (YYYY-MM-DD), inclusive */
                 date_to: string;
                 /** @description Filter by account ID */
                 account_id?: string | null;
@@ -4720,7 +4724,7 @@ export interface operations {
             query: {
                 /** @description Start date (YYYY-MM-DD) */
                 date_from: string;
-                /** @description End date (YYYY-MM-DD) */
+                /** @description End date (YYYY-MM-DD), inclusive */
                 date_to: string;
                 /** @description Filter by account ID */
                 account_id?: string | null;
@@ -4774,7 +4778,7 @@ export interface operations {
             query: {
                 /** @description Start date (YYYY-MM-DD) */
                 date_from: string;
-                /** @description End date (YYYY-MM-DD) */
+                /** @description End date (YYYY-MM-DD), inclusive */
                 date_to: string;
                 /** @description Filter by account ID */
                 account_id?: string | null;

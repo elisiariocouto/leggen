@@ -5,6 +5,7 @@ import pytest
 from leggen.repositories import (
     AccountRepository,
     BalanceRepository,
+    TransactionFilter,
     TransactionRepository,
 )
 from tests.helpers import persist_transactions
@@ -130,7 +131,12 @@ class TestAccountsAPI:
         assert AccountRepository().get_account("test-account-123")["status"] == (
             "DELETED"
         )
-        assert TransactionRepository().get_count(account_id="test-account-123") == 0
+        assert (
+            TransactionRepository().get_count(
+                TransactionFilter(account_id="test-account-123")
+            )
+            == 0
+        )
         assert BalanceRepository().get_balances("test-account-123") == []
 
     def test_delete_account_keep_data(self, api_client):
@@ -157,7 +163,12 @@ class TestAccountsAPI:
         assert AccountRepository().get_account("test-account-123")["status"] == (
             "DELETED"
         )
-        assert TransactionRepository().get_count(account_id="test-account-123") == 1
+        assert (
+            TransactionRepository().get_count(
+                TransactionFilter(account_id="test-account-123")
+            )
+            == 1
+        )
         assert len(BalanceRepository().get_balances("test-account-123")) == 1
 
     def test_delete_account_not_found(self, api_client):

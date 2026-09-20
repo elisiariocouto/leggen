@@ -564,3 +564,44 @@ class TestCategorySource:
         assert rows["t2"]["category_source"] == "rule"
         assert rows["t2"]["category_rule_id"] == rule["id"]
         assert rows["t3"]["category_source"] is None
+
+
+@pytest.mark.api
+class TestTransactionFilterValidation:
+    """The filters are one model shared by the list and the statistics."""
+
+    def test_malformed_date_is_rejected_with_field_error(self, api_client):
+        response = api_client.get("/api/v1/transactions?date_from=yesterday")
+
+        assert response.status_code == 422
+        body = response.json()
+        assert body["code"] == "VALIDATION_ERROR"
+        assert body["errors"][0]["field"] == "query.date_from"
+
+    def test_stats_require_the_date_range(self, api_client):
+        response = api_client.get("/api/v1/transactions/stats?date_from=2025-01-01")
+
+        assert response.status_code == 422
+        assert response.json()["errors"][0]["field"] == "query.date_to"
+
+    def test_stats_accept_the_list_filters(self, api_client, mock_db_path):
+        """Statistics take every filter the list takes, kind included, so a
+        list narrowed to expenses adds up to the figure reported for it."""
+        persist_transactions(
+            [
+                ("t1", DEFAULT_IBAN, "2025-09-05T10:00:00", -20.0, "EUR", "booked"),
+                ("t2", DEFAULT_IBAN, "2025-09-06T10:00:00", 50.0, "EUR", "booked"),
+                ("t3", DEFAULT_IBAN, "2025-09-07T10:00:00", -5.0, "EUR", "pending"),
+            ]
+        )
+
+        response = api_client.get(
+            "/api/v1/transactions/stats"
+            "?date_from=2025-09-01&date_to=2025-09-30&kind=expense&status=booked"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_transactions"] == 1
+        assert data["total_expenses"] == 20.0
+        assert data["total_income"] == 0.0

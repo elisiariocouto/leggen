@@ -5,7 +5,10 @@ from leggen.repositories.category_rule_repository import CategoryRuleRepository
 from leggen.repositories.migrations import run_migrations
 from leggen.repositories.session_repository import SessionRepository
 from leggen.repositories.sync_repository import SyncRepository
-from leggen.repositories.transaction_repository import TransactionRepository
+from leggen.repositories.transaction_repository import (
+    TransactionFilter,
+    TransactionRepository,
+)
 
 __all__ = [
     "AccountRepository",
@@ -14,6 +17,7 @@ __all__ = [
     "CategoryRuleRepository",
     "SessionRepository",
     "SyncRepository",
+    "TransactionFilter",
     "TransactionRepository",
     "run_migrations",
 ]

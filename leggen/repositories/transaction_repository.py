@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from dataclasses import dataclass
 from typing import Any
 
 from loguru import logger
@@ -34,6 +35,98 @@ _SORT_COLUMNS = {
 }
 _DEFAULT_SORT_BY = "date"
 _DEFAULT_SORT_ORDER = "desc"
+
+
+@dataclass(frozen=True)
+class TransactionFilter:
+    """The predicates a transaction query can be narrowed by.
+
+    One object travels from the route to every repository method that reads
+    transactions, so adding a filter means adding a field here and a clause
+    in `to_sql()`. Dates are ISO `YYYY-MM-DD` strings; `category_id` is a
+    numeric ID or "uncategorized"; `status` and `kind` are the values the
+    API's Literals allow. Validation happens at the API boundary.
+    """
+
+    account_id: str | None = None
+    date_from: str | None = None
+    date_to: str | None = None
+    min_amount: float | None = None
+    max_amount: float | None = None
+    min_magnitude: float | None = None
+    max_magnitude: float | None = None
+    search: str | None = None
+    category_id: str | None = None
+    status: str | None = None
+    kind: str | None = None
+
+    def to_sql(self) -> tuple[str, list[str | int | float]]:
+        """WHERE fragments (each starting with AND) and their bound values,
+        for a query aliasing transactions as `t` and their category join as
+        `tc`."""
+        clause = ""
+        params: list[str | int | float] = []
+
+        # Same sign test as the stats totals, so a list filtered to one
+        # direction adds up to the figure the analytics reported for it.
+        if self.kind == "expense":
+            clause += " AND t.transactionValue < 0"
+        elif self.kind == "income":
+            clause += " AND t.transactionValue > 0"
+
+        if self.account_id:
+            clause += " AND t.accountId = ?"
+            params.append(self.account_id)
+
+        if self.date_from:
+            clause += " AND t.transactionDate >= ?"
+            params.append(self.date_from)
+
+        if self.date_to:
+            # transactionDate carries a time component, so an inclusive end
+            # date means "anything before the start of the following day"
+            clause += " AND t.transactionDate < date(?, '+1 day')"
+            params.append(self.date_to)
+
+        if self.min_amount is not None:
+            clause += " AND t.transactionValue >= ?"
+            params.append(self.min_amount)
+
+        if self.max_amount is not None:
+            clause += " AND t.transactionValue <= ?"
+            params.append(self.max_amount)
+
+        # Magnitude filters ignore the sign, matching how the app presents
+        # amounts: expenses are shown as positive figures (see the ABS() in
+        # get_stats_totals), so "40 to 50" should catch a -45 payment and a
+        # +45 refund alike. ABS() rules out idx_transactions_amount, but this
+        # is a filter bounded by the other predicates, not a sort.
+        if self.min_magnitude is not None:
+            clause += " AND ABS(t.transactionValue) >= ?"
+            params.append(self.min_magnitude)
+
+        if self.max_magnitude is not None:
+            clause += " AND ABS(t.transactionValue) <= ?"
+            params.append(self.max_magnitude)
+
+        if self.search:
+            clause += " AND t.description LIKE ?"
+            params.append(f"%{self.search}%")
+
+        if self.category_id:
+            if self.category_id == "uncategorized":
+                clause += " AND tc.categoryId IS NULL"
+            else:
+                clause += " AND tc.categoryId = ?"
+                params.append(int(self.category_id))
+
+        if self.status:
+            # Banks are inconsistent about the case they report, so compare
+            # case-insensitively rather than trusting the stored spelling.
+            clause += " AND LOWER(t.transactionStatus) = ?"
+            params.append(self.status.lower())
+
+        return clause, params
 
 
 def _row_to_transaction(row: sqlite3.Row) -> dict[str, Any]:
@@ -79,85 +172,6 @@ def _build_order_clause(sort_by: str | None, sort_order: str | None) -> str:
 
 class TransactionRepository:
     """Repository for transaction data operations"""
-
-    def _build_filter_clause(
-        self,
-        account_id: str | None = None,
-        date_from: str | None = None,
-        date_to: str | None = None,
-        min_amount: float | None = None,
-        max_amount: float | None = None,
-        search: str | None = None,
-        category_id: str | None = None,
-        status: str | None = None,
-        min_magnitude: float | None = None,
-        max_magnitude: float | None = None,
-        kind: str | None = None,
-    ) -> tuple[str, list[str | int | float]]:
-        """Build WHERE clause and params for transaction filtering."""
-        clause = ""
-        params: list[str | int | float] = []
-
-        # Same sign test as the stats totals, so a list filtered to one
-        # direction adds up to the figure the analytics reported for it.
-        if kind == "expense":
-            clause += " AND t.transactionValue < 0"
-        elif kind == "income":
-            clause += " AND t.transactionValue > 0"
-
-        if account_id:
-            clause += " AND t.accountId = ?"
-            params.append(account_id)
-
-        if date_from:
-            clause += " AND t.transactionDate >= ?"
-            params.append(date_from)
-
-        if date_to:
-            # transactionDate carries a time component, so an inclusive end
-            # date means "anything before the start of the following day"
-            clause += " AND t.transactionDate < date(?, '+1 day')"
-            params.append(date_to)
-
-        if min_amount is not None:
-            clause += " AND t.transactionValue >= ?"
-            params.append(min_amount)
-
-        if max_amount is not None:
-            clause += " AND t.transactionValue <= ?"
-            params.append(max_amount)
-
-        # Magnitude filters ignore the sign, matching how the app presents
-        # amounts: expenses are shown as positive figures (see the ABS() in
-        # get_stats_totals), so "40 to 50" should catch a -45 payment and a
-        # +45 refund alike. ABS() rules out idx_transactions_amount, but this
-        # is a filter bounded by the other predicates, not a sort.
-        if min_magnitude is not None:
-            clause += " AND ABS(t.transactionValue) >= ?"
-            params.append(min_magnitude)
-
-        if max_magnitude is not None:
-            clause += " AND ABS(t.transactionValue) <= ?"
-            params.append(max_magnitude)
-
-        if search:
-            clause += " AND t.description LIKE ?"
-            params.append(f"%{search}%")
-
-        if category_id:
-            if category_id == "uncategorized":
-                clause += " AND tc.categoryId IS NULL"
-            else:
-                clause += " AND tc.categoryId = ?"
-                params.append(int(category_id))
-
-        if status:
-            # Banks are inconsistent about the case they report, so compare
-            # case-insensitively rather than trusting the stored spelling.
-            clause += " AND LOWER(t.transactionStatus) = ?"
-            params.append(status.lower())
-
-        return clause, params
 
     def persist(
         self, account_id: str, transactions: list[dict[str, Any]]
@@ -299,39 +313,17 @@ class TransactionRepository:
 
     def get_transactions(
         self,
-        account_id: str | None = None,
+        filters: TransactionFilter = TransactionFilter(),
+        *,
         limit: int | None = 100,
         offset: int = 0,
-        date_from: str | None = None,
-        date_to: str | None = None,
-        min_amount: float | None = None,
-        max_amount: float | None = None,
-        search: str | None = None,
-        category_id: str | None = None,
-        status: str | None = None,
-        min_magnitude: float | None = None,
-        max_magnitude: float | None = None,
-        kind: str | None = None,
         sort_by: str | None = None,
         sort_order: str | None = None,
     ) -> list[dict[str, Any]]:
         """Get transactions with optional filtering and ordering"""
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
-
-            filter_clause, params = self._build_filter_clause(
-                account_id=account_id,
-                date_from=date_from,
-                date_to=date_to,
-                min_amount=min_amount,
-                max_amount=max_amount,
-                search=search,
-                category_id=category_id,
-                status=status,
-                min_magnitude=min_magnitude,
-                max_magnitude=max_magnitude,
-                kind=kind,
-            )
+            filter_clause, params = filters.to_sql()
 
             query = (
                 f"""SELECT t.*, tc.categoryId, c.name as categoryName, c.color as categoryColor,
@@ -355,37 +347,11 @@ class TransactionRepository:
             cursor.execute(query, params)
             return [_row_to_transaction(row) for row in cursor.fetchall()]
 
-    def get_count(
-        self,
-        account_id: str | None = None,
-        date_from: str | None = None,
-        date_to: str | None = None,
-        min_amount: float | None = None,
-        max_amount: float | None = None,
-        search: str | None = None,
-        category_id: str | None = None,
-        status: str | None = None,
-        min_magnitude: float | None = None,
-        max_magnitude: float | None = None,
-        kind: str | None = None,
-    ) -> int:
+    def get_count(self, filters: TransactionFilter = TransactionFilter()) -> int:
         """Get total count of transactions matching filters"""
         with get_db_connection() as conn:
             cursor = conn.cursor()
-
-            filter_clause, params = self._build_filter_clause(
-                account_id=account_id,
-                date_from=date_from,
-                date_to=date_to,
-                min_amount=min_amount,
-                max_amount=max_amount,
-                search=search,
-                category_id=category_id,
-                status=status,
-                min_magnitude=min_magnitude,
-                max_magnitude=max_magnitude,
-                kind=kind,
-            )
+            filter_clause, params = filters.to_sql()
 
             query = (
                 f"""SELECT COUNT(*) FROM transactions t{_CATEGORY_JOIN}
@@ -395,18 +361,7 @@ class TransactionRepository:
             cursor.execute(query, params)
             return cursor.fetchone()[0]
 
-    def get_stats_totals(
-        self,
-        account_id: str | None = None,
-        date_from: str | None = None,
-        date_to: str | None = None,
-        min_amount: float | None = None,
-        max_amount: float | None = None,
-        search: str | None = None,
-        category_id: str | None = None,
-        min_magnitude: float | None = None,
-        max_magnitude: float | None = None,
-    ) -> dict[str, Any]:
+    def get_stats_totals(self, filters: TransactionFilter) -> dict[str, Any]:
         """Aggregate totals for the filtered set, computed in SQL.
 
         Transactions excluded from stats (their own flag, or their
@@ -428,17 +383,7 @@ class TransactionRepository:
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
 
-            filter_clause, params = self._build_filter_clause(
-                account_id=account_id,
-                date_from=date_from,
-                date_to=date_to,
-                min_amount=min_amount,
-                max_amount=max_amount,
-                search=search,
-                category_id=category_id,
-                min_magnitude=min_magnitude,
-                max_magnitude=max_magnitude,
-            )
+            filter_clause, params = filters.to_sql()
 
             base = _stats_base(filter_clause)
 
@@ -506,12 +451,7 @@ class TransactionRepository:
         row = cursor.fetchone()
         return (row["currency"], True) if row else (None, False)
 
-    def get_cash_flow(
-        self,
-        date_from: str,
-        date_to: str,
-        account_id: str | None = None,
-    ) -> dict[str, Any]:
+    def get_cash_flow(self, filters: TransactionFilter) -> dict[str, Any]:
         """Monthly income/expense totals with a running cumulative net."""
         empty: dict[str, Any] = {
             "points": [],
@@ -523,9 +463,7 @@ class TransactionRepository:
         }
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
-            filter_clause, params = self._build_filter_clause(
-                account_id=account_id, date_from=date_from, date_to=date_to
-            )
+            filter_clause, params = filters.to_sql()
             base = _stats_base(filter_clause)
 
             currency, present = self._dominant_currency(cursor, base, params)
@@ -574,12 +512,7 @@ class TransactionRepository:
             }
 
     def get_expense_rows(
-        self,
-        date_from: str,
-        date_to: str,
-        account_id: str | None = None,
-        currency: str | None = None,
-        category_id: str | None = None,
+        self, filters: TransactionFilter, currency: str | None = None
     ) -> tuple[list[dict[str, Any]], str | None]:
         """Rows needed for merchant grouping and recurrence detection.
 
@@ -587,17 +520,12 @@ class TransactionRepository:
         description, neither of which SQLite can do, so the grouping happens in
         Python. Only the columns those two steps need are selected.
 
-        `category_id` narrows to one category, or to rows without one when
-        it is "uncategorized".
+        `currency` pins the set to one currency (for a comparison window);
+        without it the dominant currency of the set is used.
         """
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
-            filter_clause, params = self._build_filter_clause(
-                account_id=account_id,
-                date_from=date_from,
-                date_to=date_to,
-                category_id=category_id,
-            )
+            filter_clause, params = filters.to_sql()
             base = _stats_base(filter_clause)
 
             if currency is None:
@@ -616,10 +544,7 @@ class TransactionRepository:
             return [_row_to_transaction(row) for row in cursor.fetchall()], currency
 
     def get_category_month_rows(
-        self,
-        date_from: str,
-        date_to: str,
-        account_id: str | None = None,
+        self, filters: TransactionFilter
     ) -> tuple[list[dict[str, Any]], str | None]:
         """Expense totals per (month, category), for the analytics pivot.
 
@@ -628,9 +553,7 @@ class TransactionRepository:
         """
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
-            filter_clause, params = self._build_filter_clause(
-                account_id=account_id, date_from=date_from, date_to=date_to
-            )
+            filter_clause, params = filters.to_sql()
             base = _stats_base(filter_clause)
 
             currency, present = self._dominant_currency(cursor, base, params)

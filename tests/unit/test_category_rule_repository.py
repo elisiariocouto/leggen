@@ -8,10 +8,13 @@ from leggen.errors import CategoryRuleExistsError
 from leggen.repositories import (
     CategoryRepository,
     CategoryRuleRepository,
+    TransactionFilter,
     TransactionRepository,
 )
 from leggen.repositories.db import get_db_connection
 from tests.helpers import category_id, persist_transactions
+
+SEPTEMBER = TransactionFilter(date_from="2025-09-01", date_to="2025-09-30")
 
 
 def _assignment(account_id: str, transaction_id: str) -> dict | None:
@@ -263,13 +266,9 @@ class TestAssignments:
         )
         transactions = TransactionRepository()
 
-        totals = transactions.get_stats_totals(
-            date_from="2025-09-01", date_to="2025-09-30"
-        )
+        totals = transactions.get_stats_totals(SEPTEMBER)
         assert totals["total_expenses"] == 20.0  # t1 dropped by the rule
 
         transactions.set_exclude_from_stats("acc-1", "t1", False)
-        totals = transactions.get_stats_totals(
-            date_from="2025-09-01", date_to="2025-09-30"
-        )
+        totals = transactions.get_stats_totals(SEPTEMBER)
         assert totals["total_expenses"] == 30.0  # user keeps t1 in

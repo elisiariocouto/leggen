@@ -2,7 +2,7 @@
 
 import pytest
 
-from leggen.repositories import TransactionRepository
+from leggen.repositories import TransactionFilter, TransactionRepository
 
 
 def _make_transaction(**overrides):
@@ -149,7 +149,7 @@ class TestTransactionRepositoryStatusFilter:
         repo = TransactionRepository()
         self._seed(repo)
 
-        pending = repo.get_transactions(status="pending")
+        pending = repo.get_transactions(TransactionFilter(status="pending"))
 
         assert [t["transactionId"] for t in pending] == ["tx-2"]
 
@@ -157,8 +157,8 @@ class TestTransactionRepositoryStatusFilter:
         repo = TransactionRepository()
         self._seed(repo)
 
-        assert repo.get_count(status="booked") == 2
-        assert repo.get_count(status="pending") == 1
+        assert repo.get_count(TransactionFilter(status="booked")) == 2
+        assert repo.get_count(TransactionFilter(status="pending")) == 1
         assert repo.get_count() == 3
 
     def test_status_match_is_case_insensitive(self, mock_db_path):
@@ -170,7 +170,7 @@ class TestTransactionRepositoryStatusFilter:
             [_make_transaction(transactionId="tx-1", transactionStatus="Pending")],
         )
 
-        assert repo.get_count(status="pending") == 1
+        assert repo.get_count(TransactionFilter(status="pending")) == 1
 
 
 @pytest.mark.unit
@@ -325,7 +325,9 @@ class TestTransactionRepositoryMagnitudeFilter:
         repo = TransactionRepository()
         self._seed(repo)
 
-        rows = repo.get_transactions(min_magnitude=40, max_magnitude=50)
+        rows = repo.get_transactions(
+            TransactionFilter(min_magnitude=40, max_magnitude=50)
+        )
 
         assert sorted(t["transactionId"] for t in rows) == ["tx-expense", "tx-income"]
 
@@ -333,13 +335,15 @@ class TestTransactionRepositoryMagnitudeFilter:
         repo = TransactionRepository()
         self._seed(repo)
 
-        assert repo.get_count(min_magnitude=40, max_magnitude=50) == 2
-        assert repo.get_count(min_magnitude=100) == 1
-        assert repo.get_count(max_magnitude=10) == 1
+        assert (
+            repo.get_count(TransactionFilter(min_magnitude=40, max_magnitude=50)) == 2
+        )
+        assert repo.get_count(TransactionFilter(min_magnitude=100)) == 1
+        assert repo.get_count(TransactionFilter(max_magnitude=10)) == 1
 
     def test_zero_lower_bound_is_not_treated_as_absent(self, mock_db_path):
         """0 is falsy; the clause has to test for None, not truthiness."""
         repo = TransactionRepository()
         self._seed(repo)
 
-        assert repo.get_count(min_magnitude=0, max_magnitude=10) == 1
+        assert repo.get_count(TransactionFilter(min_magnitude=0, max_magnitude=10)) == 1

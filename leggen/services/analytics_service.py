@@ -6,11 +6,15 @@ balances forward across gaps in sync history.
 """
 
 from collections import defaultdict
+from dataclasses import replace
 from datetime import date, datetime, timedelta
 from typing import Any
 
 from leggen.repositories.balance_repository import BalanceRepository
-from leggen.repositories.transaction_repository import TransactionRepository
+from leggen.repositories.transaction_repository import (
+    TransactionFilter,
+    TransactionRepository,
+)
 from leggen.services.data_processors import merchant_identity
 
 # A recurring charge is rarely billed on an exact 30-day grid: month lengths
@@ -125,9 +129,13 @@ def get_merchants(
     "uncategorized", the spend no rule has explained yet, which is the list a
     rule author wants to work down.
     """
-    rows, currency = transaction_repo.get_expense_rows(
-        date_from, date_to, account_id=account_id, category_id=category_id
+    window = TransactionFilter(
+        account_id=account_id,
+        date_from=date_from,
+        date_to=date_to,
+        category_id=category_id,
     )
+    rows, currency = transaction_repo.get_expense_rows(window)
     if not rows:
         return {"merchants": [], "currency": None, "uncategorized_share": 0.0}
 
@@ -139,11 +147,10 @@ def get_merchants(
         prev_end = start - timedelta(days=1)
         prev_start = prev_end - timedelta(days=span - 1)
         prev_rows, _ = transaction_repo.get_expense_rows(
-            prev_start.isoformat(),
-            prev_end.isoformat(),
-            account_id=account_id,
+            replace(
+                window, date_from=prev_start.isoformat(), date_to=prev_end.isoformat()
+            ),
             currency=currency,
-            category_id=category_id,
         )
         for row in prev_rows:
             if row["transactionValue"] >= 0:
@@ -231,7 +238,7 @@ def get_recurring(
     instalment plan is still worth listing, but not as money still going out.
     """
     rows, currency = transaction_repo.get_expense_rows(
-        date_from, date_to, account_id=account_id
+        TransactionFilter(account_id=account_id, date_from=date_from, date_to=date_to)
     )
     if not rows:
         return []
@@ -353,7 +360,7 @@ def get_spending_by_category(
     """
     months = _months_between(date_from, date_to)
     rows, currency = transaction_repo.get_category_month_rows(
-        date_from, date_to, account_id=account_id
+        TransactionFilter(account_id=account_id, date_from=date_from, date_to=date_to)
     )
     empty: dict[str, Any] = {
         "months": months,

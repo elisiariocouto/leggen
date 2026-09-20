@@ -752,52 +752,14 @@
         ],
         "parameters": [
           {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "description": "Page number (1-based)",
-              "default": 1,
-              "title": "Page"
-            },
-            "description": "Page number (1-based)"
-          },
-          {
-            "name": "per_page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 500,
-              "minimum": 1,
-              "description": "Items per page",
-              "default": 50,
-              "title": "Per Page"
-            },
-            "description": "Items per page"
-          },
-          {
-            "name": "summary_only",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "Return transaction summaries only",
-              "default": true,
-              "title": "Summary Only"
-            },
-            "description": "Return transaction summaries only"
-          },
-          {
             "name": "date_from",
             "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "format": "date"
                 },
                 {
                   "type": "null"
@@ -815,70 +777,17 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "format": "date"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Filter to date (YYYY-MM-DD)",
+              "description": "Filter to date (YYYY-MM-DD), inclusive",
               "title": "Date To"
             },
-            "description": "Filter to date (YYYY-MM-DD)"
-          },
-          {
-            "name": "min_amount",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Minimum transaction amount",
-              "title": "Min Amount"
-            },
-            "description": "Minimum transaction amount"
-          },
-          {
-            "name": "max_amount",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Maximum transaction amount",
-              "title": "Max Amount"
-            },
-            "description": "Maximum transaction amount"
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Search in transaction descriptions",
-              "title": "Search"
-            },
-            "description": "Search in transaction descriptions"
+            "description": "Filter to date (YYYY-MM-DD), inclusive"
           },
           {
             "name": "account_id",
@@ -940,6 +849,82 @@
             "description": "Filter by transaction status"
           },
           {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "income",
+                    "expense"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only money in ('income') or money out ('expense')",
+              "title": "Kind"
+            },
+            "description": "Only money in ('income') or money out ('expense')"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search in transaction descriptions",
+              "title": "Search"
+            },
+            "description": "Search in transaction descriptions"
+          },
+          {
+            "name": "min_amount",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Minimum transaction amount",
+              "title": "Min Amount"
+            },
+            "description": "Minimum transaction amount"
+          },
+          {
+            "name": "max_amount",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum transaction amount",
+              "title": "Max Amount"
+            },
+            "description": "Maximum transaction amount"
+          },
+          {
             "name": "min_magnitude",
             "in": "query",
             "required": false,
@@ -978,26 +963,43 @@
             "description": "Maximum transaction size, ignoring sign (matches income and expenses alike)"
           },
           {
-            "name": "kind",
+            "name": "page",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "enum": [
-                    "income",
-                    "expense"
-                  ],
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Only money in ('income') or money out ('expense')",
-              "title": "Kind"
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number (1-based)",
+              "default": 1,
+              "title": "Page"
             },
-            "description": "Only money in ('income') or money out ('expense')"
+            "description": "Page number (1-based)"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 50,
+              "title": "Per Page"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "summary_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Return transaction summaries only",
+              "default": true,
+              "title": "Summary Only"
+            },
+            "description": "Return transaction summaries only"
           },
           {
             "name": "sort_by",
@@ -1193,6 +1195,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "date",
               "description": "Start date (YYYY-MM-DD)",
               "title": "Date From"
             },
@@ -1204,10 +1207,11 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "End date (YYYY-MM-DD)",
+              "format": "date",
+              "description": "End date (YYYY-MM-DD), inclusive",
               "title": "Date To"
             },
-            "description": "End date (YYYY-MM-DD)"
+            "description": "End date (YYYY-MM-DD), inclusive"
           },
           {
             "name": "account_id",
@@ -1226,6 +1230,69 @@
               "title": "Account Id"
             },
             "description": "Filter by account ID"
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(\\d+|uncategorized)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by category ID or 'uncategorized' for transactions without a category",
+              "title": "Category Id"
+            },
+            "description": "Filter by category ID or 'uncategorized' for transactions without a category"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "booked",
+                    "pending"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by transaction status",
+              "title": "Status"
+            },
+            "description": "Filter by transaction status"
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "income",
+                    "expense"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only money in ('income') or money out ('expense')",
+              "title": "Kind"
+            },
+            "description": "Only money in ('income') or money out ('expense')"
           },
           {
             "name": "search",
@@ -1318,25 +1385,6 @@
               "title": "Max Magnitude"
             },
             "description": "Maximum transaction size, ignoring sign (matches income and expenses alike)"
-          },
-          {
-            "name": "category_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "pattern": "^(\\d+|uncategorized)$"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by category ID or 'uncategorized' for transactions without a category",
-              "title": "Category Id"
-            },
-            "description": "Filter by category ID or 'uncategorized' for transactions without a category"
           }
         ],
         "responses": {
@@ -3580,6 +3628,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "date",
               "description": "Start date (YYYY-MM-DD)",
               "title": "Date From"
             },
@@ -3591,10 +3640,11 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "End date (YYYY-MM-DD)",
+              "format": "date",
+              "description": "End date (YYYY-MM-DD), inclusive",
               "title": "Date To"
             },
-            "description": "End date (YYYY-MM-DD)"
+            "description": "End date (YYYY-MM-DD), inclusive"
           },
           {
             "name": "account_id",
@@ -3682,6 +3732,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "date",
               "description": "Start date (YYYY-MM-DD)",
               "title": "Date From"
             },
@@ -3693,10 +3744,11 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "End date (YYYY-MM-DD)",
+              "format": "date",
+              "description": "End date (YYYY-MM-DD), inclusive",
               "title": "Date To"
             },
-            "description": "End date (YYYY-MM-DD)"
+            "description": "End date (YYYY-MM-DD), inclusive"
           },
           {
             "name": "account_id",
@@ -3784,6 +3836,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "date",
               "description": "Start date (YYYY-MM-DD)",
               "title": "Date From"
             },
@@ -3795,10 +3848,11 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "End date (YYYY-MM-DD)",
+              "format": "date",
+              "description": "End date (YYYY-MM-DD), inclusive",
               "title": "Date To"
             },
-            "description": "End date (YYYY-MM-DD)"
+            "description": "End date (YYYY-MM-DD), inclusive"
           },
           {
             "name": "account_id",
@@ -3919,6 +3973,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "date",
               "description": "Start date (YYYY-MM-DD)",
               "title": "Date From"
             },
@@ -3930,10 +3985,11 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "End date (YYYY-MM-DD)",
+              "format": "date",
+              "description": "End date (YYYY-MM-DD), inclusive",
               "title": "Date To"
             },
-            "description": "End date (YYYY-MM-DD)"
+            "description": "End date (YYYY-MM-DD), inclusive"
           },
           {
             "name": "account_id",
@@ -4025,6 +4081,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "date",
               "description": "Start date (YYYY-MM-DD)",
               "title": "Date From"
             },
@@ -4036,10 +4093,11 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "End date (YYYY-MM-DD)",
+              "format": "date",
+              "description": "End date (YYYY-MM-DD), inclusive",
               "title": "Date To"
             },
-            "description": "End date (YYYY-MM-DD)"
+            "description": "End date (YYYY-MM-DD), inclusive"
           },
           {
             "name": "account_id",

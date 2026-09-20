@@ -1,5 +1,6 @@
 """API routes for the analytics dashboard."""
 
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -11,9 +12,12 @@ from leggen.api.models.stats import (
     RecurringPayment,
     SpendingByCategory,
 )
-from leggen.api.routes.transactions import _CATEGORY_ID_PATTERN
+from leggen.api.models.transactions import CATEGORY_ID_PATTERN
 from leggen.repositories.balance_repository import BalanceRepository
-from leggen.repositories.transaction_repository import TransactionRepository
+from leggen.repositories.transaction_repository import (
+    TransactionFilter,
+    TransactionRepository,
+)
 from leggen.services import analytics_service
 
 router = APIRouter()
@@ -22,19 +26,25 @@ router = APIRouter()
 @router.get("/analytics/cash-flow", response_model=CashFlow)
 async def get_cash_flow(
     transaction_repo: Annotated[TransactionRepository, Depends()],
-    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
-    date_to: str = Query(description="End date (YYYY-MM-DD)"),
+    date_from: date = Query(description="Start date (YYYY-MM-DD)"),
+    date_to: date = Query(description="End date (YYYY-MM-DD), inclusive"),
     account_id: str | None = Query(default=None, description="Filter by account ID"),
 ) -> dict:
     """Monthly income, expenses and cumulative net for the period."""
-    return transaction_repo.get_cash_flow(date_from, date_to, account_id=account_id)
+    return transaction_repo.get_cash_flow(
+        TransactionFilter(
+            account_id=account_id,
+            date_from=date_from.isoformat(),
+            date_to=date_to.isoformat(),
+        )
+    )
 
 
 @router.get("/analytics/net-worth", response_model=NetWorth)
 async def get_net_worth(
     balance_repo: Annotated[BalanceRepository, Depends()],
-    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
-    date_to: str = Query(description="End date (YYYY-MM-DD)"),
+    date_from: date = Query(description="Start date (YYYY-MM-DD)"),
+    date_to: date = Query(description="End date (YYYY-MM-DD), inclusive"),
     account_id: str | None = Query(default=None, description="Filter by account ID"),
 ) -> dict:
     """Total balance over time, from recorded balance snapshots.
@@ -43,20 +53,20 @@ async def get_net_worth(
     and its resolution follows sync frequency.
     """
     return analytics_service.get_net_worth(
-        balance_repo, date_from, date_to, account_id=account_id
+        balance_repo, date_from.isoformat(), date_to.isoformat(), account_id=account_id
     )
 
 
 @router.get("/analytics/merchants", response_model=Merchants)
 async def get_merchants(
     transaction_repo: Annotated[TransactionRepository, Depends()],
-    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
-    date_to: str = Query(description="End date (YYYY-MM-DD)"),
+    date_from: date = Query(description="Start date (YYYY-MM-DD)"),
+    date_to: date = Query(description="End date (YYYY-MM-DD), inclusive"),
     account_id: str | None = Query(default=None, description="Filter by account ID"),
     limit: int = Query(default=15, ge=1, le=100, description="Merchants to return"),
     category_id: str | None = Query(
         default=None,
-        pattern=_CATEGORY_ID_PATTERN,
+        pattern=CATEGORY_ID_PATTERN,
         description=(
             "Rank merchants within one category, or pass 'uncategorized' for "
             "the spend no rule has explained yet"
@@ -71,8 +81,8 @@ async def get_merchants(
     """
     return analytics_service.get_merchants(
         transaction_repo,
-        date_from,
-        date_to,
+        date_from.isoformat(),
+        date_to.isoformat(),
         account_id=account_id,
         limit=limit,
         category_id=category_id,
@@ -82,8 +92,8 @@ async def get_merchants(
 @router.get("/analytics/recurring", response_model=list[RecurringPayment])
 async def get_recurring(
     transaction_repo: Annotated[TransactionRepository, Depends()],
-    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
-    date_to: str = Query(description="End date (YYYY-MM-DD)"),
+    date_from: date = Query(description="Start date (YYYY-MM-DD)"),
+    date_to: date = Query(description="End date (YYYY-MM-DD), inclusive"),
     account_id: str | None = Query(default=None, description="Filter by account ID"),
 ) -> list[dict]:
     """Charges that repeat on a regular cadence.
@@ -92,15 +102,18 @@ async def get_recurring(
     last-seen date so a mis-grouped merchant is visible to the caller.
     """
     return analytics_service.get_recurring(
-        transaction_repo, date_from, date_to, account_id=account_id
+        transaction_repo,
+        date_from.isoformat(),
+        date_to.isoformat(),
+        account_id=account_id,
     )
 
 
 @router.get("/analytics/spending-by-category", response_model=SpendingByCategory)
 async def get_spending_by_category(
     transaction_repo: Annotated[TransactionRepository, Depends()],
-    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
-    date_to: str = Query(description="End date (YYYY-MM-DD)"),
+    date_from: date = Query(description="Start date (YYYY-MM-DD)"),
+    date_to: date = Query(description="End date (YYYY-MM-DD), inclusive"),
     account_id: str | None = Query(default=None, description="Filter by account ID"),
 ) -> dict:
     """Expenses per category, month by month, across the window.
@@ -110,5 +123,8 @@ async def get_spending_by_category(
     left out; spend without a category is reported as its own trailing entry.
     """
     return analytics_service.get_spending_by_category(
-        transaction_repo, date_from, date_to, account_id=account_id
+        transaction_repo,
+        date_from.isoformat(),
+        date_to.isoformat(),
+        account_id=account_id,
     )

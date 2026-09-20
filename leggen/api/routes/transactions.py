@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query
 
@@ -9,28 +9,14 @@ from leggen.api.models.accounts import (
 )
 from leggen.api.models.common import PaginatedResponse
 from leggen.api.models.stats import TransactionStats
+from leggen.api.models.transactions import (
+    TransactionListQuery,
+    TransactionStatsFilters,
+)
 from leggen.errors import NotFoundError
 from leggen.repositories import TransactionRepository
 
 router = APIRouter()
-
-
-# A category filter is either a numeric ID or the "uncategorized" bucket.
-# Declaring it as a pattern lets FastAPI produce the 422, so the response
-# carries field-level errors and the constraint shows up in the schema.
-_CATEGORY_ID_PATTERN = r"^(\d+|uncategorized)$"
-
-# The two statuses EnableBanking reports for a transaction.
-TransactionStatusFilter = Literal["booked", "pending"]
-
-# Money in or money out, by the sign of the amount.
-TransactionKind = Literal["income", "expense"]
-
-# Columns the transaction list can be ordered by. Declaring these as Literals
-# lets FastAPI reject anything else with a 422 and publish the allowed values
-# in the OpenAPI schema, and keeps arbitrary strings away from the ORDER BY.
-TransactionSortField = Literal["date", "amount", "description"]
-TransactionSortOrder = Literal["asc", "desc"]
 
 
 def _to_summary(txn: dict[str, Any]) -> TransactionSummary:
@@ -79,111 +65,35 @@ def _to_transaction(txn: dict[str, Any]) -> Transaction:
 @router.get("/transactions")
 async def get_all_transactions(
     transaction_repo: Annotated[TransactionRepository, Depends()],
-    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
-    per_page: int = Query(default=50, ge=1, le=500, description="Items per page"),
-    summary_only: bool = Query(
-        default=True, description="Return transaction summaries only"
-    ),
-    date_from: str | None = Query(
-        default=None, description="Filter from date (YYYY-MM-DD)"
-    ),
-    date_to: str | None = Query(
-        default=None, description="Filter to date (YYYY-MM-DD)"
-    ),
-    min_amount: float | None = Query(
-        default=None, description="Minimum transaction amount"
-    ),
-    max_amount: float | None = Query(
-        default=None, description="Maximum transaction amount"
-    ),
-    search: str | None = Query(
-        default=None, description="Search in transaction descriptions"
-    ),
-    account_id: str | None = Query(default=None, description="Filter by account ID"),
-    category_id: str | None = Query(
-        default=None,
-        pattern=_CATEGORY_ID_PATTERN,
-        description="Filter by category ID or 'uncategorized' for transactions without a category",
-    ),
-    status: TransactionStatusFilter | None = Query(
-        default=None, description="Filter by transaction status"
-    ),
-    min_magnitude: float | None = Query(
-        default=None,
-        ge=0,
-        description="Minimum transaction size, ignoring sign (matches income and expenses alike)",
-    ),
-    max_magnitude: float | None = Query(
-        default=None,
-        ge=0,
-        description="Maximum transaction size, ignoring sign (matches income and expenses alike)",
-    ),
-    kind: TransactionKind | None = Query(
-        default=None,
-        description="Only money in ('income') or money out ('expense')",
-    ),
-    sort_by: TransactionSortField = Query(
-        default="date", description="Column to order results by"
-    ),
-    sort_order: TransactionSortOrder = Query(
-        default="desc", description="Order direction"
-    ),
+    query: Annotated[TransactionListQuery, Query()],
 ) -> PaginatedResponse[TransactionSummary | Transaction]:
     """Get all transactions from database with filtering options"""
-    # Calculate offset from page and per_page
-    offset = (page - 1) * per_page
-    limit = per_page
-
-    # Get transactions from database
+    criteria = query.to_filter()
     db_transactions = transaction_repo.get_transactions(
-        account_id=account_id,
-        limit=limit,
-        offset=offset,
-        date_from=date_from,
-        date_to=date_to,
-        min_amount=min_amount,
-        max_amount=max_amount,
-        search=search,
-        category_id=category_id,
-        status=status,
-        min_magnitude=min_magnitude,
-        max_magnitude=max_magnitude,
-        kind=kind,
-        sort_by=sort_by,
-        sort_order=sort_order,
+        criteria,
+        limit=query.per_page,
+        offset=(query.page - 1) * query.per_page,
+        sort_by=query.sort_by,
+        sort_order=query.sort_order,
     )
-
-    # Get total count for pagination info (respecting the same filters)
-    total_transactions = transaction_repo.get_count(
-        account_id=account_id,
-        date_from=date_from,
-        date_to=date_to,
-        min_amount=min_amount,
-        max_amount=max_amount,
-        search=search,
-        category_id=category_id,
-        status=status,
-        min_magnitude=min_magnitude,
-        max_magnitude=max_magnitude,
-        kind=kind,
-    )
+    total_transactions = transaction_repo.get_count(criteria)
 
     data: list[TransactionSummary | Transaction]
-    if summary_only:
+    if query.summary_only:
         data = [_to_summary(txn) for txn in db_transactions]
     else:
         data = [_to_transaction(txn) for txn in db_transactions]
 
-    total_pages = (total_transactions + per_page - 1) // per_page
+    total_pages = (total_transactions + query.per_page - 1) // query.per_page
 
     return PaginatedResponse(
         data=data,
         total=total_transactions,
-        page=page,
-        per_page=per_page,
+        page=query.page,
+        per_page=query.per_page,
         total_pages=total_pages,
-        has_next=page < total_pages,
-        has_prev=page > 1,
+        has_next=query.page < total_pages,
+        has_prev=query.page > 1,
     )
 
 
@@ -217,44 +127,12 @@ async def update_transaction(
 @router.get("/transactions/stats")
 async def get_transaction_stats(
     transaction_repo: Annotated[TransactionRepository, Depends()],
-    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
-    date_to: str = Query(description="End date (YYYY-MM-DD)"),
-    account_id: str | None = Query(default=None, description="Filter by account ID"),
-    search: str | None = Query(
-        default=None, description="Search in transaction descriptions"
-    ),
-    min_amount: float | None = Query(
-        default=None, description="Minimum transaction amount"
-    ),
-    max_amount: float | None = Query(
-        default=None, description="Maximum transaction amount"
-    ),
-    min_magnitude: float | None = Query(
-        default=None,
-        ge=0,
-        description="Minimum transaction size, ignoring sign (matches income and expenses alike)",
-    ),
-    max_magnitude: float | None = Query(
-        default=None,
-        ge=0,
-        description="Maximum transaction size, ignoring sign (matches income and expenses alike)",
-    ),
-    category_id: str | None = Query(
-        default=None,
-        pattern=_CATEGORY_ID_PATTERN,
-        description="Filter by category ID or 'uncategorized' for transactions without a category",
-    ),
+    filters: Annotated[TransactionStatsFilters, Query()],
 ) -> TransactionStats:
     """Get transaction statistics for a date range."""
-    totals = transaction_repo.get_stats_totals(
-        account_id=account_id,
-        date_from=date_from,
-        date_to=date_to,
-        min_amount=min_amount,
-        max_amount=max_amount,
-        search=search,
-        category_id=category_id,
-        min_magnitude=min_magnitude,
-        max_magnitude=max_magnitude,
+    totals = transaction_repo.get_stats_totals(filters.to_filter())
+    return TransactionStats(
+        date_from=filters.date_from.isoformat(),
+        date_to=filters.date_to.isoformat(),
+        **totals,
     )
-    return TransactionStats(date_from=date_from, date_to=date_to, **totals)
