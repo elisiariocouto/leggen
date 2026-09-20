@@ -1,7 +1,6 @@
-import sqlite3
 from typing import Any
 
-from leggen.repositories.db import db_exists, get_db_connection
+from leggen.repositories.db import get_db_connection
 
 
 class AccountRepository:
@@ -63,42 +62,33 @@ class AccountRepository:
         include_deleted: bool = True,
     ) -> list[dict[str, Any]]:
         """Get account details from database"""
-        if not db_exists():
-            return []
+        with get_db_connection(row_factory=True) as conn:
+            cursor = conn.cursor()
 
-        try:
-            with get_db_connection(row_factory=True) as conn:
-                cursor = conn.cursor()
+            query = "SELECT * FROM accounts"
+            params: list = []
+            conditions = []
 
-                query = "SELECT * FROM accounts"
-                params: list = []
-                conditions = []
+            if account_ids:
+                placeholders = ",".join("?" * len(account_ids))
+                conditions.append(f"id IN ({placeholders})")
+                params.extend(account_ids)
 
-                if account_ids:
-                    placeholders = ",".join("?" * len(account_ids))
-                    conditions.append(f"id IN ({placeholders})")
-                    params.extend(account_ids)
+            if not include_deleted:
+                conditions.append("status != 'DELETED'")
 
-                if not include_deleted:
-                    conditions.append("status != 'DELETED'")
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
 
-                if conditions:
-                    query += " WHERE " + " AND ".join(conditions)
+            query += " ORDER BY created DESC"
 
-                query += " ORDER BY created DESC"
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
 
-                cursor.execute(query, params)
-                rows = cursor.fetchall()
-
-                return [dict(row) for row in rows]
-        except sqlite3.OperationalError:
-            return []
+            return [dict(row) for row in rows]
 
     def get_account(self, account_id: str) -> dict[str, Any] | None:
         """Get specific account details from database"""
-        if not db_exists():
-            return None
-
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
 

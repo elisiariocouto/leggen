@@ -13,7 +13,7 @@ from typing import Any
 
 from loguru import logger
 
-from leggen.repositories.db import db_exists, get_db_connection
+from leggen.repositories.db import get_db_connection
 
 # Ordered by priority. Earlier rules win, which is how "uber eats" lands in
 # Dining before "uber" can land it in Transport, and "galp energia" in
@@ -154,8 +154,6 @@ def seed_default_category_rules() -> int:
     A rule whose category is missing is skipped with a warning rather than
     failing the seed.
     """
-    if not db_exists():
-        return 0
     with get_db_connection() as conn:
         cursor = conn.cursor()
         if not _never_had_rules(cursor):

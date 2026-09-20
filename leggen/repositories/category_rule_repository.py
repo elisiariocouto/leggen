@@ -4,7 +4,7 @@ import sqlite3
 from typing import Any
 
 from leggen.errors import CategoryRuleExistsError
-from leggen.repositories.db import db_exists, get_db_connection
+from leggen.repositories.db import get_db_connection
 
 _RULE_COLUMNS = (
     "id, name, description, categoryId, lua_script, priority, is_active,"
@@ -44,8 +44,6 @@ class CategoryRuleRepository:
 
     def get_all_rules(self, active_only: bool = False) -> list[dict[str, Any]]:
         """Rules in evaluation order: priority ascending, then id."""
-        if not db_exists():
-            return []
         where = " WHERE is_active = 1" if active_only else ""
         with get_db_connection(row_factory=True) as conn:
             rows = conn.execute(
@@ -55,8 +53,6 @@ class CategoryRuleRepository:
             return [_row_to_rule(row) for row in rows]
 
     def get_rule_by_id(self, rule_id: int) -> dict[str, Any] | None:
-        if not db_exists():
-            return None
         with get_db_connection(row_factory=True) as conn:
             row = conn.execute(
                 f"SELECT {_RULE_COLUMNS} FROM category_rules WHERE id = ?", (rule_id,)

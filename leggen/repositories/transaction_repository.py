@@ -4,7 +4,7 @@ from typing import Any
 
 from loguru import logger
 
-from leggen.repositories.db import db_exists, get_db_connection
+from leggen.repositories.db import get_db_connection
 
 # SQLite's default parameter limit is 999; keep IN() chunks safely under it.
 _SELECT_CHUNK_SIZE = 900
@@ -290,9 +290,6 @@ class TransactionRepository:
         sort_order: str | None = None,
     ) -> list[dict[str, Any]]:
         """Get transactions with optional filtering and ordering"""
-        if not db_exists():
-            return []
-
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
 
@@ -358,9 +355,6 @@ class TransactionRepository:
         kind: str | None = None,
     ) -> int:
         """Get total count of transactions matching filters"""
-        if not db_exists():
-            return 0
-
         with get_db_connection() as conn:
             cursor = conn.cursor()
 
@@ -416,9 +410,6 @@ class TransactionRepository:
             "average_transaction": 0,
             "accounts_included": 0,
         }
-        if not db_exists():
-            return empty
-
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
 
@@ -521,9 +512,6 @@ class TransactionRepository:
             "net": 0.0,
             "average_monthly_net": 0.0,
         }
-        if not db_exists():
-            return empty
-
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             filter_clause, params = self._build_filter_clause(
@@ -597,9 +585,6 @@ class TransactionRepository:
         `category_id` narrows to one category, or to rows without one when
         it is "uncategorized".
         """
-        if not db_exists():
-            return [], None
-
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             filter_clause, params = self._build_filter_clause(
@@ -652,9 +637,6 @@ class TransactionRepository:
         Rows with no category come back with NULL category fields as one
         group. Only the dominant currency is summed, as elsewhere.
         """
-        if not db_exists():
-            return [], None
-
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             filter_clause, params = self._build_filter_clause(
@@ -689,9 +671,6 @@ class TransactionRepository:
         self, account_id: str, transaction_id: str
     ) -> dict[str, Any] | None:
         """Get a single transaction by its primary key."""
-        if not db_exists():
-            return None
-
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -725,9 +704,6 @@ class TransactionRepository:
         script matches. Rows carry `categorySource`, `ruleId` and
         `ruleExcludeFromStats` describing the assignment they have now.
         """
-        if not db_exists():
-            return []
-
         select = f"""SELECT t.*, tc.categoryId, c.name AS categoryName,
                             tc.source AS categorySource, tc.ruleId,
                             tc.exclude_from_stats AS ruleExcludeFromStats

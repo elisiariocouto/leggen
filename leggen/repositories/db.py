@@ -37,9 +37,3 @@ def get_db_connection(row_factory: bool = False) -> Generator[sqlite3.Connection
         raise e
     finally:
         conn.close()
-
-
-def db_exists() -> bool:
-    """Check if database file exists."""
-    db_path = path_manager.get_database_path()
-    return db_path.exists()

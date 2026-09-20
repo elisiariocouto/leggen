@@ -4,7 +4,7 @@ import sqlite3
 from typing import Any
 
 from leggen.errors import CategoryExistsError
-from leggen.repositories.db import db_exists, get_db_connection
+from leggen.repositories.db import get_db_connection
 
 
 class CategoryRepository:
@@ -14,9 +14,6 @@ class CategoryRepository:
 
     def get_all_categories(self) -> list[dict[str, Any]]:
         """Get all categories."""
-        if not db_exists():
-            return []
-
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -26,9 +23,6 @@ class CategoryRepository:
 
     def get_category_by_id(self, category_id: int) -> dict[str, Any] | None:
         """Get a category by ID."""
-        if not db_exists():
-            return None
-
         with get_db_connection(row_factory=True) as conn:
             cursor = conn.cursor()
             cursor.execute(

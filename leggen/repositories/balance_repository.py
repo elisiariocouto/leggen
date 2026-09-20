@@ -3,7 +3,7 @@ from typing import Any
 
 from loguru import logger
 
-from leggen.repositories.db import db_exists, get_db_connection
+from leggen.repositories.db import get_db_connection
 
 
 class BalanceRepository:
@@ -73,90 +73,78 @@ class BalanceRepository:
           one real-world account as one series across that change; accounts
           without an IBAN fall back to their id.
         """
-        if not db_exists():
-            return []
+        with get_db_connection(row_factory=True) as conn:
+            cursor = conn.cursor()
 
-        try:
-            with get_db_connection(row_factory=True) as conn:
-                cursor = conn.cursor()
+            # closingBooked/CLBD is the account's settled position;
+            # interimAvailable/ITAV is the fallback when a bank omits it.
+            # Other types (e.g. authorised) would double-count.
+            query = """
+                WITH ranked AS (
+                    SELECT
+                        COALESCE(NULLIF(b.iban, 'N/A'), b.account_id) AS series_key,
+                        b.account_id,
+                        b.amount,
+                        b.currency,
+                        date(b.timestamp) AS day,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY COALESCE(NULLIF(b.iban, 'N/A'), b.account_id),
+                                         date(b.timestamp)
+                            ORDER BY
+                                CASE b.type
+                                    WHEN 'closingBooked' THEN 1
+                                    WHEN 'CLBD' THEN 2
+                                    WHEN 'interimAvailable' THEN 3
+                                    WHEN 'ITAV' THEN 4
+                                END,
+                                b.timestamp DESC
+                        ) AS rn
+                    FROM balances b
+                    WHERE b.amount IS NOT NULL
+                      AND b.type IN ('closingBooked', 'CLBD', 'interimAvailable', 'ITAV')
+                      AND date(b.timestamp) >= date(?)
+                      AND date(b.timestamp) <= date(?)
+            """
+            params: list[Any] = [date_from, date_to]
 
-                # closingBooked/CLBD is the account's settled position;
-                # interimAvailable/ITAV is the fallback when a bank omits it.
-                # Other types (e.g. authorised) would double-count.
-                query = """
-                    WITH ranked AS (
-                        SELECT
-                            COALESCE(NULLIF(b.iban, 'N/A'), b.account_id) AS series_key,
-                            b.account_id,
-                            b.amount,
-                            b.currency,
-                            date(b.timestamp) AS day,
-                            ROW_NUMBER() OVER (
-                                PARTITION BY COALESCE(NULLIF(b.iban, 'N/A'), b.account_id),
-                                             date(b.timestamp)
-                                ORDER BY
-                                    CASE b.type
-                                        WHEN 'closingBooked' THEN 1
-                                        WHEN 'CLBD' THEN 2
-                                        WHEN 'interimAvailable' THEN 3
-                                        WHEN 'ITAV' THEN 4
-                                    END,
-                                    b.timestamp DESC
-                            ) AS rn
-                        FROM balances b
-                        WHERE b.amount IS NOT NULL
-                          AND b.type IN ('closingBooked', 'CLBD', 'interimAvailable', 'ITAV')
-                          AND date(b.timestamp) >= date(?)
-                          AND date(b.timestamp) <= date(?)
-                """
-                params: list[Any] = [date_from, date_to]
+            if account_id:
+                query += " AND b.account_id = ?"
+                params.append(account_id)
 
-                if account_id:
-                    query += " AND b.account_id = ?"
-                    params.append(account_id)
+            query += """
+                )
+                SELECT series_key, account_id, amount, currency, day
+                FROM ranked
+                WHERE rn = 1
+                ORDER BY day ASC, series_key ASC
+            """
 
-                query += """
-                    )
-                    SELECT series_key, account_id, amount, currency, day
-                    FROM ranked
-                    WHERE rn = 1
-                    ORDER BY day ASC, series_key ASC
-                """
-
-                cursor.execute(query, params)
-                return [dict(row) for row in cursor.fetchall()]
-        except sqlite3.OperationalError:
-            return []
+            cursor.execute(query, params)
+            return [dict(row) for row in cursor.fetchall()]
 
     def get_balances(self, account_id: str | None = None) -> list[dict[str, Any]]:
         """Get latest balances from database"""
-        if not db_exists():
-            return []
+        with get_db_connection(row_factory=True) as conn:
+            cursor = conn.cursor()
 
-        try:
-            with get_db_connection(row_factory=True) as conn:
-                cursor = conn.cursor()
+            # Get latest balance for each account_id and type combination
+            query = """
+                SELECT * FROM balances b1
+                WHERE b1.timestamp = (
+                    SELECT MAX(b2.timestamp)
+                    FROM balances b2
+                    WHERE b2.account_id = b1.account_id AND b2.type = b1.type
+                )
+            """
+            params = []
 
-                # Get latest balance for each account_id and type combination
-                query = """
-                    SELECT * FROM balances b1
-                    WHERE b1.timestamp = (
-                        SELECT MAX(b2.timestamp)
-                        FROM balances b2
-                        WHERE b2.account_id = b1.account_id AND b2.type = b1.type
-                    )
-                """
-                params = []
+            if account_id:
+                query += " AND b1.account_id = ?"
+                params.append(account_id)
 
-                if account_id:
-                    query += " AND b1.account_id = ?"
-                    params.append(account_id)
+            query += " ORDER BY b1.account_id, b1.type"
 
-                query += " ORDER BY b1.account_id, b1.type"
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
 
-                cursor.execute(query, params)
-                rows = cursor.fetchall()
-
-                return [dict(row) for row in rows]
-        except sqlite3.OperationalError:
-            return []
+            return [dict(row) for row in rows]
