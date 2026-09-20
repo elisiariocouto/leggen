@@ -36,7 +36,7 @@ A `justfile` wraps the common dev commands: `just server`, `just frontend`, `jus
 ### Backend (Python)
 - **Lint**: `uv run ruff check .`
 - **Format**: `uv run ruff format .`
-- **Type check**: `uv run mypy leggen --check-untyped-defs`
+- **Type check**: `uv run mypy leggen`
 - **All checks**: `uv run pre-commit run --all-files`
 - **Run all tests**: `uv run pytest`
 - **Run single test**: `uv run pytest tests/unit/test_api_accounts.py::TestAccountsAPI::test_get_all_accounts_success -v`
