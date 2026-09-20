@@ -12,7 +12,6 @@ import type {
   RulePreviewResponse,
   RuleRunReport,
   RuleReference,
-  Balance,
   PaginatedResponse,
   NotificationSettings,
   NotificationTest,
@@ -163,12 +162,6 @@ export const apiClient = {
     });
   },
 
-  // Get all balances
-  getBalances: async (): Promise<Balance[]> => {
-    const response = await api.get<Balance[]>("/balances");
-    return response.data;
-  },
-
   // Get transactions with optional filters
   getTransactions: async (params?: {
     accountId?: string;
@@ -286,34 +279,10 @@ export const apiClient = {
 
   // Analytics endpoints
   getTransactionStats: async (
-    dateFrom: string,
-    dateTo: string,
-    accountId?: string,
-    search?: string,
-    minAmount?: number,
-    maxAmount?: number,
-    categoryId?: string,
-    // Trailing options object: the positional list is already long enough
-    // that callers pass literal `undefined`s to skip arguments.
-    options?: { minMagnitude?: number; maxMagnitude?: number },
+    params: AnalyticsParams,
   ): Promise<TransactionStats> => {
-    const queryParams = new URLSearchParams();
-    queryParams.append("date_from", dateFrom);
-    queryParams.append("date_to", dateTo);
-    if (accountId) queryParams.append("account_id", accountId);
-    if (search) queryParams.append("search", search);
-    if (minAmount !== undefined)
-      queryParams.append("min_amount", minAmount.toString());
-    if (maxAmount !== undefined)
-      queryParams.append("max_amount", maxAmount.toString());
-    if (categoryId) queryParams.append("category_id", categoryId);
-    if (options?.minMagnitude !== undefined)
-      queryParams.append("min_magnitude", options.minMagnitude.toString());
-    if (options?.maxMagnitude !== undefined)
-      queryParams.append("max_magnitude", options.maxMagnitude.toString());
-
     const response = await api.get<TransactionStats>(
-      `/transactions/stats?${queryParams.toString()}`,
+      `/transactions/stats?${analyticsQuery(params)}`,
     );
     return response.data;
   },

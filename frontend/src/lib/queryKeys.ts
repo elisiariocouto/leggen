@@ -13,9 +13,6 @@ import type { QueryClient } from "@tanstack/react-query";
  */
 export const queryKeys = {
   accounts: ["accounts"] as const,
-  balances: ["balances"] as const,
-  historicalBalances: (dateFrom: string, dateTo: string, accountId?: string) =>
-    ["balances", "history", dateFrom, dateTo, accountId] as const,
 
   transactions: ["transactions"] as const,
   // Every field is required: an optional one could be left out at a call
@@ -48,23 +45,7 @@ export const queryKeys = {
     dateFrom: string,
     dateTo: string,
     accountId?: string,
-    search?: string,
-    categoryId?: string,
-  ) =>
-    [
-      "transaction-stats",
-      "summary",
-      dateFrom,
-      dateTo,
-      accountId,
-      search,
-      categoryId,
-    ] as const,
-  transactionStatsMonthly: (
-    dateFrom: string,
-    dateTo: string,
-    accountId?: string,
-  ) => ["transaction-stats", "monthly", dateFrom, dateTo, accountId] as const,
+  ) => ["transaction-stats", "summary", dateFrom, dateTo, accountId] as const,
 
   analytics: ["analytics"] as const,
   cashFlow: (dateFrom: string, dateTo: string, accountId?: string) =>
@@ -105,8 +86,9 @@ export const queryKeys = {
 };
 
 /**
- * Everything derived from synced bank data. A sync rewrites transactions,
- * balances and the stats computed from them, so all of it has to refetch.
+ * Everything derived from synced bank data. A sync rewrites accounts (with
+ * their balances), transactions and the stats computed from them, so all of
+ * it has to refetch.
  *
  * Call sites used to keep their own copies of this list, which had already
  * drifted — one invalidated "banks", another "balances", neither both.
@@ -114,7 +96,6 @@ export const queryKeys = {
 export function invalidateSyncedData(queryClient: QueryClient): void {
   const roots = [
     queryKeys.accounts,
-    queryKeys.balances,
     queryKeys.transactions,
     queryKeys.transactionStats,
     queryKeys.analytics,

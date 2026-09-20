@@ -82,7 +82,12 @@ export default function AnalyticsDashboard() {
   // while a filter change refetches, instead of flashing the loading state
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: queryKeys.transactionStatsSummary(startDate, endDate, accountId),
-    queryFn: () => apiClient.getTransactionStats(startDate, endDate, accountId),
+    queryFn: () =>
+      apiClient.getTransactionStats({
+        dateFrom: startDate,
+        dateTo: endDate,
+        accountId,
+      }),
     placeholderData: (previousData) => previousData,
   });
 

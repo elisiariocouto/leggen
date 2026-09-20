@@ -47,7 +47,7 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { Checkbox } from "./ui/checkbox";
-import type { Account, Balance, BankConnectionStatus } from "../types/api";
+import type { Account, BankConnectionStatus } from "../types/api";
 import { invalidateSyncedData, queryKeys } from "../lib/queryKeys";
 
 const getStatusIndicator = (status: string) => {
@@ -93,11 +93,6 @@ export default function Accounts() {
     queryFn: apiClient.getAccounts,
   });
 
-  const { data: balances } = useQuery<Balance[]>({
-    queryKey: queryKeys.balances,
-    queryFn: () => apiClient.getBalances(),
-  });
-
   const { data: bankConnections, isLoading: connectionsLoading } = useQuery({
     queryKey: queryKeys.bankConnections,
     queryFn: apiClient.getBankConnectionsStatus,
@@ -108,7 +103,6 @@ export default function Accounts() {
       apiClient.updateAccount(id, { display_name }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
-      queryClient.invalidateQueries({ queryKey: queryKeys.balances });
       setEditingAccountId(null);
       setEditingName("");
     },
@@ -127,7 +121,6 @@ export default function Accounts() {
     }) => apiClient.deleteAccount(accountId, deleteData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
-      queryClient.invalidateQueries({ queryKey: queryKeys.balances });
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
       setDeleteDialogAccount(null);
       setDeleteData(true);
@@ -163,7 +156,6 @@ export default function Accounts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
       queryClient.invalidateQueries({ queryKey: queryKeys.bankConnections });
-      queryClient.invalidateQueries({ queryKey: queryKeys.balances });
       setDeleteDialogConnection(null);
       toast.success("Bank connection deleted.");
     },
@@ -283,18 +275,9 @@ export default function Accounts() {
             <div className="divide-y divide-border">
               {displayedAccounts.map((account) => {
                 const accountBalance = account.balances?.[0];
-                const fallbackBalance = balances?.find(
-                  (b) => b.account_id === account.id,
-                );
-                const balance =
-                  accountBalance?.amount ||
-                  fallbackBalance?.balance_amount ||
-                  0;
+                const balance = accountBalance?.amount ?? 0;
                 const currency =
-                  accountBalance?.currency ||
-                  fallbackBalance?.currency ||
-                  account.currency ||
-                  "EUR";
+                  accountBalance?.currency || account.currency || "EUR";
                 const isPositive = balance >= 0;
                 const isDeleted =
                   account.status.toLowerCase() === "deleted";
