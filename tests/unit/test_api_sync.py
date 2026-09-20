@@ -27,6 +27,18 @@ def _sync_result() -> SyncResult:
     )
 
 
+def _persist_account(account_id: str) -> None:
+    AccountRepository().persist(
+        {
+            "id": account_id,
+            "institution_id": "TEST_BANK",
+            "status": "READY",
+            "iban": account_id,
+            "created": "2025-01-01T00:00:00Z",
+        }
+    )
+
+
 @pytest.fixture
 def mock_sync_service():
     """Replace the scheduler's sync service with a mock for route tests."""
@@ -51,43 +63,24 @@ class TestSyncAPI:
             False, "api", account_ids=None
         )
 
-    def test_sync_with_account_ids_forwards_them(
-        self,
-        fastapi_app,
-        api_client,
-        mock_db_path,
-        mock_sync_service,
-        mock_account_repo,
-    ):
-        mock_account_repo.get_accounts.return_value = [{"id": "IBAN1"}]
-        fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
+    def test_sync_with_account_ids_forwards_them(self, api_client, mock_sync_service):
+        _persist_account("IBAN1")
 
         response = api_client.post("/api/v1/sync", json={"account_ids": ["IBAN1"]})
 
-        fastapi_app.dependency_overrides.clear()
-
         assert response.status_code == 200
-        mock_account_repo.get_accounts.assert_called_once_with(account_ids=["IBAN1"])
         mock_sync_service.sync_all_accounts.assert_called_once_with(
             False, "api", account_ids=["IBAN1"]
         )
 
     def test_sync_with_unknown_account_id_returns_404(
-        self,
-        fastapi_app,
-        api_client,
-        mock_db_path,
-        mock_sync_service,
-        mock_account_repo,
+        self, api_client, mock_sync_service
     ):
-        mock_account_repo.get_accounts.return_value = [{"id": "IBAN1"}]
-        fastapi_app.dependency_overrides[AccountRepository] = lambda: mock_account_repo
+        _persist_account("IBAN1")
 
         response = api_client.post(
             "/api/v1/sync", json={"account_ids": ["IBAN1", "bogus"]}
         )
-
-        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 404
         assert "bogus" in response.json()["detail"]

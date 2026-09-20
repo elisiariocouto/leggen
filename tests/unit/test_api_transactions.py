@@ -1,148 +1,126 @@
 """Tests for transactions API endpoints."""
 
-from datetime import datetime
+from unittest.mock import MagicMock
 
 import pytest
 
 from leggen.repositories import TransactionRepository
-from tests.helpers import persist_transactions
+from tests.helpers import DEFAULT_IBAN, persist_transactions, seed_transactions
 
 
 @pytest.mark.api
 class TestTransactionsAPI:
     """Test transaction-related API endpoints."""
 
-    def test_get_all_transactions_success(
-        self,
-        fastapi_app,
-        api_client,
-        mock_transaction_repo,
-    ):
-        """Test successful retrieval of all transactions from database."""
-        mock_transactions = [
-            {
-                "transactionId": "bank-txn-001",  # NEW: stable bank-provided ID
-                "internalTransactionId": "txn-001",
-                "institutionId": "REVOLUT_REVOLT21",
-                "iban": "LT313250081177977789",
-                "transactionDate": datetime(2025, 9, 1, 9, 30),
-                "description": "Coffee Shop Payment",
-                "transactionValue": -10.50,
-                "transactionCurrency": "EUR",
-                "transactionStatus": "booked",
-                "accountId": "test-account-123",
-                "rawTransaction": {"transactionId": "bank-txn-001", "some": "data"},
-            },
-            {
-                "transactionId": "bank-txn-002",  # NEW: stable bank-provided ID
-                "internalTransactionId": "txn-002",
-                "institutionId": "REVOLUT_REVOLT21",
-                "iban": "LT313250081177977789",
-                "transactionDate": datetime(2025, 9, 2, 14, 15),
-                "description": "Grocery Store",
-                "transactionValue": -45.30,
-                "transactionCurrency": "EUR",
-                "transactionStatus": "booked",
-                "accountId": "test-account-123",
-                "rawTransaction": {"transactionId": "bank-txn-002", "other": "data"},
-            },
-        ]
-
-        mock_transaction_repo.get_transactions.return_value = mock_transactions
-        mock_transaction_repo.get_count.return_value = len(mock_transactions)
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
+    def test_get_all_transactions_summary(self, api_client):
+        """The default listing is newest-first summaries."""
+        seed_transactions(
+            [
+                {
+                    "id": "bank-txn-001",
+                    "account_id": "test-account-123",
+                    "date": "2025-09-01T09:30:00",
+                    "description": "Coffee Shop Payment",
+                    "value": -10.50,
+                },
+                {
+                    "id": "bank-txn-002",
+                    "account_id": "test-account-123",
+                    "date": "2025-09-02T14:15:00",
+                    "description": "Grocery Store",
+                    "value": -45.30,
+                },
+            ]
         )
 
         response = api_client.get("/api/v1/transactions?summary_only=true")
 
-        fastapi_app.dependency_overrides.clear()
-
         assert response.status_code == 200
         data = response.json()
-        assert len(data["data"]) == 2
+        assert data["total"] == 2
+        assert [t["transaction_id"] for t in data["data"]] == [
+            "bank-txn-002",
+            "bank-txn-001",
+        ]
 
-        # Check first transaction summary
-        transaction = data["data"][0]
-        assert transaction["internal_transaction_id"] == "txn-001"
+        transaction = data["data"][1]
+        assert transaction["internal_transaction_id"] == "int-bank-txn-001"
         assert transaction["amount"] == -10.50
         assert transaction["currency"] == "EUR"
         assert transaction["description"] == "Coffee Shop Payment"
         assert transaction["status"] == "booked"
         assert transaction["account_id"] == "test-account-123"
+        assert "raw_transaction" not in transaction
 
-    def test_get_all_transactions_full_details(
-        self,
-        fastapi_app,
-        api_client,
-        mock_transaction_repo,
-    ):
-        """Test retrieval of full transaction details from database."""
-        mock_transactions = [
-            {
-                "transactionId": "bank-txn-001",  # NEW: stable bank-provided ID
-                "internalTransactionId": "txn-001",
-                "institutionId": "REVOLUT_REVOLT21",
-                "iban": "LT313250081177977789",
-                "transactionDate": datetime(2025, 9, 1, 9, 30),
-                "description": "Coffee Shop Payment",
-                "transactionValue": -10.50,
-                "transactionCurrency": "EUR",
-                "transactionStatus": "booked",
-                "accountId": "test-account-123",
-                "rawTransaction": {"transactionId": "bank-txn-001", "some": "raw_data"},
-            }
-        ]
-
-        mock_transaction_repo.get_transactions.return_value = mock_transactions
-        mock_transaction_repo.get_count.return_value = len(mock_transactions)
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
+    def test_get_all_transactions_full_details(self, api_client):
+        """summary_only=false returns the stored row including the raw payload."""
+        raw = {"transactionId": "bank-txn-001", "some": "raw_data"}
+        seed_transactions(
+            [
+                {
+                    "id": "bank-txn-001",
+                    "account_id": "test-account-123",
+                    "date": "2025-09-01T09:30:00",
+                    "description": "Coffee Shop Payment",
+                    "value": -10.50,
+                    "raw": raw,
+                }
+            ]
         )
 
         response = api_client.get("/api/v1/transactions?summary_only=false")
-
-        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
         assert len(data["data"]) == 1
 
         transaction = data["data"][0]
-        assert transaction["transaction_id"] == "bank-txn-001"  # NEW: check stable ID
-        assert transaction["internal_transaction_id"] == "txn-001"
-        assert transaction["institution_id"] == "REVOLUT_REVOLT21"
-        assert transaction["iban"] == "LT313250081177977789"
-        assert "raw_transaction" in transaction
+        assert transaction["transaction_id"] == "bank-txn-001"
+        assert transaction["internal_transaction_id"] == "int-bank-txn-001"
+        assert transaction["institution_id"] == "TEST_BANK"
+        assert transaction["iban"] == DEFAULT_IBAN
+        assert transaction["raw_transaction"] == raw
 
-    def test_get_transactions_with_filters(
-        self,
-        fastapi_app,
-        api_client,
-        mock_transaction_repo,
-    ):
-        """Test getting transactions with various filters."""
-        mock_transactions = [
-            {
-                "transactionId": "bank-txn-001",  # NEW: stable bank-provided ID
-                "internalTransactionId": "txn-001",
-                "institutionId": "REVOLUT_REVOLT21",
-                "iban": "LT313250081177977789",
-                "transactionDate": datetime(2025, 9, 1, 9, 30),
-                "description": "Coffee Shop Payment",
-                "transactionValue": -10.50,
-                "transactionCurrency": "EUR",
-                "transactionStatus": "booked",
-                "accountId": "test-account-123",
-                "rawTransaction": {"transactionId": "bank-txn-001", "some": "data"},
-            }
-        ]
-
-        mock_transaction_repo.get_transactions.return_value = mock_transactions
-        mock_transaction_repo.get_count.return_value = 1
-
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
+    def test_get_transactions_with_filters(self, api_client):
+        """Account, date range, amount range and search combine."""
+        seed_transactions(
+            [
+                {
+                    "id": "coffee",
+                    "account_id": "test-account-123",
+                    "date": "2025-09-01T09:30:00",
+                    "description": "Coffee Shop Payment",
+                    "value": -10.50,
+                },
+                {
+                    "id": "grocery",
+                    "account_id": "test-account-123",
+                    "date": "2025-09-01T14:15:00",
+                    "description": "Grocery Store",
+                    "value": -45.30,
+                },
+                {
+                    "id": "late-coffee",
+                    "account_id": "test-account-123",
+                    "date": "2025-09-10T08:00:00",
+                    "description": "Coffee Shop Payment",
+                    "value": -3.0,
+                },
+                {
+                    "id": "big-coffee",
+                    "account_id": "test-account-123",
+                    "date": "2025-09-01T12:00:00",
+                    "description": "Coffee Beans",
+                    "value": -60.0,
+                },
+                {
+                    "id": "other-account",
+                    "account_id": "other",
+                    "date": "2025-09-01T12:00:00",
+                    "description": "Coffee Shop Payment",
+                    "value": -8.0,
+                },
+            ]
         )
 
         response = api_client.get(
@@ -152,77 +130,52 @@ class TestTransactionsAPI:
             "date_to=2025-09-02&"
             "min_amount=-50.0&"
             "max_amount=0.0&"
-            "search=Coffee&"
-            "page=2&"
-            "per_page=10"
+            "search=Coffee"
         )
-
-        fastapi_app.dependency_overrides.clear()
-
-        assert response.status_code == 200
-
-        # Verify the repository was called with correct filters
-        mock_transaction_repo.get_transactions.assert_called_once_with(
-            account_id="test-account-123",
-            limit=10,
-            offset=10,  # (page-1) * per_page = (2-1) * 10 = 10
-            date_from="2025-09-01",
-            date_to="2025-09-02",
-            min_amount=-50.0,
-            max_amount=0.0,
-            search="Coffee",
-            category_id=None,
-            status=None,
-            min_magnitude=None,
-            max_magnitude=None,
-            kind=None,
-            sort_by="date",
-            sort_order="desc",
-        )
-
-    def test_get_transactions_empty_result(
-        self,
-        fastapi_app,
-        api_client,
-        mock_transaction_repo,
-    ):
-        """Test getting transactions when database returns empty result."""
-        mock_transaction_repo.get_transactions.return_value = []
-        mock_transaction_repo.get_count.return_value = 0
-
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
-        )
-
-        response = api_client.get("/api/v1/transactions")
-
-        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data["data"]) == 0
+        assert [t["transaction_id"] for t in data["data"]] == ["coffee"]
+        assert data["total"] == 1
+
+    def test_get_transactions_pagination(self, api_client):
+        """The total counts every match; pages report their neighbours."""
+        persist_transactions(
+            [
+                (f"txn-{i}", "acc-1", f"2025-09-0{i}T10:00:00", -1.0, "EUR", "booked")
+                for i in range(1, 4)
+            ]
+        )
+
+        first = api_client.get("/api/v1/transactions?per_page=2&page=1").json()
+        second = api_client.get("/api/v1/transactions?per_page=2&page=2").json()
+
+        assert [t["transaction_id"] for t in first["data"]] == ["txn-3", "txn-2"]
+        assert first["total"] == 3
+        assert first["total_pages"] == 2
+        assert first["has_next"] is True
+        assert first["has_prev"] is False
+        assert [t["transaction_id"] for t in second["data"]] == ["txn-1"]
+        assert second["has_next"] is False
+        assert second["has_prev"] is True
+
+    def test_get_transactions_empty_result(self, api_client):
+        response = api_client.get("/api/v1/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["data"] == []
         assert data["total"] == 0
         assert data["page"] == 1
         assert data["total_pages"] == 0
 
-    def test_get_transactions_database_error(
-        self,
-        fastapi_app,
-        raw_api_client,
-        mock_transaction_repo,
-    ):
+    def test_get_transactions_database_error(self, raw_api_client, override):
         """A repository error surfaces as the sanitized global 500."""
-        mock_transaction_repo.get_transactions.side_effect = Exception(
-            "Database connection failed"
-        )
-
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
-        )
+        repo = MagicMock()
+        repo.get_transactions.side_effect = Exception("Database connection failed")
+        override(TransactionRepository, repo)
 
         response = raw_api_client.get("/api/v1/transactions")
-
-        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 500
         assert response.json()["detail"] == "Internal server error."
@@ -371,26 +324,15 @@ class TestTransactionsAPI:
         assert data["accounts_included"] == 0
         assert data["currency"] is None
 
-    def test_get_transaction_stats_database_error(
-        self,
-        fastapi_app,
-        raw_api_client,
-        mock_transaction_repo,
-    ):
+    def test_get_transaction_stats_database_error(self, raw_api_client, override):
         """A repository error surfaces as the sanitized global 500."""
-        mock_transaction_repo.get_stats_totals.side_effect = Exception(
-            "Database connection failed"
-        )
-
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
-        )
+        repo = MagicMock()
+        repo.get_stats_totals.side_effect = Exception("Database connection failed")
+        override(TransactionRepository, repo)
 
         response = raw_api_client.get(
             "/api/v1/transactions/stats?date_from=2025-01-01&date_to=2025-12-31"
         )
-
-        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 500
         assert response.json()["detail"] == "Internal server error."
@@ -402,29 +344,6 @@ class TestTransactionsAPI:
 
         response = api_client.get("/api/v1/transactions?per_page=-5")
         assert response.status_code == 422
-
-    def test_get_transactions_status_filter_reaches_repository(
-        self,
-        fastapi_app,
-        api_client,
-        mock_transaction_repo,
-    ):
-        """A status filter is forwarded to both repository calls."""
-        mock_transaction_repo.get_transactions.return_value = []
-        mock_transaction_repo.get_count.return_value = 0
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
-        )
-
-        response = api_client.get("/api/v1/transactions?status=pending")
-
-        fastapi_app.dependency_overrides.clear()
-
-        assert response.status_code == 200
-        assert mock_transaction_repo.get_transactions.call_args.kwargs["status"] == (
-            "pending"
-        )
-        assert mock_transaction_repo.get_count.call_args.kwargs["status"] == "pending"
 
     def test_get_transactions_filtered_by_status(self, api_client, mock_db_path):
         """Only transactions in the requested status come back, and the

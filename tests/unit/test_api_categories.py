@@ -1,502 +1,246 @@
-"""Tests for categories API endpoints."""
+"""Tests for the categories API endpoints, against the real temporary database.
 
-from unittest.mock import MagicMock
+The default categories are seeded by the migrations, so every test starts
+with them present.
+"""
 
 import pytest
 
 from leggen.errors import CategoryExistsError
 from leggen.repositories.category_repository import CategoryRepository
-from leggen.repositories.transaction_repository import TransactionRepository
+from tests.helpers import (
+    category_assignments,
+    category_id,
+    persist_transactions,
+    seed_transactions,
+)
 
 
-@pytest.fixture
-def mock_category_repo():
-    """Create mock CategoryRepository for testing."""
-    return MagicMock()
+def _create(api_client, name: str = "Travel", **fields) -> dict:
+    response = api_client.post(
+        "/api/v1/categories", json={"name": name, "color": "#06b6d4", **fields}
+    )
+    assert response.status_code == 201
+    return response.json()
 
 
 @pytest.mark.api
 class TestCategoriesAPI:
-    """Test category-related API endpoints."""
-
-    def test_get_categories_success(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test successful retrieval of all categories."""
-        mock_category_repo.get_all_categories.return_value = [
-            {
-                "id": 1,
-                "name": "Groceries",
-                "color": "#22c55e",
-                "icon": "shopping-cart",
-                "is_default": True,
-                "exclude_from_stats": False,
-            },
-            {
-                "id": 2,
-                "name": "Transport",
-                "color": "#3b82f6",
-                "icon": "car",
-                "is_default": True,
-                "exclude_from_stats": False,
-            },
-        ]
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
-
+    def test_get_categories_lists_the_defaults(self, api_client):
         response = api_client.get("/api/v1/categories")
 
-        fastapi_app.dependency_overrides.clear()
-
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 2
-        assert data[0]["name"] == "Groceries"
-        assert data[0]["is_default"] is True
-        assert data[1]["name"] == "Transport"
+        names = [c["name"] for c in data]
+        assert "Groceries" in names
+        assert all(c["is_default"] is True for c in data)
 
-    def test_create_category_success(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test creating a new custom category."""
-        mock_category_repo.create_category.return_value = {
-            "id": 13,
-            "name": "Travel",
-            "color": "#06b6d4",
-            "icon": None,
-            "is_default": False,
-            "exclude_from_stats": False,
-        }
+    def test_create_category(self, api_client):
+        created = _create(api_client, "Travel")
 
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
+        assert created["name"] == "Travel"
+        assert created["color"] == "#06b6d4"
+        assert created["is_default"] is False
+        assert created["exclude_from_stats"] is False
 
-        response = api_client.post(
-            "/api/v1/categories",
-            json={"name": "Travel", "color": "#06b6d4"},
-        )
+        listed = api_client.get("/api/v1/categories").json()
+        assert {"id": created["id"], "name": "Travel"} in [
+            {"id": c["id"], "name": c["name"]} for c in listed
+        ]
+        # Custom categories sort after the defaults.
+        assert listed[-1]["name"] == "Travel"
 
-        fastapi_app.dependency_overrides.clear()
+    def test_create_category_with_exclude_from_stats(self, api_client):
+        created = _create(api_client, "Internal", exclude_from_stats=True)
 
-        assert response.status_code == 201
-        data = response.json()
-        assert data["name"] == "Travel"
-        assert data["is_default"] is False
-
-    def test_update_category_success(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test updating a category."""
-        mock_category_repo.update_category.return_value = {
-            "id": 1,
-            "name": "Food & Groceries",
-            "color": "#22c55e",
-            "icon": "shopping-cart",
-            "is_default": True,
-            "exclude_from_stats": False,
-        }
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
-
-        response = api_client.put(
-            "/api/v1/categories/1",
-            json={"name": "Food & Groceries"},
-        )
-
-        fastapi_app.dependency_overrides.clear()
-
-        assert response.status_code == 200
-        assert response.json()["name"] == "Food & Groceries"
-
-    def test_update_category_not_found(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test updating a non-existent category."""
-        mock_category_repo.update_category.return_value = None
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
-
-        response = api_client.put(
-            "/api/v1/categories/999",
-            json={"name": "Nonexistent"},
-        )
-
-        fastapi_app.dependency_overrides.clear()
-        assert response.status_code == 404
-
-    def test_delete_category_success(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test deleting a custom category."""
-        mock_category_repo.delete_category.return_value = True
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
-
-        response = api_client.delete("/api/v1/categories/13")
-
-        fastapi_app.dependency_overrides.clear()
-        assert response.status_code == 204
-
-    def test_delete_default_category_rejected(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test that deleting a default category is rejected."""
-        mock_category_repo.delete_category.return_value = False
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
-
-        response = api_client.delete("/api/v1/categories/1")
-
-        fastapi_app.dependency_overrides.clear()
-        assert response.status_code == 400
-
-    def test_assign_category_success(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-        mock_transaction_repo,
-    ):
-        """Test assigning a category to a transaction."""
-        mock_category_repo.get_category_by_id.return_value = {
-            "id": 1,
-            "name": "Groceries",
-            "color": "#22c55e",
-            "icon": "shopping-cart",
-            "is_default": True,
-            "exclude_from_stats": False,
-        }
-        mock_transaction_repo.get_transactions.return_value = [
-            {
-                "transactionId": "txn-001",
-                "description": "LIDL",
-                "rawTransaction": {"creditorName": "LIDL GmbH"},
-            }
+        assert created["exclude_from_stats"] is True
+        assert CategoryRepository().get_category_by_id(created["id"])[
+            "exclude_from_stats"
         ]
 
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
+    def test_update_category(self, api_client):
+        created = _create(api_client, "Travel")
+
+        response = api_client.put(
+            f"/api/v1/categories/{created['id']}",
+            json={"name": "Trips", "color": "#000000"},
         )
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "Trips"
+        assert response.json()["color"] == "#000000"
+        stored = CategoryRepository().get_category_by_id(created["id"])
+        assert stored["name"] == "Trips"
+
+    def test_update_category_not_found(self, api_client):
+        response = api_client.put(
+            "/api/v1/categories/999", json={"name": "Nonexistent"}
         )
+
+        assert response.status_code == 404
+
+    def test_delete_custom_category(self, api_client):
+        created = _create(api_client, "Travel")
+
+        response = api_client.delete(f"/api/v1/categories/{created['id']}")
+
+        assert response.status_code == 204
+        assert CategoryRepository().get_category_by_id(created["id"]) is None
+
+    def test_delete_default_category_rejected(self, api_client):
+        groceries = category_id("Groceries")
+
+        response = api_client.delete(f"/api/v1/categories/{groceries}")
+
+        assert response.status_code == 400
+        assert CategoryRepository().get_category_by_id(groceries) is not None
+
+    def test_delete_unknown_category_rejected(self, api_client):
+        response = api_client.delete("/api/v1/categories/999")
+
+        assert response.status_code == 400
+
+
+@pytest.mark.api
+class TestTransactionCategoryAssignment:
+    def test_assign_category(self, api_client):
+        persist_transactions(
+            [("txn-001", "acc-001", "2025-09-01T10:00:00", -12.0, "EUR", "booked")]
+        )
+        groceries = category_id("Groceries")
 
         response = api_client.put(
             "/api/v1/transactions/acc-001/txn-001/category",
-            json={"category_id": 1},
+            json={"category_id": groceries},
         )
-
-        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
-        assert response.json()["status"] == "ok"
-        mock_category_repo.assign_category.assert_called_once()
+        assert response.json() == {"status": "ok"}
+        assignment = category_assignments()["txn-001"]
+        assert assignment["categoryId"] == groceries
+        assert assignment["source"] == "manual"
 
-    def test_assign_category_not_found(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-        mock_transaction_repo,
-    ):
-        """Test assigning a non-existent category."""
-        mock_category_repo.get_category_by_id.return_value = None
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
-        )
-
+    def test_assign_unknown_category(self, api_client):
         response = api_client.put(
             "/api/v1/transactions/acc-001/txn-001/category",
             json={"category_id": 999},
         )
 
-        fastapi_app.dependency_overrides.clear()
         assert response.status_code == 404
+        assert category_assignments() == {}
 
-    def test_remove_category_success(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-        mock_transaction_repo,
-    ):
-        """Test removing a category from a transaction."""
-        mock_category_repo.remove_category.return_value = True
-        mock_transaction_repo.get_transactions.return_value = [
-            {
-                "transactionId": "txn-001",
-                "description": "LIDL",
-                "rawTransaction": {},
-            }
-        ]
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
+    def test_remove_category(self, api_client):
+        persist_transactions(
+            [("txn-001", "acc-001", "2025-09-01T10:00:00", -12.0, "EUR", "booked")]
         )
-        fastapi_app.dependency_overrides[TransactionRepository] = lambda: (
-            mock_transaction_repo
+        CategoryRepository().assign_category(
+            "acc-001", "txn-001", category_id("Groceries")
         )
 
         response = api_client.delete("/api/v1/transactions/acc-001/txn-001/category")
 
-        fastapi_app.dependency_overrides.clear()
         assert response.status_code == 200
+        assert category_assignments() == {}
 
-    def test_create_category_with_exclude_from_stats(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test creating a category with exclude_from_stats=True."""
-        mock_category_repo.create_category.return_value = {
-            "id": 14,
-            "name": "Internal",
-            "color": "#14b8a6",
-            "icon": None,
-            "is_default": False,
-            "exclude_from_stats": True,
-        }
+    def test_remove_category_when_none_assigned(self, api_client):
+        response = api_client.delete("/api/v1/transactions/acc-001/txn-001/category")
 
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
-
-        response = api_client.post(
-            "/api/v1/categories",
-            json={
-                "name": "Internal",
-                "color": "#14b8a6",
-                "exclude_from_stats": True,
-            },
-        )
-
-        fastapi_app.dependency_overrides.clear()
-
-        assert response.status_code == 201
-        data = response.json()
-        assert data["name"] == "Internal"
-        assert data["exclude_from_stats"] is True
-        mock_category_repo.create_category.assert_called_once_with(
-            name="Internal",
-            color="#14b8a6",
-            icon=None,
-            exclude_from_stats=True,
-        )
-
-    def test_bulk_categorize_success(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test bulk categorizing transactions by description."""
-        mock_category_repo.get_category_by_id.return_value = {
-            "id": 1,
-            "name": "Transfer",
-            "color": "#06b6d4",
-            "icon": "arrow-right-left",
-            "is_default": True,
-            "exclude_from_stats": False,
-        }
-        mock_category_repo.bulk_assign_by_description.return_value = 5
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
-
-        response = api_client.put(
-            "/api/v1/transactions/bulk-categorize",
-            json={
-                "category_id": 1,
-                "description": "To Flexible Cash Funds",
-            },
-        )
-
-        fastapi_app.dependency_overrides.clear()
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "ok"
-        assert data["updated_count"] == 5
-        mock_category_repo.bulk_assign_by_description.assert_called_once_with(
-            category_id=1,
-            description="To Flexible Cash Funds",
-        )
-
-    def test_bulk_categorize_category_not_found(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test bulk categorize with non-existent category returns 404."""
-        mock_category_repo.get_category_by_id.return_value = None
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
-
-        response = api_client.put(
-            "/api/v1/transactions/bulk-categorize",
-            json={
-                "category_id": 999,
-                "description": "Some description",
-            },
-        )
-
-        fastapi_app.dependency_overrides.clear()
         assert response.status_code == 404
 
-    def test_bulk_categorize_no_matching_transactions(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test bulk categorize with no matching transactions returns count 0."""
-        mock_category_repo.get_category_by_id.return_value = {
-            "id": 1,
-            "name": "Transfer",
-            "color": "#06b6d4",
-            "icon": "arrow-right-left",
-            "is_default": True,
-            "exclude_from_stats": False,
-        }
-        mock_category_repo.bulk_assign_by_description.return_value = 0
 
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
+@pytest.mark.api
+class TestBulkCategorization:
+    DESCRIPTION = "To Flexible Cash Funds"
+
+    def _seed(self) -> None:
+        seed_transactions(
+            [
+                {"id": "t1", "description": self.DESCRIPTION, "value": -100.0},
+                {"id": "t2", "description": self.DESCRIPTION, "value": -200.0},
+                {"id": "t3", "description": "Something else", "value": -5.0},
+            ]
         )
+
+    def test_bulk_categorize_by_description(self, api_client):
+        self._seed()
+        transport = category_id("Transport")
+
+        response = api_client.put(
+            "/api/v1/transactions/bulk-categorize",
+            json={"category_id": transport, "description": self.DESCRIPTION},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok", "updated_count": 2}
+        assignments = category_assignments()
+        assert set(assignments) == {"t1", "t2"}
+        assert all(a["categoryId"] == transport for a in assignments.values())
+
+    def test_bulk_categorize_unknown_category(self, api_client):
+        self._seed()
+
+        response = api_client.put(
+            "/api/v1/transactions/bulk-categorize",
+            json={"category_id": 999, "description": self.DESCRIPTION},
+        )
+
+        assert response.status_code == 404
+
+    def test_bulk_categorize_without_matches(self, api_client):
+        self._seed()
 
         response = api_client.put(
             "/api/v1/transactions/bulk-categorize",
             json={
-                "category_id": 1,
+                "category_id": category_id("Transport"),
                 "description": "Nonexistent description",
             },
         )
 
-        fastapi_app.dependency_overrides.clear()
-
         assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "ok"
-        assert data["updated_count"] == 0
+        assert response.json()["updated_count"] == 0
 
-    def test_bulk_remove_category_success(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test bulk removing categories by description."""
-        mock_category_repo.bulk_remove_by_description.return_value = 3
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
+    def test_bulk_remove_by_description(self, api_client):
+        self._seed()
+        transport = category_id("Transport")
+        api_client.put(
+            "/api/v1/transactions/bulk-categorize",
+            json={"category_id": transport, "description": self.DESCRIPTION},
         )
+        CategoryRepository().assign_category("acc-1", "t3", transport)
 
         response = api_client.request(
             "DELETE",
             "/api/v1/transactions/bulk-categorize",
-            json={"description": "To Flexible Cash Funds"},
+            json={"description": self.DESCRIPTION},
         )
-
-        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "ok"
-        assert data["removed_count"] == 3
-        mock_category_repo.bulk_remove_by_description.assert_called_once_with(
-            description="To Flexible Cash Funds",
-        )
+        assert response.json() == {"status": "ok", "removed_count": 2}
+        # Only the matching descriptions lose their category.
+        assert set(category_assignments()) == {"t3"}
 
-    def test_bulk_remove_category_no_matches(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        """Test bulk remove with no matching categorized transactions."""
-        mock_category_repo.bulk_remove_by_description.return_value = 0
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
-
+    def test_bulk_remove_without_matches(self, api_client):
         response = api_client.request(
             "DELETE",
             "/api/v1/transactions/bulk-categorize",
             json={"description": "Nonexistent"},
         )
 
-        fastapi_app.dependency_overrides.clear()
-
         assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "ok"
-        assert data["removed_count"] == 0
+        assert response.json()["removed_count"] == 0
 
 
 @pytest.mark.api
 class TestDuplicateCategory:
     """A duplicate category name is a conflict, not a server error."""
 
-    def test_create_duplicate_returns_409(
-        self,
-        fastapi_app,
-        api_client,
-        mock_category_repo,
-    ):
-        mock_category_repo.create_category.side_effect = CategoryExistsError(
-            "Category 'Travel' already exists."
-        )
-
-        fastapi_app.dependency_overrides[CategoryRepository] = lambda: (
-            mock_category_repo
-        )
+    def test_create_duplicate_returns_409(self, api_client):
+        _create(api_client, "Travel")
 
         response = api_client.post(
-            "/api/v1/categories",
-            json={"name": "Travel", "color": "#06b6d4"},
+            "/api/v1/categories", json={"name": "Travel", "color": "#06b6d4"}
         )
-
-        fastapi_app.dependency_overrides.clear()
 
         assert response.status_code == 409
         body = response.json()

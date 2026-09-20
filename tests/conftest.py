@@ -6,7 +6,6 @@ imported: the test config is written by a fixture, not at import time.
 
 import copy
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 import tomli_w
@@ -151,21 +150,6 @@ def override(fastapi_app):
         yield _override
     finally:
         fastapi_app.dependency_overrides.clear()
-
-
-@pytest.fixture
-def mock_account_repo():
-    return MagicMock()
-
-
-@pytest.fixture
-def mock_balance_repo():
-    return MagicMock()
-
-
-@pytest.fixture
-def mock_transaction_repo():
-    return MagicMock()
 
 
 @pytest.fixture
