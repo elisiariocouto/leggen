@@ -36,7 +36,7 @@ class AccountUpdate(BaseModel):
 
 
 class Balance(BaseModel):
-    """A single balance entry as returned by /balances and /balances/history"""
+    """A single balance entry as returned by /balances"""
 
     id: str
     account_id: str

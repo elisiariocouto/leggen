@@ -218,20 +218,6 @@ class TestNotificationFiltersUpdateAPI:
         assert "telegram" not in notifications
         assert notifications["discord"]["enabled"] is True
 
-    def test_delete_filters_clears_the_section(self, api_client, mock_config):
-        """The filters DELETE must not be shadowed by the /{service} route."""
-        mock_config._config["filters"] = {
-            "case_insensitive": ["rent"],
-            "case_sensitive": ["ACME"],
-        }
-
-        response = api_client.delete("/api/v1/notifications/settings/filters")
-
-        assert response.status_code == 200
-        assert response.json() == {"deleted": "filters"}
-        assert not mock_config._config["filters"].get("case_insensitive")
-        assert not mock_config._config["filters"].get("case_sensitive")
-
 
 @pytest.fixture
 def enabled_notifications(mock_config):
@@ -418,17 +404,6 @@ class TestNotificationServiceDeletionAPI:
         body = response.json()
         assert body["code"] == "VALIDATION_ERROR"
         assert any("service" in error["field"] for error in body["errors"])
-
-    def test_filters_route_still_wins_over_the_service_route(
-        self, api_client, mock_config
-    ):
-        """`/settings/filters` must not be swallowed by the service path."""
-        mock_config._config["filters"] = {"case_insensitive": ["rent"]}
-
-        response = api_client.delete("/api/v1/notifications/settings/filters")
-
-        assert response.status_code == 200
-        assert response.json() == {"deleted": "filters"}
 
 
 @pytest.mark.api

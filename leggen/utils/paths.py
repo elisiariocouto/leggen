@@ -56,22 +56,6 @@ class PathManager:
         """Set the database file path."""
         self._database_path = Path(path)
 
-    def get_auth_file_path(self) -> Path:
-        """Get the authentication file path."""
-        return self.get_config_dir() / "auth.json"
-
-    def ensure_config_dir_exists(self) -> None:
-        """Ensure the configuration directory exists."""
-        self.get_config_dir().mkdir(parents=True, exist_ok=True)
-
-    def ensure_database_dir_exists(self) -> None:
-        """Ensure the database directory exists.
-
-        Note: get_database_path() now automatically ensures the directory exists,
-        so this method is mainly for explicit directory creation in tests.
-        """
-        self.get_database_path().parent.mkdir(parents=True, exist_ok=True)
-
 
 # Global instance for the application
 path_manager = PathManager()

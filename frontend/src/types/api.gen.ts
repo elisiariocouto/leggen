@@ -184,26 +184,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/balances/history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Historical Balances
-         * @description Get historical balance progression calculated from transaction history
-         */
-        get: operations["get_historical_balances_api_v1_balances_history_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/accounts/{account_id}": {
         parameters: {
             query?: never;
@@ -282,31 +262,8 @@ export interface paths {
         /**
          * Get Transaction Stats
          * @description Get transaction statistics for a date range.
-         *
-         *     Without group_by: returns totals (transactions, income, expenses, etc.)
-         *     With group_by=month: returns array of monthly stats.
          */
         get: operations["get_transaction_stats_api_v1_transactions_stats_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/transactions/stats/by-category": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Stats By Category
-         * @description Get transaction statistics grouped by category.
-         */
-        get: operations["get_stats_by_category_api_v1_transactions_stats_by_category_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -707,26 +664,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/notifications/settings/filters": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete Notification Filters
-         * @description Remove all notification filters
-         */
-        delete: operations["delete_notification_filters_api_v1_notifications_settings_filters_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/notifications/settings/{service}": {
         parameters: {
             query?: never;
@@ -1082,7 +1019,7 @@ export interface components {
         };
         /**
          * Balance
-         * @description A single balance entry as returned by /balances and /balances/history
+         * @description A single balance entry as returned by /balances
          */
         Balance: {
             /** Id */
@@ -1405,26 +1342,6 @@ export interface components {
             exclude_from_stats?: boolean | null;
         };
         /**
-         * CategoryStats
-         * @description Income/expense totals for one category
-         */
-        CategoryStats: {
-            /** Category Id */
-            category_id?: number | null;
-            /** Category Name */
-            category_name: string;
-            /** Category Color */
-            category_color: string;
-            /** Transaction Count */
-            transaction_count: number;
-            /** Income */
-            income: number;
-            /** Expenses */
-            expenses: number;
-            /** Currency */
-            currency?: string | null;
-        };
-        /**
          * CategoryUpdate
          * @description Model for updating a category.
          */
@@ -1522,22 +1439,6 @@ export interface components {
             currency?: string | null;
             /** Uncategorized Share */
             uncategorized_share: number;
-        };
-        /**
-         * MonthlyStats
-         * @description Income/expense totals for one month
-         */
-        MonthlyStats: {
-            /** Month */
-            month: string;
-            /** Income */
-            income: number;
-            /** Expenses */
-            expenses: number;
-            /** Net */
-            net: number;
-            /** Currency */
-            currency?: string | null;
         };
         /**
          * NetWorth
@@ -2757,60 +2658,6 @@ export interface operations {
             };
         };
     };
-    get_historical_balances_api_v1_balances_history_get: {
-        parameters: {
-            query: {
-                /** @description Start date (YYYY-MM-DD) */
-                date_from: string;
-                /** @description End date (YYYY-MM-DD) */
-                date_to: string;
-                /** @description Filter by specific account ID */
-                account_id?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Balance"][];
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
     update_account_details_api_v1_accounts__account_id__put: {
         parameters: {
             query?: never;
@@ -3080,8 +2927,6 @@ export interface operations {
                 min_magnitude?: number | null;
                 /** @description Maximum transaction size, ignoring sign (matches income and expenses alike) */
                 max_magnitude?: number | null;
-                /** @description Group results by month */
-                group_by?: "month" | null;
                 /** @description Filter by category ID or 'uncategorized' for transactions without a category */
                 category_id?: string | null;
             };
@@ -3097,61 +2942,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TransactionStats"] | components["schemas"]["MonthlyStats"][];
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    get_stats_by_category_api_v1_transactions_stats_by_category_get: {
-        parameters: {
-            query: {
-                /** @description Start date (YYYY-MM-DD) */
-                date_from: string;
-                /** @description End date (YYYY-MM-DD) */
-                date_to: string;
-                /** @description Filter by account ID */
-                account_id?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CategoryStats"][];
+                    "application/json": components["schemas"]["TransactionStats"];
                 };
             };
             /** @description Not authenticated */
@@ -4409,46 +4200,6 @@ export interface operations {
                 content: {
                     "application/json": {
                         [key: string]: components["schemas"]["NotificationServiceStatus"];
-                    };
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    delete_notification_filters_api_v1_notifications_settings_filters_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
                     };
                 };
             };

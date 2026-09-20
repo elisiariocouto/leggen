@@ -507,7 +507,7 @@ python = nil
 """
 
 
-def _deny_attribute(obj: Any, attr_name: Any, is_setting: bool) -> None:
+def _deny_attribute(obj: Any, attr_name: Any, _is_setting: bool) -> None:
     """Lua may call the stdlib functions but never look inside them."""
     raise AttributeError(f"attribute access is not allowed: {attr_name}")
 

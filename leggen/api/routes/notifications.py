@@ -155,16 +155,6 @@ async def get_notification_services() -> dict[str, NotificationServiceStatus]:
     }
 
 
-# Declared before the /{service} route below, which would otherwise match
-# "filters" and reject it as an unknown service.
-@router.delete("/notifications/settings/filters")
-async def delete_notification_filters() -> dict:
-    """Remove all notification filters"""
-    config.update_section("filters", {})
-
-    return {"deleted": "filters"}
-
-
 @router.delete("/notifications/settings/{service}")
 async def delete_notification_service(
     service: Literal["discord", "telegram"],

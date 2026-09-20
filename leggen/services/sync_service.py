@@ -56,10 +56,6 @@ class SyncService:
         self.session_repo = SessionRepository()
         self.rules = CategoryRuleEngine()
 
-    async def get_sync_status(self) -> SyncStatus:
-        """Get current sync status"""
-        return self._sync_status
-
     async def sync_all_accounts(
         self,
         full_sync: bool = False,

@@ -21,7 +21,6 @@ import type {
   HealthData,
   AccountUpdate,
   TransactionStats,
-  MonthlyStats,
   SpendingByCategory,
   SyncOperation,
   SyncResult,
@@ -170,23 +169,6 @@ export const apiClient = {
     return response.data;
   },
 
-  // Get historical balances for balance progression chart
-  getHistoricalBalances: async (
-    dateFrom: string,
-    dateTo: string,
-    accountId?: string,
-  ): Promise<Balance[]> => {
-    const queryParams = new URLSearchParams();
-    queryParams.append("date_from", dateFrom);
-    queryParams.append("date_to", dateTo);
-    if (accountId) queryParams.append("account_id", accountId);
-
-    const response = await api.get<Balance[]>(
-      `/balances/history?${queryParams.toString()}`,
-    );
-    return response.data;
-  },
-
   // Get transactions with optional filters
   getTransactions: async (params?: {
     accountId?: string;
@@ -331,24 +313,6 @@ export const apiClient = {
       queryParams.append("max_magnitude", options.maxMagnitude.toString());
 
     const response = await api.get<TransactionStats>(
-      `/transactions/stats?${queryParams.toString()}`,
-    );
-    return response.data;
-  },
-
-  // Get monthly transaction statistics (group_by=month)
-  getTransactionStatsByMonth: async (
-    dateFrom: string,
-    dateTo: string,
-    accountId?: string,
-  ): Promise<MonthlyStats[]> => {
-    const queryParams = new URLSearchParams();
-    queryParams.append("date_from", dateFrom);
-    queryParams.append("date_to", dateTo);
-    queryParams.append("group_by", "month");
-    if (accountId) queryParams.append("account_id", accountId);
-
-    const response = await api.get<MonthlyStats[]>(
       `/transactions/stats?${queryParams.toString()}`,
     );
     return response.data;

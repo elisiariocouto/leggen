@@ -568,112 +568,6 @@
         ]
       }
     },
-    "/api/v1/balances/history": {
-      "get": {
-        "tags": [
-          "accounts"
-        ],
-        "summary": "Get Historical Balances",
-        "description": "Get historical balance progression calculated from transaction history",
-        "operationId": "get_historical_balances_api_v1_balances_history_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyHeader": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "date_from",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Start date (YYYY-MM-DD)",
-              "title": "Date From"
-            },
-            "description": "Start date (YYYY-MM-DD)"
-          },
-          {
-            "name": "date_to",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "End date (YYYY-MM-DD)",
-              "title": "Date To"
-            },
-            "description": "End date (YYYY-MM-DD)"
-          },
-          {
-            "name": "account_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by specific account ID",
-              "title": "Account Id"
-            },
-            "description": "Filter by specific account ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Balance"
-                  },
-                  "title": "Response Get Historical Balances Api V1 Balances History Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not authenticated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/accounts/{account_id}": {
       "delete": {
         "tags": [
@@ -1282,7 +1176,7 @@
           "transactions"
         ],
         "summary": "Get Transaction Stats",
-        "description": "Get transaction statistics for a date range.\n\nWithout group_by: returns totals (transactions, income, expenses, etc.)\nWith group_by=month: returns array of monthly stats.",
+        "description": "Get transaction statistics for a date range.",
         "operationId": "get_transaction_stats_api_v1_transactions_stats_get",
         "security": [
           {
@@ -1426,25 +1320,6 @@
             "description": "Maximum transaction size, ignoring sign (matches income and expenses alike)"
           },
           {
-            "name": "group_by",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "const": "month",
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Group results by month",
-              "title": "Group By"
-            },
-            "description": "Group results by month"
-          },
-          {
             "name": "category_id",
             "in": "query",
             "required": false,
@@ -1470,124 +1345,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/TransactionStats"
-                    },
-                    {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/MonthlyStats"
-                      }
-                    }
-                  ],
-                  "title": "Response Get Transaction Stats Api V1 Transactions Stats Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not authenticated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/transactions/stats/by-category": {
-      "get": {
-        "tags": [
-          "transactions"
-        ],
-        "summary": "Get Stats By Category",
-        "description": "Get transaction statistics grouped by category.",
-        "operationId": "get_stats_by_category_api_v1_transactions_stats_by_category_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyHeader": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "date_from",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Start date (YYYY-MM-DD)",
-              "title": "Date From"
-            },
-            "description": "Start date (YYYY-MM-DD)"
-          },
-          {
-            "name": "date_to",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "End date (YYYY-MM-DD)",
-              "title": "Date To"
-            },
-            "description": "End date (YYYY-MM-DD)"
-          },
-          {
-            "name": "account_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by account ID",
-              "title": "Account Id"
-            },
-            "description": "Filter by account ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CategoryStats"
-                  },
-                  "title": "Response Get Stats By Category Api V1 Transactions Stats By Category Get"
+                  "$ref": "#/components/schemas/TransactionStats"
                 }
               }
             }
@@ -3354,58 +3112,6 @@
         ]
       }
     },
-    "/api/v1/notifications/settings/filters": {
-      "delete": {
-        "tags": [
-          "notifications"
-        ],
-        "summary": "Delete Notification Filters",
-        "description": "Remove all notification filters",
-        "operationId": "delete_notification_filters_api_v1_notifications_settings_filters_delete",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Delete Notification Filters Api V1 Notifications Settings Filters Delete"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not authenticated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          },
-          {
-            "APIKeyHeader": []
-          }
-        ]
-      }
-    },
     "/api/v1/notifications/settings/{service}": {
       "delete": {
         "tags": [
@@ -4754,7 +4460,7 @@
           "balance_type"
         ],
         "title": "Balance",
-        "description": "A single balance entry as returned by /balances and /balances/history"
+        "description": "A single balance entry as returned by /balances"
       },
       "BankAuthResponse": {
         "properties": {
@@ -5464,62 +5170,6 @@
         "title": "CategoryRuleUpdate",
         "description": "Request body for updating a rule. Only the fields sent are changed;\nsend `description` or `exclude_from_stats` as null to clear them."
       },
-      "CategoryStats": {
-        "properties": {
-          "category_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category Id"
-          },
-          "category_name": {
-            "type": "string",
-            "title": "Category Name"
-          },
-          "category_color": {
-            "type": "string",
-            "title": "Category Color"
-          },
-          "transaction_count": {
-            "type": "integer",
-            "title": "Transaction Count"
-          },
-          "income": {
-            "type": "number",
-            "title": "Income"
-          },
-          "expenses": {
-            "type": "number",
-            "title": "Expenses"
-          },
-          "currency": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Currency"
-          }
-        },
-        "type": "object",
-        "required": [
-          "category_name",
-          "category_color",
-          "transaction_count",
-          "income",
-          "expenses"
-        ],
-        "title": "CategoryStats",
-        "description": "Income/expense totals for one category"
-      },
       "CategoryUpdate": {
         "properties": {
           "name": {
@@ -5754,46 +5404,6 @@
         ],
         "title": "Merchants",
         "description": "Top merchants for the period, plus the largest movers."
-      },
-      "MonthlyStats": {
-        "properties": {
-          "month": {
-            "type": "string",
-            "title": "Month"
-          },
-          "income": {
-            "type": "number",
-            "title": "Income"
-          },
-          "expenses": {
-            "type": "number",
-            "title": "Expenses"
-          },
-          "net": {
-            "type": "number",
-            "title": "Net"
-          },
-          "currency": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Currency"
-          }
-        },
-        "type": "object",
-        "required": [
-          "month",
-          "income",
-          "expenses",
-          "net"
-        ],
-        "title": "MonthlyStats",
-        "description": "Income/expense totals for one month"
       },
       "NetWorth": {
         "properties": {

@@ -48,7 +48,6 @@ class TestRuleCrud:
         assert rule["is_default"] is False
         assert rule["exclude_from_stats"] is None
         assert repo.get_rule_by_id(rule["id"]) == rule
-        assert repo.get_rule_by_name("Supermarkets") == rule
 
     def test_listed_in_evaluation_order(self, mock_db_path):
         repo = CategoryRuleRepository()

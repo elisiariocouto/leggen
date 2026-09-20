@@ -63,15 +63,6 @@ class CategoryRuleRepository:
             ).fetchone()
             return _row_to_rule(row) if row else None
 
-    def get_rule_by_name(self, name: str) -> dict[str, Any] | None:
-        if not db_exists():
-            return None
-        with get_db_connection(row_factory=True) as conn:
-            row = conn.execute(
-                f"SELECT {_RULE_COLUMNS} FROM category_rules WHERE name = ?", (name,)
-            ).fetchone()
-            return _row_to_rule(row) if row else None
-
     def create_rule(
         self,
         name: str,

@@ -11,8 +11,6 @@ from leggen.api.models.accounts import (
     Balance,
 )
 from leggen.repositories import AccountRepository, BalanceRepository
-from leggen.services.data_processors import calculate_historical_balances
-from leggen.utils.paths import path_manager
 
 router = APIRouter()
 
@@ -85,23 +83,6 @@ async def get_all_balances(
             )
 
     return all_balances
-
-
-@router.get("/balances/history", response_model=list[Balance])
-async def get_historical_balances(
-    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
-    date_to: str = Query(description="End date (YYYY-MM-DD)"),
-    account_id: str | None = Query(
-        default=None, description="Filter by specific account ID"
-    ),
-) -> list[dict]:
-    """Get historical balance progression calculated from transaction history"""
-    # Returned as dicts; the response_model performs the single validation
-    # pass (this is the largest payload the API serves).
-    db_path = path_manager.get_database_path()
-    return calculate_historical_balances(
-        db_path, account_id=account_id, date_from=date_from, date_to=date_to
-    )
 
 
 @router.delete("/accounts/{account_id}")

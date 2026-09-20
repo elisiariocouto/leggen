@@ -21,28 +21,6 @@ class TransactionStats(BaseModel):
     accounts_included: int
 
 
-class MonthlyStats(BaseModel):
-    """Income/expense totals for one month"""
-
-    month: str
-    income: float
-    expenses: float
-    net: float
-    currency: str | None = None
-
-
-class CategoryStats(BaseModel):
-    """Income/expense totals for one category"""
-
-    category_id: int | None = None
-    category_name: str
-    category_color: str
-    transaction_count: int
-    income: float
-    expenses: float
-    currency: str | None = None
-
-
 class CashFlowPoint(BaseModel):
     """One month of cash flow, with the running total to that point."""
 

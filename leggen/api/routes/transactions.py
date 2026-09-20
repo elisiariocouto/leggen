@@ -8,14 +8,9 @@ from leggen.api.models.accounts import (
     TransactionUpdate,
 )
 from leggen.api.models.common import PaginatedResponse
-from leggen.api.models.stats import CategoryStats, MonthlyStats, TransactionStats
+from leggen.api.models.stats import TransactionStats
 from leggen.errors import NotFoundError
 from leggen.repositories import TransactionRepository
-from leggen.services.data_processors import (
-    calculate_category_stats,
-    calculate_monthly_stats,
-)
-from leggen.utils.paths import path_manager
 
 router = APIRouter()
 
@@ -244,30 +239,13 @@ async def get_transaction_stats(
         ge=0,
         description="Maximum transaction size, ignoring sign (matches income and expenses alike)",
     ),
-    group_by: Literal["month"] | None = Query(
-        default=None, description="Group results by month"
-    ),
     category_id: str | None = Query(
         default=None,
         pattern=_CATEGORY_ID_PATTERN,
         description="Filter by category ID or 'uncategorized' for transactions without a category",
     ),
-) -> TransactionStats | list[MonthlyStats]:
-    """Get transaction statistics for a date range.
-
-    Without group_by: returns totals (transactions, income, expenses, etc.)
-    With group_by=month: returns array of monthly stats.
-    """
-    if group_by == "month":
-        db_path = path_manager.get_database_path()
-        monthly = calculate_monthly_stats(
-            db_path,
-            account_id=account_id,
-            date_from=date_from,
-            date_to=date_to,
-        )
-        return [MonthlyStats(**entry) for entry in monthly]
-
+) -> TransactionStats:
+    """Get transaction statistics for a date range."""
     totals = transaction_repo.get_stats_totals(
         account_id=account_id,
         date_from=date_from,
@@ -280,20 +258,3 @@ async def get_transaction_stats(
         max_magnitude=max_magnitude,
     )
     return TransactionStats(date_from=date_from, date_to=date_to, **totals)
-
-
-@router.get("/transactions/stats/by-category")
-async def get_stats_by_category(
-    date_from: str = Query(description="Start date (YYYY-MM-DD)"),
-    date_to: str = Query(description="End date (YYYY-MM-DD)"),
-    account_id: str | None = Query(default=None, description="Filter by account ID"),
-) -> list[CategoryStats]:
-    """Get transaction statistics grouped by category."""
-    db_path = path_manager.get_database_path()
-    category_stats = calculate_category_stats(
-        db_path,
-        account_id=account_id,
-        date_from=date_from,
-        date_to=date_to,
-    )
-    return [CategoryStats(**entry) for entry in category_stats]

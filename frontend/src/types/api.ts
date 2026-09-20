@@ -43,7 +43,6 @@ export type RuleReference = Schemas["RuleReference"];
 
 // Analytics
 export type TransactionStats = Schemas["TransactionStats"];
-export type MonthlyStats = Schemas["MonthlyStats"];
 export type CashFlow = Schemas["CashFlow"];
 export type CashFlowPoint = Schemas["CashFlowPoint"];
 export type NetWorth = Schemas["NetWorth"];

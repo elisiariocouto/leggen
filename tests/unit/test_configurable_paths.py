@@ -87,9 +87,6 @@ class TestConfigurablePaths:
                     path_manager.get_config_file_path()
                     == test_config_dir / "config.toml"
                 )
-                assert (
-                    path_manager.get_auth_file_path() == test_config_dir / "auth.json"
-                )
             finally:
                 # Restore original paths
                 path_manager._config_dir = original_config
@@ -145,26 +142,19 @@ class TestConfigurablePaths:
     def test_directory_creation(self):
         """Test that directories are created as needed."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            test_config_dir = Path(tmpdir) / "new" / "config" / "dir"
             test_db_path = Path(tmpdir) / "new" / "db" / "dir" / "test.db"
 
-            # Save original paths
-            original_config = path_manager._config_dir
+            # Save original path
             original_db = path_manager._database_path
 
             try:
-                # Set paths to non-existent directories
-                path_manager.set_config_dir(test_config_dir)
+                # Point at a directory that does not exist yet
                 path_manager.set_database_path(test_db_path)
 
-                # Ensure directories are created
-                path_manager.ensure_config_dir_exists()
-                path_manager.ensure_database_dir_exists()
-
-                assert test_config_dir.exists()
+                # Resolving the database path creates its directory
+                assert path_manager.get_database_path() == test_db_path
                 assert test_db_path.parent.exists()
 
             finally:
-                # Restore original paths
-                path_manager._config_dir = original_config
+                # Restore original path
                 path_manager._database_path = original_db
