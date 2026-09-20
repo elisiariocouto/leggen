@@ -67,6 +67,13 @@ class InvalidRuleScriptError(LeggenError):
     code = "INVALID_RULE_SCRIPT"
 
 
+class InvalidScheduleError(LeggenError):
+    """A sync or backup schedule cannot be turned into a cron trigger."""
+
+    status_code = 422
+    code = "INVALID_SCHEDULE"
+
+
 class UnsupportedDatabaseVersionError(LeggenError):
     """The database predates the oldest schema this version can migrate.
 

@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from leggen.background.scheduler import BackgroundScheduler
+from leggen.errors import InvalidScheduleError
 
 
 @pytest.mark.unit
@@ -137,6 +138,16 @@ class TestBackgroundScheduler:
         assert convert("*/2") == "1,3,5,6"  # Sun,Tue,Thu,Sat
         assert convert("mon-fri") == "mon-fri"  # names pass through
         assert convert("sun") == "sun"
+
+    def test_build_trigger_rejects_bad_expressions(self, scheduler):
+        """The API relies on this raising so a bad cron is never saved."""
+        with pytest.raises(InvalidScheduleError, match="five fields"):
+            scheduler.build_trigger({"cron": "invalid cron"})
+        with pytest.raises(InvalidScheduleError, match="day-of-week"):
+            scheduler.build_trigger({"cron": "0 3 * * 9"})
+
+        trigger = scheduler.build_trigger({"cron": "30 6 * * 1-5"})
+        assert str(trigger.fields[trigger.FIELD_NAMES.index("hour")]) == "6"
 
     def test_scheduler_shutdown(self, scheduler):
         """Test scheduler shutdown."""

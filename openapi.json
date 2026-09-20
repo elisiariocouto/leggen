@@ -6745,16 +6745,23 @@
           "enabled": {
             "type": "boolean",
             "title": "Enabled",
+            "description": "Enable sync scheduling",
             "default": true
           },
           "hour": {
             "type": "integer",
+            "maximum": 23.0,
+            "minimum": 0.0,
             "title": "Hour",
+            "description": "Hour to run sync (0-23)",
             "default": 3
           },
           "minute": {
             "type": "integer",
+            "maximum": 59.0,
+            "minimum": 0.0,
             "title": "Minute",
+            "description": "Minute to run sync (0-59)",
             "default": 0
           },
           "cron": {
@@ -6766,12 +6773,13 @@
                 "type": "null"
               }
             ],
-            "title": "Cron"
+            "title": "Cron",
+            "description": "Custom cron expression (overrides hour/minute)"
           }
         },
         "type": "object",
         "title": "SyncScheduleRequest",
-        "description": "Request to update sync schedule"
+        "description": "Request to update the sync schedule: the config section as the API\naccepts it, with the same bounds, so an out-of-range hour is a 422."
       },
       "SyncScheduleResponse": {
         "properties": {

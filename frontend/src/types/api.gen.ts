@@ -2010,25 +2010,32 @@ export interface components {
         };
         /**
          * SyncScheduleRequest
-         * @description Request to update sync schedule
+         * @description Request to update the sync schedule: the config section as the API
+         *     accepts it, with the same bounds, so an out-of-range hour is a 422.
          */
         SyncScheduleRequest: {
             /**
              * Enabled
+             * @description Enable sync scheduling
              * @default true
              */
             enabled: boolean;
             /**
              * Hour
+             * @description Hour to run sync (0-23)
              * @default 3
              */
             hour: number;
             /**
              * Minute
+             * @description Minute to run sync (0-59)
              * @default 0
              */
             minute: number;
-            /** Cron */
+            /**
+             * Cron
+             * @description Custom cron expression (overrides hour/minute)
+             */
             cron?: string | null;
         };
         /**

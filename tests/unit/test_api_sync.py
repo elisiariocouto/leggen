@@ -236,3 +236,27 @@ class TestPerAccountSyncFilter:
 
         assert result.accounts_processed == 2
         assert mock_get_details.call_count == 2
+
+    def test_invalid_cron_is_rejected_before_saving(self, api_client, test_config):
+        """A bad expression used to be persisted with a 200 and a null next
+        run, which silently disabled scheduled syncs."""
+        before = dict(test_config.scheduler_config.get("sync", {}))
+
+        response = api_client.put(
+            "/api/v1/sync/schedule",
+            json={"enabled": True, "hour": 3, "minute": 0, "cron": "not a cron"},
+        )
+
+        assert response.status_code == 422
+        body = response.json()
+        assert body["code"] == "INVALID_SCHEDULE"
+        assert "five fields" in body["detail"]
+        assert test_config.scheduler_config.get("sync", {}) == before
+
+    def test_out_of_range_hour_is_a_validation_error(self, api_client):
+        response = api_client.put(
+            "/api/v1/sync/schedule", json={"enabled": True, "hour": 24, "minute": 0}
+        )
+
+        assert response.status_code == 422
+        assert response.json()["code"] == "VALIDATION_ERROR"

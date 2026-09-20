@@ -70,6 +70,11 @@ async def update_sync_schedule(request: SyncScheduleRequest) -> SyncScheduleResp
     if request.cron:
         sync_config["cron"] = request.cron
 
+    # A schedule that cannot become a trigger must not be saved: the write
+    # would succeed, the reschedule would silently do nothing, and scheduled
+    # syncs would stop until someone noticed. InvalidScheduleError is a 422.
+    scheduler.build_trigger(sync_config)
+
     # Merge into the existing section: replacing it wholesale would reset
     # the backup schedule to defaults.
     scheduler_section = dict(config.scheduler_config)

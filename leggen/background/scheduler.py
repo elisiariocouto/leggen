@@ -2,6 +2,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from loguru import logger
 
+from leggen.errors import InvalidScheduleError
 from leggen.models.config import S3BackupConfig
 from leggen.services.backup_service import BackupService
 from leggen.services.notification_service import NotificationService
@@ -54,13 +55,7 @@ class BackgroundScheduler:
         else:
             trigger = self._parse_cron_config(sync_config)
             if trigger:
-                self.scheduler.add_job(
-                    self._run_sync,
-                    trigger,
-                    id="daily_sync",
-                    name="Scheduled sync of all transactions",
-                    max_instances=1,
-                )
+                self._add_sync_job(trigger)
             else:
                 logger.error(
                     "Invalid sync schedule configuration; no sync job scheduled. "
@@ -102,7 +97,11 @@ class BackgroundScheduler:
             logger.info("Background scheduler shutdown")
 
     def reschedule_sync(self, schedule_config: dict):
-        """Reschedule the sync job with new configuration"""
+        """Reschedule the sync job with new configuration.
+
+        Raises InvalidScheduleError for a schedule that cannot be turned into
+        a trigger; callers validate with `build_trigger` before persisting.
+        """
         if self.scheduler.running:
             try:
                 self.scheduler.remove_job("daily_sync")
@@ -114,19 +113,18 @@ class BackgroundScheduler:
                 logger.info("Sync scheduling disabled")
                 return
 
-            # Configure new schedule
-            trigger = self._parse_cron_config(schedule_config)
-            if not trigger:
-                return
-
-            self.scheduler.add_job(
-                self._run_sync,
-                trigger,
-                id="daily_sync",
-                name="Scheduled sync of all transactions",
-                max_instances=1,
-            )
+            trigger = self.build_trigger(schedule_config)
+            self._add_sync_job(trigger)
             logger.info(f"Rescheduled sync job with: {trigger}")
+
+    def _add_sync_job(self, trigger: CronTrigger) -> None:
+        self.scheduler.add_job(
+            self._run_sync,
+            trigger,
+            id="daily_sync",
+            name="Scheduled sync of all transactions",
+            max_instances=1,
+        )
 
     @staticmethod
     def _convert_day_of_week(day_of_week: str) -> str:
@@ -163,36 +161,53 @@ class BackgroundScheduler:
             converted.extend(str(v) for v in sorted({remap(str(v)) for v in values}))
         return ",".join(converted)
 
+    def build_trigger(
+        self, schedule_config: dict, default_hour: int = 3, default_minute: int = 0
+    ) -> CronTrigger:
+        """Turn a schedule section into a CronTrigger.
+
+        A `cron` expression (standard five-field form) wins over hour/minute.
+        Raises InvalidScheduleError when the expression cannot be parsed, so
+        the API can reject it before anything is written.
+        """
+        expression = schedule_config.get("cron")
+        if not expression:
+            return CronTrigger(
+                hour=schedule_config.get("hour", default_hour),
+                minute=schedule_config.get("minute", default_minute),
+            )
+
+        cron_parts = expression.split()
+        if len(cron_parts) != 5:
+            raise InvalidScheduleError(
+                f"Invalid cron expression {expression!r}: expected five fields."
+            )
+        minute, hour, day, month, day_of_week = cron_parts
+        try:
+            return CronTrigger(
+                minute=minute,
+                hour=hour,
+                day=day if day != "*" else None,
+                month=month if month != "*" else None,
+                day_of_week=self._convert_day_of_week(day_of_week)
+                if day_of_week != "*"
+                else None,
+            )
+        except ValueError as e:
+            raise InvalidScheduleError(
+                f"Invalid cron expression {expression!r}: {e}"
+            ) from e
+
     def _parse_cron_config(
         self, schedule_config: dict, default_hour: int = 3, default_minute: int = 0
     ) -> CronTrigger | None:
-        """Parse cron configuration and return CronTrigger"""
-        if schedule_config.get("cron"):
-            # Parse custom cron expression (e.g., "0 3 * * *" for daily at 3 AM)
-            try:
-                cron_parts = schedule_config["cron"].split()
-                if len(cron_parts) == 5:
-                    minute, hour, day, month, day_of_week = cron_parts
-                    return CronTrigger(
-                        minute=minute,
-                        hour=hour,
-                        day=day if day != "*" else None,
-                        month=month if month != "*" else None,
-                        day_of_week=self._convert_day_of_week(day_of_week)
-                        if day_of_week != "*"
-                        else None,
-                    )
-                else:
-                    logger.error(f"Invalid cron expression: {schedule_config['cron']}")
-                    return None
-            except Exception as e:
-                logger.error(f"Error parsing cron expression: {e}")
-                return None
-        else:
-            # Use hour/minute configuration
-            hour = schedule_config.get("hour", default_hour)
-            minute = schedule_config.get("minute", default_minute)
-            return CronTrigger(hour=hour, minute=minute)
+        """`build_trigger` for startup, where a bad schedule is logged rather
+        than raised so the scheduler still starts."""
+        try:
+            return self.build_trigger(schedule_config, default_hour, default_minute)
+        except InvalidScheduleError as e:
+            logger.error(str(e))
+            return None
 
     async def _run_sync(self, retry_count: int = 0):
         """Run sync with enhanced error handling and retry logic"""

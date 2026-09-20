@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from leggen.models.config import SyncScheduleConfig
+
 
 class SyncOperation(BaseModel):
     """Sync operation record for tracking sync history"""
@@ -28,13 +30,9 @@ class SyncRequest(BaseModel):
     full_sync: bool = False  # If False, only sync last 30 days of transactions
 
 
-class SyncScheduleRequest(BaseModel):
-    """Request to update sync schedule"""
-
-    enabled: bool = True
-    hour: int = 3
-    minute: int = 0
-    cron: str | None = None
+class SyncScheduleRequest(SyncScheduleConfig):
+    """Request to update the sync schedule: the config section as the API
+    accepts it, with the same bounds, so an out-of-range hour is a 422."""
 
 
 class SyncScheduleResponse(BaseModel):
