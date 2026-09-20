@@ -1,15 +1,19 @@
 """Generate sample database command."""
 
-import json
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, TypedDict
 
 import click
 
-from leggen.repositories import run_migrations
-from leggen.repositories.db import create_connection
+from leggen.repositories import (
+    AccountRepository,
+    BalanceRepository,
+    CategoryRepository,
+    TransactionRepository,
+    run_migrations,
+)
 from leggen.services.rules import seed_default_category_rules
 from leggen.utils.paths import path_manager
 
@@ -22,7 +26,62 @@ class TransactionType(TypedDict):
     frequency: float
 
 
-DESCRIPTION_TO_CATEGORY = {
+INSTITUTIONS = [
+    {"id": "REVOLUT_REVOLT21", "name": "Revolut", "bic": "REVOLT21", "country": "LT"},
+    {
+        "id": "BANCOBPI_BBPIPTPL",
+        "name": "Banco BPI",
+        "bic": "BBPIPTPL",
+        "country": "PT",
+    },
+    {"id": "MONZO_MONZGB2L", "name": "Monzo Bank", "bic": "MONZGB2L", "country": "GB"},
+    {
+        "id": "NUBANK_NUPBBR25",
+        "name": "Nu Pagamentos",
+        "bic": "NUPBBR25",
+        "country": "BR",
+    },
+]
+
+TRANSACTION_TYPES: list[TransactionType] = [
+    {"description": "Grocery Store", "amount_range": (-150, -20), "frequency": 0.3},
+    {"description": "Coffee Shop", "amount_range": (-15, -3), "frequency": 0.2},
+    {"description": "Gas Station", "amount_range": (-80, -30), "frequency": 0.1},
+    {"description": "Online Shopping", "amount_range": (-200, -25), "frequency": 0.15},
+    {"description": "Restaurant", "amount_range": (-60, -15), "frequency": 0.15},
+    {"description": "Salary", "amount_range": (2500, 5000), "frequency": 0.02},
+    {"description": "ATM Withdrawal", "amount_range": (-200, -20), "frequency": 0.05},
+    {
+        "description": "Transfer to Savings",
+        "amount_range": (-1000, -100),
+        "frequency": 0.03,
+    },
+    {
+        "description": "Inter-account Transfer",
+        "amount_range": (-500, 500),
+        "frequency": 0.02,
+    },
+]
+
+# Merchant names a transaction of each type may carry as its description.
+MERCHANTS: dict[str, list[str]] = {
+    "Grocery Store": ["TESCO", "SAINSBURY'S", "LIDL", "ALDI", "WALMART", "CARREFOUR"],
+    "Coffee Shop": ["STARBUCKS", "COSTA COFFEE", "PRET A MANGER", "LOCAL CAFE"],
+    "Gas Station": ["BP", "SHELL", "ESSO", "GALP", "PETROBRAS"],
+    "Online Shopping": ["AMAZON", "EBAY", "ZALANDO", "ASOS", "APPLE"],
+    "Restaurant": ["PIZZA HUT", "MCDONALD'S", "BURGER KING", "LOCAL RESTAURANT"],
+    "Salary": ["MONTHLY SALARY", "PAYROLL DEPOSIT", "SALARY PAYMENT"],
+    "ATM Withdrawal": ["ATM WITHDRAWAL", "CASH WITHDRAWAL"],
+    "Transfer to Savings": ["SAVINGS TRANSFER", "INVESTMENT TRANSFER"],
+    "Inter-account Transfer": [
+        "TRANSFER TO CHECKING",
+        "TRANSFER FROM SAVINGS",
+        "INTERNAL TRANSFER",
+    ],
+}
+
+# Category each transaction type lands in when categorized by hand.
+TYPE_TO_CATEGORY = {
     "Grocery Store": "Groceries",
     "Coffee Shop": "Dining",
     "Gas Station": "Transport",
@@ -34,96 +93,40 @@ DESCRIPTION_TO_CATEGORY = {
     "Inter-account Transfer": "Inter-account",
 }
 
+# The stored description is the merchant, so resolve categories through it.
+MERCHANT_TO_CATEGORY = {
+    merchant: TYPE_TO_CATEGORY[type_description]
+    for type_description, merchants in MERCHANTS.items()
+    for merchant in merchants
+}
+
+BALANCE_TYPES = ["interimAvailable", "closingBooked", "authorised"]
+
+# Share of transactions given a category up front; the builtin rules cover
+# the rest once the server runs them.
+HAND_CATEGORIZED_SHARE = 0.6
+
 
 class SampleDataGenerator:
     """Generates realistic sample data for testing Leggen."""
 
     def __init__(self, db_path: Path):
         self.db_path = db_path
-        self.institutions = [
-            {
-                "id": "REVOLUT_REVOLT21",
-                "name": "Revolut",
-                "bic": "REVOLT21",
-                "country": "LT",
-            },
-            {
-                "id": "BANCOBPI_BBPIPTPL",
-                "name": "Banco BPI",
-                "bic": "BBPIPTPL",
-                "country": "PT",
-            },
-            {
-                "id": "MONZO_MONZGB2L",
-                "name": "Monzo Bank",
-                "bic": "MONZGB2L",
-                "country": "GB",
-            },
-            {
-                "id": "NUBANK_NUPBBR25",
-                "name": "Nu Pagamentos",
-                "bic": "NUPBBR25",
-                "country": "BR",
-            },
-        ]
 
-        self.transaction_types: list[TransactionType] = [
-            {
-                "description": "Grocery Store",
-                "amount_range": (-150, -20),
-                "frequency": 0.3,
-            },
-            {"description": "Coffee Shop", "amount_range": (-15, -3), "frequency": 0.2},
-            {
-                "description": "Gas Station",
-                "amount_range": (-80, -30),
-                "frequency": 0.1,
-            },
-            {
-                "description": "Online Shopping",
-                "amount_range": (-200, -25),
-                "frequency": 0.15,
-            },
-            {
-                "description": "Restaurant",
-                "amount_range": (-60, -15),
-                "frequency": 0.15,
-            },
-            {"description": "Salary", "amount_range": (2500, 5000), "frequency": 0.02},
-            {
-                "description": "ATM Withdrawal",
-                "amount_range": (-200, -20),
-                "frequency": 0.05,
-            },
-            {
-                "description": "Transfer to Savings",
-                "amount_range": (-1000, -100),
-                "frequency": 0.03,
-            },
-            {
-                "description": "Inter-account Transfer",
-                "amount_range": (-500, 500),
-                "frequency": 0.02,
-            },
-        ]
-
-    def ensure_database_dir(self):
-        """Ensure database directory exists."""
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-
-    def remove_existing_database(self):
-        """Delete any existing database so the sample data starts from scratch.
+    def prepare_database(self) -> None:
+        """Start from an empty, fully migrated database at `db_path`.
 
         Inserting over an existing file would leave old rows behind: only some
         tables are keyed in a way that lets a re-insert replace them. A leftover
         WAL would also be replayed over the new file on the next connection.
         """
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.db_path.unlink(missing_ok=True)
         for suffix in ("-wal", "-shm"):
             self.db_path.with_name(self.db_path.name + suffix).unlink(missing_ok=True)
 
-    def create_tables(self):
-        """Create database tables using the shared repository schema."""
+        # The repositories resolve their connection through the path manager,
+        # so pointing it here is all the plumbing the writes below need.
         path_manager.set_database_path(self.db_path)
         run_migrations()
         seed_default_category_rules()
@@ -154,28 +157,28 @@ class SampleDataGenerator:
     def generate_accounts(self, num_accounts: int = 3) -> list[dict[str, Any]]:
         """Generate sample accounts."""
         accounts = []
-        base_date = datetime.now() - timedelta(days=90)
+        now = datetime.now(UTC)
+        base_date = now - timedelta(days=90)
 
         for i in range(num_accounts):
-            institution = random.choice(self.institutions)
-            account_id = f"account-{i + 1:03d}-{random.randint(1000, 9999)}"
-
-            account = {
-                "id": account_id,
-                "institution_id": institution["id"],
-                "status": "READY",
-                "iban": self.generate_iban(institution["country"]),
-                "name": f"Personal Account {i + 1}",
-                "currency": "EUR",
-                "created": (
-                    base_date + timedelta(days=random.randint(0, 30))
-                ).isoformat(),
-                "last_accessed": (
-                    datetime.now() - timedelta(hours=random.randint(1, 48))
-                ).isoformat(),
-                "last_updated": datetime.now().isoformat(),
-            }
-            accounts.append(account)
+            institution = random.choice(INSTITUTIONS)
+            accounts.append(
+                {
+                    "id": f"account-{i + 1:03d}-{random.randint(1000, 9999)}",
+                    "institution_id": institution["id"],
+                    "status": "READY",
+                    "iban": self.generate_iban(institution["country"]),
+                    "name": f"Personal Account {i + 1}",
+                    "currency": "EUR",
+                    "created": (
+                        base_date + timedelta(days=random.randint(0, 30))
+                    ).isoformat(),
+                    "last_accessed": (
+                        now - timedelta(hours=random.randint(1, 48))
+                    ).isoformat(),
+                    "last_updated": now.isoformat(),
+                }
+            )
 
         return accounts
 
@@ -184,26 +187,21 @@ class SampleDataGenerator:
     ) -> list[dict[str, Any]]:
         """Generate sample transactions for accounts."""
         transactions = []
-        base_date = datetime.now() - timedelta(days=60)
+        base_date = datetime.now(UTC) - timedelta(days=60)
+        weights = [t["frequency"] for t in TRANSACTION_TYPES]
 
         for account in accounts:
             account_transactions = []
-            current_balance = random.uniform(500, 3000)
 
             for i in range(num_transactions_per_account):
-                # Choose transaction type based on frequency weights
-                transaction_type = random.choices(
-                    self.transaction_types,
-                    weights=[t["frequency"] for t in self.transaction_types],
-                )[0]
+                transaction_type = random.choices(TRANSACTION_TYPES, weights=weights)[0]
 
-                # Generate transaction amount
                 min_amount: float
                 max_amount: float
                 min_amount, max_amount = transaction_type["amount_range"]
                 amount = round(random.uniform(min_amount, max_amount), 2)
 
-                # Generate transaction date (more recent transactions are more likely)
+                # More recent transactions are more likely
                 days_ago = random.choices(
                     range(60), weights=[1.5 ** (60 - d) for d in range(60)]
                 )[0]
@@ -213,50 +211,17 @@ class SampleDataGenerator:
                     minutes=random.randint(0, 59),
                 )
 
-                # Generate transaction IDs
                 transaction_id = f"bank-txn-{account['id']}-{i + 1:04d}"
                 internal_transaction_id = f"int-txn-{random.randint(100000, 999999)}"
 
-                # Create realistic descriptions
-                descriptions: dict[str, list[str]] = {
-                    "Grocery Store": [
-                        "TESCO",
-                        "SAINSBURY'S",
-                        "LIDL",
-                        "ALDI",
-                        "WALMART",
-                        "CARREFOUR",
-                    ],
-                    "Coffee Shop": [
-                        "STARBUCKS",
-                        "COSTA COFFEE",
-                        "PRET A MANGER",
-                        "LOCAL CAFE",
-                    ],
-                    "Gas Station": ["BP", "SHELL", "ESSO", "GALP", "PETROBRAS"],
-                    "Online Shopping": ["AMAZON", "EBAY", "ZALANDO", "ASOS", "APPLE"],
-                    "Restaurant": [
-                        "PIZZA HUT",
-                        "MCDONALD'S",
-                        "BURGER KING",
-                        "LOCAL RESTAURANT",
-                    ],
-                    "Salary": ["MONTHLY SALARY", "PAYROLL DEPOSIT", "SALARY PAYMENT"],
-                    "ATM Withdrawal": ["ATM WITHDRAWAL", "CASH WITHDRAWAL"],
-                    "Transfer to Savings": ["SAVINGS TRANSFER", "INVESTMENT TRANSFER"],
-                    "Inter-account Transfer": [
-                        "TRANSFER TO CHECKING",
-                        "TRANSFER FROM SAVINGS",
-                        "INTERNAL TRANSFER",
-                    ],
-                }
-
-                specific_descriptions: list[str] = descriptions.get(
-                    transaction_type["description"], [transaction_type["description"]]
+                description = random.choice(
+                    MERCHANTS.get(
+                        transaction_type["description"],
+                        [transaction_type["description"]],
+                    )
                 )
-                description = random.choice(specific_descriptions)
 
-                # Determine status (most are booked, some recent ones might be pending)
+                # Most are booked; some recent ones might be pending
                 status = (
                     "pending" if days_ago < 2 and random.random() < 0.1 else "booked"
                 )
@@ -297,22 +262,25 @@ class SampleDataGenerator:
                     if random.random() < 0.7:
                         raw_transaction["debtor_account"] = {"iban": counterparty_iban}
 
-                transaction = {
-                    "accountId": account["id"],
-                    "transactionId": transaction_id,
-                    "internalTransactionId": internal_transaction_id,
-                    "institutionId": account["institution_id"],
-                    "iban": account["iban"],
-                    "transactionDate": transaction_date.isoformat(),
-                    "description": description,
-                    "transactionValue": amount,
-                    "transactionCurrency": account["currency"],
-                    "transactionStatus": status,
-                    "rawTransaction": raw_transaction,
-                }
-
-                account_transactions.append(transaction)
-                current_balance += amount
+                account_transactions.append(
+                    {
+                        "accountId": account["id"],
+                        "transactionId": transaction_id,
+                        "internalTransactionId": internal_transaction_id,
+                        "institutionId": account["institution_id"],
+                        "iban": account["iban"],
+                        # Naive, like the dates the sync derives from the bank's
+                        # booking dates
+                        "transactionDate": transaction_date.replace(
+                            tzinfo=None
+                        ).isoformat(),
+                        "description": description,
+                        "transactionValue": amount,
+                        "transactionCurrency": account["currency"],
+                        "transactionStatus": status,
+                        "rawTransaction": raw_transaction,
+                    }
+                )
 
             # Sort transactions by date for realistic ordering
             account_transactions.sort(key=lambda x: x["transactionDate"])
@@ -320,34 +288,32 @@ class SampleDataGenerator:
 
         return transactions
 
-    def generate_balances(self, accounts: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Generate sample balances for accounts."""
+    def generate_balances(self, accounts: list[dict[str, Any]]) -> list[tuple]:
+        """Generate one balance row per type for every account, in the row
+        shape BalanceRepository.persist stores."""
         balances = []
+        timestamp = datetime.now(UTC).isoformat()
 
         for account in accounts:
-            # Calculate balance from transactions (simplified)
             base_balance = random.uniform(500, 2000)
 
-            balance_types = ["interimAvailable", "closingBooked", "authorised"]
-
-            for balance_type in balance_types:
-                # Add some variation to balance types
+            for balance_type in BALANCE_TYPES:
+                # Add some variation between balance types
                 variation = (
                     random.uniform(-50, 50) if balance_type != "interimAvailable" else 0
                 )
-                balance_amount = base_balance + variation
-
-                balance = {
-                    "account_id": account["id"],
-                    "bank": account["institution_id"],
-                    "status": account["status"],
-                    "iban": account["iban"],
-                    "amount": round(balance_amount, 2),
-                    "currency": account["currency"],
-                    "type": balance_type,
-                    "timestamp": datetime.now().isoformat(),
-                }
-                balances.append(balance)
+                balances.append(
+                    (
+                        account["id"],
+                        account["institution_id"],
+                        account["status"],
+                        account["iban"],
+                        round(base_balance + variation, 2),
+                        account["currency"],
+                        balance_type,
+                        timestamp,
+                    )
+                )
 
         return balances
 
@@ -355,122 +321,53 @@ class SampleDataGenerator:
         self,
         accounts: list[dict[str, Any]],
         transactions: list[dict[str, Any]],
-        balances: list[dict[str, Any]],
-    ):
-        """Insert generated data into the database."""
-        conn = create_connection(self.db_path)
-        cursor = conn.cursor()
-
-        # Insert accounts
+        balances: list[tuple],
+    ) -> None:
+        """Write the generated data through the same repositories the sync
+        uses, so the sample database has exactly the columns the server reads."""
+        account_repo = AccountRepository()
         for account in accounts:
-            cursor.execute(
-                """
-                INSERT OR REPLACE INTO accounts
-                (id, institution_id, status, iban, name, currency, created, last_accessed, last_updated, display_name)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    account["id"],
-                    account["institution_id"],
-                    account["status"],
-                    account["iban"],
-                    account["name"],
-                    account["currency"],
-                    account["created"],
-                    account["last_accessed"],
-                    account["last_updated"],
-                    None,  # display_name is initially None for sample data
-                ),
+            account_repo.persist(account)
+
+        transaction_repo = TransactionRepository()
+        for account in accounts:
+            transaction_repo.persist(
+                account["id"],
+                [t for t in transactions if t["accountId"] == account["id"]],
             )
 
-        # Insert transactions
+        balance_repo = BalanceRepository()
+        for account in accounts:
+            balance_repo.persist(
+                account["id"], [b for b in balances if b[0] == account["id"]]
+            )
+
+        self._assign_categories(transactions)
+
+    def _assign_categories(self, transactions: list[dict[str, Any]]) -> None:
+        """Give a share of the transactions a manual category, by description."""
+        category_repo = CategoryRepository()
+        # The defaults are seeded by the baseline migration
+        category_ids = {c["name"]: c["id"] for c in category_repo.get_all_categories()}
+
         for transaction in transactions:
-            cursor.execute(
-                """
-                INSERT OR REPLACE INTO transactions
-                (accountId, transactionId, internalTransactionId, institutionId, iban,
-                 transactionDate, description, transactionValue, transactionCurrency,
-                 transactionStatus, rawTransaction)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    transaction["accountId"],
-                    transaction["transactionId"],
-                    transaction["internalTransactionId"],
-                    transaction["institutionId"],
-                    transaction["iban"],
-                    transaction["transactionDate"],
-                    transaction["description"],
-                    transaction["transactionValue"],
-                    transaction["transactionCurrency"],
-                    transaction["transactionStatus"],
-                    json.dumps(transaction["rawTransaction"]),
-                ),
-            )
-
-        # Insert balances
-        for balance in balances:
-            cursor.execute(
-                """
-                INSERT INTO balances
-                (account_id, bank, status, iban, amount, currency, type, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    balance["account_id"],
-                    balance["bank"],
-                    balance["status"],
-                    balance["iban"],
-                    balance["amount"],
-                    balance["currency"],
-                    balance["type"],
-                    balance["timestamp"],
-                ),
-            )
-
-        # Build category name -> id mapping (defaults are seeded by the baseline migration)
-        cursor.execute("SELECT id, name FROM categories")
-        category_map = {row[1]: row[0] for row in cursor.fetchall()}
-
-        # Assign categories by hand to ~60% of transactions; the builtin
-        # rules cover the rest once the server runs them.
-        for transaction in transactions:
-            if random.random() > 0.6:
+            if random.random() > HAND_CATEGORIZED_SHARE:
                 continue
-
-            description = transaction["description"]
-            # Find matching category from the description-to-category mapping
-            category_name = None
-            for desc_key, cat_name in DESCRIPTION_TO_CATEGORY.items():
-                if (
-                    desc_key.lower() in description.lower()
-                    or description.lower() in desc_key.lower()
-                ):
-                    category_name = cat_name
-                    break
-
-            if not category_name or category_name not in category_map:
+            category = MERCHANT_TO_CATEGORY.get(transaction["description"])
+            if category is None or category not in category_ids:
                 continue
-
-            category_id = category_map[category_name]
-
-            cursor.execute(
-                "INSERT OR IGNORE INTO transaction_categories (accountId, transactionId, categoryId) VALUES (?, ?, ?)",
-                (transaction["accountId"], transaction["transactionId"], category_id),
+            category_repo.assign_category(
+                transaction["accountId"],
+                transaction["transactionId"],
+                category_ids[category],
             )
-
-        conn.commit()
-        conn.close()
 
     def generate_sample_database(
         self, num_accounts: int = 3, num_transactions_per_account: int = 50
     ):
         """Generate complete sample database."""
         click.echo(f"🗄️  Creating sample database at: {self.db_path}")
-
-        self.ensure_database_dir()
-        self.remove_existing_database()
-        self.create_tables()
+        self.prepare_database()
 
         click.echo(f"👥 Generating {num_accounts} sample accounts...")
         accounts = self.generate_accounts(num_accounts)
@@ -488,7 +385,6 @@ class SampleDataGenerator:
         click.echo("💾 Inserting data into database...")
         self.insert_data(accounts, transactions, balances)
 
-        # Print summary
         click.echo("\n✅ Sample database created successfully!")
         click.echo("📊 Summary:")
         click.echo(f"   - Accounts: {len(accounts)}")
@@ -496,12 +392,11 @@ class SampleDataGenerator:
         click.echo(f"   - Balances: {len(balances)}")
         click.echo(f"   - Database: {self.db_path}")
 
-        # Show account details
         click.echo("\n📋 Sample accounts:")
         for account in accounts:
             institution_name = next(
                 inst["name"]
-                for inst in self.institutions
+                for inst in INSTITUTIONS
                 if inst["id"] == account["institution_id"]
             )
             click.echo(f"   - {account['id']} ({institution_name}) - {account['iban']}")
@@ -511,7 +406,10 @@ class SampleDataGenerator:
 @click.option(
     "--database",
     type=click.Path(path_type=Path),
-    help="Path to database file (default: uses LEGGEN_DATABASE_PATH or ~/.config/leggen/leggen-dev.db)",
+    help=(
+        "Path to database file (default: the global --database flag or "
+        "LEGGEN_DATABASE_PATH, else ~/.config/leggen/leggen-dev.db)"
+    ),
 )
 @click.option(
     "--accounts",
@@ -539,34 +437,22 @@ def generate_sample_db(
     force: bool,
 ):
     """Generate a sample database with realistic financial data for testing."""
-    import os
+    # Never default to the production database: without an explicit path
+    # the sample data goes to a development file next to it.
+    db_path = (
+        database
+        or path_manager.configured_database_path()
+        or path_manager.get_config_dir() / "leggen-dev.db"
+    )
 
-    from leggen.utils.paths import path_manager
-
-    # Determine database path
-    if database:
-        db_path = database
-    else:
-        # Use development database by default to avoid overwriting production data
-        env_path = os.environ.get("LEGGEN_DATABASE_PATH")
-        if env_path:
-            db_path = Path(env_path)
-        else:
-            # Default to development database in config directory
-            db_path = path_manager.get_config_dir() / "leggen-dev.db"
-
-    # Check if database exists and ask for confirmation
     if db_path.exists() and not force:
         click.echo(f"⚠️  Database already exists: {db_path}")
         if not click.confirm("Do you want to overwrite it?"):
             click.echo("Aborted.")
             ctx.exit(0)
 
-    # Generate the sample database
-    generator = SampleDataGenerator(db_path)
-    generator.generate_sample_database(accounts, transactions)
+    SampleDataGenerator(db_path).generate_sample_database(accounts, transactions)
 
-    # Show usage instructions
     click.echo("\n🚀 Usage instructions:")
     click.echo("To use this sample database with leggen commands:")
     click.echo(f"   export LEGGEN_DATABASE_PATH={db_path}")

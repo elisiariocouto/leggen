@@ -33,18 +33,19 @@ class PathManager:
         """Get the configuration file path."""
         return self.get_config_dir() / "config.toml"
 
+    def configured_database_path(self) -> Path | None:
+        """The database path the user chose (flag or LEGGEN_DATABASE_PATH), or
+        None when only the default would apply."""
+        if self._database_path is not None:
+            return self._database_path
+        database_path = os.environ.get("LEGGEN_DATABASE_PATH")
+        return Path(database_path) if database_path else None
+
     def get_database_path(self) -> Path:
         """Get the database file path and ensure the directory exists."""
-        if self._database_path is not None:
-            db_path = self._database_path
-        else:
-            # Check environment variable first
-            database_path = os.environ.get("LEGGEN_DATABASE_PATH")
-            if database_path:
-                db_path = Path(database_path)
-            else:
-                # Default to config_dir/leggen.db
-                db_path = self.get_config_dir() / "leggen.db"
+        db_path = self.configured_database_path() or (
+            self.get_config_dir() / "leggen.db"
+        )
 
         # Try to ensure the directory exists, but handle permission errors gracefully
         with contextlib.suppress(PermissionError, OSError):
