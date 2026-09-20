@@ -111,7 +111,9 @@ class TestAuthDependency:
 
     def test_jwt_signed_with_wrong_secret(self, fastapi_app, mock_db_path):
         """A well-formed token signed by someone else is invalid, not expired."""
-        token = create_access_token(username="testuser", secret="not-the-secret")
+        token = create_access_token(
+            username="testuser", secret="not-the-secret-but-still-thirty-two-bytes-long"
+        )
         client = TestClient(fastapi_app)
         response = client.get(
             "/api/v1/accounts",
@@ -211,7 +213,7 @@ class TestDecodeAccessToken:
     def test_wrong_secret_raises_authentication_error(self):
         token = create_access_token(username="alice", secret=self.SECRET)
         with pytest.raises(AuthenticationError) as exc_info:
-            decode_access_token(token, "a-different-secret")
+            decode_access_token(token, "a-different-secret-that-is-long-enough")
         assert exc_info.value.code == "INVALID_CREDENTIALS"
 
     def test_token_without_subject_raises_authentication_error(self):
