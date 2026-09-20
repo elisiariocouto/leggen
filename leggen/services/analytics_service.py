@@ -7,7 +7,7 @@ balances forward across gaps in sync history.
 
 from collections import defaultdict
 from dataclasses import replace
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from leggen.repositories.balance_repository import BalanceRepository
@@ -16,6 +16,7 @@ from leggen.repositories.transaction_repository import (
     TransactionRepository,
 )
 from leggen.services.data_processors import merchant_identity
+from leggen.utils.dates import parse_day
 
 # A recurring charge is rarely billed on an exact 30-day grid: month lengths
 # differ, and weekends push debits by a day or two.
@@ -39,19 +40,6 @@ _AMOUNT_TOLERANCE = 0.15
 # ended. Twice the cadence tolerance absorbs a late debit; the floor absorbs a
 # sync that has not run for a few days on the short cadences.
 _MISSED_GRACE_DAYS = 7
-
-
-def _parse_day(value: str) -> date | None:
-    """Parse a stored transaction/balance date, which may carry a time part."""
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).date()
-    except ValueError:
-        try:
-            return datetime.strptime(str(value)[:10], "%Y-%m-%d").date()
-        except ValueError:
-            return None
 
 
 def get_net_worth(
@@ -139,8 +127,8 @@ def get_merchants(
     if not rows:
         return {"merchants": [], "currency": None, "uncategorized_share": 0.0}
 
-    start = _parse_day(date_from)
-    end = _parse_day(date_to)
+    start = parse_day(date_from)
+    end = parse_day(date_to)
     previous: dict[str, float] = {}
     if start and end:
         span = (end - start).days + 1
@@ -247,7 +235,7 @@ def get_recurring(
     # today, so a window ending in the future must not count that stretch as
     # silence from the merchant.
     today = today or date.today()
-    window_end = _parse_day(date_to) or today
+    window_end = parse_day(date_to) or today
     observed_until = min(window_end, today)
 
     charges: dict[str, list[tuple[date, float]]] = defaultdict(list)
@@ -255,7 +243,7 @@ def get_recurring(
     for row in rows:
         if row["transactionValue"] >= 0:
             continue
-        day = _parse_day(row["transactionDate"])
+        day = parse_day(row["transactionDate"])
         if day is None:
             continue
         key, name = merchant_identity(row["rawTransaction"], row["description"], True)
@@ -331,8 +319,8 @@ _UNCATEGORIZED_COLOR = "#9ca3af"
 
 def _months_between(date_from: str, date_to: str) -> list[str]:
     """Every YYYY-MM from the first month of the window to the last, inclusive."""
-    start = _parse_day(date_from)
-    end = _parse_day(date_to)
+    start = parse_day(date_from)
+    end = parse_day(date_to)
     if start is None or end is None or start > end:
         return []
     months: list[str] = []

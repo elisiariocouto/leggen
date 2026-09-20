@@ -1,7 +1,7 @@
 """Data processing layer for all transformation logic."""
 
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from loguru import logger
@@ -203,7 +203,10 @@ def transform_to_database_format(
             float(balance_amount.get("amount", 0)),
             balance_amount.get("currency"),
             balance.get("balance_type"),
-            datetime.now().isoformat(),
+            # Aware UTC, like the session and sync timestamps: the net-worth
+            # series groups snapshots by day, and a naive local stamp would
+            # make that day depend on the host's timezone.
+            datetime.now(UTC).isoformat(),
         )
         rows.append(row)
 

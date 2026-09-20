@@ -6,9 +6,14 @@ differ in which they populate — a Belfius account that omitted the first two
 used to abort its whole sync (issue #66).
 """
 
+from datetime import datetime, timedelta
+
 from loguru import logger
 
-from leggen.services.data_processors import process_transactions
+from leggen.services.data_processors import (
+    process_transactions,
+    transform_to_database_format,
+)
 
 ACCOUNT_INFO = {"institution_id": "BELFIUS_GKCCBEBB", "iban": "BE31063XXXXXXXXX"}
 
@@ -119,3 +124,34 @@ class TestSkipsAreNotFatal:
 
     def test_empty_payload(self):
         assert process_transactions("acc-1", ACCOUNT_INFO, {}) == ([], 0)
+
+
+class TestBalanceRows:
+    def test_snapshots_are_stamped_in_utc(self):
+        rows = transform_to_database_format(
+            "acc-1",
+            {
+                "institution_id": "TEST_BANK",
+                "iban": "PT1",
+                "balances": [
+                    {
+                        "balance_amount": {"amount": "10.5", "currency": "EUR"},
+                        "balance_type": "closingBooked",
+                    }
+                ],
+            },
+        )
+
+        [row] = rows
+        assert row[:7] == (
+            "acc-1",
+            "TEST_BANK",
+            None,
+            "PT1",
+            10.5,
+            "EUR",
+            "closingBooked",
+        )
+        stamp = datetime.fromisoformat(row[7])
+        assert stamp.tzinfo is not None
+        assert stamp.utcoffset() == timedelta(0)

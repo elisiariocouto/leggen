@@ -23,6 +23,7 @@ from leggen.services.data_processors import (
 from leggen.services.enablebanking_service import get_enablebanking_service
 from leggen.services.notification_service import NotificationService
 from leggen.services.rules import CategoryRuleEngine
+from leggen.utils.dates import parse_datetime
 
 # Constants for notification
 EXPIRED_DAYS_LEFT = 0
@@ -414,16 +415,12 @@ class SyncService:
             if not valid_until_str:
                 continue
 
-            try:
-                valid_until = datetime.fromisoformat(valid_until_str)
-            except (ValueError, TypeError):
+            valid_until = parse_datetime(valid_until_str)
+            if valid_until is None:
                 logger.warning(
                     f"Session {session_id} has unparseable valid_until: {valid_until_str!r}"
                 )
                 continue
-            # Timestamps stored without an offset are UTC
-            if valid_until.tzinfo is None:
-                valid_until = valid_until.replace(tzinfo=UTC)
 
             if valid_until < now:
                 status = "expired"

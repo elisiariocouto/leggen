@@ -16,6 +16,7 @@ from leggen.services.enablebanking_service import (
     EnableBankingService,
     get_enablebanking_service,
 )
+from leggen.utils.dates import parse_datetime
 
 router = APIRouter()
 
@@ -134,18 +135,12 @@ async def get_bank_connections_status(
         status = session.get("status", "active")
         valid_until_str = session.get("valid_until")
         days_until_expiry = None
-        if valid_until_str and status == "active":
-            try:
-                valid_until = datetime.fromisoformat(valid_until_str)
-                # Timestamps stored without an offset are UTC
-                if valid_until.tzinfo is None:
-                    valid_until = valid_until.replace(tzinfo=UTC)
+        valid_until = parse_datetime(valid_until_str) if status == "active" else None
+        if valid_until is not None:
+            if valid_until < now:
+                status = "expired"
+            else:
                 days_until_expiry = (valid_until - now).days
-                if valid_until < now:
-                    status = "expired"
-                    days_until_expiry = None
-            except (ValueError, TypeError):
-                pass
 
         accounts = session.get("accounts", []) or []
 
