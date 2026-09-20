@@ -28,11 +28,6 @@ jobs:
         with:
           python-version-file: "pyproject.toml"
 
-      - name: Create config directory for tests
-        run: |
-          mkdir -p ~/.config/leggen
-          cp config.example.toml ~/.config/leggen/config.toml
-
       - name: Run ruff
         run: uv run ruff check .
 
