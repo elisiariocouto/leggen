@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Check, ChevronDown, FlaskConical, Search, Tag } from "lucide-react";
+import { FlaskConical, Search, Tag } from "lucide-react";
 
 import { apiClient, getApiErrorMessage } from "@/lib/api";
 import { queryKeys } from "@/lib/queryKeys";
@@ -11,19 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { BlurredValue } from "@/components/ui/blurred-value";
 import RuleReference from "./RuleReference";
 import type {
@@ -34,6 +21,8 @@ import type {
   Transaction,
 } from "@/types/api";
 import { useCategories } from "@/hooks/queries";
+import Combobox from "@/components/Combobox";
+import { categoryOptions } from "@/components/filters/categoryOptions";
 
 export interface RuleDraft {
   name: string;
@@ -80,68 +69,17 @@ function CategoryPicker({
   value: number | null;
   onChange: (id: number) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const { data: categories = [] } = useCategories();
-  const selected = categories.find((c) => c.id === value);
-
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-          >
-            <span className="flex items-center">
-              {selected ? (
-                <span
-                  className="mr-2 h-3 w-3 shrink-0 rounded-full"
-                  style={{ backgroundColor: selected.color }}
-                />
-              ) : (
-                <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
-              )}
-              {selected?.name ?? "Choose a category"}
-            </span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        }
-      />
-      <PopoverContent className="w-[240px] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Search categories..." className="h-9" />
-          <CommandList>
-            <CommandEmpty>No categories found.</CommandEmpty>
-            <CommandGroup>
-              {categories.map((cat) => (
-                <CommandItem
-                  key={cat.id}
-                  value={cat.name}
-                  onSelect={() => {
-                    onChange(cat.id);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      cat.id === value ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  <span
-                    className="mr-2 h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: cat.color }}
-                  />
-                  {cat.name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <Combobox
+      options={categoryOptions(categories)}
+      value={value == null ? "" : String(value)}
+      onChange={(id) => onChange(Number(id))}
+      placeholder="Choose a category"
+      icon={<Tag className="h-4 w-4 text-muted-foreground" />}
+      searchPlaceholder="Search categories..."
+      emptyText="No categories found."
+    />
   );
 }
 

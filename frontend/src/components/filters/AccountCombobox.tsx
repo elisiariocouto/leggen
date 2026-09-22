@@ -1,21 +1,7 @@
-import { useState } from "react";
-import { Check, ChevronDown, Building2 } from "lucide-react";
+import { Building2 } from "lucide-react";
 
-import { accountLabel, cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { accountLabel } from "@/lib/utils";
+import Combobox from "@/components/Combobox";
 import type { Account } from "../../types/api";
 
 export interface AccountComboboxProps {
@@ -31,94 +17,37 @@ export function AccountCombobox({
   onAccountChange,
   className,
 }: AccountComboboxProps) {
-  const [open, setOpen] = useState(false);
-
-  const selectedAccountData = accounts.find(
-    (account) => account.id === selectedAccount,
-  );
-
-  const formatAccountName = (account: Account) =>
-    `${accountLabel(account)} (${account.institution_id})`;
+  const options = [
+    {
+      value: "",
+      label: "All accounts",
+      icon: <Building2 className="h-4 w-4 text-muted-foreground" />,
+    },
+    ...accounts.map((account) => ({
+      value: account.id,
+      label: accountLabel(account),
+      triggerLabel: `${accountLabel(account)} (${account.institution_id})`,
+      keywords: [account.institution_id],
+      description: (
+        <>
+          {account.institution_id}
+          {account.iban && ` • ${account.iban.slice(-4)}`}
+        </>
+      ),
+    })),
+  ];
 
   return (
-    <div className={className}>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="w-full justify-between"
-            >
-              <div className="flex items-center">
-                <Building2 className="mr-2 h-4 w-4" />
-                {selectedAccountData
-                  ? formatAccountName(selectedAccountData)
-                  : "All accounts"}
-              </div>
-              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          }
-        />
-        <PopoverContent className="w-[300px] p-0">
-          <Command>
-            <CommandInput placeholder="Search accounts..." className="h-9" />
-            <CommandList>
-              <CommandEmpty>No accounts found.</CommandEmpty>
-              <CommandGroup>
-                {/* All accounts option */}
-                <CommandItem
-                  value="all-accounts"
-                  onSelect={() => {
-                    onAccountChange("");
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedAccount === "" ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
-                  All accounts
-                </CommandItem>
-
-                {/* Individual accounts */}
-                {accounts.map((account) => (
-                  <CommandItem
-                    key={account.id}
-                    value={`${accountLabel(account)} ${account.institution_id}`}
-                    onSelect={() => {
-                      onAccountChange(account.id);
-                      setOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedAccount === account.id
-                          ? "opacity-100"
-                          : "opacity-0",
-                      )}
-                    />
-                    <div className="flex flex-col">
-                      <span className="font-medium">
-                        {accountLabel(account)}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {account.institution_id}
-                        {account.iban && ` • ${account.iban.slice(-4)}`}
-                      </span>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
+    <Combobox
+      className={className}
+      options={options}
+      value={selectedAccount}
+      onChange={onAccountChange}
+      placeholder="All accounts"
+      icon={<Building2 className="h-4 w-4" />}
+      searchPlaceholder="Search accounts..."
+      emptyText="No accounts found."
+      popoverClassName="w-[300px]"
+    />
   );
 }
