@@ -18,16 +18,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "./ui/drawer";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "./ui/alert-dialog";
+import ConfirmDialog from "./ConfirmDialog";
 import type { BackupSettings, S3Config } from "../types/api";
 import { queryKeys } from "../lib/queryKeys";
 
@@ -323,35 +314,15 @@ export default function S3BackupConfigDrawer({
         </div>
       </DrawerContent>
 
-      <AlertDialog
+      <ConfirmDialog
         open={confirmRemove}
-        onOpenChange={(next) => {
-          if (!next) {
-            setConfirmRemove(false);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove S3 Configuration</AlertDialogTitle>
-            <AlertDialogDescription>
-              This deletes the bucket settings and the stored credentials.
-              Scheduled backups will stop until S3 is configured again. Existing
-              backups in the bucket are not touched.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteMutation.mutate()}
-              disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onClose={() => setConfirmRemove(false)}
+        onConfirm={() => deleteMutation.mutate()}
+        isPending={deleteMutation.isPending}
+        title="Remove S3 Configuration"
+        description="This deletes the bucket settings and the stored credentials. Scheduled backups will stop until S3 is configured again. Existing backups in the bucket are not touched."
+        confirmLabel="Remove"
+      />
     </Drawer>
   );
 }

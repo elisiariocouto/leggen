@@ -33,16 +33,7 @@ import {
 import { Button } from "./ui/button";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Label } from "./ui/label";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "./ui/alert-dialog";
+import ConfirmDialog from "./ConfirmDialog";
 
 import AccountsSkeleton from "./AccountsSkeleton";
 import NotificationFiltersDrawer from "./NotificationFiltersDrawer";
@@ -647,89 +638,60 @@ export default function Settings() {
           </Card>
 
       {/* Delete Notification Service Dialog */}
-      <AlertDialog
+      <ConfirmDialog
         open={!!deleteServiceTarget}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteServiceTarget(null);
+        onClose={() => setDeleteServiceTarget(null)}
+        onConfirm={() => {
+          if (deleteServiceTarget) {
+            deleteServiceMutation.mutate(deleteServiceTarget.toLowerCase());
           }
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Notification Service</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the{" "}
-              <span className="font-medium text-foreground capitalize">
-                {deleteServiceTarget}
-              </span>{" "}
-              notification service?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteServiceTarget) {
-                  deleteServiceMutation.mutate(
-                    deleteServiceTarget.toLowerCase(),
-                  );
-                }
-              }}
-              disabled={deleteServiceMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        isPending={deleteServiceMutation.isPending}
+        title="Delete Notification Service"
+        description={
+          <>
+            Are you sure you want to delete the{" "}
+            <span className="font-medium text-foreground capitalize">
+              {deleteServiceTarget}
+            </span>{" "}
+            notification service?
+          </>
+        }
+        confirmLabel="Delete"
+      />
 
       {/* Restore Backup Dialog */}
-      <AlertDialog
+      <ConfirmDialog
         open={!!restoreTarget}
-        onOpenChange={(open) => {
-          if (!open) {
-            setRestoreTarget(null);
+        onClose={() => setRestoreTarget(null)}
+        onConfirm={() => {
+          if (restoreTarget?.key) {
+            restoreBackupMutation.mutate(restoreTarget.key);
           }
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Restore Database</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <span className="block">
-                This replaces the current database with the backup taken on{" "}
-                <span className="font-medium text-foreground">
-                  {restoreTarget ? formatDate(restoreTarget.last_modified) : ""}
-                </span>
-                . Accounts, transactions and categories recorded since then will
-                be lost.
+        isPending={restoreBackupMutation.isPending}
+        title="Restore Database"
+        description={
+          <span className="block space-y-2">
+            <span className="block">
+              This replaces the current database with the backup taken on{" "}
+              <span className="font-medium text-foreground">
+                {restoreTarget ? formatDate(restoreTarget.last_modified) : ""}
               </span>
-              <span className="block break-all text-xs">
-                {restoreTarget?.key}
-              </span>
-              <span className="block font-medium text-foreground">
-                This cannot be undone. Consider running a backup first.
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (restoreTarget?.key) {
-                  restoreBackupMutation.mutate(restoreTarget.key);
-                }
-              }}
-              disabled={restoreBackupMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {restoreBackupMutation.isPending ? "Restoring..." : "Restore"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              . Accounts, transactions and categories recorded since then will
+              be lost.
+            </span>
+            <span className="block break-all text-xs">
+              {restoreTarget?.key}
+            </span>
+            <span className="block font-medium text-foreground">
+              This cannot be undone. Consider running a backup first.
+            </span>
+          </span>
+        }
+        confirmLabel="Restore"
+        pendingLabel="Restoring..."
+      />
     </div>
   );
 }

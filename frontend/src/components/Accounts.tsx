@@ -36,16 +36,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "./ui/tooltip";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "./ui/alert-dialog";
+import ConfirmDialog from "./ConfirmDialog";
 import { Checkbox } from "./ui/checkbox";
 import type { Account, BankConnectionStatus } from "../types/api";
 import { invalidateSyncedData, queryKeys } from "../lib/queryKeys";
@@ -520,60 +511,49 @@ export default function Accounts() {
       </Card>
 
       {/* Delete Account Dialog */}
-      <AlertDialog
+      <ConfirmDialog
         open={!!deleteDialogAccount}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteDialogAccount(null);
-            setDeleteData(true);
+        onClose={() => {
+          setDeleteDialogAccount(null);
+          setDeleteData(true);
+        }}
+        onConfirm={() => {
+          if (deleteDialogAccount) {
+            deleteAccountMutation.mutate({
+              accountId: deleteDialogAccount.id,
+              deleteData,
+            });
           }
         }}
+        isPending={deleteAccountMutation.isPending}
+        title="Delete Account"
+        description={
+          <>
+            Are you sure you want to delete{" "}
+            <span className="font-medium text-foreground">
+              {deleteDialogAccount?.display_name ||
+                deleteDialogAccount?.name ||
+                "this account"}
+            </span>
+            ? This action cannot be undone.
+          </>
+        }
+        confirmLabel="Delete"
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Account</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <span className="font-medium text-foreground">
-                {deleteDialogAccount?.display_name ||
-                  deleteDialogAccount?.name ||
-                  "this account"}
-              </span>
-              ? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex items-center space-x-2 py-2">
-            <Checkbox
-              id="delete-data"
-              checked={deleteData}
-              onCheckedChange={(checked) => setDeleteData(checked === true)}
-            />
-            <label
-              htmlFor="delete-data"
-              className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Also delete all transactions and balance history
-            </label>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteDialogAccount) {
-                  deleteAccountMutation.mutate({
-                    accountId: deleteDialogAccount.id,
-                    deleteData,
-                  });
-                }
-              }}
-              disabled={deleteAccountMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <div className="flex items-center space-x-2 py-2">
+          <Checkbox
+            id="delete-data"
+            checked={deleteData}
+            onCheckedChange={(checked) => setDeleteData(checked === true)}
+          />
+          <label
+            htmlFor="delete-data"
+            className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Also delete all transactions and balance history
+          </label>
+        </div>
+      </ConfirmDialog>
 
       {/* Bank Connections Status */}
       <Card>
@@ -707,62 +687,46 @@ export default function Accounts() {
       </Card>
 
       {/* Delete Bank Connection Dialog */}
-      <AlertDialog
+      <ConfirmDialog
         open={!!deleteDialogConnection}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteDialogConnection(null);
+        onClose={() => setDeleteDialogConnection(null)}
+        onConfirm={() => {
+          if (deleteDialogConnection) {
+            deleteBankConnectionMutation.mutate(
+              deleteDialogConnection.session_id,
+            );
           }
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {deleteDialogConnection?.status === "active"
-                ? "Disconnect Bank"
-                : "Delete Connection"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteDialogConnection?.status === "active" ? (
-                <>
-                  Are you sure you want to disconnect{" "}
-                  <span className="font-medium text-foreground">
-                    {deleteDialogConnection?.aspsp_name}
-                  </span>
-                  ? This will stop syncing new transactions but keep your
-                  existing transaction history.
-                </>
-              ) : (
-                <>
-                  Delete the connection to{" "}
-                  <span className="font-medium text-foreground">
-                    {deleteDialogConnection?.aspsp_name}
-                  </span>
-                  ?
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteDialogConnection) {
-                  deleteBankConnectionMutation.mutate(
-                    deleteDialogConnection.session_id,
-                  );
-                }
-              }}
-              disabled={deleteBankConnectionMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteDialogConnection?.status === "active"
-                ? "Disconnect"
-                : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        isPending={deleteBankConnectionMutation.isPending}
+        title={
+          deleteDialogConnection?.status === "active"
+            ? "Disconnect Bank"
+            : "Delete Connection"
+        }
+        description={
+          deleteDialogConnection?.status === "active" ? (
+            <>
+              Are you sure you want to disconnect{" "}
+              <span className="font-medium text-foreground">
+                {deleteDialogConnection?.aspsp_name}
+              </span>
+              ? This will stop syncing new transactions but keep your
+              existing transaction history.
+            </>
+          ) : (
+            <>
+              Delete the connection to{" "}
+              <span className="font-medium text-foreground">
+                {deleteDialogConnection?.aspsp_name}
+              </span>
+              ?
+            </>
+          )
+        }
+        confirmLabel={
+          deleteDialogConnection?.status === "active" ? "Disconnect" : "Delete"
+        }
+      />
     </div>
   );
 }

@@ -23,16 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "./ui/alert-dialog";
+import ConfirmDialog from "./ConfirmDialog";
 import {
   Empty,
   EmptyDescription,
@@ -289,31 +280,22 @@ export default function CategoryRules() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog
+      <ConfirmDialog
         open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete rule</AlertDialogTitle>
-            <AlertDialogDescription>
-              Delete &ldquo;{deleteTarget?.name}&rdquo;? Categories this rule
-              assigned are removed from their transactions; categories chosen
-              by hand stay.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteTarget && remove.mutate(deleteTarget.id)}
-              disabled={remove.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {remove.isPending ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && remove.mutate(deleteTarget.id)}
+        isPending={remove.isPending}
+        title="Delete rule"
+        description={
+          <>
+            Delete &ldquo;{deleteTarget?.name}&rdquo;? Categories this rule
+            assigned are removed from their transactions; categories chosen by
+            hand stay.
+          </>
+        }
+        confirmLabel="Delete"
+        pendingLabel="Deleting..."
+      />
     </div>
   );
 }

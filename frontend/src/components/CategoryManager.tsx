@@ -21,17 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "./ui/alert-dialog";
+import ConfirmDialog from "./ConfirmDialog";
 import { Skeleton } from "./ui/skeleton";
 import { Switch } from "./ui/switch";
 import type { Category } from "../types/api";
@@ -298,42 +288,15 @@ export default function CategoryManager() {
                   </Dialog>
 
                   {!cat.is_default && (
-                    <AlertDialog
-                      open={deleteTarget?.id === cat.id}
-                      onOpenChange={(open) => !open && setDeleteTarget(null)}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      aria-label={`Delete ${cat.name}`}
+                      onClick={() => setDeleteTarget(cat)}
                     >
-                      <AlertDialogTrigger
-                        render={
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                            onClick={() => setDeleteTarget(cat)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        }
-                      />
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Category</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete &quot;{cat.name}&quot;? This will remove
-                            the category from all transactions that use it.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteMutation.mutate(cat.id)}
-                            disabled={deleteMutation.isPending}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            {deleteMutation.isPending ? "Deleting..." : "Delete"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   )}
                 </div>
               </div>
@@ -341,6 +304,22 @@ export default function CategoryManager() {
           </div>
         )}
       </CardContent>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+        isPending={deleteMutation.isPending}
+        title="Delete Category"
+        description={
+          <>
+            Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
+            This will remove the category from all transactions that use it.
+          </>
+        }
+        confirmLabel="Delete"
+        pendingLabel="Deleting..."
+      />
     </Card>
   );
 }
