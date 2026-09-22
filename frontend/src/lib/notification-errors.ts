@@ -19,7 +19,7 @@ export function getTestNotificationErrorMessage(
 
   switch (apiError?.code) {
     case "NOTIFICATION_NOT_ENABLED":
-      return `${serviceLabel} notifications are not configured or are disabled. Save a valid configuration first.`;
+      return `${serviceLabel} notifications are switched off or missing credentials. Check the settings and try again.`;
     case "UPSTREAM_ERROR":
       return `${serviceLabel} rejected the test notification. Check the credentials and try again.`;
     default:

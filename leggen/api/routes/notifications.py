@@ -16,6 +16,26 @@ from leggen.utils.masking import mask_secret, resolve_secret
 
 router = APIRouter()
 
+# Each service's secret field, and how errors name it.
+_SECRETS = {
+    "discord": ("webhook", "Discord webhook"),
+    "telegram": ("token", "Telegram token"),
+}
+
+
+def _with_stored_secret(
+    service: str, section: DiscordConfig | TelegramConfig
+) -> dict[str, Any]:
+    """The section as a dict, its secret resolved against the stored one.
+
+    Clients echo back the masked secret from GET to mean "keep the current
+    value"; a mask with nothing stored raises MaskedSecretError, a 400.
+    """
+    field, label = _SECRETS[service]
+    stored = config.notifications_config.get(service, {}).get(field)
+    secret = resolve_secret(getattr(section, field), stored, label)
+    return section.model_copy(update={field: secret}).model_dump()
+
 
 @router.get("/notifications/settings")
 async def get_notification_settings() -> NotificationSettings:
@@ -57,36 +77,17 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
     from wiping the settings it does not mention. An explicit `null` service
     removes it, and an explicit empty filter list clears it.
     """
-    # Clients echo back masked secrets from GET to mean "keep current value";
-    # a mask with nothing stored raises MaskedSecretError, a 400.
     stored_config = config.notifications_config
     notifications_config = dict(stored_config)
 
-    if "discord" in settings.model_fields_set:
-        if settings.discord is None:
-            notifications_config.pop("discord", None)
+    for service in ("discord", "telegram"):
+        if service not in settings.model_fields_set:
+            continue
+        section = getattr(settings, service)
+        if section is None:
+            notifications_config.pop(service, None)
         else:
-            webhook = resolve_secret(
-                settings.discord.webhook,
-                stored_config.get("discord", {}).get("webhook"),
-                "Discord webhook",
-            )
-            notifications_config["discord"] = settings.discord.model_copy(
-                update={"webhook": webhook}
-            ).model_dump()
-
-    if "telegram" in settings.model_fields_set:
-        if settings.telegram is None:
-            notifications_config.pop("telegram", None)
-        else:
-            token = resolve_secret(
-                settings.telegram.token,
-                stored_config.get("telegram", {}).get("token"),
-                "Telegram token",
-            )
-            notifications_config["telegram"] = settings.telegram.model_copy(
-                update={"token": token}
-            ).model_dump()
+            notifications_config[service] = _with_stored_secret(service, section)
 
     if notifications_config != stored_config:
         config.update_section("notifications", notifications_config)
@@ -112,7 +113,12 @@ async def test_notification(test_request: NotificationTest) -> dict:
     provider itself refuses the message, so clients can tell a settings problem
     apart from a transient delivery failure.
     """
-    await NotificationService().send_test_notification(test_request.service)
+    section = (
+        _with_stored_secret(test_request.service, test_request.config)
+        if test_request.config is not None
+        else None
+    )
+    await NotificationService().send_test_notification(test_request.service, section)
 
     return {"sent": True}
 

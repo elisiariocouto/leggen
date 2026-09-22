@@ -5650,6 +5650,20 @@
               "telegram"
             ],
             "title": "Service"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiscordConfig"
+              },
+              {
+                "$ref": "#/components/schemas/TelegramConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
           }
         },
         "type": "object",
@@ -5657,7 +5671,7 @@
           "service"
         ],
         "title": "NotificationTest",
-        "description": "Test notification request"
+        "description": "Test notification request\n\n`config` tests settings that have not been saved yet, so a form can be\nchecked before it is submitted; a masked secret in it stands for the stored\none. Without it, the saved configuration is tested."
       },
       "PaginatedResponse_SyncOperation_": {
         "properties": {

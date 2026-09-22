@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from leggen.models.config import DiscordNotificationConfig, TelegramNotificationConfig
 
@@ -49,6 +49,19 @@ class NotificationSettings(BaseModel):
 
 
 class NotificationTest(BaseModel):
-    """Test notification request"""
+    """Test notification request
+
+    `config` tests settings that have not been saved yet, so a form can be
+    checked before it is submitted; a masked secret in it stands for the stored
+    one. Without it, the saved configuration is tested.
+    """
 
     service: Literal["discord", "telegram"]
+    config: DiscordConfig | TelegramConfig | None = None
+
+    @model_validator(mode="after")
+    def _config_matches_service(self) -> Self:
+        expected = DiscordConfig if self.service == "discord" else TelegramConfig
+        if self.config is not None and not isinstance(self.config, expected):
+            raise ValueError(f"config is not a {self.service} configuration")
+        return self

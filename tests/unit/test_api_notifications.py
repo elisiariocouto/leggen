@@ -4,6 +4,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from leggen.utils.masking import MASK
+
 
 @pytest.mark.api
 class TestNotificationSettingsAPI:
@@ -346,6 +348,82 @@ class TestNotificationTestAPI:
 
         assert response.status_code == 200
         assert "custom text" not in str(post_embed.call_args[0][1])
+
+    def test_supplied_config_is_tested_instead_of_the_saved_one(
+        self, api_client, enabled_notifications
+    ):
+        """A form's unsaved webhook is what gets tested, and nothing is saved."""
+        new_webhook = "https://discord.com/api/webhooks/456/new"
+        with patch(
+            "leggen.notifications.discord._post_embed", new_callable=AsyncMock
+        ) as post_embed:
+            response = api_client.post(
+                "/api/v1/notifications/test",
+                json={
+                    "service": "discord",
+                    "config": {"webhook": new_webhook, "enabled": True},
+                },
+            )
+
+        assert response.status_code == 200
+        assert post_embed.call_args[0][0] == new_webhook
+        stored = enabled_notifications._config["notifications"]["discord"]
+        assert stored["webhook"] == "https://discord.com/api/webhooks/123/secret"
+
+    def test_masked_secret_in_supplied_config_uses_the_stored_one(
+        self, api_client, enabled_notifications
+    ):
+        """An untouched token field echoes the mask; the other fields still
+        come from the form."""
+        with patch(
+            "leggen.notifications.telegram._send_message", new_callable=AsyncMock
+        ) as send_message:
+            response = api_client.post(
+                "/api/v1/notifications/test",
+                json={
+                    "service": "telegram",
+                    "config": {
+                        "token": MASK,
+                        "chat_id": 99,
+                        "enabled": True,
+                    },
+                },
+            )
+
+        assert response.status_code == 200
+        token, chat_id, _ = send_message.call_args[0]
+        assert token == "123456:token"
+        assert chat_id == 99
+
+    def test_switched_off_supplied_config_returns_not_enabled(
+        self, api_client, enabled_notifications
+    ):
+        """A supplied config that is switched off is tested like a saved one."""
+        response = api_client.post(
+            "/api/v1/notifications/test",
+            json={
+                "service": "discord",
+                "config": {"webhook": "https://example.test/hook", "enabled": False},
+            },
+        )
+
+        assert response.status_code == 400
+        assert response.json()["code"] == "NOTIFICATION_NOT_ENABLED"
+
+    def test_config_for_another_service_returns_422(
+        self, api_client, enabled_notifications
+    ):
+        """A Telegram config sent for Discord fails validation."""
+        response = api_client.post(
+            "/api/v1/notifications/test",
+            json={
+                "service": "discord",
+                "config": {"token": "1:abc", "chat_id": 1, "enabled": True},
+            },
+        )
+
+        assert response.status_code == 422
+        assert response.json()["code"] == "VALIDATION_ERROR"
 
 
 @pytest.mark.api

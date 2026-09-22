@@ -70,7 +70,7 @@ export default function TelegramConfigDrawer({
   });
 
   const testMutation = useMutation({
-    mutationFn: () => apiClient.testNotification({ service: "telegram" }),
+    mutationFn: () => apiClient.testNotification({ service: "telegram", config }),
     onSuccess: () => {
       toast.success("Test Telegram notification sent.");
     },

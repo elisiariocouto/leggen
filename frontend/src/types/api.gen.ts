@@ -1520,6 +1520,10 @@ export interface components {
         /**
          * NotificationTest
          * @description Test notification request
+         *
+         *     `config` tests settings that have not been saved yet, so a form can be
+         *     checked before it is submitted; a masked secret in it stands for the stored
+         *     one. Without it, the saved configuration is tested.
          */
         NotificationTest: {
             /**
@@ -1527,6 +1531,8 @@ export interface components {
              * @enum {string}
              */
             service: "discord" | "telegram";
+            /** Config */
+            config?: components["schemas"]["DiscordConfig"] | components["schemas"]["TelegramConfig"] | null;
         };
         /** PaginatedResponse[SyncOperation] */
         PaginatedResponse_SyncOperation_: {

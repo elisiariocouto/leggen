@@ -42,8 +42,13 @@ class NotificationService:
         if self._is_telegram_enabled():
             await self._send_telegram_notifications(matching_transactions)
 
-    async def send_test_notification(self, service: str) -> None:
+    async def send_test_notification(
+        self, service: str, section: dict[str, Any] | None = None
+    ) -> None:
         """Send a test notification, raising a domain error if it does not arrive.
+
+        `section` is the service's configuration to test, for checking settings
+        before they are saved; by default the stored configuration is used.
 
         The two failure modes are deliberately distinct: a service that is not
         configured or is switched off never reaches the provider
@@ -52,8 +57,8 @@ class NotificationService:
         (`UpstreamServiceError`, a 502 worth retrying).
         """
         senders = {
-            "discord": (self._is_discord_enabled, self._send_discord_test),
-            "telegram": (self._is_telegram_enabled, self._send_telegram_test),
+            "discord": (_discord_ready, _send_discord_test),
+            "telegram": (_telegram_ready, _send_telegram_test),
         }
         entry = senders.get(service)
 
@@ -64,14 +69,16 @@ class NotificationService:
                 f"Unknown notification service '{service}'."
             )
 
-        is_enabled, send = entry
-        if not is_enabled():
+        is_ready, send = entry
+        if section is None:
+            section = self.notifications_config.get(service, {})
+        if not is_ready(section):
             raise NotificationNotEnabledError(
                 f"Notification service '{service}' is not configured or is disabled."
             )
 
         try:
-            await send()
+            await send(section)
         except Exception as e:
             raise UpstreamServiceError(
                 f"Failed to send test notification to {service}: {describe_exception(e)}"
@@ -157,18 +164,10 @@ class NotificationService:
         return matching
 
     def _is_discord_enabled(self) -> bool:
-        discord_config = self.notifications_config.get("discord", {})
-        return bool(
-            discord_config.get("webhook") and discord_config.get("enabled", True)
-        )
+        return _discord_ready(self.notifications_config.get("discord", {}))
 
     def _is_telegram_enabled(self) -> bool:
-        telegram_config = self.notifications_config.get("telegram", {})
-        return bool(
-            telegram_config.get("token")
-            and telegram_config.get("chat_id")
-            and telegram_config.get("enabled", True)
-        )
+        return _telegram_ready(self.notifications_config.get("telegram", {}))
 
     def _get_discord_webhook(self) -> str:
         return self.notifications_config.get("discord", {}).get("webhook", "")
@@ -205,19 +204,30 @@ class NotificationService:
             # otherwise successful sync as failed.
             logger.error(f"Failed to send Telegram transaction notifications: {e}")
 
-    async def _send_discord_test(self) -> None:
-        try:
-            await discord.send_test_notification(self._get_discord_webhook())
-            logger.info("Discord test notification sent")
-        except Exception as e:
-            logger.error(f"Failed to send Discord test notification: {e}")
-            raise
 
-    async def _send_telegram_test(self) -> None:
-        try:
-            token, chat_id = self._get_telegram_credentials()
-            await telegram.send_test_notification(token, chat_id)
-            logger.info("Telegram test notification sent")
-        except Exception as e:
-            logger.error(f"Failed to send Telegram test notification: {e}")
-            raise
+def _discord_ready(section: dict[str, Any]) -> bool:
+    return bool(section.get("webhook") and section.get("enabled", True))
+
+
+def _telegram_ready(section: dict[str, Any]) -> bool:
+    return bool(
+        section.get("token") and section.get("chat_id") and section.get("enabled", True)
+    )
+
+
+async def _send_discord_test(section: dict[str, Any]) -> None:
+    try:
+        await discord.send_test_notification(section["webhook"])
+        logger.info("Discord test notification sent")
+    except Exception as e:
+        logger.error(f"Failed to send Discord test notification: {e}")
+        raise
+
+
+async def _send_telegram_test(section: dict[str, Any]) -> None:
+    try:
+        await telegram.send_test_notification(section["token"], section["chat_id"])
+        logger.info("Telegram test notification sent")
+    except Exception as e:
+        logger.error(f"Failed to send Telegram test notification: {e}")
+        raise
