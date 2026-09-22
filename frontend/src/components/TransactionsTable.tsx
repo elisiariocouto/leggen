@@ -37,6 +37,7 @@ import {
 import { queryKeys } from "@/lib/queryKeys";
 import type { Transaction, PaginatedResponse } from "@/types/api";
 import { useAccounts } from "@/hooks/queries";
+import { useTransactionDetail } from "../hooks/useTransactionDetail";
 
 /**
  * Zero-result state, rendered as a row inside the table rather than in place
@@ -95,18 +96,6 @@ export default function TransactionsTable() {
     writeStoredDensity(next);
   };
 
-  // Transaction detail panel state. The transaction is stored by key and
-  // re-derived from the query data below, so category changes made while
-  // the panel is open (which invalidate ["transactions"]) refresh it too.
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedKey, setSelectedKey] = useState<{
-    accountId: string;
-    transactionId: string;
-  } | null>(null);
-  const [selectedSnapshot, setSelectedSnapshot] = useState<Transaction | null>(
-    null,
-  );
-
   const { data: accounts } = useAccounts();
 
   const {
@@ -162,29 +151,7 @@ export default function TransactionsTable() {
     [accounts],
   );
 
-  const selectedFromQuery = useMemo(
-    () =>
-      transactions.find(
-        (t) =>
-          t.account_id === selectedKey?.accountId &&
-          t.transaction_id === selectedKey?.transactionId,
-      ) ?? null,
-    [transactions, selectedKey],
-  );
-  // Prefer the live row so edits made while the panel is open show up, and
-  // fall back to the snapshot taken when it was opened — the row leaves the
-  // page if a category filter is active and it was just recategorized, and
-  // it is also gone during the closing animation.
-  const selectedTransaction = selectedFromQuery ?? selectedSnapshot;
-
-  const openDetail = (transaction: Transaction) => {
-    setSelectedKey({
-      accountId: transaction.account_id,
-      transactionId: transaction.transaction_id,
-    });
-    setSelectedSnapshot(transaction);
-    setDetailOpen(true);
-  };
+  const detail = useTransactionDetail(transactions);
 
   const pagination = useMemo(
     () =>
@@ -327,7 +294,7 @@ export default function TransactionsTable() {
             transaction={transaction}
             account={accountsById.get(transaction.account_id)}
             density={density}
-            onOpen={openDetail}
+            onOpen={detail.openDetail}
             />
             ))
               )}
@@ -372,7 +339,7 @@ export default function TransactionsTable() {
             key={`${transaction.account_id}-${transaction.transaction_id}`}
             transaction={transaction}
             account={accountsById.get(transaction.account_id)}
-            onOpen={openDetail}
+            onOpen={detail.openDetail}
               />
             ))
           )}
@@ -419,12 +386,7 @@ export default function TransactionsTable() {
         )}
       </Card>
 
-      <TransactionDetail
-        transaction={selectedTransaction}
-        open={detailOpen && !!selectedTransaction}
-        onOpenChange={setDetailOpen}
-        accounts={accounts}
-      />
+      <TransactionDetail {...detail.panel} accounts={accounts} />
     </div>
   );
 }

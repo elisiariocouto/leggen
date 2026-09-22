@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
@@ -22,8 +22,8 @@ import {
 } from "../transactions/cells";
 import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
-import type { Transaction } from "../../types/api";
 import { useAccounts } from "../../hooks/queries";
+import { useTransactionDetail } from "../../hooks/useTransactionDetail";
 
 /** The API caps a page here; a single month of one category rarely nears it. */
 const PAGE_SIZE = 500;
@@ -74,8 +74,6 @@ export default function CategoryTransactions({
   const open = selection !== undefined;
   const filterId = selection ? filterIdOf(selection) : undefined;
 
-  const [detail, setDetail] = useState<Transaction | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
 
   const { data: accounts } = useAccounts({ enabled: open });
 
@@ -119,19 +117,7 @@ export default function CategoryTransactions({
   );
 
   const transactions = data?.data ?? [];
-  // Prefer the live row so an edit made in the detail panel shows up there
-  // too, and fall back to the snapshot during the closing animation.
-  const selectedTransaction =
-    transactions.find(
-      (t) =>
-        t.account_id === detail?.account_id &&
-        t.transaction_id === detail?.transaction_id,
-    ) ?? detail;
-
-  const openDetail = (transaction: Transaction) => {
-    setDetail(transaction);
-    setDetailOpen(true);
-  };
+  const detail = useTransactionDetail(transactions);
 
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
@@ -189,9 +175,9 @@ export default function CategoryTransactions({
                     role="button"
                     tabIndex={0}
                     aria-label={openDetailLabel(transaction)}
-                    onClick={() => openDetail(transaction)}
+                    onClick={() => detail.openDetail(transaction)}
                     onKeyDown={(event) =>
-                      handleActivateKeyDown(event, () => openDetail(transaction))
+                      handleActivateKeyDown(event, () => detail.openDetail(transaction))
                     }
                   >
                     <Description
@@ -235,12 +221,7 @@ export default function CategoryTransactions({
 
         {/* Rendered inside the sheet so the dialog library treats it as a
             nested dialog rather than a click outside this one. */}
-        <TransactionDetail
-          transaction={selectedTransaction}
-          open={detailOpen && !!selectedTransaction}
-          onOpenChange={setDetailOpen}
-          accounts={accounts}
-        />
+        <TransactionDetail {...detail.panel} accounts={accounts} />
       </SheetContent>
     </Sheet>
   );
