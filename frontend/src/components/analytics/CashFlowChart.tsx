@@ -13,7 +13,6 @@ import {
 } from "recharts";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
-import { Skeleton } from "../ui/skeleton";
 import {
   CHART_AXIS_TICK,
   CHART_GRID_COLOR,
@@ -25,6 +24,7 @@ import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
 import { monthLabel, monthRange } from "../../lib/months";
 import type { CashFlowPoint } from "../../types/api";
+import AnalyticsPanel from "./AnalyticsPanel";
 
 interface CashFlowChartProps {
   className?: string;
@@ -91,25 +91,12 @@ export default function CashFlowChart({
     placeholderData: (previousData) => previousData,
   });
 
-  if (isLoading) {
-    return (
-      <div className={className}>
-        <h3 className="text-lg font-medium text-foreground mb-1">Cash Flow</h3>
-        <Skeleton className="h-80 w-full mt-4" />
-      </div>
-    );
-  }
+  const panel = { title: "Cash Flow", className };
+  if (isLoading) return <AnalyticsPanel {...panel} isLoading />;
 
   const points = data?.points ?? [];
   if (points.length === 0) {
-    return (
-      <div className={className}>
-        <h3 className="text-lg font-medium text-foreground mb-1">Cash Flow</h3>
-        <div className="h-80 flex items-center justify-center text-muted-foreground">
-          No transactions in this period
-        </div>
-      </div>
-    );
+    return <AnalyticsPanel {...panel} empty="No transactions in this period" />;
   }
 
   const currency = data?.currency ?? "EUR";
@@ -128,10 +115,10 @@ export default function CashFlowChart({
   };
 
   return (
-    <div className={className}>
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-foreground">Cash Flow</h3>
-        <p className="text-sm text-muted-foreground">
+    <AnalyticsPanel
+      {...panel}
+      subtitle={
+        <>
           {net >= 0 ? "Saved" : "Overspent"}{" "}
           <span
             className={cn(
@@ -144,8 +131,9 @@ export default function CashFlowChart({
           over {points.length} {points.length === 1 ? "month" : "months"} ·{" "}
           {formatCurrency(data?.average_monthly_net ?? 0, currency)} in a typical
           month · Click a month for its transactions
-        </p>
-      </div>
+        </>
+      }
+    >
       <div className={cn("h-80", !isBalanceVisible && "blur-md select-none")}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
@@ -218,6 +206,6 @@ export default function CashFlowChart({
           Running total
         </span>
       </div>
-    </div>
+    </AnalyticsPanel>
   );
 }

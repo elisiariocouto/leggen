@@ -3,10 +3,10 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
 import { BlurredValue } from "../ui/blurred-value";
-import { Skeleton } from "../ui/skeleton";
 import { chartColor } from "../../lib/chartColors";
 import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
+import AnalyticsPanel from "./AnalyticsPanel";
 
 interface TopMerchantsProps {
   className?: string;
@@ -52,36 +52,19 @@ export default function TopMerchants({
     placeholderData: (previousData) => previousData,
   });
 
-  if (isLoading) {
-    return (
-      <div className={className}>
-        <h3 className="text-lg font-medium text-foreground mb-4">{title}</h3>
-        <Skeleton className="h-80 w-full" />
-      </div>
-    );
-  }
+  const panel = { title, subtitle, className };
+  if (isLoading) return <AnalyticsPanel {...panel} isLoading />;
 
   const merchants = data?.merchants ?? [];
   if (merchants.length === 0) {
-    return (
-      <div className={className}>
-        <h3 className="text-lg font-medium text-foreground mb-4">{title}</h3>
-        <div className="h-80 flex items-center justify-center text-muted-foreground">
-          No spending in this period
-        </div>
-      </div>
-    );
+    return <AnalyticsPanel {...panel} empty="No spending in this period" />;
   }
 
   const currency = data?.currency ?? "EUR";
   const max = Math.max(...merchants.map((m) => m.total));
 
   return (
-    <div className={className}>
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-foreground">{title}</h3>
-        <p className="text-sm text-muted-foreground">{subtitle}</p>
-      </div>
+    <AnalyticsPanel {...panel}>
       <div className={cn("space-y-2", !isBalanceVisible && "select-none")}>
         {merchants.map((merchant) => {
           const pct = merchant.change_pct;
@@ -155,6 +138,6 @@ export default function TopMerchants({
           descriptions.
         </p>
       )}
-    </div>
+    </AnalyticsPanel>
   );
 }

@@ -11,7 +11,6 @@ import {
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
 import { BlurredValue } from "../ui/blurred-value";
-import { Skeleton } from "../ui/skeleton";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
@@ -19,6 +18,7 @@ import { CHART_AXIS_TICK, CHART_GRID_COLOR } from "../../lib/chartColors";
 import { isCompleteMonth, median, monthLabel } from "../../lib/months";
 import type { SpendingByCategory } from "../../types/api";
 import { useSpendingByCategory } from "../../hooks/queries";
+import AnalyticsPanel from "./AnalyticsPanel";
 
 /**
  * Categories drawn as their own segment. Past this many the palette stops
@@ -218,28 +218,10 @@ export default function SpendingByCategoryChart({
     [data, series, mode],
   );
 
-  const title = (
-    <h3 className="text-lg font-medium text-foreground">Spending by month</h3>
-  );
-
-  if (isLoading) {
-    return (
-      <div className={className}>
-        {title}
-        <Skeleton className="h-80 w-full mt-4" />
-      </div>
-    );
-  }
-
+  const panel = { title: "Spending by month", className };
+  if (isLoading) return <AnalyticsPanel {...panel} isLoading />;
   if (!data || data.categories.length === 0) {
-    return (
-      <div className={className}>
-        {title}
-        <div className="h-80 flex items-center justify-center text-muted-foreground">
-          No spending in this period
-        </div>
-      </div>
-    );
+    return <AnalyticsPanel {...panel} empty="No spending in this period" />;
   }
 
   const currency = data.currency ?? "EUR";
@@ -253,22 +235,22 @@ export default function SpendingByCategoryChart({
   const categorizedPct = Math.round(data.categorized_share * 100);
 
   return (
-    <div className={className}>
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          {title}
-          <p className="text-sm text-muted-foreground">
-            <BlurredValue>{formatCurrency(total, currency)}</BlurredValue>{" "}
-            over {rows.length} {rows.length === 1 ? "month" : "months"}
-            {typical != null && (
-              <>
-                {" · "}
-                <BlurredValue>{formatCurrency(typical, currency)}</BlurredValue>{" "}
-                in a typical month
-              </>
-            )}
-          </p>
-        </div>
+    <AnalyticsPanel
+      {...panel}
+      subtitle={
+        <>
+          <BlurredValue>{formatCurrency(total, currency)}</BlurredValue> over{" "}
+          {rows.length} {rows.length === 1 ? "month" : "months"}
+          {typical != null && (
+            <>
+              {" · "}
+              <BlurredValue>{formatCurrency(typical, currency)}</BlurredValue>{" "}
+              in a typical month
+            </>
+          )}
+        </>
+      }
+      actions={
         <div className="flex flex-wrap items-center gap-4">
           <Tabs value={mode} onValueChange={(value) => setMode(value as Mode)}>
             <TabsList>
@@ -290,7 +272,8 @@ export default function SpendingByCategoryChart({
             </Label>
           </div>
         </div>
-      </div>
+      }
+    >
 
       <div className={cn("h-80", !isBalanceVisible && "blur-md select-none")}>
         <ResponsiveContainer width="100%" height="100%">
@@ -391,6 +374,6 @@ export default function SpendingByCategoryChart({
       <p className="mt-3 text-xs text-muted-foreground text-center">
         {categorizedPct}% of this spending has a category.
       </p>
-    </div>
+    </AnalyticsPanel>
   );
 }

@@ -11,7 +11,6 @@ import {
 import { format, parseISO } from "date-fns";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
-import { Skeleton } from "../ui/skeleton";
 import {
   CHART_AXIS_TICK,
   CHART_GRID_COLOR,
@@ -20,6 +19,7 @@ import {
 import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
 import type { NetWorthPoint } from "../../types/api";
+import AnalyticsPanel from "./AnalyticsPanel";
 
 interface NetWorthChartProps {
   className?: string;
@@ -90,28 +90,24 @@ export default function NetWorthChart({
     placeholderData: (previousData) => previousData,
   });
 
-  if (isLoading) {
-    return (
-      <div className={className}>
-        <h3 className="text-lg font-medium text-foreground mb-1">Net Worth</h3>
-        <Skeleton className="h-80 w-full mt-4" />
-      </div>
-    );
-  }
+  const panel = { title: "Net Worth", className };
+  if (isLoading) return <AnalyticsPanel {...panel} isLoading />;
 
   const points = data?.points ?? [];
   if (points.length === 0) {
     return (
-      <div className={className}>
-        <h3 className="text-lg font-medium text-foreground mb-1">Net Worth</h3>
-        <div className="h-80 flex flex-col items-center justify-center gap-1 text-muted-foreground">
-          <p>No balance snapshots in this period</p>
-          <p className="text-sm">
-            Balances are recorded on each sync, so history starts at your first
-            sync.
-          </p>
-        </div>
-      </div>
+      <AnalyticsPanel
+        {...panel}
+        empty={
+          <>
+            <p>No balance snapshots in this period</p>
+            <p className="text-sm">
+              Balances are recorded on each sync, so history starts at your
+              first sync.
+            </p>
+          </>
+        }
+      />
     );
   }
 
@@ -120,10 +116,10 @@ export default function NetWorthChart({
   const changePct = data?.change_pct;
 
   return (
-    <div className={className}>
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-foreground">Net Worth</h3>
-        <p className="text-sm text-muted-foreground">
+    <AnalyticsPanel
+      {...panel}
+      subtitle={
+        <>
           <span
             className={cn(
               "font-medium",
@@ -135,8 +131,9 @@ export default function NetWorthChart({
             {changePct != null && ` (${changePct > 0 ? "+" : ""}${changePct}%)`}
           </span>{" "}
           over this period
-        </p>
-      </div>
+        </>
+      }
+    >
       <div className={cn("h-80", !isBalanceVisible && "blur-md select-none")}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
@@ -202,6 +199,6 @@ export default function NetWorthChart({
       <p className="mt-4 text-sm text-muted-foreground text-center">
         Recorded at each sync, so the line follows how often you sync.
       </p>
-    </div>
+    </AnalyticsPanel>
   );
 }

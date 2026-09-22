@@ -5,10 +5,10 @@ import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
 import { BlurredValue } from "../ui/blurred-value";
 import { Button } from "../ui/button";
-import { Skeleton } from "../ui/skeleton";
 import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
 import { useSpendingByCategory } from "../../hooks/queries";
+import AnalyticsPanel from "./AnalyticsPanel";
 
 const UNCATEGORIZED = "uncategorized";
 
@@ -53,28 +53,16 @@ export default function NeedsRule({
   // coverage line costs no extra request.
   const { data: spending } = useSpendingByCategory(dateFrom, dateTo, accountId);
 
-  const title = (
-    <h3 className="text-lg font-medium text-foreground">Needs a rule</h3>
-  );
-
-  if (isLoading) {
-    return (
-      <div className={className}>
-        {title}
-        <Skeleton className="h-80 w-full mt-4" />
-      </div>
-    );
-  }
+  const panel = { title: "Needs a rule", className };
+  if (isLoading) return <AnalyticsPanel {...panel} isLoading />;
 
   const merchants = data?.merchants ?? [];
   if (merchants.length === 0) {
     return (
-      <div className={className}>
-        {title}
-        <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">
-          Every expense in this period has a category.
-        </div>
-      </div>
+      <AnalyticsPanel
+        {...panel}
+        empty="Every expense in this period has a category."
+      />
     );
   }
 
@@ -86,14 +74,10 @@ export default function NeedsRule({
   const coverage = unexplained > 0 ? Math.min(1, listed / unexplained) : null;
 
   return (
-    <div className={className}>
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
-        <div>
-          {title}
-          <p className="text-sm text-muted-foreground">
-            Largest merchants without a category, so one rule clears the most
-          </p>
-        </div>
+    <AnalyticsPanel
+      {...panel}
+      subtitle="Largest merchants without a category, so one rule clears the most"
+      actions={
         <Link
           to="/transactions"
           search={{
@@ -108,7 +92,8 @@ export default function NeedsRule({
           All uncategorized
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
-      </div>
+      }
+    >
       <div className={cn("space-y-1", !isBalanceVisible && "select-none")}>
         {merchants.map((merchant) => (
           <div key={merchant.merchant} className="relative">
@@ -156,6 +141,6 @@ export default function NeedsRule({
           of the uncategorized spending in this period.
         </p>
       )}
-    </div>
+    </AnalyticsPanel>
   );
 }

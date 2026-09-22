@@ -1,6 +1,5 @@
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
-import { Skeleton } from "../ui/skeleton";
 import {
   Table,
   TableBody,
@@ -20,6 +19,7 @@ import {
 import type { CellSelection } from "./CategoryTransactions";
 import type { CategoryMonthly } from "../../types/api";
 import { useSpendingByCategory } from "../../hooks/queries";
+import AnalyticsPanel from "./AnalyticsPanel";
 
 /** A month this far off the category's typical month gets called out. */
 const NOTABLE_CHANGE_PCT = 15;
@@ -111,30 +111,14 @@ export default function CategoryMatrix({
 
   const { data, isLoading } = useSpendingByCategory(dateFrom, dateTo, accountId);
 
-  const title = (
-    <h3 className="text-lg font-medium text-foreground">
-      Category by month
-    </h3>
-  );
-
-  if (isLoading) {
-    return (
-      <div className={className}>
-        {title}
-        <Skeleton className="h-64 w-full mt-4" />
-      </div>
-    );
-  }
-
+  const panel = {
+    title: "Category by month",
+    className,
+    placeholderClassName: "h-64",
+  };
+  if (isLoading) return <AnalyticsPanel {...panel} isLoading />;
   if (!data || data.categories.length === 0) {
-    return (
-      <div className={className}>
-        {title}
-        <div className="h-40 flex items-center justify-center text-muted-foreground">
-          No spending in this period
-        </div>
-      </div>
-    );
+    return <AnalyticsPanel {...panel} empty="No spending in this period" />;
   }
 
   const currency = data.currency ?? "EUR";
@@ -217,10 +201,10 @@ export default function CategoryMatrix({
   };
 
   return (
-    <div className={className}>
-      <div className="mb-4">
-        {title}
-        <p className="text-sm text-muted-foreground">
+    <AnalyticsPanel
+      {...panel}
+      subtitle={
+        <>
           Shading is relative to each category&apos;s own busiest month
           {canCompare && (
             <>
@@ -231,8 +215,9 @@ export default function CategoryMatrix({
           )}
           {" · "}
           Click a figure for its transactions
-        </p>
-      </div>
+        </>
+      }
+    >
       <div
         className={cn(
           "overflow-x-auto -mx-6 px-6",
@@ -408,6 +393,6 @@ export default function CategoryMatrix({
           </TableFooter>
         </Table>
       </div>
-    </div>
+    </AnalyticsPanel>
   );
 }

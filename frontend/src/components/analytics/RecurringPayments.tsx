@@ -3,10 +3,10 @@ import { format, parseISO } from "date-fns";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
 import { BlurredValue } from "../ui/blurred-value";
-import { Skeleton } from "../ui/skeleton";
 import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
 import type { RecurringPayment } from "../../types/api";
+import AnalyticsPanel from "./AnalyticsPanel";
 
 interface RecurringPaymentsProps {
   className?: string;
@@ -130,27 +130,23 @@ export default function RecurringPayments({
     placeholderData: (previousData) => previousData,
   });
 
-  if (isLoading) {
-    return (
-      <div className={className}>
-        <h3 className="text-lg font-medium text-foreground mb-4">Recurring</h3>
-        <Skeleton className="h-80 w-full" />
-      </div>
-    );
-  }
+  const panel = { title: "Recurring", className };
+  if (isLoading) return <AnalyticsPanel {...panel} isLoading />;
 
   const payments = data ?? [];
   if (payments.length === 0) {
     return (
-      <div className={className}>
-        <h3 className="text-lg font-medium text-foreground mb-4">Recurring</h3>
-        <div className="h-80 flex flex-col items-center justify-center gap-1 text-muted-foreground">
-          <p>No recurring payments detected</p>
-          <p className="text-sm">
-            A charge needs at least three regularly spaced occurrences.
-          </p>
-        </div>
-      </div>
+      <AnalyticsPanel
+        {...panel}
+        empty={
+          <>
+            <p>No recurring payments detected</p>
+            <p className="text-sm">
+              A charge needs at least three regularly spaced occurrences.
+            </p>
+          </>
+        }
+      />
     );
   }
 
@@ -161,16 +157,17 @@ export default function RecurringPayments({
   const yearlyTotal = active.reduce((sum, p) => sum + annualized(p), 0);
 
   return (
-    <div className={className}>
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-foreground">Recurring</h3>
-        <p className="text-sm text-muted-foreground">
+    <AnalyticsPanel
+      {...panel}
+      subtitle={
+        <>
           {active.length} active ·{" "}
           <BlurredValue>{formatCurrency(yearlyTotal, currency)}</BlurredValue> a
           year at current prices
           {ended.length > 0 && ` · ${ended.length} ended`}
-        </p>
-      </div>
+        </>
+      }
+    >
       <div
         className={cn("overflow-x-auto", !isBalanceVisible && "select-none")}
       >
@@ -216,6 +213,6 @@ export default function RecurringPayments({
         Detected from spending patterns, so an unusual description may be missed
         or grouped wrongly.
       </p>
-    </div>
+    </AnalyticsPanel>
   );
 }
