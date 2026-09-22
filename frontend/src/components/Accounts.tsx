@@ -1,20 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  CreditCard,
-  TrendingUp,
-  TrendingDown,
-  Building2,
-  RefreshCw,
-  AlertTriangle,
-  Edit2,
-  Check,
-  X,
-  Trash2,
-} from "lucide-react";
+import { CreditCard, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "../lib/api";
-import { accountLabel, formatCurrency, formatDate } from "../lib/utils";
+import { accountLabel } from "../lib/utils";
 import {
   Card,
   CardContent,
@@ -22,49 +11,20 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { Button } from "./ui/button";
 import QueryErrorAlert from "./QueryErrorAlert";
-import { Badge } from "./ui/badge";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
-import { BlurredValue } from "./ui/blurred-value";
 import AccountsSkeleton from "./AccountsSkeleton";
 import AddBankAccountDrawer from "./AddBankAccountDrawer";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "./ui/tooltip";
+import AccountRow from "./accounts/AccountRow";
+import BankConnectionRow from "./accounts/BankConnectionRow";
 import ConfirmDialog from "./ConfirmDialog";
 import { Checkbox } from "./ui/checkbox";
 import type { Account, BankConnectionStatus } from "../types/api";
-import { invalidateSyncedData, queryKeys } from "../lib/queryKeys";
+import { queryKeys } from "../lib/queryKeys";
 import { useAccounts } from "../hooks/queries";
 
-const getStatusIndicator = (status: string) => {
-  const statusLower = status.toLowerCase();
-
-  switch (statusLower) {
-    case "ready":
-      return { color: "bg-green-500", tooltip: "Ready" };
-    case "pending":
-      return { color: "bg-amber-500", tooltip: "Pending" };
-    case "error":
-    case "failed":
-      return { color: "bg-destructive", tooltip: "Error" };
-    case "inactive":
-      return { color: "bg-muted-foreground", tooltip: "Inactive" };
-    case "deleted":
-      return { color: "bg-muted-foreground/50", tooltip: "Deleted" };
-    default:
-      return { color: "bg-primary", tooltip: status };
-  }
-};
-
 export default function Accounts() {
-  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState("");
-  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const [deleteDialogAccount, setDeleteDialogAccount] =
     useState<Account | null>(null);
   const [deleteData, setDeleteData] = useState(true);
@@ -84,19 +44,6 @@ export default function Accounts() {
   const { data: bankConnections, isLoading: connectionsLoading } = useQuery({
     queryKey: queryKeys.bankConnections,
     queryFn: apiClient.getBankConnectionsStatus,
-  });
-
-  const updateAccountMutation = useMutation({
-    mutationFn: ({ id, display_name }: { id: string; display_name: string }) =>
-      apiClient.updateAccount(id, { display_name }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
-      setEditingAccountId(null);
-      setEditingName("");
-    },
-    onError: (error) => {
-      toast.error(getApiErrorMessage(error, "Failed to update account name."));
-    },
   });
 
   const deleteAccountMutation = useMutation({
@@ -119,26 +66,6 @@ export default function Accounts() {
     },
   });
 
-  const syncAccountMutation = useMutation({
-    mutationFn: (accountId: string) =>
-      apiClient.triggerSync({ account_ids: [accountId] }),
-    onSuccess: (result) => {
-      if (result.success) {
-        toast.success(
-          `Account synced: ${result.transactions_added} new transactions.`,
-        );
-      } else {
-        toast.error(
-          `Sync finished with errors: ${result.errors.join(", ") || "Unknown error"}`,
-        );
-      }
-      invalidateSyncedData(queryClient);
-    },
-    onError: (error) => {
-      toast.error(getApiErrorMessage(error, "Failed to sync account."));
-    },
-  });
-
   const deleteBankConnectionMutation = useMutation({
     mutationFn: apiClient.deleteBankConnection,
     onSuccess: () => {
@@ -153,25 +80,6 @@ export default function Accounts() {
       );
     },
   });
-
-  const handleEditStart = (account: Account) => {
-    setEditingAccountId(account.id);
-    setEditingName(account.display_name || account.name || "");
-  };
-
-  const handleEditSave = () => {
-    if (editingAccountId && editingName.trim()) {
-      updateAccountMutation.mutate({
-        id: editingAccountId,
-        display_name: editingName.trim(),
-      });
-    }
-  };
-
-  const handleEditCancel = () => {
-    setEditingAccountId(null);
-    setEditingName("");
-  };
 
   const isLoading = accountsLoading || connectionsLoading;
 
@@ -247,247 +155,16 @@ export default function Accounts() {
         ) : (
           <CardContent className="p-0">
             <div className="divide-y divide-border">
-              {displayedAccounts.map((account) => {
-                const accountBalance = account.balances?.[0];
-                const balance = accountBalance?.amount ?? 0;
-                const currency =
-                  accountBalance?.currency || account.currency || "EUR";
-                const isPositive = balance >= 0;
-                const isDeleted =
-                  account.status.toLowerCase() === "deleted";
-
-                return (
-                  <div
-                    key={account.id}
-                    className={`p-4 sm:p-6 hover:bg-accent transition-colors ${isDeleted ? "opacity-60" : ""}`}
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                      <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
-                        <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                          {account.logo && !failedImages.has(account.id) ? (
-                            <img
-                              src={account.logo}
-                              alt={`${account.institution_id} logo`}
-                              className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
-                              onError={() => {
-                                setFailedImages(
-                                  (prev) => new Set([...prev, account.id]),
-                                );
-                              }}
-                            />
-                          ) : (
-                            <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          {editingAccountId === account.id ? (
-                            <div className="space-y-2">
-                              <div className="flex items-center space-x-2">
-                                <input
-                                  type="text"
-                                  value={editingName}
-                                  onChange={(e) =>
-                                    setEditingName(e.target.value)
-                                  }
-                                  className="flex-1 px-3 py-1 text-base sm:text-lg font-medium border border-input rounded-md bg-background focus:outline-hidden focus:ring-2 focus:ring-ring focus:border-ring"
-                                  placeholder="Custom account name"
-                                  name="account-name"
-                                  autoComplete="off"
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleEditSave();
-                                    if (e.key === "Escape")
-                                      handleEditCancel();
-                                  }}
-                                  autoFocus
-                                />
-                                <Tooltip>
-                                  <TooltipTrigger
-                                    render={
-                                      <Button
-                                        onClick={handleEditSave}
-                                        disabled={
-                                          !editingName.trim() ||
-                                          updateAccountMutation.isPending
-                                        }
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/20"
-                                      >
-                                        <Check className="h-4 w-4" />
-                                      </Button>
-                                    }
-                                  />
-                                  <TooltipContent>Save changes</TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger
-                                    render={
-                                      <Button
-                                        onClick={handleEditCancel}
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-8 w-8"
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </Button>
-                                    }
-                                  />
-                                  <TooltipContent>Cancel editing</TooltipContent>
-                                </Tooltip>
-                              </div>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {account.institution_id}
-                              </p>
-                            </div>
-                          ) : (
-                            <div>
-                              <div className="flex items-center space-x-2 min-w-0">
-                                <h4 className="text-base sm:text-lg font-medium text-foreground truncate">
-                                  {accountLabel(account)}
-                                </h4>
-                                {isDeleted && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="shrink-0 text-xs"
-                                  >
-                                    Deleted
-                                  </Badge>
-                                )}
-                                <div className="ml-auto flex items-center shrink-0">
-                                  {!isDeleted && (
-                                    <Tooltip>
-                                      <TooltipTrigger
-                                        render={
-                                          <Button
-                                            onClick={() =>
-                                              syncAccountMutation.mutate(
-                                                account.id,
-                                              )
-                                            }
-                                            disabled={
-                                              syncAccountMutation.isPending
-                                            }
-                                            size="icon"
-                                            variant="ghost"
-                                            className="h-8 w-8 shrink-0"
-                                          >
-                                            <RefreshCw
-                                              className={`h-4 w-4 ${
-                                                syncAccountMutation.isPending &&
-                                                syncAccountMutation.variables ===
-                                                  account.id
-                                                  ? "animate-spin"
-                                                  : ""
-                                              }`}
-                                            />
-                                          </Button>
-                                        }
-                                      />
-                                      <TooltipContent>
-                                        Sync this account
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  )}
-                                  <Tooltip>
-                                    <TooltipTrigger
-                                      render={
-                                        <Button
-                                          onClick={() => handleEditStart(account)}
-                                          size="icon"
-                                          variant="ghost"
-                                          className="h-8 w-8 shrink-0"
-                                        >
-                                          <Edit2 className="h-4 w-4" />
-                                        </Button>
-                                      }
-                                    />
-                                    <TooltipContent>Edit account name</TooltipContent>
-                                  </Tooltip>
-                                  {!isDeleted && (
-                                    <Tooltip>
-                                      <TooltipTrigger
-                                        render={
-                                          <Button
-                                            onClick={() => {
-                                              setDeleteDialogAccount(account);
-                                              setDeleteData(true);
-                                            }}
-                                            disabled={
-                                              deleteAccountMutation.isPending
-                                            }
-                                            size="icon"
-                                            variant="ghost"
-                                            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        }
-                                      />
-                                      <TooltipContent>
-                                        Delete account
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  )}
-                                </div>
-                              </div>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {account.institution_id}
-                              </p>
-                              {account.iban && (
-                                <p className="text-xs text-muted-foreground mt-1 font-mono break-all sm:break-normal">
-                                  IBAN: {account.iban}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between sm:flex-col sm:items-end sm:text-right shrink-0">
-                        <div className="flex items-center space-x-2 order-1 sm:order-2">
-                          <Tooltip>
-                            <TooltipTrigger
-                              render={
-                                <div
-                                  className={`w-3 h-3 rounded-full ${getStatusIndicator(account.status).color} cursor-help`}
-                                  role="img"
-                                  aria-label={`Account status: ${getStatusIndicator(account.status).tooltip}`}
-                                />
-                              }
-                            />
-                            <TooltipContent>
-                              {getStatusIndicator(account.status).tooltip}
-                            </TooltipContent>
-                          </Tooltip>
-                          <p className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                            Updated{" "}
-                            {formatDate(
-                              account.last_accessed || account.created,
-                            )}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center space-x-2 order-2 sm:order-1">
-                          {isPositive ? (
-                            <TrendingUp className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4 text-red-500" />
-                          )}
-                          <BlurredValue
-                            className={`text-base sm:text-lg font-semibold ${
-                              isPositive
-                                ? "text-positive"
-                                : "text-negative"
-                            }`}
-                          >
-                            {formatCurrency(balance, currency)}
-                          </BlurredValue>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {displayedAccounts.map((account) => (
+                <AccountRow
+                  key={account.id}
+                  account={account}
+                  onDelete={(target) => {
+                    setDeleteDialogAccount(target);
+                    setDeleteData(true);
+                  }}
+                />
+              ))}
             </div>
           </CardContent>
         )}
@@ -567,103 +244,14 @@ export default function Accounts() {
         ) : (
           <CardContent className="p-0">
             <div className="divide-y divide-border">
-              {bankConnections.map((connection) => {
-                const isExpiring =
-                  connection.status === "active" &&
-                  connection.days_until_expiry != null &&
-                  connection.days_until_expiry <= 7;
-                const statusColor = isExpiring
-                  ? "bg-amber-500"
-                  : connection.status === "active"
-                    ? "bg-green-500"
-                    : connection.status === "expired"
-                      ? "bg-red-500"
-                      : "bg-muted-foreground";
-
-                return (
-                  <div
-                    key={connection.session_id}
-                    className="p-4 sm:p-6 hover:bg-accent transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 min-w-0 flex-1">
-                        <div className="shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                          <Building2 className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <h4 className="text-base font-medium text-foreground truncate">
-                              {connection.aspsp_name}
-                            </h4>
-                            {/* Colour echoes the status spelled out below,
-                                so it is decorative to a screen reader. */}
-                            <div
-                              className={`w-3 h-3 rounded-full ${statusColor}`}
-                              aria-hidden="true"
-                            />
-                            {connection.status === "expired" && (
-                              <Badge
-                                variant="outline"
-                                className="shrink-0 text-xs border-red-500 text-negative"
-                              >
-                                Expired
-                              </Badge>
-                            )}
-                            {connection.days_until_expiry != null && (
-                              <Badge
-                                variant="outline"
-                                className={`shrink-0 text-xs ${isExpiring ? "border-amber-500 text-amber-600 dark:text-amber-400" : "border-border text-muted-foreground"}`}
-                              >
-                                {isExpiring && (
-                                  <AlertTriangle className="h-3 w-3 mr-1" />
-                                )}
-                                {connection.days_until_expiry} day
-                                {connection.days_until_expiry !== 1 ? "s" : ""}{" "}
-                                left
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {connection.aspsp_country} •{" "}
-                            {connection.status} •{" "}
-                            {connection.accounts_count} account
-                            {connection.accounts_count !== 1 ? "s" : ""}
-                          </p>
-                          <p className="text-xs text-muted-foreground font-mono">
-                            ID: {connection.session_id}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2 shrink-0">
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">
-                            Created {formatDate(connection.created_at)}
-                          </p>
-                        </div>
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Button
-                                onClick={() =>
-                                  setDeleteDialogConnection(connection)
-                                }
-                                disabled={deleteBankConnectionMutation.isPending}
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            }
-                          />
-                          <TooltipContent>Delete connection</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {bankConnections.map((connection) => (
+                <BankConnectionRow
+                  key={connection.session_id}
+                  connection={connection}
+                  onDelete={setDeleteDialogConnection}
+                  deleteDisabled={deleteBankConnectionMutation.isPending}
+                />
+              ))}
             </div>
           </CardContent>
         )}
