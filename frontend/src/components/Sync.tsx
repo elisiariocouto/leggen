@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "../lib/api";
+import { formatDateTime } from "../lib/utils";
 import {
   Card,
   CardContent,
@@ -57,7 +58,7 @@ function LogsDialog({ operation }: { operation: SyncOperation }) {
           <DialogTitle>Sync Operation Logs</DialogTitle>
           <DialogDescription>
             Operation #{operation.id} - Started at{" "}
-            {new Date(operation.started_at).toLocaleString()}
+            {formatDateTime(operation.started_at)}
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[60vh] w-full rounded border p-4">
@@ -352,7 +353,7 @@ export default function Sync() {
           ) : (
             <div className="space-y-4">
               {syncOperations.data.map((operation) => {
-                const startedAt = new Date(operation.started_at);
+                const startedAt = formatDateTime(operation.started_at);
                 const duration = operation.duration_seconds
                   ? `${Math.round(operation.duration_seconds)}s`
                   : "";
@@ -378,10 +379,7 @@ export default function Sync() {
                           <div className="flex items-center space-x-4 mt-1 text-xs text-muted-foreground">
                             <span className="flex items-center space-x-1">
                               <Clock className="h-3 w-3" />
-                              <span>
-                                {startedAt.toLocaleDateString()}{" "}
-                                {startedAt.toLocaleTimeString()}
-                              </span>
+                              <span>{startedAt}</span>
                             </span>
                             {duration && <span>Duration: {duration}</span>}
                           </div>
@@ -418,10 +416,7 @@ export default function Sync() {
                       <div className="text-xs text-muted-foreground space-y-2">
                         <div className="flex items-center space-x-1">
                           <Clock className="h-3 w-3" />
-                          <span>
-                            {startedAt.toLocaleDateString()}{" "}
-                            {startedAt.toLocaleTimeString()}
-                          </span>
+                          <span>{startedAt}</span>
                           {duration && (
                             <span className="ml-2">• {duration}</span>
                           )}

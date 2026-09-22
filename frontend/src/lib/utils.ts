@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { Account } from "../types/api";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -52,4 +53,24 @@ export function formatDate(dateString: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+/**
+ * A moment in time, such as a sync or a backup, with its time of day in the
+ * viewer's zone. `formatDate` drops the time, which is right for booking
+ * dates but not for these.
+ */
+export function formatDateTime(timestamp: string): string {
+  return new Date(timestamp).toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** The name an account is shown under: the user's label, then the bank's. */
+export function accountLabel(account: Account): string {
+  return account.display_name || account.name || "Unnamed Account";
 }

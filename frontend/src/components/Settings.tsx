@@ -21,7 +21,7 @@ import {
 } from "./ui/tooltip";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "../lib/api";
-import { formatDate } from "../lib/utils";
+import { formatDateTime } from "../lib/utils";
 import {
   Card,
   CardContent,
@@ -250,7 +250,7 @@ export default function Settings() {
                     </p>
                     {scheduleSettings.next_sync_time && (
                       <p>
-                        Next sync: {formatDate(scheduleSettings.next_sync_time)}
+                        Next sync: {formatDateTime(scheduleSettings.next_sync_time)}
                       </p>
                     )}
                   </div>
@@ -597,7 +597,7 @@ export default function Settings() {
                               <div className="min-w-0">
                                 <p className="text-sm font-medium truncate">{backup.key}</p>
                                 <div className="flex items-center space-x-4 text-xs text-muted-foreground mt-1">
-                                  <span>Modified: {formatDate(backup.last_modified)}</span>
+                                  <span>Modified: {formatDateTime(backup.last_modified)}</span>
                                   <span>Size: {(backup.size / 1024 / 1024).toFixed(2)} MB</span>
                                 </div>
                               </div>
@@ -661,7 +661,7 @@ export default function Settings() {
             <span className="block">
               This replaces the current database with the backup taken on{" "}
               <span className="font-medium text-foreground">
-                {restoreTarget ? formatDate(restoreTarget.last_modified) : ""}
+                {restoreTarget ? formatDateTime(restoreTarget.last_modified) : ""}
               </span>
               . Accounts, transactions and categories recorded since then will
               be lost.

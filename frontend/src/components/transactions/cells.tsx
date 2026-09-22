@@ -1,6 +1,6 @@
 import { EyeOff } from "lucide-react";
 
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { accountLabel, formatCurrency, formatDate } from "@/lib/utils";
 import { useStatsExclusion } from "@/hooks/useStatsExclusion";
 import { BlurredValue } from "@/components/ui/blurred-value";
 import {
@@ -82,8 +82,7 @@ export function transactionDate(transaction: Transaction): string {
 }
 
 export function accountName(account: Account | undefined): string | null {
-  if (!account) return null;
-  return account.display_name || "Unnamed Account";
+  return account ? accountLabel(account) : null;
 }
 
 /**

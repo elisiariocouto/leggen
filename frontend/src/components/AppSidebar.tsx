@@ -1,7 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Building2, LogOut, TrendingUp } from "lucide-react";
 import { Logo } from "./ui/logo";
-import { formatCurrency } from "../lib/utils";
+import { accountLabel, formatCurrency } from "../lib/utils";
 import { BlurredValue } from "./ui/blurred-value";
 import { useAuth } from "../contexts/AuthContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
@@ -161,9 +161,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         </div>
                         <div className="space-y-1 min-w-0 flex-1">
                           <p className="text-xs font-medium text-foreground truncate">
-                            {account.display_name ||
-                              account.name ||
-                              "Unnamed Account"}
+                            {accountLabel(account)}
                           </p>
                           <p className="text-xs font-semibold text-foreground">
                             <BlurredValue>

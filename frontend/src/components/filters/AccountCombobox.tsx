@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Check, ChevronDown, Building2 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { accountLabel, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -37,11 +37,8 @@ export function AccountCombobox({
     (account) => account.id === selectedAccount,
   );
 
-  const formatAccountName = (account: Account) => {
-    const displayName =
-      account.display_name || account.name || "Unnamed Account";
-    return `${displayName} (${account.institution_id})`;
-  };
+  const formatAccountName = (account: Account) =>
+    `${accountLabel(account)} (${account.institution_id})`;
 
   return (
     <div className={className}>
@@ -92,7 +89,7 @@ export function AccountCombobox({
                 {accounts.map((account) => (
                   <CommandItem
                     key={account.id}
-                    value={`${account.display_name || account.name} ${account.institution_id}`}
+                    value={`${accountLabel(account)} ${account.institution_id}`}
                     onSelect={() => {
                       onAccountChange(account.id);
                       setOpen(false);
@@ -108,9 +105,7 @@ export function AccountCombobox({
                     />
                     <div className="flex flex-col">
                       <span className="font-medium">
-                        {account.display_name ||
-                          account.name ||
-                          "Unnamed Account"}
+                        {accountLabel(account)}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {account.institution_id}

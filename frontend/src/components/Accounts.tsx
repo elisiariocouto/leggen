@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "../lib/api";
-import { formatCurrency, formatDate } from "../lib/utils";
+import { accountLabel, formatCurrency, formatDate } from "../lib/utils";
 import {
   Card,
   CardContent,
@@ -343,9 +343,7 @@ export default function Accounts() {
                             <div>
                               <div className="flex items-center space-x-2 min-w-0">
                                 <h4 className="text-base sm:text-lg font-medium text-foreground truncate">
-                                  {account.display_name ||
-                                    account.name ||
-                                    "Unnamed Account"}
+                                  {accountLabel(account)}
                                 </h4>
                                 {isDeleted && (
                                   <Badge
@@ -516,9 +514,9 @@ export default function Accounts() {
           <>
             Are you sure you want to delete{" "}
             <span className="font-medium text-foreground">
-              {deleteDialogAccount?.display_name ||
-                deleteDialogAccount?.name ||
-                "this account"}
+              {deleteDialogAccount
+                ? accountLabel(deleteDialogAccount)
+                : "this account"}
             </span>
             ? This action cannot be undone.
           </>

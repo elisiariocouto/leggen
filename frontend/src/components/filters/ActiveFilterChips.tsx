@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatDate } from "@/lib/utils";
+import { accountLabel, formatDate } from "@/lib/utils";
 import { describeRange } from "@/lib/dateRanges";
 import type { FilterState } from "./FilterBar";
 import type { Account } from "../../types/api";
@@ -45,7 +45,7 @@ export function ActiveFilterChips({
       (acc) => acc.id === filterState.selectedAccount,
     );
     const accountName = account
-      ? `${account.name || "Unnamed Account"} (${account.institution_id})`
+      ? `${accountLabel(account)} (${account.institution_id})`
       : "Unknown Account";
     chips.push({
       key: "selectedAccount",

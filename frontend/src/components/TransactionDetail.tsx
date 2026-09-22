@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "../hooks/use-mobile";
-import { formatCurrency, formatDate } from "../lib/utils";
+import { accountLabel, formatCurrency, formatDate } from "../lib/utils";
 import { extractRawFields } from "../lib/raw-transaction";
 import CategoryBadge from "./CategoryBadge";
 import StatsExclusionToggle from "./StatsExclusionToggle";
@@ -199,7 +199,7 @@ function TransactionDetailContent({
         />
         <DetailRow
           label="Account"
-          value={account ? account.display_name || "Unnamed Account" : undefined}
+          value={account ? accountLabel(account) : undefined}
         />
         <DetailRow label="Account IBAN" value={iban} mono />
         <DetailRow label="To" value={raw.creditorName} />
