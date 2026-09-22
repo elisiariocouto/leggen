@@ -1,10 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Building2, LogOut, TrendingUp } from "lucide-react";
 import { Logo } from "./ui/logo";
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "../lib/api";
 import { formatCurrency } from "../lib/utils";
-import type { Account } from "../types/api";
 import { BlurredValue } from "./ui/blurred-value";
 import { useAuth } from "../contexts/AuthContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
@@ -28,18 +25,15 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "./ui/sidebar";
-import { queryKeys } from "../lib/queryKeys";
 import { navigation } from "../lib/navigation";
+import { useAccounts } from "../hooks/queries";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
   const { username, logout } = useAuth();
 
-  const { data: accounts } = useQuery<Account[]>({
-    queryKey: queryKeys.accounts,
-    queryFn: apiClient.getAccounts,
-  });
+  const { data: accounts } = useAccounts();
 
   const activeAccounts = accounts?.filter(
     (a) => a.status.toLowerCase() !== "deleted",

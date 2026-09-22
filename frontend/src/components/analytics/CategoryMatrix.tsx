@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { useBalanceVisibility } from "../../contexts/BalanceVisibilityContext";
 import { cn, formatCurrency } from "../../lib/utils";
 import { Skeleton } from "../ui/skeleton";
@@ -12,8 +11,6 @@ import {
   TableRow,
 } from "../ui/table";
 import Sparkline from "./Sparkline";
-import apiClient from "../../lib/api";
-import { queryKeys } from "../../lib/queryKeys";
 import {
   isCompleteMonth,
   median,
@@ -22,6 +19,7 @@ import {
 } from "../../lib/months";
 import type { CellSelection } from "./CategoryTransactions";
 import type { CategoryMonthly } from "../../types/api";
+import { useSpendingByCategory } from "../../hooks/queries";
 
 /** A month this far off the category's typical month gets called out. */
 const NOTABLE_CHANGE_PCT = 15;
@@ -111,12 +109,7 @@ export default function CategoryMatrix({
 }: CategoryMatrixProps) {
   const { isBalanceVisible } = useBalanceVisibility();
 
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.spendingByCategory(dateFrom, dateTo, accountId),
-    queryFn: () =>
-      apiClient.getSpendingByCategory({ dateFrom, dateTo, accountId }),
-    placeholderData: (previousData) => previousData,
-  });
+  const { data, isLoading } = useSpendingByCategory(dateFrom, dateTo, accountId);
 
   const title = (
     <h3 className="text-lg font-medium text-foreground">

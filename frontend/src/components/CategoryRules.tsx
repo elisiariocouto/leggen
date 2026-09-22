@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { EyeOff, Pencil, Plus, Trash2, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { apiClient, getApiErrorMessage } from "../lib/api";
-import { invalidateRuleData, queryKeys } from "../lib/queryKeys";
+import { invalidateRuleData } from "../lib/queryKeys";
 import {
   Card,
   CardContent,
@@ -47,7 +47,8 @@ import RuleEditor, {
 } from "./rules/RuleEditor";
 import RuleApplyDialog from "./rules/RuleApplyDialog";
 import CategoryManager from "./CategoryManager";
-import type { Category, CategoryRule } from "../types/api";
+import type { CategoryRule } from "../types/api";
+import { useCategories, useCategoryRules } from "../hooks/queries";
 
 /**
  * The categories page: the rules in the order they run, an editor with
@@ -69,14 +70,8 @@ export default function CategoryRules() {
   );
   const [deleteTarget, setDeleteTarget] = useState<CategoryRule | null>(null);
 
-  const { data: rules, isLoading } = useQuery<CategoryRule[]>({
-    queryKey: queryKeys.categoryRules,
-    queryFn: apiClient.getCategoryRules,
-  });
-  const { data: categories } = useQuery<Category[]>({
-    queryKey: queryKeys.categories,
-    queryFn: apiClient.getCategories,
-  });
+  const { data: rules, isLoading } = useCategoryRules();
+  const { data: categories } = useCategories();
   const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
 
   const openEditor = (rule: CategoryRule | "new") => {

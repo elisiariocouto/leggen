@@ -1,8 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-
-import { apiClient } from "@/lib/api";
-import { queryKeys } from "@/lib/queryKeys";
-import type { Category, Transaction } from "@/types/api";
+import type { Transaction } from "@/types/api";
+import { useCategories } from "./queries";
 
 /**
  * Resolves whether a transaction counts towards statistics.
@@ -13,10 +10,7 @@ import type { Category, Transaction } from "@/types/api";
  * The categories list is already in the cache from the badge on every row.
  */
 export function useStatsExclusion(transaction: Transaction) {
-  const { data: categories } = useQuery<Category[]>({
-    queryKey: queryKeys.categories,
-    queryFn: apiClient.getCategories,
-  });
+  const { data: categories } = useCategories();
 
   const category =
     transaction.category_id != null

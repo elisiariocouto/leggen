@@ -8,6 +8,7 @@ import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
+import { useSpendingByCategory } from "../../hooks/queries";
 
 const UNCATEGORIZED = "uncategorized";
 
@@ -50,12 +51,7 @@ export default function NeedsRule({
 
   // The spending pivot already carries the uncategorized total, so the
   // coverage line costs no extra request.
-  const { data: spending } = useQuery({
-    queryKey: queryKeys.spendingByCategory(dateFrom, dateTo, accountId),
-    queryFn: () =>
-      apiClient.getSpendingByCategory({ dateFrom, dateTo, accountId }),
-    placeholderData: (previousData) => previousData,
-  });
+  const { data: spending } = useSpendingByCategory(dateFrom, dateTo, accountId);
 
   const title = (
     <h3 className="text-lg font-medium text-foreground">Needs a rule</h3>

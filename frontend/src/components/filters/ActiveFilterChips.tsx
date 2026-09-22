@@ -1,13 +1,11 @@
 import { X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { describeRange } from "@/lib/dateRanges";
-import { apiClient } from "../../lib/api";
 import type { FilterState } from "./FilterBar";
-import type { Account, Category } from "../../types/api";
-import { queryKeys } from "../../lib/queryKeys";
+import type { Account } from "../../types/api";
+import { useCategories } from "../../hooks/queries";
 
 export interface ActiveFilterChipsProps {
   filterState: FilterState;
@@ -22,9 +20,7 @@ export function ActiveFilterChips({
   onClearFilters,
   accounts = [],
 }: ActiveFilterChipsProps) {
-  const { data: categories } = useQuery<Category[]>({
-    queryKey: queryKeys.categories,
-    queryFn: apiClient.getCategories,
+  const { data: categories } = useCategories({
     enabled: !!filterState.selectedCategory,
   });
 

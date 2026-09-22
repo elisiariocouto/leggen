@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Tag, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "../lib/api";
@@ -36,6 +36,7 @@ import { Skeleton } from "./ui/skeleton";
 import { Switch } from "./ui/switch";
 import type { Category } from "../types/api";
 import { queryKeys } from "../lib/queryKeys";
+import { useCategories } from "../hooks/queries";
 
 const PRESET_COLORS = [
   "#22c55e", "#3b82f6", "#a855f7", "#f97316", "#ec4899",
@@ -131,10 +132,7 @@ export default function CategoryManager() {
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: categories, isLoading } = useQuery<Category[]>({
-    queryKey: queryKeys.categories,
-    queryFn: apiClient.getCategories,
-  });
+  const { data: categories, isLoading } = useCategories();
 
   const createMutation = useMutation({
     mutationFn: (data: { name: string; color: string; exclude_from_stats: boolean }) =>

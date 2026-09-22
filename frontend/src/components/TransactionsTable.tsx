@@ -35,7 +35,8 @@ import {
   type Density,
 } from "@/lib/density";
 import { queryKeys } from "@/lib/queryKeys";
-import type { Account, Transaction, PaginatedResponse } from "@/types/api";
+import type { Transaction, PaginatedResponse } from "@/types/api";
+import { useAccounts } from "@/hooks/queries";
 
 /**
  * Zero-result state, rendered as a row inside the table rather than in place
@@ -106,10 +107,7 @@ export default function TransactionsTable() {
     null,
   );
 
-  const { data: accounts } = useQuery<Account[]>({
-    queryKey: queryKeys.accounts,
-    queryFn: apiClient.getAccounts,
-  });
+  const { data: accounts } = useAccounts();
 
   const {
     data: transactionsResponse,

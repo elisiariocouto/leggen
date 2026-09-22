@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Check, ChevronDown, Tag } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,9 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { apiClient } from "../../lib/api";
-import type { Category } from "../../types/api";
-import { queryKeys } from "../../lib/queryKeys";
+import { useCategories } from "../../hooks/queries";
 
 export interface CategoryComboboxProps {
   selectedCategory: string;
@@ -34,10 +31,7 @@ export function CategoryCombobox({
 }: CategoryComboboxProps) {
   const [open, setOpen] = useState(false);
 
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: queryKeys.categories,
-    queryFn: apiClient.getCategories,
-  });
+  const { data: categories = [] } = useCategories();
 
   const selectedCategoryData = categories.find(
     (cat) => String(cat.id) === selectedCategory,

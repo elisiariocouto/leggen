@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import {
@@ -24,9 +23,8 @@ import {
 } from "../ui/sheet";
 import { CHART_AXIS_TICK, CHART_GRID_COLOR } from "../../lib/chartColors";
 import TopMerchants from "./TopMerchants";
-import apiClient from "../../lib/api";
-import { queryKeys } from "../../lib/queryKeys";
 import { isCompleteMonth, median, monthLabel } from "../../lib/months";
+import { useSpendingByCategory } from "../../hooks/queries";
 
 /** Fewer complete months than this and "typical" is just noise. */
 const MIN_MONTHS_FOR_TYPICAL = 3;
@@ -99,10 +97,7 @@ export default function CategoryDetail({
   const { isBalanceVisible } = useBalanceVisibility();
   const open = categoryId !== undefined;
 
-  const { data } = useQuery({
-    queryKey: queryKeys.spendingByCategory(dateFrom, dateTo, accountId),
-    queryFn: () =>
-      apiClient.getSpendingByCategory({ dateFrom, dateTo, accountId }),
+  const { data } = useSpendingByCategory(dateFrom, dateTo, accountId, {
     enabled: open,
   });
 

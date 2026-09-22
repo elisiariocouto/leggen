@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tag, X, Check, WandSparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { apiClient, getApiErrorMessage } from "../lib/api";
@@ -24,11 +24,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "./ui/tooltip";
-import type { Category, CategoryRule } from "../types/api";
-import {
-  invalidateCategorizedData,
-  queryKeys,
-} from "../lib/queryKeys";
+import { invalidateCategorizedData } from "../lib/queryKeys";
+import { useCategories, useCategoryRules } from "../hooks/queries";
 
 interface CategoryBadgeProps {
   accountId: string;
@@ -46,11 +43,7 @@ interface CategoryBadgeProps {
  * names are read from the rules query the Rules page already caches.
  */
 function RuleProvenance({ ruleId }: { ruleId: number | null | undefined }) {
-  const { data: rules } = useQuery<CategoryRule[]>({
-    queryKey: queryKeys.categoryRules,
-    queryFn: apiClient.getCategoryRules,
-    staleTime: 60_000,
-  });
+  const { data: rules } = useCategoryRules();
   const rule = rules?.find((r) => r.id === ruleId);
   return (
     <Tooltip>
@@ -87,10 +80,7 @@ export default function CategoryBadge({
   const [applyToAll, setApplyToAll] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: categories } = useQuery<Category[]>({
-    queryKey: queryKeys.categories,
-    queryFn: apiClient.getCategories,
-  });
+  const { data: categories } = useCategories();
 
   const assignMutation = useMutation({
     mutationFn: (catId: number) =>

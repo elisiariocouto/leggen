@@ -25,6 +25,7 @@ import { Card, CardContent } from "../ui/card";
 import { queryKeys } from "../../lib/queryKeys";
 import { TIME_PERIODS } from "../../lib/timePeriods";
 import type { HomeSearch } from "../../routes/index";
+import { useAccounts } from "../../hooks/queries";
 
 const analyticsPresets: DatePreset[] = TIME_PERIODS.map((p) => ({
   label: p.label,
@@ -91,10 +92,7 @@ export default function AnalyticsDashboard() {
     placeholderData: (previousData) => previousData,
   });
 
-  const { data: accounts } = useQuery({
-    queryKey: queryKeys.accounts,
-    queryFn: () => apiClient.getAccounts(),
-  });
+  const { data: accounts } = useAccounts();
 
   const statsCurrency = stats?.currency ?? "EUR";
 

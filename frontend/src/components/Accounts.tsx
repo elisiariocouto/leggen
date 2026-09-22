@@ -49,6 +49,7 @@ import {
 import { Checkbox } from "./ui/checkbox";
 import type { Account, BankConnectionStatus } from "../types/api";
 import { invalidateSyncedData, queryKeys } from "../lib/queryKeys";
+import { useAccounts } from "../hooks/queries";
 
 const getStatusIndicator = (status: string) => {
   const statusLower = status.toLowerCase();
@@ -88,10 +89,7 @@ export default function Accounts() {
     isLoading: accountsLoading,
     error: accountsError,
     refetch: refetchAccounts,
-  } = useQuery<Account[]>({
-    queryKey: queryKeys.accounts,
-    queryFn: apiClient.getAccounts,
-  });
+  } = useAccounts();
 
   const { data: bankConnections, isLoading: connectionsLoading } = useQuery({
     queryKey: queryKeys.bankConnections,

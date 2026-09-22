@@ -1,11 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
 import { Tag } from "lucide-react";
 import { formatCurrency } from "../../lib/utils";
 import { Card, CardContent } from "../ui/card";
 import { BlurredValue } from "../ui/blurred-value";
 import { Skeleton } from "../ui/skeleton";
-import apiClient from "../../lib/api";
-import { queryKeys } from "../../lib/queryKeys";
+import { useSpendingByCategory } from "../../hooks/queries";
 
 interface CoverageCardProps {
   className?: string;
@@ -25,12 +23,7 @@ export default function CoverageCard({
   dateTo,
   accountId,
 }: CoverageCardProps) {
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.spendingByCategory(dateFrom, dateTo, accountId),
-    queryFn: () =>
-      apiClient.getSpendingByCategory({ dateFrom, dateTo, accountId }),
-    placeholderData: (previousData) => previousData,
-  });
+  const { data, isLoading } = useSpendingByCategory(dateFrom, dateTo, accountId);
 
   const share = data?.categorized_share ?? 0;
   const pct = Math.round(share * 100);

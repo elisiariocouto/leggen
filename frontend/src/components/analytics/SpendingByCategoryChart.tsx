@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   Bar,
   BarChart,
@@ -17,10 +16,9 @@ import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { CHART_AXIS_TICK, CHART_GRID_COLOR } from "../../lib/chartColors";
-import apiClient from "../../lib/api";
-import { queryKeys } from "../../lib/queryKeys";
 import { isCompleteMonth, median, monthLabel } from "../../lib/months";
 import type { SpendingByCategory } from "../../types/api";
+import { useSpendingByCategory } from "../../hooks/queries";
 
 /**
  * Categories drawn as their own segment. Past this many the palette stops
@@ -209,12 +207,7 @@ export default function SpendingByCategoryChart({
   const [mode, setMode] = useState<Mode>("amount");
   const [includeUncategorized, setIncludeUncategorized] = useState(true);
 
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.spendingByCategory(dateFrom, dateTo, accountId),
-    queryFn: () =>
-      apiClient.getSpendingByCategory({ dateFrom, dateTo, accountId }),
-    placeholderData: (previousData) => previousData,
-  });
+  const { data, isLoading } = useSpendingByCategory(dateFrom, dateTo, accountId);
 
   const series = useMemo(
     () => (data ? buildSeries(data, includeUncategorized) : []),

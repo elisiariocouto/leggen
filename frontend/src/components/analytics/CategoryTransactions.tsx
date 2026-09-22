@@ -22,7 +22,8 @@ import {
 } from "../transactions/cells";
 import apiClient from "../../lib/api";
 import { queryKeys } from "../../lib/queryKeys";
-import type { Account, Transaction } from "../../types/api";
+import type { Transaction } from "../../types/api";
+import { useAccounts } from "../../hooks/queries";
 
 /** The API caps a page here; a single month of one category rarely nears it. */
 const PAGE_SIZE = 500;
@@ -76,11 +77,7 @@ export default function CategoryTransactions({
   const [detail, setDetail] = useState<Transaction | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const { data: accounts } = useQuery<Account[]>({
-    queryKey: queryKeys.accounts,
-    queryFn: apiClient.getAccounts,
-    enabled: open,
-  });
+  const { data: accounts } = useAccounts({ enabled: open });
 
   const { data, isLoading } = useQuery({
     // Under the transactions root so a recategorisation from the detail

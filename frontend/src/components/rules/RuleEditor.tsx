@@ -27,13 +27,13 @@ import {
 import { BlurredValue } from "@/components/ui/blurred-value";
 import RuleReference from "./RuleReference";
 import type {
-  Category,
   CategoryRule,
   PaginatedResponse,
   RulePreviewResponse,
   RuleTestResult,
   Transaction,
 } from "@/types/api";
+import { useCategories } from "@/hooks/queries";
 
 export interface RuleDraft {
   name: string;
@@ -81,10 +81,7 @@ function CategoryPicker({
   onChange: (id: number) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: queryKeys.categories,
-    queryFn: apiClient.getCategories,
-  });
+  const { data: categories = [] } = useCategories();
   const selected = categories.find((c) => c.id === value);
 
   return (
