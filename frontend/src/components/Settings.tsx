@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   RefreshCw,
-  AlertCircle,
   X,
   Bell,
   MessageSquare,
@@ -31,7 +30,7 @@ import {
   CardTitle,
 } from "./ui/card";
 import { Button } from "./ui/button";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import QueryErrorAlert from "./QueryErrorAlert";
 import { Label } from "./ui/label";
 import ConfirmDialog from "./ConfirmDialog";
 
@@ -199,29 +198,15 @@ export default function Settings() {
 
   if (hasError) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Failed to load settings</AlertTitle>
-        <AlertDescription className="space-y-3">
-          <p>
-            Unable to connect to the Leggen API. Please check your configuration
-            and ensure the API server is running.
-          </p>
-          <Button
-            onClick={() => {
-              refetchSettings();
-              refetchServices();
-              refetchBackup();
-              refetchSchedule();
-            }}
-            variant="outline"
-            size="sm"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
-        </AlertDescription>
-      </Alert>
+      <QueryErrorAlert
+        title="Failed to load settings"
+        onRetry={() => {
+          refetchSettings();
+          refetchServices();
+          refetchBackup();
+          refetchSchedule();
+        }}
+      />
     );
   }
 

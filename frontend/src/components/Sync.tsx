@@ -18,7 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import QueryErrorAlert from "./QueryErrorAlert";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
@@ -250,24 +250,10 @@ export default function Sync() {
   if (syncOperationsError) {
     return (
       <div className="space-y-6">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Failed to load system data</AlertTitle>
-          <AlertDescription className="space-y-3">
-            <p>
-              Unable to connect to the Leggen API. Please check your
-              configuration and ensure the API server is running.
-            </p>
-            <Button
-              onClick={() => refetchSyncOperations()}
-              variant="outline"
-              size="sm"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <QueryErrorAlert
+          title="Failed to load system data"
+          onRetry={() => refetchSyncOperations()}
+        />
       </div>
     );
   }

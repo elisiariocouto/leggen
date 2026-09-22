@@ -6,7 +6,6 @@ import {
   TrendingDown,
   Building2,
   RefreshCw,
-  AlertCircle,
   AlertTriangle,
   Edit2,
   Check,
@@ -24,7 +23,7 @@ import {
   CardTitle,
 } from "./ui/card";
 import { Button } from "./ui/button";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import QueryErrorAlert from "./QueryErrorAlert";
 import { Badge } from "./ui/badge";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
@@ -197,24 +196,10 @@ export default function Accounts() {
 
   if (accountsError) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Failed to load accounts</AlertTitle>
-        <AlertDescription className="space-y-3">
-          <p>
-            Unable to connect to the Leggen API. Please check your configuration
-            and ensure the API server is running.
-          </p>
-          <Button
-            onClick={() => refetchAccounts()}
-            variant="outline"
-            size="sm"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
-        </AlertDescription>
-      </Alert>
+      <QueryErrorAlert
+        title="Failed to load accounts"
+        onRetry={() => refetchAccounts()}
+      />
     );
   }
 
