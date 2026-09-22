@@ -1,6 +1,8 @@
 import axios from "axios";
 import { clearToken, getToken, setLogoutReason } from "./authToken";
 import type {
+  BulkAssignmentResult,
+  BulkRemovalResult,
   ApiError,
   Account,
   Transaction,
@@ -144,12 +146,8 @@ export const apiClient = {
   updateAccount: async (
     id: string,
     updates: AccountUpdate,
-  ): Promise<{ id: string; display_name?: string }> => {
-    const response = await api.put<{ id: string; display_name?: string }>(
-      `/accounts/${id}`,
-      updates,
-    );
-    return response.data;
+  ): Promise<void> => {
+    await api.put(`/accounts/${id}`, updates);
   },
 
   // Delete account
@@ -243,12 +241,8 @@ export const apiClient = {
   // Update notification settings
   updateNotificationSettings: async (
     settings: NotificationSettings,
-  ): Promise<NotificationSettings> => {
-    const response = await api.put<NotificationSettings>(
-      "/notifications/settings",
-      settings,
-    );
-    return response.data;
+  ): Promise<void> => {
+    await api.put("/notifications/settings", settings);
   },
 
   // Test notification
@@ -416,12 +410,8 @@ export const apiClient = {
 
   updateBackupSettings: async (
     settings: BackupSettings,
-  ): Promise<BackupSettings> => {
-    const response = await api.put<BackupSettings>(
-      "/backup/settings",
-      settings,
-    );
-    return response.data;
+  ): Promise<void> => {
+    await api.put("/backup/settings", settings);
   },
 
   // Removes the S3 configuration and its stored credentials
@@ -429,14 +419,9 @@ export const apiClient = {
     await api.delete("/backup/settings");
   },
 
-  testBackupConnection: async (
-    test: BackupTest,
-  ): Promise<{ connected: boolean }> => {
-    const response = await api.post<{ connected: boolean }>(
-      "/backup/test",
-      test,
-    );
-    return response.data;
+  // Resolves when the bucket is reachable; a failed test is a 400
+  testBackupConnection: async (test: BackupTest): Promise<void> => {
+    await api.post("/backup/test", test);
   },
 
   listBackups: async (): Promise<BackupInfo[]> => {
@@ -444,14 +429,9 @@ export const apiClient = {
     return response.data;
   },
 
-  performBackupOperation: async (
-    operation: BackupOperation,
-  ): Promise<{ operation: string; completed: boolean }> => {
-    const response = await api.post<{ operation: string; completed: boolean }>(
-      "/backup/operation",
-      operation,
-    );
-    return response.data;
+  // Resolves once the backup or restore has finished; a failure is an error
+  performBackupOperation: async (operation: BackupOperation): Promise<void> => {
+    await api.post("/backup/operation", operation);
   },
 
   // Sync schedule endpoints
@@ -496,8 +476,8 @@ export const apiClient = {
   bulkAssignCategoryByDescription: async (
     categoryId: number,
     description: string,
-  ): Promise<{ status: string; updated_count: number }> => {
-    const response = await api.put<{ status: string; updated_count: number }>(
+  ): Promise<BulkAssignmentResult> => {
+    const response = await api.put<BulkAssignmentResult>(
       "/transactions/bulk-categorize",
       { category_id: categoryId, description },
     );
@@ -506,11 +486,11 @@ export const apiClient = {
 
   bulkRemoveCategoryByDescription: async (
     description: string,
-  ): Promise<{ status: string; removed_count: number }> => {
-    const response = await api.delete<{
-      status: string;
-      removed_count: number;
-    }>("/transactions/bulk-categorize", { data: { description } });
+  ): Promise<BulkRemovalResult> => {
+    const response = await api.delete<BulkRemovalResult>(
+      "/transactions/bulk-categorize",
+      { data: { description } },
+    );
     return response.data;
   },
 

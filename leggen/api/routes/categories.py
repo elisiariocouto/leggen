@@ -1,12 +1,14 @@
 """API routes for transaction categorization."""
 
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
 from leggen.api.models.categories import (
+    BulkAssignmentResult,
     BulkCategoryAssignment,
     BulkCategoryRemoval,
+    BulkRemovalResult,
     Category,
     CategoryAssignment,
     CategoryCreate,
@@ -86,7 +88,7 @@ async def delete_category(
 async def bulk_categorize_transactions(
     body: BulkCategoryAssignment,
     category_repo: Annotated[CategoryRepository, Depends()],
-) -> dict[str, Any]:
+) -> BulkAssignmentResult:
     """Assign a category to all transactions matching a description."""
     cat = category_repo.get_category_by_id(body.category_id)
     if not cat:
@@ -96,44 +98,42 @@ async def bulk_categorize_transactions(
         category_id=body.category_id,
         description=body.description,
     )
-    return {"status": "ok", "updated_count": updated_count}
+    return BulkAssignmentResult(updated_count=updated_count)
 
 
 @router.delete("/transactions/bulk-categorize")
 async def bulk_remove_transaction_categories(
     body: BulkCategoryRemoval,
     category_repo: Annotated[CategoryRepository, Depends()],
-) -> dict[str, Any]:
+) -> BulkRemovalResult:
     """Remove category from all transactions matching a description."""
     removed_count = category_repo.bulk_remove_by_description(
         description=body.description,
     )
-    return {"status": "ok", "removed_count": removed_count}
+    return BulkRemovalResult(removed_count=removed_count)
 
 
-@router.put("/transactions/{account_id}/{transaction_id}/category")
+@router.put("/transactions/{account_id}/{transaction_id}/category", status_code=204)
 async def assign_transaction_category(
     account_id: str,
     transaction_id: str,
     body: CategoryAssignment,
     category_repo: Annotated[CategoryRepository, Depends()],
-) -> dict[str, str]:
+) -> None:
     """Assign a category to a transaction by hand. A manual category is
     never changed by the rule engine."""
     cat = category_repo.get_category_by_id(body.category_id)
     if not cat:
         raise NotFoundError("Category not found.")
     category_repo.assign_category(account_id, transaction_id, body.category_id)
-    return {"status": "ok"}
 
 
-@router.delete("/transactions/{account_id}/{transaction_id}/category")
+@router.delete("/transactions/{account_id}/{transaction_id}/category", status_code=204)
 async def remove_transaction_category(
     account_id: str,
     transaction_id: str,
     category_repo: Annotated[CategoryRepository, Depends()],
-) -> dict[str, str]:
+) -> None:
     """Remove a transaction's category."""
     if not category_repo.remove_category(account_id, transaction_id):
         raise NotFoundError("No category assignment found.")
-    return {"status": "ok"}

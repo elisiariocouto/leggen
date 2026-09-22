@@ -68,8 +68,8 @@ async def get_notification_settings() -> NotificationSettings:
     )
 
 
-@router.put("/notifications/settings")
-async def update_notification_settings(settings: NotificationSettings) -> dict:
+@router.put("/notifications/settings", status_code=204)
+async def update_notification_settings(settings: NotificationSettings) -> None:
     """Update notification settings
 
     Fields absent from the request body are left as stored; `update_section`
@@ -101,11 +101,9 @@ async def update_notification_settings(settings: NotificationSettings) -> dict:
                 filters_config[field] = getattr(settings.filters, field) or []
         config.update_section("filters", filters_config)
 
-    return {"updated": True}
 
-
-@router.post("/notifications/test")
-async def test_notification(test_request: NotificationTest) -> dict:
+@router.post("/notifications/test", status_code=204)
+async def test_notification(test_request: NotificationTest) -> None:
     """Send a test notification
 
     The service raises `NotificationNotEnabledError` (400) when the service is
@@ -119,8 +117,6 @@ async def test_notification(test_request: NotificationTest) -> dict:
         else None
     )
     await NotificationService().send_test_notification(test_request.service, section)
-
-    return {"sent": True}
 
 
 @router.get("/notifications/services")
@@ -153,10 +149,10 @@ async def get_notification_services() -> dict[str, NotificationServiceStatus]:
     }
 
 
-@router.delete("/notifications/settings/{service}")
+@router.delete("/notifications/settings/{service}", status_code=204)
 async def delete_notification_service(
     service: Literal["discord", "telegram"],
-) -> dict:
+) -> None:
     """Delete/disable a notification service
 
     The service name is validated by FastAPI against the Literal, so an unknown
@@ -166,5 +162,3 @@ async def delete_notification_service(
     if service in notifications_config:
         del notifications_config[service]
         config.update_section("notifications", notifications_config)
-
-    return {"deleted": service}

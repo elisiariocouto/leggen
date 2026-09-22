@@ -228,8 +228,7 @@ class TestBanksAPI:
         # Delete the session
         response = api_client.delete("/api/v1/banks/connections/sess-delete-test")
 
-        assert response.status_code == 200
-        assert response.json()["deleted"] == "sess-delete-test"
+        assert response.status_code == 204
 
     def test_delete_nonexistent_connection(self, api_client):
         """Test deleting a non-existent connection returns 404."""

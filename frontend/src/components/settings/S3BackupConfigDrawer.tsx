@@ -64,16 +64,10 @@ export default function S3BackupConfigDrawer({
 
   const test = useMutation({
     mutationFn: () => apiClient.testBackupConnection({ service: "s3", config }),
-    onSuccess: (response) => {
-      if (response.connected) {
-        toast.success(
-          "S3 connection test successful! Your configuration is working correctly.",
-        );
-      } else {
-        toast.error(
-          "S3 connection test failed. Please verify your credentials and settings.",
-        );
-      }
+    onSuccess: () => {
+      toast.success(
+        "S3 connection test successful! Your configuration is working correctly.",
+      );
     },
     onError: (error) => {
       toast.error(

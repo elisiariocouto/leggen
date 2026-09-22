@@ -114,8 +114,7 @@ class TestTransactionCategoryAssignment:
             json={"category_id": groceries},
         )
 
-        assert response.status_code == 200
-        assert response.json() == {"status": "ok"}
+        assert response.status_code == 204
         assignment = category_assignments()["txn-001"]
         assert assignment["categoryId"] == groceries
         assert assignment["source"] == "manual"
@@ -139,7 +138,7 @@ class TestTransactionCategoryAssignment:
 
         response = api_client.delete("/api/v1/transactions/acc-001/txn-001/category")
 
-        assert response.status_code == 200
+        assert response.status_code == 204
         assert category_assignments() == {}
 
     def test_remove_category_when_none_assigned(self, api_client):
@@ -171,7 +170,7 @@ class TestBulkCategorization:
         )
 
         assert response.status_code == 200
-        assert response.json() == {"status": "ok", "updated_count": 2}
+        assert response.json() == {"updated_count": 2}
         assignments = category_assignments()
         assert set(assignments) == {"t1", "t2"}
         assert all(a["categoryId"] == transport for a in assignments.values())
@@ -216,7 +215,7 @@ class TestBulkCategorization:
         )
 
         assert response.status_code == 200
-        assert response.json() == {"status": "ok", "removed_count": 2}
+        assert response.json() == {"removed_count": 2}
         # Only the matching descriptions lose their category.
         assert set(category_assignments()) == {"t3"}
 

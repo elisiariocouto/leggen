@@ -43,8 +43,8 @@ async def get_backup_settings() -> BackupSettings:
     )
 
 
-@router.put("/backup/settings")
-async def update_backup_settings(settings: BackupSettings) -> dict:
+@router.put("/backup/settings", status_code=204)
+async def update_backup_settings(settings: BackupSettings) -> None:
     """Update backup settings."""
     if settings.s3 is None:
         # Reporting success for a request that changes nothing hides the
@@ -82,19 +82,15 @@ async def update_backup_settings(settings: BackupSettings) -> dict:
 
     config.update_section("backup", {"s3": s3_config.model_dump()})
 
-    return {"updated": True}
 
-
-@router.delete("/backup/settings")
-async def delete_backup_settings() -> dict:
+@router.delete("/backup/settings", status_code=204)
+async def delete_backup_settings() -> None:
     """Remove the S3 backup configuration, including its stored credentials."""
     config.update_section("backup", {})
 
-    return {"deleted": "s3"}
 
-
-@router.post("/backup/test")
-async def test_backup_connection(test_request: BackupTest) -> dict:
+@router.post("/backup/test", status_code=204)
+async def test_backup_connection(test_request: BackupTest) -> None:
     """Test backup connection."""
     # Clients may submit masked secrets meaning "test with the stored value"
     stored_s3 = config.backup_config.get("s3", {})
@@ -119,8 +115,6 @@ async def test_backup_connection(test_request: BackupTest) -> dict:
     if not success:
         raise BadRequestError("S3 connection test failed")
 
-    return {"connected": True}
-
 
 @router.get("/backup/list", response_model=list[BackupInfo])
 async def list_backups() -> list[dict]:
@@ -137,8 +131,8 @@ async def list_backups() -> list[dict]:
     return await backup_service.list_backups()
 
 
-@router.post("/backup/operation")
-async def backup_operation(operation_request: BackupOperation) -> dict:
+@router.post("/backup/operation", status_code=204)
+async def backup_operation(operation_request: BackupOperation) -> None:
     """Perform backup operation (backup or restore)."""
     backup_config = config.backup_config.get("s3", {})
 
@@ -161,8 +155,6 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
         if not success:
             raise LeggenError("Database backup failed")
 
-        return {"operation": "backup", "completed": True}
-
     else:
         if not operation_request.backup_key:
             raise BadRequestError("backup_key is required for restore operation")
@@ -175,5 +167,3 @@ async def backup_operation(operation_request: BackupOperation) -> dict:
 
         if not success:
             raise LeggenError("Database restore failed")
-
-        return {"operation": "restore", "completed": True}

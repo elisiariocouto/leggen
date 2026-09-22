@@ -70,9 +70,7 @@ class TestBackupAPI:
 
         response = api_client.put("/api/v1/backup/settings", json=request_data)
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["updated"] is True
+        assert response.status_code == 204
 
         # Verify connection test was called
         mock_test_connection.assert_called_once()
@@ -125,8 +123,7 @@ class TestBackupAPI:
 
         response = api_client.put("/api/v1/backup/settings", json=request_data)
 
-        assert response.status_code == 200
-        assert response.json()["updated"] is True
+        assert response.status_code == 204
         mock_test_connection.assert_not_called()
         assert test_config._config["backup"]["s3"]["enabled"] is False
 
@@ -174,8 +171,7 @@ class TestBackupAPI:
 
         response = api_client.delete("/api/v1/backup/settings")
 
-        assert response.status_code == 200
-        assert response.json() == {"deleted": "s3"}
+        assert response.status_code == 204
         assert not test_config._config["backup"].get("s3")
 
         # The GET endpoint now reports nothing configured
@@ -188,8 +184,7 @@ class TestBackupAPI:
 
         response = api_client.delete("/api/v1/backup/settings")
 
-        assert response.status_code == 200
-        assert response.json() == {"deleted": "s3"}
+        assert response.status_code == 204
 
     @patch("leggen.services.backup_service.BackupService.test_connection")
     def test_update_backup_settings_masked_secrets_keep_stored_values(
@@ -223,8 +218,7 @@ class TestBackupAPI:
 
         response = api_client.put("/api/v1/backup/settings", json=request_data)
 
-        assert response.status_code == 200
-        assert response.json()["updated"] is True
+        assert response.status_code == 204
 
         s3_config = test_config._config["backup"]["s3"]
         assert s3_config["access_key_id"] == "AKIAREAL123"
@@ -295,8 +289,7 @@ class TestBackupAPI:
 
         response = api_client.post("/api/v1/backup/test", json=request_data)
 
-        assert response.status_code == 200
-        assert response.json()["connected"] is True
+        assert response.status_code == 204
 
         tested_config = mock_test_connection.call_args[0][0]
         assert tested_config.access_key_id == "AKIAREAL123"
@@ -322,9 +315,7 @@ class TestBackupAPI:
 
         response = api_client.post("/api/v1/backup/test", json=request_data)
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["connected"] is True
+        assert response.status_code == 204
 
         # Verify connection test was called
         mock_test_connection.assert_called_once()
@@ -441,10 +432,7 @@ class TestBackupAPI:
 
         response = api_client.post("/api/v1/backup/operation", json=request_data)
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["operation"] == "backup"
-        assert data["completed"] is True
+        assert response.status_code == 204
 
         # Verify backup was called
         mock_backup_db.assert_called_once()

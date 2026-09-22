@@ -71,6 +71,19 @@ class TestLeggenAPIClient:
             assert len(result) == 1
             assert result[0]["id"] == "test-account-123"
 
+    def test_no_content_acknowledgement_returns_none(self):
+        """A 204 has no body to decode; the delete still counts as done."""
+        client = LeggenAPIClient("http://localhost:8000")
+
+        with requests_mock.Mocker() as m:
+            m.delete(
+                "http://localhost:8000/api/v1/banks/connections/sess-123",
+                status_code=204,
+            )
+
+            assert client.delete_bank_connection("sess-123") is None
+            assert m.called
+
     def test_connection_error_raises_api_error(self):
         """Connection failures surface as LeggenAPIError (a ClickException)."""
         client = LeggenAPIClient("http://localhost:8000")

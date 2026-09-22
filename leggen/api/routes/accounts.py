@@ -86,27 +86,26 @@ async def get_all_balances(
     return all_balances
 
 
-@router.delete("/accounts/{account_id}")
+@router.delete("/accounts/{account_id}", status_code=204)
 async def delete_account(
     account_id: str,
     account_repo: Annotated[AccountRepository, Depends()],
     delete_data: bool = Query(
         default=True, description="Also delete transactions and balances"
     ),
-) -> dict:
+) -> None:
     """Delete a bank account and optionally its associated data"""
     deleted = account_repo.delete_account(account_id, delete_data)
     if not deleted:
         raise NotFoundError(f"Account {account_id} not found")
-    return {"deleted": account_id}
 
 
-@router.put("/accounts/{account_id}")
+@router.put("/accounts/{account_id}", status_code=204)
 async def update_account_details(
     account_id: str,
     update_data: AccountUpdate,
     account_repo: Annotated[AccountRepository, Depends()],
-) -> dict:
+) -> None:
     """Update account details (currently only display_name)"""
     current_account = account_repo.get_account(account_id)
     if not current_account:
@@ -117,5 +116,3 @@ async def update_account_details(
         updated_account_data["display_name"] = update_data.display_name
 
     account_repo.persist(updated_account_data)
-
-    return {"id": account_id, "display_name": update_data.display_name}

@@ -361,17 +361,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Delete Bank Connection Api V1 Banks Connections  Session Id  Delete"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -608,17 +599,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Delete Account Api V1 Accounts  Account Id  Delete"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -689,17 +671,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Update Account Details Api V1 Accounts  Account Id  Put"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -1720,9 +1693,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Bulk Categorize Transactions Api V1 Transactions Bulk Categorize Put"
+                  "$ref": "#/components/schemas/BulkAssignmentResult"
                 }
               }
             }
@@ -1790,9 +1761,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Bulk Remove Transaction Categories Api V1 Transactions Bulk Categorize Delete"
+                  "$ref": "#/components/schemas/BulkRemovalResult"
                 }
               }
             }
@@ -1885,19 +1854,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Assign Transaction Category Api V1 Transactions  Account Id   Transaction Id  Category Put"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -1967,19 +1925,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Remove Transaction Category Api V1 Transactions  Account Id   Transaction Id  Category Delete"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -2981,17 +2928,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Update Notification Settings Api V1 Notifications Settings Put"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -3053,17 +2991,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Test Notification Api V1 Notifications Test Post"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -3192,17 +3121,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Delete Notification Service Api V1 Notifications Settings  Service  Delete"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -3304,17 +3224,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Update Backup Settings Api V1 Backup Settings Put"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -3364,17 +3275,8 @@
         "description": "Remove the S3 backup configuration, including its stored credentials.",
         "operationId": "delete_backup_settings_api_v1_backup_settings_delete",
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Delete Backup Settings Api V1 Backup Settings Delete"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "500": {
             "description": "Internal server error",
@@ -3426,17 +3328,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Test Backup Connection Api V1 Backup Test Post"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -3552,17 +3445,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Backup Operation Api V1 Backup Operation Post"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -4717,6 +4601,20 @@
         "title": "BankInstitution",
         "description": "Bank institution (ASPSP) model"
       },
+      "BulkAssignmentResult": {
+        "properties": {
+          "updated_count": {
+            "type": "integer",
+            "title": "Updated Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "updated_count"
+        ],
+        "title": "BulkAssignmentResult",
+        "description": "How many transactions a bulk assignment categorized."
+      },
       "BulkCategoryAssignment": {
         "properties": {
           "category_id": {
@@ -4749,6 +4647,20 @@
         ],
         "title": "BulkCategoryRemoval",
         "description": "Model for bulk-removing categories by transaction description."
+      },
+      "BulkRemovalResult": {
+        "properties": {
+          "removed_count": {
+            "type": "integer",
+            "title": "Removed Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "removed_count"
+        ],
+        "title": "BulkRemovalResult",
+        "description": "How many transactions a bulk removal left uncategorized."
       },
       "CashFlow": {
         "properties": {

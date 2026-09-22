@@ -88,11 +88,7 @@ class TestAccountsAPI:
             json={"display_name": "My Custom Account Name"},
         )
 
-        assert response.status_code == 200
-        assert response.json() == {
-            "id": "test-account-123",
-            "display_name": "My Custom Account Name",
-        }
+        assert response.status_code == 204
         stored = AccountRepository().get_account("test-account-123")
         assert stored["display_name"] == "My Custom Account Name"
         # The rest of the row is untouched.
@@ -125,8 +121,7 @@ class TestAccountsAPI:
 
         response = api_client.delete("/api/v1/accounts/test-account-123")
 
-        assert response.status_code == 200
-        assert response.json() == {"deleted": "test-account-123"}
+        assert response.status_code == 204
         # Soft-deleted: the row stays, flagged, but its data is gone.
         assert AccountRepository().get_account("test-account-123")["status"] == (
             "DELETED"
@@ -159,7 +154,7 @@ class TestAccountsAPI:
             "/api/v1/accounts/test-account-123?delete_data=false"
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 204
         assert AccountRepository().get_account("test-account-123")["status"] == (
             "DELETED"
         )

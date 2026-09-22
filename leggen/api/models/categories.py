@@ -49,3 +49,15 @@ class BulkCategoryRemoval(BaseModel):
     """Model for bulk-removing categories by transaction description."""
 
     description: str
+
+
+class BulkAssignmentResult(BaseModel):
+    """How many transactions a bulk assignment categorized."""
+
+    updated_count: int
+
+
+class BulkRemovalResult(BaseModel):
+    """How many transactions a bulk removal left uncategorized."""
+
+    removed_count: int

@@ -60,8 +60,7 @@ class TestNotificationSettingsAPI:
 
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
-        assert response.status_code == 200
-        assert response.json()["updated"] is True
+        assert response.status_code == 204
 
         notifications = test_config._config["notifications"]
         assert notifications["discord"]["webhook"] == real_webhook
@@ -87,7 +86,7 @@ class TestNotificationSettingsAPI:
 
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
-        assert response.status_code == 200
+        assert response.status_code == 204
         notifications = test_config._config["notifications"]
         assert notifications["discord"]["webhook"] == new_webhook
         assert notifications["discord"]["enabled"] is False
@@ -128,7 +127,7 @@ class TestNotificationFiltersUpdateAPI:
 
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
-        assert response.status_code == 200
+        assert response.status_code == 204
         assert test_config._config["filters"]["case_insensitive"] == []
         assert test_config._config["filters"]["case_sensitive"] == []
 
@@ -143,7 +142,7 @@ class TestNotificationFiltersUpdateAPI:
 
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
-        assert response.status_code == 200
+        assert response.status_code == 204
         assert test_config._config["filters"]["case_insensitive"] == ["rent", "gym"]
         assert test_config._config["filters"]["case_sensitive"] == ["ACME"]
 
@@ -161,7 +160,7 @@ class TestNotificationFiltersUpdateAPI:
 
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
-        assert response.status_code == 200
+        assert response.status_code == 204
         assert test_config._config["filters"]["case_insensitive"] == ["rent"]
 
     def test_omitted_service_survives_an_update_to_the_other(
@@ -182,7 +181,7 @@ class TestNotificationFiltersUpdateAPI:
 
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
-        assert response.status_code == 200
+        assert response.status_code == 204
         notifications = test_config._config["notifications"]
         assert notifications["telegram"]["token"] == real_token
         assert notifications["discord"]["enabled"] is True
@@ -201,7 +200,7 @@ class TestNotificationFiltersUpdateAPI:
 
         response = api_client.put("/api/v1/notifications/settings", json=request_data)
 
-        assert response.status_code == 200
+        assert response.status_code == 204
         notifications = test_config._config["notifications"]
         assert "telegram" not in notifications
         assert notifications["discord"]["enabled"] is True
@@ -234,8 +233,7 @@ class TestNotificationTestAPI:
                 "/api/v1/notifications/test", json={"service": "discord"}
             )
 
-        assert response.status_code == 200
-        assert response.json() == {"sent": True}
+        assert response.status_code == 204
 
         embed = post_embed.call_args[0][1]
         assert embed["description"] == "Leggen notifications are configured correctly."
@@ -255,7 +253,7 @@ class TestNotificationTestAPI:
                 "/api/v1/notifications/test", json={"service": "telegram"}
             )
 
-        assert response.status_code == 200
+        assert response.status_code == 204
 
         token, chat_id, message = send_message.call_args[0]
         assert token == "123456:token"
@@ -346,7 +344,7 @@ class TestNotificationTestAPI:
                 json={"service": "discord", "message": "custom text"},
             )
 
-        assert response.status_code == 200
+        assert response.status_code == 204
         assert "custom text" not in str(post_embed.call_args[0][1])
 
     def test_supplied_config_is_tested_instead_of_the_saved_one(
@@ -365,7 +363,7 @@ class TestNotificationTestAPI:
                 },
             )
 
-        assert response.status_code == 200
+        assert response.status_code == 204
         assert post_embed.call_args[0][0] == new_webhook
         stored = enabled_notifications._config["notifications"]["discord"]
         assert stored["webhook"] == "https://discord.com/api/webhooks/123/secret"
@@ -390,7 +388,7 @@ class TestNotificationTestAPI:
                 },
             )
 
-        assert response.status_code == 200
+        assert response.status_code == 204
         token, chat_id, _ = send_message.call_args[0]
         assert token == "123456:token"
         assert chat_id == 99
@@ -434,8 +432,7 @@ class TestNotificationServiceDeletionAPI:
         """Deleting a service drops its whole section from the config."""
         response = api_client.delete("/api/v1/notifications/settings/discord")
 
-        assert response.status_code == 200
-        assert response.json() == {"deleted": "discord"}
+        assert response.status_code == 204
         assert "discord" not in enabled_notifications._config["notifications"]
         # The other service is untouched.
         assert "telegram" in enabled_notifications._config["notifications"]

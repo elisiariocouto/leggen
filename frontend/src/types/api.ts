@@ -27,6 +27,8 @@ export type RawTransactionData = Transaction["raw_transaction"];
 
 // Categories
 export type Category = Schemas["Category"];
+export type BulkAssignmentResult = Schemas["BulkAssignmentResult"];
+export type BulkRemovalResult = Schemas["BulkRemovalResult"];
 export type CategoryCreate = Schemas["CategoryCreate"];
 export type CategoryUpdate = Schemas["CategoryUpdate"];
 

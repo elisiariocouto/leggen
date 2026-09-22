@@ -33,17 +33,13 @@ function BackupList({ onClose }: { onClose: () => void }) {
         operation: "restore",
         backup_key: backupKey,
       }),
-    onSuccess: (response) => {
-      if (response.completed) {
-        // The restore swapped the whole database, so everything derived from
-        // it is stale — categories included, which a sync would not touch.
-        invalidateSyncedData(queryClient);
-        queryClient.invalidateQueries({ queryKey: queryKeys.categories });
-        setRestoreTarget(null);
-        toast.success("Database restored successfully!");
-      } else {
-        toast.error("Failed to restore backup.");
-      }
+    onSuccess: () => {
+      // The restore swapped the whole database, so everything derived from it
+      // is stale — categories included, which a sync would not touch.
+      invalidateSyncedData(queryClient);
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+      setRestoreTarget(null);
+      toast.success("Database restored successfully!");
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Failed to restore backup."));
@@ -149,13 +145,9 @@ export default function BackupCard() {
 
   const createBackup = useMutation({
     mutationFn: () => apiClient.performBackupOperation({ operation: "backup" }),
-    onSuccess: (response) => {
-      if (response.completed) {
-        toast.success("Backup created successfully!");
-        queryClient.invalidateQueries({ queryKey: queryKeys.backups });
-      } else {
-        toast.error("Failed to create backup.");
-      }
+    onSuccess: () => {
+      toast.success("Backup created successfully!");
+      queryClient.invalidateQueries({ queryKey: queryKeys.backups });
     },
     onError: (error) => {
       toast.error(

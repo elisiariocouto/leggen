@@ -160,16 +160,15 @@ async def get_bank_connections_status(
     return connections
 
 
-@router.delete("/banks/connections/{session_id}")
+@router.delete("/banks/connections/{session_id}", status_code=204)
 async def delete_bank_connection(
     session_id: str,
     session_repo: Annotated[SessionRepository, Depends()],
-) -> dict:
+) -> None:
     """Delete a bank connection session"""
     deleted = session_repo.delete_session(session_id)
     if not deleted:
         raise NotFoundError(f"Session {session_id} not found")
-    return {"deleted": session_id}
 
 
 _COUNTRIES = [

@@ -97,6 +97,9 @@ class LeggenAPIClient:
                 method, url, verify=self.verify_ssl, **kwargs
             )
             response.raise_for_status()
+            # Acknowledgements (deletes, settings writes) are 204 with no body.
+            if response.status_code == 204:
+                return None
             return response.json()
         except requests.exceptions.ConnectionError as e:
             raise LeggenAPIError(
@@ -151,9 +154,9 @@ class LeggenAPIClient:
         response = self._make_request("GET", "/banks/status")
         return response
 
-    def delete_bank_connection(self, session_id: str) -> dict[str, Any]:
+    def delete_bank_connection(self, session_id: str) -> None:
         """Delete a bank connection session"""
-        return self._make_request("DELETE", f"/banks/connections/{session_id}")
+        self._make_request("DELETE", f"/banks/connections/{session_id}")
 
     def get_supported_countries(self) -> list[dict[str, Any]]:
         """Get supported countries"""
@@ -166,11 +169,9 @@ class LeggenAPIClient:
         response = self._make_request("GET", "/accounts")
         return response
 
-    def delete_account(
-        self, account_id: str, delete_data: bool = True
-    ) -> dict[str, Any]:
+    def delete_account(self, account_id: str, delete_data: bool = True) -> None:
         """Delete a bank account and optionally its associated data"""
-        return self._make_request(
+        self._make_request(
             "DELETE",
             f"/accounts/{account_id}",
             params={"delete_data": str(delete_data).lower()},
