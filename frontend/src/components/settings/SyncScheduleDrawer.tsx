@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { Clock } from "lucide-react";
-import { apiClient } from "../lib/api";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Switch } from "./ui/switch";
+import { apiClient } from "../../lib/api";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Switch } from "../ui/switch";
 import SettingsDrawer, {
   useSettingsDrawer,
   useSettingsMutation,
-} from "./settings/SettingsDrawer";
-import type { ScheduleSettings } from "../types/api";
-import { queryKeys } from "../lib/queryKeys";
+} from "./SettingsDrawer";
+import type { ScheduleSettings } from "../../types/api";
+import { queryKeys } from "../../lib/queryKeys";
 
 interface SyncScheduleDrawerProps {
   settings?: ScheduleSettings;

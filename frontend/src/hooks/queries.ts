@@ -64,3 +64,11 @@ export function useCategoryRules() {
     staleTime: 60_000,
   });
 }
+
+/** Read by the notification services card, the filters card and their drawers. */
+export function useNotificationSettings() {
+  return useQuery({
+    queryKey: queryKeys.notificationSettings,
+    queryFn: apiClient.getNotificationSettings,
+  });
+}

@@ -2,19 +2,19 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Cloud, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient, getApiErrorMessage, MASKED_SECRET } from "../lib/api";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Switch } from "./ui/switch";
+import { apiClient, getApiErrorMessage, MASKED_SECRET } from "../../lib/api";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Switch } from "../ui/switch";
 import SettingsDrawer, {
   TestButton,
   useSettingsDrawer,
   useSettingsMutation,
-} from "./settings/SettingsDrawer";
-import ConfirmDialog from "./ConfirmDialog";
-import type { BackupSettings, S3Config } from "../types/api";
-import { queryKeys } from "../lib/queryKeys";
+} from "./SettingsDrawer";
+import ConfirmDialog from "../ConfirmDialog";
+import type { BackupSettings, S3Config } from "../../types/api";
+import { queryKeys } from "../../lib/queryKeys";
 
 interface S3BackupConfigDrawerProps {
   settings?: BackupSettings;

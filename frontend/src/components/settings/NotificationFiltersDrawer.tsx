@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
-import { apiClient } from "../lib/api";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { apiClient } from "../../lib/api";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import SettingsDrawer, {
   useSettingsDrawer,
   useSettingsMutation,
-} from "./settings/SettingsDrawer";
-import type { NotificationSettings, NotificationFilters } from "../types/api";
-import { queryKeys } from "../lib/queryKeys";
+} from "./SettingsDrawer";
+import type { NotificationSettings, NotificationFilters } from "../../types/api";
+import { queryKeys } from "../../lib/queryKeys";
 
 interface NotificationFiltersDrawerProps {
   settings: NotificationSettings | undefined;

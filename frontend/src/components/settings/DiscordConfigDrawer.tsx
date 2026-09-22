@@ -2,18 +2,18 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { MessageSquare } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient, MASKED_SECRET } from "../lib/api";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Switch } from "./ui/switch";
+import { apiClient, MASKED_SECRET } from "../../lib/api";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Switch } from "../ui/switch";
 import SettingsDrawer, {
   TestButton,
   useSettingsDrawer,
   useSettingsMutation,
-} from "./settings/SettingsDrawer";
-import type { NotificationSettings, DiscordConfig } from "../types/api";
-import { queryKeys } from "../lib/queryKeys";
-import { getTestNotificationErrorMessage } from "../lib/notification-errors";
+} from "./SettingsDrawer";
+import type { NotificationSettings, DiscordConfig } from "../../types/api";
+import { queryKeys } from "../../lib/queryKeys";
+import { getTestNotificationErrorMessage } from "../../lib/notification-errors";
 
 const EMPTY_DISCORD_CONFIG: DiscordConfig = { webhook: "", enabled: true };
 
